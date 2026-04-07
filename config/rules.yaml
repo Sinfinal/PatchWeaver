@@ -1,0 +1,19 @@
+# 规则与 recipe 配置
+
+# 风险规则目录
+risk_rules_dir: rules/risk_rules
+
+# patch author guide 规则目录
+patch_author_guide_dir: rules/risk_rules/patch_author_guide
+
+# 原子改写规则目录
+primitive_rules_dir: rules/primitive_rules
+
+# livepatch 专项规则目录
+livepatch_rule_dir: rules/primitive_rules/livepatch
+
+# 规则排序目录
+ranking_rules_dir: rules/ranking_rules
+
+# 默认 recipe 清单
+default_recipe_manifest: recipes/manifests/default.yaml

@@ -1,0 +1,27 @@
+# 全局基础配置
+
+# 工作区根目录
+workspace_root: workspaces
+
+# SQLite 数据库路径
+database_path: data/patchweaver.db
+
+# 默认目标内核版本
+default_kernel: 6.6.102-5.2.an23.x86_64
+
+# 单个补丁最大尝试次数
+max_attempts: 5
+
+# 只读阶段的最大并发数
+parallel_read_limit: 3
+
+# 写入独占粒度，首版按任务级串行
+write_lock_scope: task
+
+# Trace 记录模式，首版保留完整回放材料
+trace_mode: full
+
+# 报告输出格式
+report_formats:
+  - json
+  - md

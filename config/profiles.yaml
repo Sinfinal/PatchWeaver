@@ -1,0 +1,56 @@
+# 运行档位配置
+
+profiles:
+  dev:
+    # 调试档位，优先快速跑通流程
+    max_attempts: 2
+
+    # 是否检查语义一致性
+    enable_semantic_guard: false
+
+    # 是否启用上下文去重
+    enable_context_dedup: true
+
+    # 是否记录证据 token 成本
+    track_token_cost: true
+
+    # 是否允许只读 subagent
+    allow_readonly_subagent: false
+
+  demo:
+    # 演示档位，兼顾速度和效果
+    max_attempts: 3
+
+    # 是否检查语义一致性
+    enable_semantic_guard: true
+
+    # 是否启用上下文去重
+    enable_context_dedup: true
+
+    # 是否记录证据 token 成本
+    track_token_cost: true
+
+    # 是否允许只读 subagent
+    allow_readonly_subagent: true
+
+  full:
+    # 正式档位，优先成功率
+    max_attempts: 5
+
+    # 是否检查语义一致性
+    enable_semantic_guard: true
+
+    # 是否启用回归验证
+    enable_regression: true
+
+    # 是否启用上下文去重
+    enable_context_dedup: true
+
+    # 是否记录证据 token 成本
+    track_token_cost: true
+
+    # 是否允许只读 subagent
+    allow_readonly_subagent: true
+
+    # 是否允许只读任务并行
+    enable_read_parallel: true

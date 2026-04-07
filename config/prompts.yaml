@@ -1,0 +1,42 @@
+# 提示词策略配置
+
+default_prompt_profile: strict
+
+prompt_profiles:
+  strict:
+    # 是否强制结构化输出
+    require_json_schema: true
+
+    # 证据片段上限
+    max_evidence_snippets: 8
+
+    # 记忆召回上限
+    max_memory_hits: 3
+
+    # 是否抑制重复证据注入
+    suppress_duplicate_evidence: true
+
+    # 是否记录上下文 token 成本
+    track_token_cost: true
+
+    # 是否允许直接输出自由格式 patch
+    allow_freeform_patch_output: false
+
+  debug:
+    # 是否强制结构化输出
+    require_json_schema: true
+
+    # 证据片段上限
+    max_evidence_snippets: 12
+
+    # 记忆召回上限
+    max_memory_hits: 5
+
+    # 是否抑制重复证据注入
+    suppress_duplicate_evidence: true
+
+    # 是否记录上下文 token 成本
+    track_token_cost: true
+
+    # 是否允许直接输出自由格式 patch
+    allow_freeform_patch_output: false

@@ -1,0 +1,16 @@
+# 验证配置
+
+# 是否验证模块加载
+enable_load_test: true
+
+# 是否验证模块卸载
+enable_unload_test: true
+
+# 是否执行冒烟测试
+enable_smoke_test: true
+
+# 是否执行回归测试
+enable_regression: false
+
+# 冒烟测试脚本
+smoke_test_script: scripts/validate_smoke.sh

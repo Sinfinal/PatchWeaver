@@ -1,0 +1,16 @@
+# 构建配置
+
+# 目标内核源码目录
+kernel_src_dir: /opt/kernel-src
+
+# kernel-devel 目录
+kernel_devel_dir: /usr/src/kernels/6.6.102-5.2.an23.x86_64
+
+# vmlinux 符号文件路径
+vmlinux_path: /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux
+
+# kpatch-build 命令
+kpatch_build_cmd: kpatch-build
+
+# 单次构建超时时间（秒）
+build_timeout_sec: 3600

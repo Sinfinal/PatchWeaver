@@ -1,0 +1,16 @@
+# 日志配置
+
+# 日志级别
+level: INFO
+
+# 文本日志路径
+file_path: data/logs/patchweaver.log
+
+# 控制台彩色输出
+console_rich: true
+
+# 是否输出 JSONL 日志
+enable_jsonl: true
+
+# JSONL 日志路径
+jsonl_path: data/logs/patchweaver.jsonl

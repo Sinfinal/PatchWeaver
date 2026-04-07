@@ -1,0 +1,43 @@
+# Skill 路由与调度配置
+
+# 默认启用的 skill 档位
+default_skill_profile: contest
+
+skill_profiles:
+  contest:
+    # 是否启用 skill 路由器
+    enable_skill_router: true
+
+    # 优先采用的调度模式
+    preferred_dispatch: skill_first
+
+    # skill 失败后的回退模式
+    fallback_dispatch: direct_worker
+
+    # 是否允许 skill 失败后自动回退
+    enable_skill_fallback: true
+
+    # 是否允许派生只读 subagent
+    allow_readonly_subagent: true
+
+    # 只读 subagent 的最大并发数
+    subagent_max_parallel: 2
+
+    # 允许使用只读 subagent 的阶段
+    subagent_allowed_stages:
+      - retrieval
+      - failure_analysis
+      - reporting
+
+    # 写入动作是否必须经由 harness
+    write_actions_via_harness_only: true
+
+# 首版启用的核心 skill 列表
+enabled_skills:
+  - retrieval
+  - semantic_card
+  - constraint_diagnosis
+  - rewrite_recipe
+  - failure_analysis
+  - validation
+  - reporting
