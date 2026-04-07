@@ -1,0 +1,11 @@
+name: patchweaver-dev
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - sqlite
+  - pip:
+      - -e .
+      - pytest>=8.0
