@@ -31,6 +31,9 @@ Thumbs.db
 # Runtime data
 data/*.db
 data/logs/
+data/manifests/*
+!data/manifests/.gitkeep
+!data/manifests/*.template.json
 *.log
 
 # Generated workspaces and caches
@@ -38,3 +41,5 @@ workspaces/*
 !workspaces/.gitkeep
 data/cache/*
 !data/cache/.gitkeep
+data/traces/*
+!data/traces/.gitkeep

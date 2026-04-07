@@ -1,0 +1,3 @@
+"""PatchWeaver 包级元信息。"""
+
+__version__ = "0.1.0"

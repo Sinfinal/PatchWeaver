@@ -21,6 +21,9 @@ write_lock_scope: task
 # Trace 记录模式，首版保留完整回放材料
 trace_mode: full
 
+# manifest 归档目录
+manifest_dir: data/manifests
+
 # 报告输出格式
 report_formats:
   - json
