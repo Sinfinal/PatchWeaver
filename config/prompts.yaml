@@ -1,5 +1,4 @@
 # 提示词策略配置
-
 default_prompt_profile: strict
 
 prompt_profiles:

@@ -13,14 +13,24 @@ requires-python = ">=3.11"
 
 # 运行依赖
 dependencies = [
+  #命令行程序
   "typer>=0.12",
+  #定义数据模型和做参数校验
   "pydantic>=2.7",
+  #读取解析YAML文件
   "pyyaml>=6.0",
+  #模板引擎
   "jinja2>=3.1",
+  #解析patch/diff文件
   "unidiff>=0.7",
+  #终端美化
   "rich>=13.7"
 ]
 
 # 命令入口
 [project.scripts]
 patchweaver = "patchweaver.cli.app:app"
+
+#工具目录
+[tool.setuptools]
+packages = ["patchweaver"]
