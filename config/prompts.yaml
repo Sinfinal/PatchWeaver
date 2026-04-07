@@ -1,6 +1,14 @@
 # 提示词策略配置
 default_prompt_profile: strict
 
+# bootstrap 片段目录
+bootstrap_fragment_dirs:
+  - prompts/system
+  - prompts/bootstrap
+
+# 是否记录 bootstrap manifest
+record_bootstrap_manifest: true
+
 prompt_profiles:
   strict:
     # 是否强制结构化输出
@@ -14,6 +22,9 @@ prompt_profiles:
 
     # 是否抑制重复证据注入
     suppress_duplicate_evidence: true
+
+    # 是否标注裁剪信息
+    annotate_truncation: true
 
     # 是否记录上下文 token 成本
     track_token_cost: true
@@ -33,6 +44,9 @@ prompt_profiles:
 
     # 是否抑制重复证据注入
     suppress_duplicate_evidence: true
+
+    # 是否标注裁剪信息
+    annotate_truncation: true
 
     # 是否记录上下文 token 成本
     track_token_cost: true

@@ -14,6 +14,9 @@ profiles:
     # 是否记录证据 token 成本
     track_token_cost: true
 
+    # 是否启用窄状态 failover
+    enable_narrow_failover: true
+
     # 是否允许只读 subagent
     allow_readonly_subagent: false
 
@@ -29,6 +32,9 @@ profiles:
 
     # 是否记录证据 token 成本
     track_token_cost: true
+
+    # 是否启用窄状态 failover
+    enable_narrow_failover: true
 
     # 是否允许只读 subagent
     allow_readonly_subagent: true
@@ -48,6 +54,9 @@ profiles:
 
     # 是否记录证据 token 成本
     track_token_cost: true
+
+    # 是否启用窄状态 failover
+    enable_narrow_failover: true
 
     # 是否允许只读 subagent
     allow_readonly_subagent: true

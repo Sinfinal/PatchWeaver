@@ -3,6 +3,25 @@
 # 默认启用的 skill 档位
 default_skill_profile: contest
 
+# skill 来源优先级
+skill_source_priority:
+  - workspace
+  - project
+  - shared
+  - builtin
+
+# 是否要求 skill 带 manifest
+require_manifest: true
+
+# 是否强制 allowlist 过滤
+enforce_allowlist: true
+
+# 各层 skill 根目录
+skill_dirs:
+  project: skills/project
+  shared: skills/shared
+  builtin: skills/builtin
+
 skill_profiles:
   contest:
     # 是否启用 skill 路由器
@@ -31,6 +50,11 @@ skill_profiles:
 
     # 写入动作是否必须经由 harness
     write_actions_via_harness_only: true
+
+# 当前 profile 默认允许的 skill 标签
+allowed_skill_tags:
+  - contest
+  - core
 
 # 首版启用的核心 skill 列表
 enabled_skills:
