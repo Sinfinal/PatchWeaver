@@ -1,0 +1,16 @@
+{
+  "manifest_type": "bootstrap_manifest",
+  "version": "0.1.0",
+  "fragments": [
+    {
+      "name": "system",
+      "source": "prompts/system",
+      "required": true
+    },
+    {
+      "name": "bootstrap",
+      "source": "prompts/bootstrap",
+      "required": false
+    }
+  ]
+}

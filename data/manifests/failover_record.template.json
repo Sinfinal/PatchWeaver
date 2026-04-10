@@ -1,0 +1,11 @@
+{
+  "record_type": "failover_record",
+  "version": "0.1.0",
+  "allowed_switches": [
+    "模型档位",
+    "提示档位",
+    "超时",
+    "并发预算"
+  ],
+  "note": "窄状态 failover 只能调整调用参数，不能直接修改任务状态或工作区。"
+}
