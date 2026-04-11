@@ -1,0 +1,11 @@
+name: constraint_diagnosis
+version: 0.1.0
+enabled: true
+visibility: project
+tags:
+  - contest
+  - core
+entry:
+  kind: placeholder
+  stage: constraint_diagnosis
+description: constraint_diagnosis 阶段能力包，负责输出热补丁约束诊断结果。

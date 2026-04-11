@@ -1,0 +1,11 @@
+name: failure_analysis
+version: 0.1.0
+enabled: true
+visibility: project
+tags:
+  - contest
+  - core
+entry:
+  kind: placeholder
+  stage: failure_analysis
+description: failure_analysis 阶段能力包，负责整理构建失败归因。

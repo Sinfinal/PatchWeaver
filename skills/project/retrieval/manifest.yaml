@@ -1,0 +1,11 @@
+name: retrieval
+version: 0.1.0
+enabled: true
+visibility: project
+tags:
+  - contest
+  - core
+entry:
+  kind: placeholder
+  stage: retrieval
+description: retrieval 阶段能力包，负责整理漏洞来源与修复链路。

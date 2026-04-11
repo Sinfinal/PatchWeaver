@@ -1,0 +1,11 @@
+name: rewrite_recipe
+version: 0.1.0
+enabled: true
+visibility: project
+tags:
+  - contest
+  - core
+entry:
+  kind: placeholder
+  stage: rewrite_recipe
+description: rewrite_recipe 阶段能力包，负责组织改写规划与候选原语。

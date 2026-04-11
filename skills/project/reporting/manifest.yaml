@@ -1,0 +1,11 @@
+name: reporting
+version: 0.1.0
+enabled: true
+visibility: project
+tags:
+  - contest
+  - core
+entry:
+  kind: placeholder
+  stage: reporting
+description: reporting 阶段能力包，负责生成结构化报告与交付摘要。

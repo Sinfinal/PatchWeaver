@@ -1,0 +1,11 @@
+name: validation
+version: 0.1.0
+enabled: true
+visibility: project
+tags:
+  - contest
+  - core
+entry:
+  kind: placeholder
+  stage: validation
+description: validation 阶段能力包，负责加载与回归验证结果整理。
