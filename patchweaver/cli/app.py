@@ -19,7 +19,14 @@ from typer.core import TyperGroup
 from patchweaver import __version__
 from patchweaver.config.loader import load_build_config, load_logging_config, load_prompts_config, load_skills_config
 from patchweaver.config.resolver import resolve_runtime
+from patchweaver.coordinator.task_runner import TaskRunner
+from patchweaver.harness.attempt_engine import AttemptEngine
+from patchweaver.harness.workspace_guard import WorkspaceGuard
+from patchweaver.models.task import TaskContext
+from patchweaver.storage.artifact_repo import ArtifactRepository
+from patchweaver.storage.attempt_repo import AttemptRepository
 from patchweaver.storage.sqlite import initialize_sqlite_db
+from patchweaver.storage.task_repo import TaskRepository
 
 class PatchWeaverHelpGroup(TyperGroup):
     """统一渲染更适合人读的帮助页。"""
@@ -363,11 +370,35 @@ def _runtime_payload(runtime: Any) -> dict[str, Any]:
     }
 
 
+def _task_payload(task: TaskContext) -> dict[str, Any]:
+    """把任务对象整理成统一输出结构。"""
+
+    return {
+        "task_id": task.task_id,
+        "cve_id": task.cve_id,
+        "target_kernel": task.target_kernel,
+        "status": task.status,
+        "current_attempt": task.current_attempt,
+        "max_attempts": task.max_attempts,
+        "workspace_dir": str(task.workspace_dir),
+        "created_at": task.created_at.isoformat(),
+        "updated_at": task.updated_at.isoformat(),
+    }
+
+
+def _build_task_runner(runtime: Any) -> TaskRunner:
+    """按当前运行时配置创建任务编排器。"""
+
+    build_config = load_build_config(runtime.project_root)
+    prompts_config = load_prompts_config(runtime.project_root)
+    return TaskRunner(runtime=runtime, build_config=build_config, prompts_config=prompts_config)
+
+
 def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills_config: Any, prompts_config: Any) -> dict[str, Any]:
     """组装 doctor 命令的完整检查结果。"""
     checks: list[dict[str, Any]] = []
 
-    # 先把诊断输出里几块核心上下文整理出来，后面文本和 JSON 共用这一份数据。
+    # 先把几块固定上下文整理出来，后面的检查项都直接引用这份快照。
     skill_roots = {
         "project": str(_resolve_project_path(runtime.project_root, skills_config.skill_dirs.project).resolve()),
         "shared": str(_resolve_project_path(runtime.project_root, skills_config.skill_dirs.shared).resolve()),
@@ -386,6 +417,7 @@ def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills
         "default_kernel": runtime.default_kernel,
     }
 
+    # Python 依赖放在最前面查，CLI 自己起不来的问题会最先暴露。
     required_modules = {
         "typer": "命令行框架",
         "pydantic": "配置与模型校验",
@@ -412,6 +444,7 @@ def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills
         config_path = runtime.config_dir / filename
         checks.append(_check_item(category="config_file", name=filename, label=f"配置文件 `{filename}`", ok=config_path.exists(), detail=str(config_path)))
 
+    # 构建环境单独列出来，后面如果 doctor 报黄，基本一眼就能看出是环境问题还是代码问题。
     checks.append(
         _check_item(
             category="external_command",
@@ -475,6 +508,7 @@ def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills
                 )
             )
 
+    # bootstrap 目录和 contracts 目录分开检查，方便排查 prompt 体系是不是缺文件。
     for bootstrap_dir in bootstrap_dirs:
         bootstrap_path = Path(bootstrap_dir)
         checks.append(
@@ -522,6 +556,7 @@ def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills
             )
         )
 
+    # 最后一段再看文件系统状态，这里基本能判断当前环境能不能继续跑任务。
     log_path = _resolve_project_path(runtime.project_root, logging_config.file_path)
     jsonl_path = _resolve_project_path(runtime.project_root, logging_config.jsonl_path)
     checks.extend(
@@ -727,45 +762,209 @@ def doctor(
 
 
 @app.command("create")
-def create() -> None:
-    """创建任务占位命令。"""
+def create(
+    cve: Annotated[str, typer.Option("--cve", help="指定要处理的 CVE ID。")] = ...,
+    kernel: Annotated[str | None, typer.Option("--kernel", help="覆盖目标内核版本。")] = None,
+    task_id: Annotated[str | None, typer.Option("--task-id", help="手工指定任务编号。")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """创建任务并初始化工作区骨架。"""
 
-    _placeholder("create")
+    runtime = _load_runtime()
+    task_repo = TaskRepository(runtime.database_path)
+    attempt_repo = AttemptRepository(runtime.database_path)
+    artifact_repo = ArtifactRepository(runtime.database_path)
+
+    final_task_id = task_id or task_repo.next_task_id()
+    if task_repo.task_exists(final_task_id):
+        typer.secho(f"错误: 任务已存在：{final_task_id}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
+    task = TaskContext(
+        task_id=final_task_id,
+        cve_id=cve,
+        target_kernel=kernel or runtime.default_kernel,
+        status="created",
+        max_attempts=runtime.max_attempts,
+        current_attempt=0,
+        workspace_dir=(runtime.workspace_root / final_task_id).resolve(),
+    )
+
+    workspace_guard = WorkspaceGuard(runtime.workspace_root)
+    task_dir = workspace_guard.create_task_workspace(task)
+    workspace_guard.create_attempt_workspace(task_dir, 1)
+    task_repo.create_task(task)
+
+    initial_state = AttemptEngine().create_initial_state(task_id=task.task_id, max_attempts=task.max_attempts)
+    attempt_repo.save_attempt_state(initial_state)
+    artifact_repo.add_artifact(
+        task_id=task.task_id,
+        artifact_type="task_context",
+        artifact_path=task_dir / "task_context.json",
+        metadata={"kind": "workspace_snapshot"},
+    )
+
+    payload = {
+        "command": "create",
+        "task": _task_payload(task),
+        "prepared_attempt_dir": str(task_dir / "attempts" / "001"),
+        "status": "ok",
+    }
+    if json_output:
+        _emit_json(payload)
+        return
+
+    typer.echo(f"已创建任务: {task.task_id}")
+    typer.echo(f"CVE 编号: {task.cve_id}")
+    typer.echo(f"目标内核: {task.target_kernel}")
+    typer.echo(f"工作区目录: {task.workspace_dir}")
+    typer.echo(f"首轮尝试目录: {task_dir / 'attempts' / '001'}")
 
 
 @app.command("run")
-def run() -> None:
-    """执行任务占位命令。"""
+def run(
+    task: Annotated[str, typer.Option("--task", help="指定任务编号。")] = ...,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """执行最小单轮尝试。"""
 
-    _placeholder("run")
+    runtime = _load_runtime()
+    runner = _build_task_runner(runtime)
+    try:
+        payload = runner.run_task(task)
+    except Exception as exc:
+        typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        _emit_json(payload)
+        return
+
+    typer.echo(f"任务编号: {payload['task_id']}")
+    typer.echo(f"尝试编号: {payload['attempt_id']}")
+    typer.echo(f"执行结果: {payload['status']}")
+    typer.echo(f"失败类型: {payload['failure_type']}")
+    typer.echo(f"构建日志: {payload['build_log_path']}")
+    typer.echo(f"Trace 路径: {payload['trace_path']}")
 
 
 @app.command("status")
-def status() -> None:
-    """查看任务状态占位命令。"""
+def status(
+    task: Annotated[str | None, typer.Option("--task", help="指定任务编号。")] = None,
+    limit: Annotated[int, typer.Option("--limit", help="限制返回的任务条数。")] = 10,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """查看任务状态。"""
 
-    _placeholder("status")
+    runtime = _load_runtime()
+    task_repo = TaskRepository(runtime.database_path)
+
+    if task:
+        task_context = task_repo.get_task(task)
+        if task_context is None:
+            typer.secho(f"错误: 未找到任务：{task}", err=True, fg=typer.colors.RED)
+            raise typer.Exit(code=1)
+        payload = {"command": "status", "task": _task_payload(task_context)}
+        if json_output:
+            _emit_json(payload)
+            return
+        typer.echo(f"任务编号: {task_context.task_id}")
+        typer.echo(f"CVE 编号: {task_context.cve_id}")
+        typer.echo(f"目标内核: {task_context.target_kernel}")
+        typer.echo(f"当前状态: {task_context.status}")
+        typer.echo(f"当前尝试轮: {task_context.current_attempt}/{task_context.max_attempts}")
+        typer.echo(f"工作区目录: {task_context.workspace_dir}")
+        return
+
+    tasks = task_repo.list_tasks(limit=limit)
+    payload = {"command": "status", "tasks": [_task_payload(item) for item in tasks]}
+    if json_output:
+        _emit_json(payload)
+        return
+
+    if not tasks:
+        typer.echo("当前还没有任务记录。")
+        return
+
+    typer.echo("最近任务：")
+    for item in tasks:
+        typer.echo(f"  - {item.task_id} | {item.cve_id} | {item.status} | {item.workspace_dir}")
 
 
 @app.command("analyze")
-def analyze() -> None:
-    """分析阶段占位命令。"""
+def analyze(
+    task: Annotated[str, typer.Option("--task", help="指定任务编号。")] = ...,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """执行最小分析链路。"""
 
-    _placeholder("analyze")
+    runtime = _load_runtime()
+    runner = _build_task_runner(runtime)
+    try:
+        payload = runner.analyze_task(task)
+    except Exception as exc:
+        typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        _emit_json(payload)
+        return
+
+    typer.echo(f"任务编号: {payload['task_id']}")
+    typer.echo(f"PatchBundle: {payload['patch_bundle_path']}")
+    typer.echo(f"SemanticCard: {payload['semantic_card_path']}")
+    typer.echo(f"ConstraintReport: {payload['constraint_report_path']}")
+    typer.echo(f"Bootstrap Manifest: {payload['bootstrap_manifest_path']}")
 
 
 @app.command("report")
-def report() -> None:
-    """报告生成占位命令。"""
+def report(
+    task: Annotated[str, typer.Option("--task", help="指定任务编号。")] = ...,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """生成任务报告。"""
 
-    _placeholder("report")
+    runtime = _load_runtime()
+    runner = _build_task_runner(runtime)
+    try:
+        payload = runner.build_report(task)
+    except Exception as exc:
+        typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        _emit_json(payload)
+        return
+
+    typer.echo(f"任务编号: {payload['task_id']}")
+    typer.echo(f"JSON 报告: {payload['report_json']}")
+    typer.echo(f"Markdown 报告: {payload['report_md']}")
 
 
 @app.command("replay")
-def replay() -> None:
-    """回放占位命令。"""
+def replay(
+    task: Annotated[str, typer.Option("--task", help="指定任务编号。")] = ...,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """查看最近一轮回放信息。"""
 
-    _placeholder("replay")
+    runtime = _load_runtime()
+    runner = _build_task_runner(runtime)
+    try:
+        payload = runner.replay_task(task)
+    except Exception as exc:
+        typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        _emit_json(payload)
+        return
+
+    typer.echo(f"任务编号: {payload['task_id']}")
+    typer.echo(f"最近尝试: {payload['latest_attempt_id']}")
+    typer.echo(f"尝试结果: {payload['latest_attempt_status']}")
+    typer.echo(f"Trace 路径: {payload['trace_path']}")
+    typer.echo(f"报告路径: {payload['report_path']}")
 
 
 @app.command("init-db")
