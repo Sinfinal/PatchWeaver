@@ -1,5 +1,8 @@
 # 构建配置
 
+# 构建后端，local 表示本机构建，ssh 表示走远端构建机
+build_backend: ssh
+
 # 目标内核源码目录
 kernel_src_dir: /opt/kernel-src
 
@@ -14,3 +17,21 @@ kpatch_build_cmd: kpatch-build
 
 # 单次构建超时时间（秒）
 build_timeout_sec: 3600
+
+# 远端构建机地址
+remote_host: 10.223.185.3
+
+# SSH 端口
+remote_port: 22
+
+# 远端登录用户
+remote_username: root
+
+# 从本地环境变量读取 SSH 密码
+remote_password_env: PATCHWEAVER_REMOTE_PASSWORD
+
+# 远端工作目录根路径
+remote_workspace_root: /root/patchweaver
+
+# SSH 建连超时时间（秒）
+remote_connect_timeout_sec: 15

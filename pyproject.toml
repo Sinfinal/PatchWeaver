@@ -24,7 +24,9 @@ dependencies = [
   #解析patch/diff文件
   "unidiff>=0.7",
   #终端美化
-  "rich>=13.7"
+  "rich>=13.7",
+  #SSH 构建机接入
+  "paramiko>=4.0"
 ]
 
 # 命令入口
