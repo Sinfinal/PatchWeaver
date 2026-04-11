@@ -23,15 +23,59 @@ class FailureClassifier:
         """根据构建日志给出简单归因。"""
 
         failure_type = "compile_failed"
-        if "kpatch-build 未找到" in build_log:
+        lowered_log = build_log.lower()
+
+        if "未找到构建命令" in build_log or "kpatch-build 未找到" in build_log:
             failure_type = "build_env_missing"
+        elif "缺少远端登录密码" in build_log or "缺少远端密码环境变量" in build_log:
+            failure_type = "remote_auth_missing"
+        elif "远端连接失败" in build_log or "远端执行失败" in build_log:
+            failure_type = "remote_connect_failed"
+        elif "找不到可用的内核源码目录" in build_log:
+            failure_type = "kernel_src_missing"
+        elif "没有找到 .config" in build_log or "源码目录中没有找到 .config" in build_log:
+            failure_type = "kernel_config_missing"
+        elif "找不到可用的 vmlinux" in build_log or "vmlinux 文件" in build_log:
+            failure_type = "vmlinux_missing"
+        elif "file failed to apply" in lowered_log:
+            failure_type = "patch_apply_failed"
+        elif "only garbage was found in the patch input" in lowered_log:
+            failure_type = "patch_apply_failed"
+        elif "can't find file to patch" in lowered_log or "patch failed" in lowered_log:
+            failure_type = "patch_apply_failed"
+        elif "unreconcilable difference" in lowered_log:
+            failure_type = "kpatch_constraint"
+        elif "fentry" in lowered_log or "init section" in lowered_log:
+            failure_type = "kpatch_constraint"
         elif "未接入真实构建" in build_log:
             failure_type = "build_not_implemented"
+
+        lines = [line.strip() for line in build_log.strip().splitlines() if line.strip()]
+        summary = "构建失败"
+        for line in lines:
+            if "error" in line.lower() or "failed" in line.lower():
+                summary = line
+                break
+        else:
+            if lines:
+                summary = lines[0]
+
+        evidence = lines[:3]
+        if failure_type == "patch_apply_failed":
+            evidence = [
+                line
+                for line in lines
+                if "failed to apply" in line.lower()
+                or "patch failed" in line.lower()
+                or "only garbage was found" in line.lower()
+                or "can't find file to patch" in line.lower()
+            ][:3] or evidence
+
         return FailureRecord(
             task_id=task_id,
             attempt_id=attempt_id,
             stage_name="build",
             failure_type=failure_type,
-            summary=build_log.strip().splitlines()[0] if build_log.strip() else "构建失败",
-            evidence=build_log.strip().splitlines()[:3],
+            summary=summary,
+            evidence=evidence,
         )

@@ -51,14 +51,22 @@ class ProfilesConfig(ConfigModel):
 
 
 class BuildConfig(ConfigModel):
-    """构建阶段使用的路径和命令配置。"""
+    """构建阶段使用的路径、后端和远端连接配置。"""
 
-    # 构建配置先只收束最关键的路径和命令，避免首版配置面过宽。
+    # 这里的路径默认按目标构建环境理解。
+    # 本地后端直接访问本机路径，SSH 后端则把它们当成远端路径使用。
+    build_backend: Literal["local", "ssh"] = "local"
     kernel_src_dir: str = "/opt/kernel-src"
     kernel_devel_dir: str = "/usr/src/kernels/6.6.102-5.2.an23.x86_64"
     vmlinux_path: str = "/usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux"
     kpatch_build_cmd: str = "kpatch-build"
     build_timeout_sec: int = 3600
+    remote_host: str | None = None
+    remote_port: int = 22
+    remote_username: str | None = None
+    remote_password_env: str | None = None
+    remote_workspace_root: str = "/root/patchweaver"
+    remote_connect_timeout_sec: int = 15
 
 
 class VerifyConfig(ConfigModel):

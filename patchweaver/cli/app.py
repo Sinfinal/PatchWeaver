@@ -8,7 +8,7 @@ import os
 import platform
 import sys
 from pathlib import Path
-from shutil import get_terminal_size, which
+from shutil import get_terminal_size
 from textwrap import wrap
 from typing import Annotated, Any
 
@@ -17,6 +17,7 @@ import typer
 from typer.core import TyperGroup
 
 from patchweaver import __version__
+from patchweaver.builder.orchestrator import BuildOrchestrator
 from patchweaver.config.loader import load_build_config, load_logging_config, load_prompts_config, load_skills_config
 from patchweaver.config.resolver import resolve_runtime
 from patchweaver.coordinator.task_runner import TaskRunner
@@ -408,14 +409,8 @@ def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills
         str(_resolve_project_path(runtime.project_root, raw_dir).resolve())
         for raw_dir in prompts_config.bootstrap_fragment_dirs
     ]
-    build_env = {
-        "kpatch_build_cmd": build_config.kpatch_build_cmd,
-        "kpatch_build_path": which(build_config.kpatch_build_cmd),
-        "kernel_src_dir": build_config.kernel_src_dir,
-        "kernel_devel_dir": build_config.kernel_devel_dir,
-        "vmlinux_path": build_config.vmlinux_path,
-        "default_kernel": runtime.default_kernel,
-    }
+    build_env = BuildOrchestrator(build_config).probe_environment()
+    build_env["default_kernel"] = runtime.default_kernel
 
     # Python 依赖放在最前面查，CLI 自己起不来的问题会最先暴露。
     required_modules = {
@@ -425,6 +420,7 @@ def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills
         "jinja2": "模板渲染",
         "unidiff": "补丁解析",
         "rich": "终端输出",
+        "paramiko": "SSH 构建通道",
     }
     for module_name, description in required_modules.items():
         ok = importlib.util.find_spec(module_name) is not None
@@ -447,40 +443,112 @@ def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills
     # 构建环境单独列出来，后面如果 doctor 报黄，基本一眼就能看出是环境问题还是代码问题。
     checks.append(
         _check_item(
-            category="external_command",
-            name=build_config.kpatch_build_cmd,
-            label=f"构建命令 `{build_config.kpatch_build_cmd}`",
-            ok=build_env["kpatch_build_path"] is not None,
-            detail=build_env["kpatch_build_path"] or "当前 PATH 中未找到",
+            category="build_backend",
+            name="build_backend",
+            label="构建后端",
+            ok=True,
+            detail=build_env["backend"],
         )
     )
-    checks.append(
-        _check_item(
-            category="build_env",
-            name="kernel_src_dir",
-            label="内核源码目录",
-            ok=Path(build_config.kernel_src_dir).exists(),
-            detail=build_config.kernel_src_dir,
+
+    if build_env["backend"] == "ssh":
+        checks.extend(
+            [
+                _check_item(
+                    category="build_env",
+                    name="remote_host",
+                    label="远端构建主机",
+                    ok=bool(build_env.get("remote_host")),
+                    detail=build_env.get("host_label") or "未配置",
+                    failed_status="error",
+                ),
+                _check_item(
+                    category="build_env",
+                    name="remote_password_env",
+                    label="远端密码环境变量",
+                    ok=bool(build_env.get("password_present")),
+                    detail=build_env.get("remote_password_env") or "未配置",
+                    failed_status="error",
+                ),
+                _check_item(
+                    category="build_env",
+                    name="remote_connection",
+                    label="远端连接",
+                    ok=bool(build_env.get("reachable")),
+                    detail=build_env.get("error") or "连接正常",
+                    failed_status="error",
+                ),
+                _check_item(
+                    category="external_command",
+                    name=build_config.kpatch_build_cmd,
+                    label=f"远端构建命令 `{build_config.kpatch_build_cmd}`",
+                    ok=bool(build_env.get("builder_ok")),
+                    detail=build_env.get("builder_path") or "远端未找到",
+                    failed_status="error",
+                ),
+                _check_item(
+                    category="build_env",
+                    name="selected_source_dir",
+                    label="远端源码目录",
+                    ok=bool(build_env.get("selected_source_ok")),
+                    detail=build_env.get("selected_source_dir") or "未找到可用目录",
+                    failed_status="error",
+                ),
+                _check_item(
+                    category="build_env",
+                    name="config_path",
+                    label="远端 .config",
+                    ok=bool(build_env.get("config_ok")),
+                    detail=build_env.get("config_path") or "未找到",
+                    failed_status="error",
+                ),
+                _check_item(
+                    category="build_env",
+                    name="vmlinux_path",
+                    label="远端 vmlinux",
+                    ok=bool(build_env.get("vmlinux_ok")),
+                    detail=build_env.get("vmlinux_path") or "未配置",
+                    failed_status="error",
+                ),
+            ]
         )
-    )
-    checks.append(
-        _check_item(
-            category="build_env",
-            name="kernel_devel_dir",
-            label="kernel-devel 目录",
-            ok=Path(build_config.kernel_devel_dir).exists(),
-            detail=build_config.kernel_devel_dir,
+    else:
+        checks.extend(
+            [
+                _check_item(
+                    category="external_command",
+                    name=build_config.kpatch_build_cmd,
+                    label=f"构建命令 `{build_config.kpatch_build_cmd}`",
+                    ok=bool(build_env.get("builder_ok")),
+                    detail=build_env.get("builder_path") or "当前 PATH 中未找到",
+                    failed_status="error",
+                ),
+                _check_item(
+                    category="build_env",
+                    name="selected_source_dir",
+                    label="内核源码目录",
+                    ok=bool(build_env.get("selected_source_ok")),
+                    detail=build_env.get("selected_source_dir") or "未找到可用目录",
+                    failed_status="error",
+                ),
+                _check_item(
+                    category="build_env",
+                    name="config_path",
+                    label="内核 .config",
+                    ok=bool(build_env.get("config_ok")),
+                    detail=build_env.get("config_path") or "未找到",
+                    failed_status="error",
+                ),
+                _check_item(
+                    category="build_env",
+                    name="vmlinux_path",
+                    label="vmlinux 路径",
+                    ok=bool(build_env.get("vmlinux_ok")),
+                    detail=build_env.get("vmlinux_path") or "未配置",
+                    failed_status="error",
+                ),
+            ]
         )
-    )
-    checks.append(
-        _check_item(
-            category="build_env",
-            name="vmlinux_path",
-            label="vmlinux 路径",
-            ok=Path(build_config.vmlinux_path).exists(),
-            detail=build_config.vmlinux_path,
-        )
-    )
 
     for source_name, raw_path in skill_roots.items():
         skill_root = Path(raw_path)
