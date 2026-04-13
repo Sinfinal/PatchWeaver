@@ -17,5 +17,5 @@ class PrimitiveSelector:
     def select(self, report: ConstraintReport) -> list[str]:
         """返回当前约束下的原语选择结果。"""
 
-        return self.catalog.suggest(report)
+        return sorted(dict.fromkeys(self.catalog.suggest(report)))
 

@@ -11,8 +11,10 @@ class PrimitiveCatalog:
     def suggest(self, report: ConstraintReport) -> list[str]:
         """根据约束报告给出建议原语。"""
 
-        primitives = {"wrapper"}
+        primitives = {"direct_apply"}
         for item in report.risk_items:
             primitives.update(item.required_primitives)
+        if report.high_risk_count > 0:
+            primitives.add("wrapper")
         return sorted(primitives)
 

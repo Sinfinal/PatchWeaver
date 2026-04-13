@@ -10,7 +10,13 @@ from patchweaver.models.harness import ArtifactRef, HarnessTrace, StateTransitio
 from patchweaver.models.patch import PatchBundle, SourceEvidence
 from patchweaver.models.prompt import PromptPacket
 from patchweaver.models.report import AttemptDigest, FinalReport
-from patchweaver.models.rewrite import RewriteCandidate, RewritePlan
+from patchweaver.models.rewrite import (
+    ApplyPrecheckReport,
+    RewriteCandidate,
+    RewritePlan,
+    TransformationStep,
+    TransformationTrace,
+)
 from patchweaver.models.semantic import SemanticCard
 from patchweaver.models.skill import SkillManifest, SkillRouteDecision
 from patchweaver.models.task import TaskContext
@@ -18,6 +24,7 @@ from patchweaver.models.validation import ValidationItem, ValidationReport
 
 __all__ = [
     "ArtifactRef",
+    "ApplyPrecheckReport",
     "AttemptDigest",
     "AttemptRecord",
     "AttemptState",
@@ -45,6 +52,8 @@ __all__ = [
     "SubagentRecord",
     "TaskContext",
     "ToolCallRecord",
+    "TransformationStep",
+    "TransformationTrace",
     "ValidationItem",
     "ValidationReport",
 ]

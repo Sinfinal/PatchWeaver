@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -11,9 +13,11 @@ from pydantic import BaseModel
 from patchweaver.context.bootstrap_registry import BootstrapRegistry
 from patchweaver.harness.attempt_engine import AttemptEngine
 from patchweaver.harness.dispatch_policy import dispatch_mode
+from patchweaver.models.attempt import FailureRecord
 from patchweaver.models.constraint import ConstraintReport
 from patchweaver.models.context import BootstrapManifest, ContextBundle
 from patchweaver.models.evidence import EvidenceBundle, EvidenceSpan
+from patchweaver.models.patch import PatchBundle
 from patchweaver.models.semantic import SemanticCard
 from patchweaver.models.task import TaskContext
 
@@ -196,18 +200,25 @@ class AnalysisService(CoordinatorSupport):
 
         # 分析阶段先把原始 patch 和规范化 patch 固定下来，后续阶段都复用这些输入。
         raw_patch_path = task_dir / "input" / "raw_patch.patch"
-        raw_patch_path.write_text(self.retriever.render_placeholder_patch(task.cve_id), encoding="utf-8")
-
         bundle = self.retriever.fetch_patch_bundle(task=task, raw_patch_path=raw_patch_path)
         normalized_patch_path = task_dir / "normalized" / "normalized.patch"
         self.patch_normalizer.normalize(raw_patch_path, normalized_patch_path)
         bundle.normalized_patch_path = normalized_patch_path
+        if not bundle.affected_files:
+            bundle.affected_files = self.patch_normalizer.extract_affected_files(
+                normalized_patch_path.read_text(encoding="utf-8")
+            )
 
         semantic_card = self.semantic_analyzer.analyze(task, bundle)
         constraint_report = self.constraint_diagnoser.diagnose(bundle)
         bootstrap_manifest = self.build_bootstrap_manifest()
 
         patch_bundle_path = self.json_writer.write_model(bundle, task_dir / "input" / "patch_bundle.json")
+        source_evidence_path = task_dir / "input" / "source_evidence.json"
+        source_evidence_path.write_text(
+            json.dumps([item.model_dump() for item in bundle.source_evidence], ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
         semantic_card_path = self.json_writer.write_model(semantic_card, task_dir / "analysis" / "semantic_card.json")
         constraint_report_path = self.json_writer.write_model(constraint_report, task_dir / "analysis" / "constraint_report.json")
         bootstrap_manifest_path = self.json_writer.write_model(
@@ -317,6 +328,7 @@ class AnalysisService(CoordinatorSupport):
             ("raw_patch", raw_patch_path),
             ("normalized_patch", normalized_patch_path),
             ("patch_bundle", patch_bundle_path),
+            ("source_evidence", source_evidence_path),
             ("semantic_card", semantic_card_path),
             ("constraint_report", constraint_report_path),
             ("analysis_bootstrap_manifest", bootstrap_manifest_path),
@@ -336,6 +348,7 @@ class AnalysisService(CoordinatorSupport):
             "command": "analyze",
             "task_id": task.task_id,
             "patch_bundle_path": str(patch_bundle_path),
+            "source_evidence_path": str(source_evidence_path),
             "semantic_card_path": str(semantic_card_path),
             "constraint_report_path": str(constraint_report_path),
             "bootstrap_manifest_path": str(bootstrap_manifest_path),
@@ -358,6 +371,7 @@ class AttemptExecutionService(CoordinatorSupport):
         attempt_no = self.attempt_repo.next_attempt_no(task_id)
         attempt_dir = self.workspace_guard.create_attempt_workspace(task_dir, attempt_no)
 
+        patch_bundle = self.load_model(task_dir / "input" / "patch_bundle.json", PatchBundle)
         semantic_card = self.load_model(task_dir / "analysis" / "semantic_card.json", SemanticCard)
         constraint_report = self.load_model(task_dir / "analysis" / "constraint_report.json", ConstraintReport)
         bootstrap_manifest = self.build_bootstrap_manifest()
@@ -384,24 +398,86 @@ class AttemptExecutionService(CoordinatorSupport):
 
         plan = self.planner.plan(task_id=task.task_id, semantic_card=semantic_card, constraint_report=constraint_report)
         rewrite_plan_path = self.json_writer.write_model(plan, attempt_dir / "rewrite" / "rewrite_plan.json")
-        rewritten_patch_path = self.rewriter.render_placeholder_patch(plan, attempt_dir / "rewrite" / "rewritten.patch")
-        rewrite_meta = self.rewriter.write_rewrite_metadata(plan, attempt_dir / "rewrite")
-
-        attempt_record, build_log = self.builder.execute_build(
-            task=task,
-            attempt_no=attempt_no,
+        rewrite_meta = self.rewriter.execute(
             plan=plan,
-            rewritten_patch_path=rewritten_patch_path,
-            build_log_path=attempt_dir / "logs" / "build.log",
-        )
-        self.attempt_repo.create_attempt(attempt_record)
-        self.attempt_repo.save_evidence_spans(task.task_id, attempt_record.attempt_id, rewrite_evidence.spans)
-
-        failure_record = self.failure_classifier.classify_build_log(
+            patch_bundle=patch_bundle,
+            rewrite_dir=attempt_dir / "rewrite",
+            builder=self.builder,
             task_id=task.task_id,
-            attempt_id=attempt_record.attempt_id,
-            build_log=build_log,
+            attempt_no=attempt_no,
         )
+        rewritten_patch_path = rewrite_meta["rewritten_patch"]
+        apply_precheck_report = rewrite_meta["apply_precheck_report"]
+        build_log_path = attempt_dir / "logs" / "build.log"
+
+        if apply_precheck_report.status == "failed":
+            build_log = "\n".join(
+                [
+                    "构建阶段已跳过。",
+                    "原因: apply 预检查未通过。",
+                    f"目标源码目录: {apply_precheck_report.target_source_dir or 'unknown'}",
+                    f"命令: {apply_precheck_report.command or 'unknown'}",
+                    f"摘要: {apply_precheck_report.summary}",
+                    "",
+                    "[stdout]",
+                    apply_precheck_report.stdout or "<empty>",
+                    "",
+                    "[stderr]",
+                    apply_precheck_report.stderr or "<empty>",
+                ]
+            ) + "\n"
+            build_log_path.write_text(build_log, encoding="utf-8")
+            base_attempt_record = self.builder.start_attempt(task_id=task.task_id, attempt_no=attempt_no)
+            attempt_record = base_attempt_record.model_copy(
+                update={
+                    "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
+                    "status": "failed",
+                    "failure_type": "patch_apply_failed",
+                    "build_log_path": build_log_path,
+                    "module_path": None,
+                    "rewritten_patch_path": rewritten_patch_path,
+                    "finished_at": datetime.now(timezone.utc),
+                }
+            )
+            self.attempt_repo.create_attempt(attempt_record)
+            self.attempt_repo.save_evidence_spans(task.task_id, attempt_record.attempt_id, rewrite_evidence.spans)
+            failure_record = FailureRecord(
+                task_id=task.task_id,
+                attempt_id=attempt_record.attempt_id,
+                stage_name="rewrite",
+                failure_type="patch_apply_failed",
+                summary=apply_precheck_report.summary,
+                evidence=[
+                    item
+                    for item in [apply_precheck_report.stdout, apply_precheck_report.stderr]
+                    if item
+                ][:3],
+            )
+        else:
+            attempt_record, build_log = self.builder.execute_build(
+                task=task,
+                attempt_no=attempt_no,
+                plan=plan,
+                rewritten_patch_path=rewritten_patch_path,
+                build_log_path=build_log_path,
+            )
+            self.attempt_repo.create_attempt(attempt_record)
+            self.attempt_repo.save_evidence_spans(task.task_id, attempt_record.attempt_id, rewrite_evidence.spans)
+            if attempt_record.status == "failed":
+                failure_record = self.failure_classifier.classify_build_log(
+                    task_id=task.task_id,
+                    attempt_id=attempt_record.attempt_id,
+                    build_log=build_log,
+                )
+            else:
+                failure_record = FailureRecord(
+                    task_id=task.task_id,
+                    attempt_id=attempt_record.attempt_id,
+                    stage_name="build",
+                    failure_type="none",
+                    summary="构建阶段已完成。",
+                    evidence=[],
+                )
         self.attempt_repo.save_failure_record(failure_record)
         failure_record_path = self.json_writer.write_model(failure_record, attempt_dir / "logs" / "failure_record.json")
 
@@ -491,7 +567,7 @@ class AttemptExecutionService(CoordinatorSupport):
             trace,
             from_stage="rewrite_recipe",
             to_stage="build",
-            reason="改写产物已落盘，准备进入构建阶段。",
+            reason="改写产物已落盘，完成 apply 预检查后进入构建阶段。",
         )
         trace = self.harness.attach_dispatch_mode(trace, stage_name="build", mode=dispatch_mode("build"))
         trace = self.harness.record_tool_call(
@@ -532,6 +608,7 @@ class AttemptExecutionService(CoordinatorSupport):
         for artifact_type, artifact_path, summary in [
             ("rewrite_plan", rewrite_plan_path, "候选改写规划"),
             ("rewritten_patch", rewritten_patch_path, "单轮改写结果"),
+            ("apply_precheck", rewrite_meta["apply_precheck"], "构建前 apply 预检查"),
             ("failure_record", failure_record_path, "构建失败归因"),
             ("validation_report", validation_report_path, "验证结果摘要"),
         ]:
@@ -554,6 +631,7 @@ class AttemptExecutionService(CoordinatorSupport):
             ("rewritten_patch", rewritten_patch_path),
             ("rewrite_reason", rewrite_meta["rewrite_reason"]),
             ("transformation_trace", rewrite_meta["transformation_trace"]),
+            ("apply_precheck", rewrite_meta["apply_precheck"]),
             ("build_log", attempt_record.build_log_path),
             ("failure_record", failure_record_path),
             ("validate_log", validate_log_path),

@@ -14,6 +14,10 @@ class SourceEvidence(BaseModel):
     url: str
     summary: str | None = None
     commit_id: str | None = None
+    stage: str | None = None
+    reference_type: str | None = None
+    title: str | None = None
+    preferred: bool = False
 
 
 class PatchBundle(BaseModel):

@@ -1,0 +1,11 @@
+id: direct_apply_ready
+description: 原始补丁已经是标准 unified diff，可直接进入 apply 预检查。
+detection:
+  kind: patch_shape
+  requires:
+    - diff --git
+    - unified_hunks
+primitive:
+  - direct_apply
+forbidden_actions:
+  - rewrite_outside_diff

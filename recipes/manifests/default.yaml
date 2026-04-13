@@ -1,0 +1,13 @@
+version: 0.1.0
+recipes:
+  - name: direct_apply_patch
+    template: recipes/templates/direct_apply_patch.patch.j2
+    smpl: recipes/smpl/direct_apply_patch.cocci
+    primitives:
+      - direct_apply
+  - name: minimal_livepatch_wrap
+    template: recipes/templates/minimal_livepatch_wrap.patch.j2
+    smpl: recipes/smpl/minimal_livepatch_wrap.cocci
+    primitives:
+      - direct_apply
+      - wrapper
