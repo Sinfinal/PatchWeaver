@@ -67,7 +67,7 @@ class TaskRunner:
             schema_guard=SchemaGuard(),
             policy_guard=PolicyGuard(),
             planner=JointPlanner(),
-            rewriter=RewriteExecutor(),
+            rewriter=RewriteExecutor(runtime.project_root),
             builder=BuildOrchestrator(build_config),
             failure_classifier=FailureClassifier(),
             validator=Validator(),

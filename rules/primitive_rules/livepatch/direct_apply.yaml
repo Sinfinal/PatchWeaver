@@ -1,0 +1,6 @@
+name: direct_apply
+category: livepatch
+summary: 优先保留 stable/upstream patch 的原始 diff 形态，先做 apply 预检查再进入构建。
+constraints:
+  - 仅用于已具备标准 unified diff 的 patch
+  - 若 apply 预检查失败，必须在构建前截断
