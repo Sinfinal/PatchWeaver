@@ -37,16 +37,26 @@ class FailureClassifier:
             failure_type = "kernel_config_missing"
         elif "找不到可用的 vmlinux" in build_log or "vmlinux 文件" in build_log:
             failure_type = "vmlinux_missing"
+        elif "apply 级预检查未通过" in build_log:
+            failure_type = "patch_apply_failed"
         elif "file failed to apply" in lowered_log:
             failure_type = "patch_apply_failed"
         elif "only garbage was found in the patch input" in lowered_log:
+            failure_type = "patch_apply_failed"
+        elif "no valid patches in input" in lowered_log:
+            failure_type = "patch_apply_failed"
+        elif "patch does not apply" in lowered_log or "corrupt patch" in lowered_log:
             failure_type = "patch_apply_failed"
         elif "can't find file to patch" in lowered_log or "patch failed" in lowered_log:
             failure_type = "patch_apply_failed"
         elif "unreconcilable difference" in lowered_log:
             failure_type = "kpatch_constraint"
-        elif "fentry" in lowered_log or "init section" in lowered_log:
+        elif "fentry" in lowered_log or "init section" in lowered_log or "section mismatch" in lowered_log:
             failure_type = "kpatch_constraint"
+        elif "unsupported" in lowered_log and "kpatch" in lowered_log:
+            failure_type = "kpatch_constraint"
+        elif "command not found" in lowered_log:
+            failure_type = "build_env_missing"
         elif "未接入真实构建" in build_log:
             failure_type = "build_not_implemented"
 
@@ -69,6 +79,18 @@ class FailureClassifier:
                 or "patch failed" in line.lower()
                 or "only garbage was found" in line.lower()
                 or "can't find file to patch" in line.lower()
+                or "apply 级预检查未通过" in line
+                or "patch does not apply" in line.lower()
+                or "no valid patches in input" in line.lower()
+            ][:3] or evidence
+        elif failure_type == "kpatch_constraint":
+            evidence = [
+                line
+                for line in lines
+                if "fentry" in line.lower()
+                or "init section" in line.lower()
+                or "section mismatch" in line.lower()
+                or "unsupported" in line.lower()
             ][:3] or evidence
 
         return FailureRecord(

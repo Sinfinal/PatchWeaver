@@ -18,7 +18,7 @@ from typer.core import TyperGroup
 
 from patchweaver import __version__
 from patchweaver.builder.orchestrator import BuildOrchestrator
-from patchweaver.config.loader import load_build_config, load_logging_config, load_prompts_config, load_skills_config
+from patchweaver.config.loader import load_build_config, load_logging_config, load_prompts_config, load_skills_config, load_verify_config
 from patchweaver.config.resolver import resolve_runtime
 from patchweaver.coordinator.task_runner import TaskRunner
 from patchweaver.harness.attempt_engine import AttemptEngine
@@ -235,7 +235,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
     program_name = command.name or "patchweaver"
     commands = {name: command.get_command(ctx, name) for name in command.list_commands(ctx)}
     task_commands = ["create", "analyze", "run", "report", "replay"]
-    env_commands = ["init", "doctor", "paths", "init-db", "db", "status", "version"]
+    env_commands = ["init", "doctor", "paths", "init-db", "db", "serve-api", "status", "version"]
     lines = [
         f"{_style_help('PatchWeaver', fg='bright_blue', bold=True)} {_style_help(__version__, fg='bright_yellow', bold=True)}"
         " — 从上游 CVE 修复补丁到 livepatch 构建尝试的最小工程壳。",
@@ -281,6 +281,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
     lines.extend(_wrap_help_entry("patchweaver doctor --json", "输出结构化环境检查结果。", width=30, color="bright_green"))
     lines.extend(_wrap_help_entry("patchweaver init --with-db", "初始化最小工程目录，并同时建立 SQLite 数据库。", width=30, color="bright_green"))
     lines.extend(_wrap_help_entry("patchweaver paths --json", "输出当前生效的路径、运行时和 manifest 目录。", width=30, color="bright_green"))
+    lines.extend(_wrap_help_entry("patchweaver serve-api --reload", "启动 FastAPI 接口，供 Web 控制台开发调试。", width=30, color="bright_green"))
     lines.extend(_wrap_help_entry("patchweaver db path", "查看当前配置解析出来的数据库路径。", width=30, color="bright_green"))
     lines.extend(
         [
@@ -391,8 +392,14 @@ def _build_task_runner(runtime: Any) -> TaskRunner:
     """按当前运行时配置创建任务编排器。"""
 
     build_config = load_build_config(runtime.project_root)
+    verify_config = load_verify_config(runtime.project_root)
     prompts_config = load_prompts_config(runtime.project_root)
-    return TaskRunner(runtime=runtime, build_config=build_config, prompts_config=prompts_config)
+    return TaskRunner(
+        runtime=runtime,
+        build_config=build_config,
+        verify_config=verify_config,
+        prompts_config=prompts_config,
+    )
 
 
 def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills_config: Any, prompts_config: Any) -> dict[str, Any]:
@@ -1049,6 +1056,21 @@ def init_db(
         _emit_json({"command": "init-db", "database_path": str(final_path), "status": "ok"})
         return
     typer.echo(f"已初始化 SQLite 数据库：{final_path}")
+
+
+@app.command("serve-api")
+def serve_api(
+    host: Annotated[str, typer.Option("--host", help="指定 API 监听地址。")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", help="指定 API 监听端口。")] = 18080,
+    reload: Annotated[bool, typer.Option("--reload", help="开发阶段开启自动重载。")] = False,
+) -> None:
+    """启动 Web 控制台后端接口。"""
+
+    # API 服务默认直接复用当前仓库里的 patchweaver.api.app，不再单独维护第二套启动脚本。
+    import uvicorn
+
+    typer.echo(f"启动 PatchWeaver API: http://{host}:{port}")
+    uvicorn.run("patchweaver.api.app:app", host=host, port=port, reload=reload)
 
 
 @db_app.command("init")

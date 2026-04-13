@@ -53,3 +53,40 @@ class FailureRecord(BaseModel):
     evidence: list[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=_utc_now)
 
+
+class BuildPrecheck(BaseModel):
+    """表示构建前 apply 级预检查结果。"""
+
+    task_id: str
+    attempt_id: str
+    backend: str
+    ok: bool
+    summary: str
+    patch_path: Path
+    source_dir: str | None = None
+    command: str | None = None
+    failure_type: str | None = None
+    stdout_excerpt: str = ""
+    stderr_excerpt: str = ""
+    checked_at: datetime = Field(default_factory=_utc_now)
+
+
+class BuildSummary(BaseModel):
+    """表示一次构建执行的摘要结果。"""
+
+    task_id: str
+    attempt_id: str
+    backend: str
+    builder_cmd: str
+    status: str
+    summary: str
+    rewritten_patch_path: Path
+    source_dir: str | None = None
+    build_log_path: Path | None = None
+    module_path: Path | None = None
+    remote_patch_path: str | None = None
+    remote_output_dir: str | None = None
+    remote_module_path: str | None = None
+    failure_type: str | None = None
+    exit_code: int | None = None
+    created_at: datetime = Field(default_factory=_utc_now)

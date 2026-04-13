@@ -26,13 +26,17 @@ dependencies = [
   #终端美化
   "rich>=13.7",
   #SSH 构建机接入
-  "paramiko>=4.0"
+  "paramiko>=4.0",
+  #Web API
+  "fastapi>=0.115",
+  #API 服务启动
+  "uvicorn>=0.30"
 ]
 
 # 命令入口
 [project.scripts]
 patchweaver = "patchweaver.cli.app:app"
 
-#工具目录
-[tool.setuptools]
-packages = ["patchweaver"]
+#包发现
+[tool.setuptools.packages.find]
+include = ["patchweaver*"]

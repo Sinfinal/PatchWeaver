@@ -19,6 +19,9 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+web/node_modules/
+web/dist/
+*.tsbuildinfo
 
 # IDE and editor files
 .idea/

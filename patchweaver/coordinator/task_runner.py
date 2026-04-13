@@ -43,7 +43,7 @@ from patchweaver.coordinator.services import (
 class TaskRunner:
     """负责暴露任务级主流程入口。"""
 
-    def __init__(self, runtime: Any, build_config: Any, prompts_config: Any) -> None:
+    def __init__(self, runtime: Any, build_config: Any, verify_config: Any, prompts_config: Any) -> None:
         """绑定运行时配置，并装配各阶段 service。"""
 
         services = TaskRunnerServices(
@@ -70,7 +70,11 @@ class TaskRunner:
             rewriter=RewriteExecutor(runtime.project_root),
             builder=BuildOrchestrator(build_config),
             failure_classifier=FailureClassifier(),
-            validator=Validator(),
+            validator=Validator(
+                verify_config=verify_config,
+                build_config=build_config,
+                project_root=runtime.project_root,
+            ),
             harness=HarnessOrchestrator(),
             trace_writer=TraceWriter(),
             json_writer=JsonWriter(),

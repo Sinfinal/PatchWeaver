@@ -118,6 +118,16 @@ class AttemptRepository:
         if attempt_row_id is None:
             raise ValueError(f"尝试轮不存在：{attempt_id}")
 
+        if report.load_result.status == "passed" and report.unload_result.status == "passed":
+            validation_status = "passed"
+        elif any(
+            item.status == "failed"
+            for item in [report.load_result, report.unload_result, report.smoke_result, report.semantic_guard_result]
+        ):
+            validation_status = "failed"
+        else:
+            validation_status = "partial"
+
         with connect_sqlite(self.database_path) as connection:
             connection.execute(
                 """
@@ -129,12 +139,12 @@ class AttemptRepository:
                 """,
                 (
                     attempt_row_id,
-                    "passed" if report.load_result.ok and report.unload_result.ok else "partial",
+                    validation_status,
                     int(report.load_result.ok),
                     int(report.unload_result.ok),
                     int(report.smoke_result.ok),
                     0,
-                    "验证结果已记录",
+                    "；".join(report.notes) if report.notes else "验证结果已记录",
                     report.load_result.model_dump_json(),
                     report.unload_result.model_dump_json(),
                     report.smoke_result.model_dump_json(),

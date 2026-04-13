@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shlex
 import stat
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from shutil import which
@@ -12,7 +13,7 @@ from typing import Any
 
 import paramiko
 
-from patchweaver.models.attempt import AttemptRecord
+from patchweaver.models.attempt import AttemptRecord, BuildPrecheck, BuildSummary
 from patchweaver.models.rewrite import RewritePlan
 from patchweaver.models.task import TaskContext
 
@@ -42,6 +43,72 @@ class BuildOrchestrator:
             return self._probe_remote_environment()
         return self._probe_local_environment()
 
+    def precheck_patch(
+        self,
+        *,
+        task_id: str,
+        attempt_id: str,
+        rewritten_patch_path: Path,
+        source_dir: Path | None = None,
+    ) -> BuildPrecheck:
+        """对本地改写补丁执行 apply 级预检查。"""
+
+        selected_source_dir = source_dir
+        if selected_source_dir is None:
+            selected_source_dir, _ = self._select_local_source_dir()
+
+        if selected_source_dir is None:
+            return self._precheck_not_run(
+                task_id=task_id,
+                attempt_id=attempt_id,
+                backend="local",
+                rewritten_patch_path=rewritten_patch_path,
+                failure_type="kernel_src_missing",
+                summary="未找到可用源码目录，无法执行 apply 级预检查。",
+            )
+
+        git_path = which("git")
+        if git_path is None:
+            return self._precheck_not_run(
+                task_id=task_id,
+                attempt_id=attempt_id,
+                backend="local",
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=str(selected_source_dir),
+                failure_type="build_env_missing",
+                summary="未找到 git 命令，无法执行 apply 级预检查。",
+            )
+
+        command = [git_path, "apply", "--check", "--verbose", str(rewritten_patch_path.resolve())]
+        result = subprocess.run(
+            command,
+            cwd=selected_source_dir,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        stdout_text = result.stdout.strip()
+        stderr_text = result.stderr.strip()
+        ok = result.returncode == 0
+        failure_type = None if ok else self._classify_apply_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
+        summary = "apply 级预检查通过。" if ok else self._summarize_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
+
+        return BuildPrecheck(
+            task_id=task_id,
+            attempt_id=attempt_id,
+            backend="local",
+            ok=ok,
+            summary=summary,
+            patch_path=rewritten_patch_path,
+            source_dir=str(selected_source_dir),
+            command=" ".join(shlex.quote(part) for part in command),
+            failure_type=failure_type,
+            stdout_excerpt=stdout_text[:2000],
+            stderr_excerpt=stderr_text[:2000],
+        )
+
     def execute_build(
         self,
         *,
@@ -50,7 +117,7 @@ class BuildOrchestrator:
         plan: RewritePlan,
         rewritten_patch_path: Path,
         build_log_path: Path,
-    ) -> tuple[AttemptRecord, str]:
+    ) -> tuple[AttemptRecord, str, BuildPrecheck, BuildSummary]:
         """执行一轮构建尝试。"""
 
         if self.build_config.build_backend == "ssh":
@@ -178,7 +245,7 @@ class BuildOrchestrator:
         plan: RewritePlan,
         rewritten_patch_path: Path,
         build_log_path: Path,
-    ) -> tuple[AttemptRecord, str]:
+    ) -> tuple[AttemptRecord, str, BuildPrecheck, BuildSummary]:
         """执行本机构建。"""
 
         record = self.start_attempt(task_id=task.task_id, attempt_no=attempt_no)
@@ -194,12 +261,106 @@ class BuildOrchestrator:
         ]
 
         failure_type = self._probe_failure_type(probe)
-        if failure_type is None:
-            lines.append("本地预检已通过，但当前版本优先接入真实 SSH 构建机，本地 Linux 构建流程暂未展开。")
-            failure_type = "build_not_implemented"
-        else:
-            lines.append(self._failure_message(failure_type))
+        if failure_type is not None:
+            message = self._failure_message(failure_type)
+            lines.append(message)
+            precheck = self._precheck_not_run(
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                backend="local",
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=probe.get("selected_source_dir"),
+                failure_type=failure_type,
+                summary=message,
+            )
+            summary = BuildSummary(
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                backend="local",
+                builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
+                status="failed",
+                summary=message,
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=probe.get("selected_source_dir"),
+                build_log_path=build_log_path,
+                failure_type=failure_type,
+            )
+            build_log = "\n".join(lines) + "\n"
+            build_log_path.write_text(build_log, encoding="utf-8")
+            return (
+                record.model_copy(
+                    update={
+                        "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
+                        "status": "failed",
+                        "failure_type": failure_type,
+                        "build_log_path": build_log_path,
+                        "module_path": None,
+                        "rewritten_patch_path": rewritten_patch_path,
+                        "finished_at": datetime.now(timezone.utc),
+                    }
+                ),
+                build_log,
+                precheck,
+                summary,
+            )
 
+        precheck = self.precheck_patch(
+            task_id=task.task_id,
+            attempt_id=record.attempt_id,
+            rewritten_patch_path=rewritten_patch_path,
+            source_dir=Path(str(probe["selected_source_dir"])),
+        )
+        lines.extend(self._format_precheck_lines(precheck))
+
+        if not precheck.ok:
+            failure_type = precheck.failure_type or "patch_apply_failed"
+            summary_text = "apply 级预检查未通过，已跳过本地构建。"
+            lines.append(summary_text)
+            summary = BuildSummary(
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                backend="local",
+                builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
+                status="precheck_failed",
+                summary=summary_text,
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=precheck.source_dir,
+                build_log_path=build_log_path,
+                failure_type=failure_type,
+            )
+            build_log = "\n".join(lines) + "\n"
+            build_log_path.write_text(build_log, encoding="utf-8")
+            return (
+                record.model_copy(
+                    update={
+                        "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
+                        "status": "failed",
+                        "failure_type": failure_type,
+                        "build_log_path": build_log_path,
+                        "module_path": None,
+                        "rewritten_patch_path": rewritten_patch_path,
+                        "finished_at": datetime.now(timezone.utc),
+                    }
+                ),
+                build_log,
+                precheck,
+                summary,
+            )
+
+        failure_type = "build_not_implemented"
+        lines.append("本地 apply 级预检查已通过，但当前版本优先接入真实 SSH 构建机，本地 Linux 构建流程暂未展开。")
+        summary = BuildSummary(
+            task_id=task.task_id,
+            attempt_id=record.attempt_id,
+            backend="local",
+            builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
+            status="failed",
+            summary="本地构建链尚未实现，已在 apply 级预检查后停止。",
+            rewritten_patch_path=rewritten_patch_path,
+            source_dir=precheck.source_dir,
+            build_log_path=build_log_path,
+            failure_type=failure_type,
+        )
         build_log = "\n".join(lines) + "\n"
         build_log_path.write_text(build_log, encoding="utf-8")
         return (
@@ -215,6 +376,8 @@ class BuildOrchestrator:
                 }
             ),
             build_log,
+            precheck,
+            summary,
         )
 
     def _execute_remote_build(
@@ -225,7 +388,7 @@ class BuildOrchestrator:
         plan: RewritePlan,
         rewritten_patch_path: Path,
         build_log_path: Path,
-    ) -> tuple[AttemptRecord, str]:
+    ) -> tuple[AttemptRecord, str, BuildPrecheck, BuildSummary]:
         """执行远端构建。"""
 
         record = self.start_attempt(task_id=task.task_id, attempt_no=attempt_no)
@@ -243,10 +406,29 @@ class BuildOrchestrator:
 
         failure_type = self._probe_failure_type(probe)
         if failure_type is not None:
-            if probe.get("error"):
-                lines.append(probe["error"])
-            else:
-                lines.append(self._failure_message(failure_type))
+            message = probe.get("error") or self._failure_message(failure_type)
+            lines.append(message)
+            precheck = self._precheck_not_run(
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                backend="ssh",
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=probe.get("selected_source_dir"),
+                failure_type=failure_type,
+                summary=message,
+            )
+            summary = BuildSummary(
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                backend="ssh",
+                builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
+                status="failed",
+                summary=message,
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=probe.get("selected_source_dir"),
+                build_log_path=build_log_path,
+                failure_type=failure_type,
+            )
             build_log = "\n".join(lines) + "\n"
             build_log_path.write_text(build_log, encoding="utf-8")
             return (
@@ -262,6 +444,8 @@ class BuildOrchestrator:
                     }
                 ),
                 build_log,
+                precheck,
+                summary,
             )
 
         password = self._remote_password()
@@ -270,7 +454,12 @@ class BuildOrchestrator:
         client: paramiko.SSHClient | None = None
         sftp: paramiko.SFTPClient | None = None
         module_path: Path | None = None
+        remote_module_path: str | None = None
         exit_code = 1
+        precheck: BuildPrecheck
+        remote_patch_path_str: str | None = None
+        remote_output_dir_str: str | None = None
+        selected_source_dir = str(probe["selected_source_dir"])
         try:
             client = self._connect_remote(password)
             sftp = client.open_sftp()
@@ -278,16 +467,65 @@ class BuildOrchestrator:
             remote_attempt_dir = PurePosixPath(self.build_config.remote_workspace_root) / task.task_id / "attempts" / f"{attempt_no:03d}"
             remote_output_dir = remote_attempt_dir / "output"
             remote_patch_path = remote_attempt_dir / "rewritten.patch"
+            remote_patch_path_str = remote_patch_path.as_posix()
+            remote_output_dir_str = remote_output_dir.as_posix()
 
             self._remote_mkdirs(client, remote_output_dir)
-            sftp.put(str(rewritten_patch_path), remote_patch_path.as_posix())
+            sftp.put(str(rewritten_patch_path), remote_patch_path_str)
+
+            precheck = self._run_remote_apply_precheck(
+                client=client,
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                rewritten_patch_path=rewritten_patch_path,
+                remote_patch_path=remote_patch_path_str,
+                source_dir=selected_source_dir,
+            )
+            lines.extend(self._format_precheck_lines(precheck))
+
+            if not precheck.ok:
+                failure_type = precheck.failure_type or "patch_apply_failed"
+                summary_text = "apply 级预检查未通过，已跳过远端构建。"
+                lines.append(summary_text)
+                summary = BuildSummary(
+                    task_id=task.task_id,
+                    attempt_id=record.attempt_id,
+                    backend="ssh",
+                    builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
+                    status="precheck_failed",
+                    summary=summary_text,
+                    rewritten_patch_path=rewritten_patch_path,
+                    source_dir=selected_source_dir,
+                    build_log_path=build_log_path,
+                    remote_patch_path=remote_patch_path_str,
+                    remote_output_dir=remote_output_dir_str,
+                    failure_type=failure_type,
+                )
+                build_log = "\n".join(lines) + "\n"
+                build_log_path.write_text(build_log, encoding="utf-8")
+                return (
+                    record.model_copy(
+                        update={
+                            "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
+                            "status": "failed",
+                            "failure_type": failure_type,
+                            "build_log_path": build_log_path,
+                            "module_path": None,
+                            "rewritten_patch_path": rewritten_patch_path,
+                            "finished_at": datetime.now(timezone.utc),
+                        }
+                    ),
+                    build_log,
+                    precheck,
+                    summary,
+                )
 
             module_name = self._module_name(task.task_id, attempt_no)
             build_command = " ".join(
                 [
                     shlex.quote(self.build_config.kpatch_build_cmd),
                     "-s",
-                    shlex.quote(str(probe["selected_source_dir"])),
+                    shlex.quote(selected_source_dir),
                     "-c",
                     shlex.quote(str(probe["config_path"])),
                     "-v",
@@ -295,11 +533,11 @@ class BuildOrchestrator:
                     "-n",
                     shlex.quote(module_name),
                     "-o",
-                    shlex.quote(remote_output_dir.as_posix()),
-                    shlex.quote(remote_patch_path.as_posix()),
+                    shlex.quote(remote_output_dir_str),
+                    shlex.quote(remote_patch_path_str),
                 ]
             )
-            command = f"mkdir -p {shlex.quote(remote_output_dir.as_posix())} && {build_command}"
+            command = f"mkdir -p {shlex.quote(remote_output_dir_str)} && {build_command}"
             stdout_text, stderr_text, exit_code = self._remote_command(client, command, timeout=self.build_config.build_timeout_sec)
 
             lines.extend(
@@ -328,6 +566,7 @@ class BuildOrchestrator:
                 else:
                     lines.append("远端构建命令返回成功，但输出目录中没有找到 .ko 文件。")
                     exit_code = 2
+                    failure_type = "compile_failed"
             else:
                 remote_kpatch_log = self._read_remote_kpatch_log(client)
                 if remote_kpatch_log:
@@ -342,6 +581,15 @@ class BuildOrchestrator:
         except Exception as exc:
             lines.append(f"远端执行失败: {exc}")
             failure_type = "remote_connect_failed"
+            precheck = self._precheck_not_run(
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                backend="ssh",
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=selected_source_dir,
+                failure_type=failure_type,
+                summary=f"远端执行失败：{exc}",
+            )
         finally:
             if sftp is not None:
                 sftp.close()
@@ -357,6 +605,23 @@ class BuildOrchestrator:
 
         build_log = "\n".join(lines) + "\n"
         build_log_path.write_text(build_log, encoding="utf-8")
+        summary = BuildSummary(
+            task_id=task.task_id,
+            attempt_id=record.attempt_id,
+            backend="ssh",
+            builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
+            status=status,
+            summary="远端构建成功，并已拉回模块产物。" if status == "built" else "远端构建失败，已生成结构化失败摘要。",
+            rewritten_patch_path=rewritten_patch_path,
+            source_dir=selected_source_dir,
+            build_log_path=build_log_path,
+            module_path=module_path,
+            remote_patch_path=remote_patch_path_str,
+            remote_output_dir=remote_output_dir_str,
+            remote_module_path=remote_module_path,
+            failure_type=final_failure_type,
+            exit_code=exit_code,
+        )
         return (
             record.model_copy(
                 update={
@@ -370,7 +635,85 @@ class BuildOrchestrator:
                 }
             ),
             build_log,
+            precheck,
+            summary,
         )
+
+    def _run_remote_apply_precheck(
+        self,
+        *,
+        client: paramiko.SSHClient,
+        task_id: str,
+        attempt_id: str,
+        rewritten_patch_path: Path,
+        remote_patch_path: str,
+        source_dir: str,
+    ) -> BuildPrecheck:
+        """在远端源码树上执行 apply 级预检查。"""
+
+        command = (
+            f"cd {shlex.quote(source_dir)} && "
+            f"git apply --check --verbose {shlex.quote(remote_patch_path)}"
+        )
+        stdout_text, stderr_text, exit_code = self._remote_command(client, command, timeout=60)
+        ok = exit_code == 0
+        failure_type = None if ok else self._classify_apply_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
+        summary = "apply 级预检查通过。" if ok else self._summarize_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
+        return BuildPrecheck(
+            task_id=task_id,
+            attempt_id=attempt_id,
+            backend="ssh",
+            ok=ok,
+            summary=summary,
+            patch_path=rewritten_patch_path,
+            source_dir=source_dir,
+            command=command,
+            failure_type=failure_type,
+            stdout_excerpt=stdout_text[:2000],
+            stderr_excerpt=stderr_text[:2000],
+        )
+
+    def _precheck_not_run(
+        self,
+        *,
+        task_id: str,
+        attempt_id: str,
+        backend: str,
+        rewritten_patch_path: Path,
+        failure_type: str,
+        summary: str,
+        source_dir: str | None = None,
+    ) -> BuildPrecheck:
+        """为未实际执行的预检查生成结构化结果。"""
+
+        return BuildPrecheck(
+            task_id=task_id,
+            attempt_id=attempt_id,
+            backend=backend,
+            ok=False,
+            summary=summary,
+            patch_path=rewritten_patch_path,
+            source_dir=source_dir,
+            failure_type=failure_type,
+        )
+
+    def _format_precheck_lines(self, precheck: BuildPrecheck) -> list[str]:
+        """把预检查结果展开成构建日志片段。"""
+
+        lines = [
+            "",
+            "[apply precheck]",
+            precheck.summary,
+            f"源码目录: {precheck.source_dir or '未找到'}",
+            f"补丁路径: {precheck.patch_path}",
+        ]
+        if precheck.command:
+            lines.append(f"命令: {precheck.command}")
+        if precheck.stdout_excerpt:
+            lines.extend(["[precheck stdout]", precheck.stdout_excerpt])
+        if precheck.stderr_excerpt:
+            lines.extend(["[precheck stderr]", precheck.stderr_excerpt])
+        return lines
 
     def _select_local_source_dir(self) -> tuple[Path | None, str | None]:
         """挑选本地可用的源码目录。"""
@@ -521,6 +864,32 @@ class BuildOrchestrator:
         }
         return messages.get(failure_type, "构建环境检查未通过。")
 
+    def _summarize_precheck_failure(self, *, stdout_text: str, stderr_text: str) -> str:
+        """为 apply 级预检查生成摘要。"""
+
+        for raw_text in [stderr_text, stdout_text]:
+            for line in raw_text.splitlines():
+                stripped = line.strip()
+                if stripped:
+                    return stripped
+        return "apply 级预检查未通过。"
+
+    def _classify_apply_precheck_failure(self, *, stdout_text: str, stderr_text: str) -> str:
+        """根据 apply 级预检查输出归类失败原因。"""
+
+        combined = f"{stdout_text}\n{stderr_text}".lower()
+        if "git: command not found" in combined or "not recognized as an internal or external command" in combined:
+            return "build_env_missing"
+        if "no valid patches in input" in combined:
+            return "patch_apply_failed"
+        if "patch does not apply" in combined or "corrupt patch" in combined:
+            return "patch_apply_failed"
+        if "does not exist in index" in combined or "no such file or directory" in combined:
+            return "patch_apply_failed"
+        if "fatal:" in combined and "not a git repository" in combined:
+            return "patch_apply_failed"
+        return "patch_apply_failed"
+
     def _classify_command_failure(self, *, stdout_text: str, stderr_text: str) -> str:
         """根据构建命令的直接输出给出一层快速归因。"""
 
@@ -529,7 +898,13 @@ class BuildOrchestrator:
             return "patch_apply_failed"
         if "only garbage was found in the patch input" in combined:
             return "patch_apply_failed"
+        if "patch does not apply" in combined:
+            return "patch_apply_failed"
+        if "command not found" in combined:
+            return "build_env_missing"
         if "unreconcilable difference" in combined or "fentry" in combined or "init section" in combined:
+            return "kpatch_constraint"
+        if "section mismatch" in combined or "unsupported" in combined and "kpatch" in combined:
             return "kpatch_constraint"
         return "compile_failed"
 

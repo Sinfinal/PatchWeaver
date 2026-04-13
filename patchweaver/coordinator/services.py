@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from patchweaver.context.bootstrap_registry import BootstrapRegistry
 from patchweaver.harness.attempt_engine import AttemptEngine
 from patchweaver.harness.dispatch_policy import dispatch_mode
-from patchweaver.models.attempt import FailureRecord
+from patchweaver.models.attempt import BuildSummary, FailureRecord
 from patchweaver.models.constraint import ConstraintReport
 from patchweaver.models.context import BootstrapManifest, ContextBundle
 from patchweaver.models.evidence import EvidenceBundle, EvidenceSpan
@@ -410,6 +410,9 @@ class AttemptExecutionService(CoordinatorSupport):
         apply_precheck_report = rewrite_meta["apply_precheck_report"]
         build_log_path = attempt_dir / "logs" / "build.log"
 
+        build_precheck_path: Path | None = None
+        build_summary: BuildSummary | None = None
+
         if apply_precheck_report.status == "failed":
             build_log = "\n".join(
                 [
@@ -453,13 +456,29 @@ class AttemptExecutionService(CoordinatorSupport):
                     if item
                 ][:3],
             )
+            build_summary = BuildSummary(
+                task_id=task.task_id,
+                attempt_id=attempt_record.attempt_id,
+                backend=apply_precheck_report.backend,
+                builder_cmd=apply_precheck_report.command or self.build_config.kpatch_build_cmd,
+                status="precheck_failed",
+                summary=apply_precheck_report.summary,
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=apply_precheck_report.target_source_dir,
+                build_log_path=build_log_path,
+                failure_type="patch_apply_failed",
+            )
         else:
-            attempt_record, build_log = self.builder.execute_build(
+            attempt_record, build_log, build_precheck, build_summary = self.builder.execute_build(
                 task=task,
                 attempt_no=attempt_no,
                 plan=plan,
                 rewritten_patch_path=rewritten_patch_path,
                 build_log_path=build_log_path,
+            )
+            build_precheck_path = self.json_writer.write_model(
+                build_precheck,
+                attempt_dir / "artifacts" / "build_precheck.json",
             )
             self.attempt_repo.create_attempt(attempt_record)
             self.attempt_repo.save_evidence_spans(task.task_id, attempt_record.attempt_id, rewrite_evidence.spans)
@@ -480,12 +499,50 @@ class AttemptExecutionService(CoordinatorSupport):
                 )
         self.attempt_repo.save_failure_record(failure_record)
         failure_record_path = self.json_writer.write_model(failure_record, attempt_dir / "logs" / "failure_record.json")
+        if build_summary is None:
+            build_summary = BuildSummary(
+                task_id=task.task_id,
+                attempt_id=attempt_record.attempt_id,
+                backend=apply_precheck_report.backend,
+                builder_cmd=apply_precheck_report.command or self.build_config.kpatch_build_cmd,
+                status=attempt_record.status,
+                summary="构建阶段未返回结构化摘要，已回退为兼容摘要。",
+                rewritten_patch_path=rewritten_patch_path,
+                build_log_path=attempt_record.build_log_path,
+                module_path=attempt_record.module_path,
+                failure_type=attempt_record.failure_type,
+            )
+        build_summary_path = self.json_writer.write_model(
+            build_summary,
+            attempt_dir / "artifacts" / "build_summary.json",
+        )
 
-        validation_report = self.validator.empty_report()
+        validation_report, validation_artifacts = self.validator.run(
+            task=task,
+            attempt=attempt_record,
+            attempt_dir=attempt_dir,
+            rewritten_patch_path=rewritten_patch_path,
+            build_summary=build_summary,
+        )
         validate_log_path = attempt_dir / "logs" / "validate.log"
-        validate_log_path.write_text("当前轮未进入真实加载验证。\n", encoding="utf-8")
+        validate_log_lines = [
+            f"load: {validation_report.load_result.status} - {validation_report.load_result.detail}",
+            f"unload: {validation_report.unload_result.status} - {validation_report.unload_result.detail}",
+            f"smoke: {validation_report.smoke_result.status} - {validation_report.smoke_result.detail}",
+            (
+                f"semantic_guard: {validation_report.semantic_guard_result.status}"
+                f" - {validation_report.semantic_guard_result.detail}"
+            ),
+        ]
+        if validation_report.notes:
+            validate_log_lines.extend(["", "[notes]", *validation_report.notes])
+        validate_log_path.write_text("\n".join(validate_log_lines) + "\n", encoding="utf-8")
         self.attempt_repo.save_validation_report(attempt_record.attempt_id, validation_report)
-        validation_report_path = self.json_writer.write_model(validation_report, attempt_dir / "artifacts" / "validation_report.json")
+        validation_report_path = Path(str(validation_artifacts["validation_report"]))
+        semantic_precheck_path = Path(str(validation_artifacts["semantic_precheck"]))
+        load_log_path = Path(str(validation_artifacts["load_log"]))
+        unload_log_path = Path(str(validation_artifacts["unload_log"]))
+        smoke_log_path = Path(str(validation_artifacts["smoke_log"]))
 
         failure_packet: dict[str, Any] | None = None
         failure_context_path: Path | None = None
@@ -514,7 +571,7 @@ class AttemptExecutionService(CoordinatorSupport):
             )
 
         validation_evidence = self.build_evidence_bundle(
-            source_paths=[rewrite_plan_path, failure_record_path, validation_report_path],
+            source_paths=[rewrite_plan_path, failure_record_path, semantic_precheck_path, validation_report_path],
             bundle_tag=f"VD{attempt_no:03d}",
         )
         validation_context = self.assemble_context(stage_name="validation", evidence_bundle=validation_evidence)
@@ -609,7 +666,9 @@ class AttemptExecutionService(CoordinatorSupport):
             ("rewrite_plan", rewrite_plan_path, "候选改写规划"),
             ("rewritten_patch", rewritten_patch_path, "单轮改写结果"),
             ("apply_precheck", rewrite_meta["apply_precheck"], "构建前 apply 预检查"),
+            ("build_summary", build_summary_path, "构建阶段结构化摘要"),
             ("failure_record", failure_record_path, "构建失败归因"),
+            ("semantic_precheck", semantic_precheck_path, "验证前语义预检查"),
             ("validation_report", validation_report_path, "验证结果摘要"),
         ]:
             trace = self.harness.attach_artifact(
@@ -621,7 +680,7 @@ class AttemptExecutionService(CoordinatorSupport):
         trace_path = self.trace_writer.write(trace, attempt_dir / "trace" / "harness_trace.json")
         self.attempt_repo.save_harness_trace(trace, trace_path=trace_path)
 
-        for artifact_type, artifact_path in [
+        artifact_records: list[tuple[str, Path | None]] = [
             ("rewrite_bootstrap_manifest", rewrite_bootstrap_path),
             ("rewrite_evidence_bundle", rewrite_evidence_path),
             ("rewrite_context_bundle", rewrite_context_path),
@@ -633,8 +692,14 @@ class AttemptExecutionService(CoordinatorSupport):
             ("transformation_trace", rewrite_meta["transformation_trace"]),
             ("apply_precheck", rewrite_meta["apply_precheck"]),
             ("build_log", attempt_record.build_log_path),
+            ("build_precheck", build_precheck_path),
+            ("build_summary", build_summary_path),
             ("failure_record", failure_record_path),
             ("validate_log", validate_log_path),
+            ("semantic_precheck", semantic_precheck_path),
+            ("load_log", load_log_path),
+            ("unload_log", unload_log_path),
+            ("smoke_log", smoke_log_path),
             ("validation_report", validation_report_path),
             ("validation_evidence_bundle", validation_evidence_path),
             ("validation_context_bundle", validation_context_path),
@@ -642,7 +707,10 @@ class AttemptExecutionService(CoordinatorSupport):
             ("validation_prompt_packet", validation_packet["prompt_path"]),
             ("attempt_state", state_path),
             ("harness_trace", trace_path),
-        ]:
+        ]
+        for artifact_type, artifact_path in artifact_records:
+            if artifact_path is None:
+                continue
             self.artifact_repo.add_artifact(
                 task_id=task.task_id,
                 artifact_type=artifact_type,
