@@ -1,0 +1,23 @@
+:root {
+  --bg-main: #0b1020;
+  --bg-panel: #11182b;
+  --bg-panel-soft: #151f35;
+  --bg-panel-alt: #0f1628;
+  --border-main: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text-main: #e8edf7;
+  --text-soft: #98a4ba;
+  --text-dim: #74809a;
+  --accent-main: #53d2b2;
+  --accent-blue: #61b8ff;
+  --warn-main: #f3b24f;
+  --danger-main: #ff6b6b;
+  --success-main: #52d273;
+  --shadow-panel: 0 18px 40px rgba(0, 0, 0, 0.28);
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --sidebar-width: 252px;
+  --font-sans: "Manrope", "Noto Sans SC", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", "Consolas", monospace;
+}
