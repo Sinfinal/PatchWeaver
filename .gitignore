@@ -10,6 +10,10 @@ env/
 
 # Test and tooling cache
 .pytest_cache/
+.pytest_tmp/
+pytest-cache-files-*/
+pytest-of-*/
+tmp_pytest*/
 .mypy_cache/
 .ruff_cache/
 .coverage

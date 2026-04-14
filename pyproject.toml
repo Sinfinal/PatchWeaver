@@ -40,3 +40,8 @@ patchweaver = "patchweaver.cli.app:app"
 #包发现
 [tool.setuptools.packages.find]
 include = ["patchweaver*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+cache_dir = "data/cache/pytest-cache"
+addopts = "--basetemp=data/cache/pytest-tmp"
