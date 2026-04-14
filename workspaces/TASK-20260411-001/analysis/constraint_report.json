@@ -1,0 +1,22 @@
+{
+  "task_id": "TASK-20260411-001",
+  "risk_items": [
+    {
+      "risk_type": "unknown_patchability",
+      "severity": "low",
+      "evidence": [
+        "涉及文件: kernel/example.c"
+      ],
+      "affected_functions": [
+        "example_fix"
+      ],
+      "required_primitives": [
+        "wrapper"
+      ]
+    }
+  ],
+  "high_risk_count": 0,
+  "requires_callback": false,
+  "requires_shadow_variable": false,
+  "summary": "已完成最小约束分析。"
+}

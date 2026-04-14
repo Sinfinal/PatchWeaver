@@ -1,0 +1,10 @@
+{
+  "stage_name": "constraint_diagnosis",
+  "candidate_skills": [
+    "constraint_diagnosis"
+  ],
+  "selected_skill": "constraint_diagnosis",
+  "selection_reason": "命中阶段优先级最高的可见 skill。",
+  "fallback_used": false,
+  "route_source": "registry"
+}

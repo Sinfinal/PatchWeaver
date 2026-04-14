@@ -1,0 +1,14 @@
+{
+  "task_id": "TASK-STAGE-II-20260414-185447",
+  "attempt_id": "TASK-STAGE-II-20260414-185447-A001",
+  "backend": "ssh",
+  "ok": false,
+  "summary": "Checking patch net/netfilter/nf_tables_api.c...",
+  "patch_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\rewrite\\rewritten.patch",
+  "source_dir": "/usr/src/kernels/6.6.102-5.2.an23.x86_64",
+  "command": "cd /usr/src/kernels/6.6.102-5.2.an23.x86_64 && git apply --check --verbose /root/patchweaver/TASK-STAGE-II-20260414-185447/attempts/001/rewritten.patch",
+  "failure_type": "patch_apply_failed",
+  "stdout_excerpt": "",
+  "stderr_excerpt": "Checking patch net/netfilter/nf_tables_api.c...\nerror: net/netfilter/nf_tables_api.c: No such file or directory",
+  "checked_at": "2026-04-14T10:55:04.342103Z"
+}

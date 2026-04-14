@@ -1,0 +1,813 @@
+{
+  "task_summary": {
+    "task_id": "TASK-20260411-001",
+    "cve_id": "CVE-2024-0001",
+    "target_kernel": "6.6.102-5.2.an23.x86_64"
+  },
+  "attempt_digest": [
+    {
+      "attempt_id": "TASK-20260411-001-A001",
+      "attempt_no": 1,
+      "status": "failed",
+      "failure_type": "build_env_missing"
+    },
+    {
+      "attempt_id": "TASK-20260411-001-A002",
+      "attempt_no": 2,
+      "status": "failed",
+      "failure_type": "compile_failed"
+    },
+    {
+      "attempt_id": "TASK-20260411-001-A003",
+      "attempt_no": 3,
+      "status": "failed",
+      "failure_type": "patch_apply_failed"
+    },
+    {
+      "attempt_id": "TASK-20260411-001-A004",
+      "attempt_no": 4,
+      "status": "failed",
+      "failure_type": "patch_apply_failed"
+    },
+    {
+      "attempt_id": "TASK-20260411-001-A005",
+      "attempt_no": 5,
+      "status": "failed",
+      "failure_type": "patch_apply_failed"
+    }
+  ],
+  "artifact_index": [
+    {
+      "artifact_type": "task_context",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\task_context.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "raw_patch",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\input\\raw_patch.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "normalized_patch",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\normalized\\normalized.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "patch_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\input\\patch_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_card",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\semantic_card.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "constraint_report",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\constraint_report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "analysis_bootstrap_manifest",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\bootstrap\\bootstrap_manifest.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "analysis_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\context\\evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "analysis_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\context\\context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "retrieval_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\route\\retrieval_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "retrieval_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\prompt\\retrieval_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_card_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\route\\semantic_card_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_card_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\prompt\\semantic_card_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "constraint_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\route\\constraint_diagnosis_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "constraint_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\prompt\\constraint_diagnosis_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "analysis_trace",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\trace\\analysis_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\context\\evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\context\\context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_bootstrap_manifest",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\prompt\\bootstrap_manifest.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\route\\reporting_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\prompt\\reporting_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "final_report_json",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "final_report_md",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\report.md",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_bootstrap_manifest",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\prompt\\bootstrap_manifest.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\context\\evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\context\\context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\route\\rewrite_recipe_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\prompt\\rewrite_recipe_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_plan",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\rewrite\\rewrite_plan.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewritten_patch",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\rewrite\\rewritten.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_reason",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\rewrite\\rewrite_reason.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "transformation_trace",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\rewrite\\transformation_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "build_log",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\logs\\build.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_record",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\logs\\failure_record.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validate_log",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\logs\\validate.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_report",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\artifacts\\validation_report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\context\\validation_evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\context\\validation_context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\route\\validation_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\prompt\\validation_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "attempt_state",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\attempt_state.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "harness_trace",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\trace\\harness_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\context\\failure_analysis_evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\context\\failure_analysis_context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\route\\failure_analysis_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\001\\prompt\\failure_analysis_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_bootstrap_manifest",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\prompt\\bootstrap_manifest.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\context\\evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\context\\context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\route\\rewrite_recipe_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\prompt\\rewrite_recipe_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_plan",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\rewrite\\rewrite_plan.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewritten_patch",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\rewrite\\rewritten.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_reason",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\rewrite\\rewrite_reason.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "transformation_trace",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\rewrite\\transformation_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "build_log",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\logs\\build.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_record",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\logs\\failure_record.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validate_log",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\logs\\validate.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_report",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\artifacts\\validation_report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\context\\validation_evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\context\\validation_context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\route\\validation_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\prompt\\validation_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "attempt_state",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\attempt_state.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "harness_trace",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\trace\\harness_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\context\\failure_analysis_evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\context\\failure_analysis_context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\route\\failure_analysis_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\prompt\\failure_analysis_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_bootstrap_manifest",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\prompt\\bootstrap_manifest.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\context\\evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\context\\context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\route\\rewrite_recipe_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\prompt\\rewrite_recipe_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_plan",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\rewrite\\rewrite_plan.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewritten_patch",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\rewrite\\rewritten.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_reason",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\rewrite\\rewrite_reason.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "transformation_trace",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\rewrite\\transformation_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "build_log",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\logs\\build.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_record",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\logs\\failure_record.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validate_log",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\logs\\validate.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_report",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\artifacts\\validation_report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\context\\validation_evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\context\\validation_context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\route\\validation_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\prompt\\validation_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "attempt_state",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\attempt_state.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "harness_trace",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\trace\\harness_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\context\\failure_analysis_evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\context\\failure_analysis_context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\route\\failure_analysis_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\prompt\\failure_analysis_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_bootstrap_manifest",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\prompt\\bootstrap_manifest.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\context\\evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\context\\context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\route\\rewrite_recipe_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\prompt\\rewrite_recipe_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_plan",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\rewrite\\rewrite_plan.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewritten_patch",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\rewrite\\rewritten.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_reason",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\rewrite\\rewrite_reason.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "transformation_trace",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\rewrite\\transformation_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "build_log",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\logs\\build.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_record",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\logs\\failure_record.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validate_log",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\logs\\validate.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_report",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\artifacts\\validation_report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\context\\validation_evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\context\\validation_context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\route\\validation_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\prompt\\validation_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "attempt_state",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\attempt_state.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "harness_trace",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\trace\\harness_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\context\\failure_analysis_evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\context\\failure_analysis_context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\route\\failure_analysis_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\004\\prompt\\failure_analysis_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_bootstrap_manifest",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\prompt\\bootstrap_manifest.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\context\\evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\context\\context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\route\\rewrite_recipe_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\prompt\\rewrite_recipe_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_plan",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\rewrite\\rewrite_plan.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewritten_patch",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\rewrite\\rewritten.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_reason",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\rewrite\\rewrite_reason.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "transformation_trace",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\rewrite\\transformation_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "build_log",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\logs\\build.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_record",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\logs\\failure_record.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validate_log",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\logs\\validate.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_report",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\artifacts\\validation_report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\context\\validation_evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\context\\validation_context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\route\\validation_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\prompt\\validation_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "attempt_state",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\attempt_state.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "harness_trace",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\trace\\harness_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\context\\failure_analysis_evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\context\\failure_analysis_context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\route\\failure_analysis_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_analysis_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\prompt\\failure_analysis_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\context\\evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\context\\context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_bootstrap_manifest",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\prompt\\bootstrap_manifest.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\route\\reporting_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\prompt\\reporting_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "final_report_json",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "final_report_md",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\report.md",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_evidence_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\context\\evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_context_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\context\\context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_bootstrap_manifest",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\prompt\\bootstrap_manifest.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_skill_route",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\route\\reporting_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "reporting_prompt_packet",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\prompt\\reporting_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "evaluation_summary",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\evaluation_summary.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "final_report_json",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "final_report_md",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\report.md",
+      "summary": ""
+    }
+  ],
+  "final_status": "failed",
+  "explanations": [
+    "当前共执行 5 轮尝试。",
+    "分析、归因和报告阶段按只读路径整理证据，改写与构建阶段走写入独占路径。",
+    "当前成功率为 0%，已归档产物类型 47 类。",
+    "最近一轮结果为 failed，失败类型为 patch_apply_failed。"
+  ]
+}

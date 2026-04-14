@@ -1,0 +1,17 @@
+{
+  "stage_name": "failure_analysis",
+  "candidate_skills": [
+    "failure_analysis"
+  ],
+  "selected_skill": "failure_analysis",
+  "rejected_skills": [],
+  "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=True。",
+  "readonly_subagent_allowed": true,
+  "contract_summary": [
+    "输入: build.log, failure_record.json",
+    "输出: 失败归因摘要, 下一轮优先动作",
+    "工具: failure_classifier"
+  ],
+  "fallback_used": false,
+  "route_source": "registry"
+}

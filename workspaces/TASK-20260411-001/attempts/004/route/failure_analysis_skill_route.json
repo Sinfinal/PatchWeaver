@@ -1,0 +1,10 @@
+{
+  "stage_name": "failure_analysis",
+  "candidate_skills": [
+    "failure_analysis"
+  ],
+  "selected_skill": "failure_analysis",
+  "selection_reason": "命中阶段优先级最高的可见 skill。",
+  "fallback_used": false,
+  "route_source": "registry"
+}

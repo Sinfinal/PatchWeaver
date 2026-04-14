@@ -1,0 +1,35 @@
+{
+  "load_result": {
+    "status": "pending",
+    "ok": false,
+    "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+    "command": null,
+    "log_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\logs\\load.log"
+  },
+  "unload_result": {
+    "status": "pending",
+    "ok": false,
+    "detail": "尚未执行加载测试，暂不执行卸载测试。",
+    "command": null,
+    "log_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\logs\\unload.log"
+  },
+  "smoke_result": {
+    "status": "pending",
+    "ok": false,
+    "detail": "尚未满足冒烟测试前置条件。",
+    "command": null,
+    "log_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\logs\\smoke.log"
+  },
+  "semantic_guard_result": {
+    "status": "pending",
+    "ok": false,
+    "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+    "command": null,
+    "log_path": null
+  },
+  "notes": [
+    "验证任务: TASK-STAGE-II-20260414-185447",
+    "构建状态: failed",
+    "本轮未构建出模块产物，验证阶段输出待执行说明。"
+  ]
+}

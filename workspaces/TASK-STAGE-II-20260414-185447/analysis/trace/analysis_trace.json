@@ -1,0 +1,89 @@
+{
+  "trace_id": "TASK-STAGE-II-20260414-185447-analysis",
+  "task_id": "TASK-STAGE-II-20260414-185447",
+  "attempt_no": 0,
+  "state_transitions": [
+    {
+      "from_stage": "created",
+      "to_stage": "retrieval",
+      "reason": "开始整理 patch 来源与修复链路。"
+    },
+    {
+      "from_stage": "retrieval",
+      "to_stage": "semantic_card",
+      "reason": "进入语义卡片整理阶段。"
+    },
+    {
+      "from_stage": "semantic_card",
+      "to_stage": "constraint_diagnosis",
+      "reason": "进入热补丁约束分析阶段。"
+    }
+  ],
+  "tool_calls": [],
+  "skill_route": {
+    "stage_name": "retrieval",
+    "candidate_skills": [
+      "retrieval"
+    ],
+    "selected_skill": "retrieval",
+    "rejected_skills": [],
+    "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=True。",
+    "readonly_subagent_allowed": true,
+    "contract_summary": [
+      "输入: task.cve_id, task.target_kernel",
+      "输出: patch_bundle.json, source_evidence.json, raw_patch.patch",
+      "工具: http_fetch, patch_parser"
+    ],
+    "fallback_used": false,
+    "route_source": "registry"
+  },
+  "subagent_records": [],
+  "artifacts": [
+    {
+      "artifact_type": "patch_bundle",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\input\\patch_bundle.json",
+      "summary": "分析输入补丁包"
+    },
+    {
+      "artifact_type": "semantic_card",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\analysis\\semantic_card.json",
+      "summary": "语义分析结果"
+    },
+    {
+      "artifact_type": "constraint_report",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\analysis\\constraint_report.json",
+      "summary": "约束诊断结果"
+    }
+  ],
+  "created_at": "2026-04-14T10:55:01.022427Z",
+  "extras": {
+    "stage_routes": {
+      "retrieval": {
+        "selected_skill": "retrieval",
+        "candidate_skills": [
+          "retrieval"
+        ],
+        "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=True。"
+      },
+      "semantic_card": {
+        "selected_skill": "semantic_card",
+        "candidate_skills": [
+          "semantic_card"
+        ],
+        "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=True。"
+      },
+      "constraint_diagnosis": {
+        "selected_skill": "constraint_diagnosis",
+        "candidate_skills": [
+          "constraint_diagnosis"
+        ],
+        "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=True。"
+      }
+    },
+    "dispatch_modes": {
+      "retrieval": "read-parallel",
+      "semantic_card": "read-parallel",
+      "constraint_diagnosis": "read-parallel"
+    }
+  }
+}

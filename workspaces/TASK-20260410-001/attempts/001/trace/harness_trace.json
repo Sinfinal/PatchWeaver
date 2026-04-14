@@ -1,0 +1,34 @@
+{
+  "trace_id": "TASK-20260410-001-trace-001",
+  "task_id": "TASK-20260410-001",
+  "attempt_no": 1,
+  "state_transitions": [
+    {
+      "from_stage": "analyzed",
+      "to_stage": "rewrite",
+      "reason": "进入改写与构建链路。"
+    }
+  ],
+  "tool_calls": [
+    {
+      "tool_name": "build",
+      "action": "kpatch-build",
+      "status": "failed",
+      "detail": "kpatch-build 未找到，当前仅完成 MVP 骨架，未进入真实构建。"
+    }
+  ],
+  "skill_route": {
+    "stage_name": "rewrite_recipe",
+    "candidate_skills": [
+      "rewrite_recipe"
+    ],
+    "selected_skill": "rewrite_recipe",
+    "selection_reason": "命中阶段优先级最高的可见 skill。",
+    "fallback_used": false,
+    "route_source": "registry"
+  },
+  "subagent_records": [],
+  "artifacts": [],
+  "created_at": "2026-04-10T07:22:29.547340Z",
+  "extras": {}
+}

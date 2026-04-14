@@ -1,0 +1,15 @@
+{
+  "task_id": "TASK-20260411-001",
+  "plan_id": "TASK-20260411-001-plan-001",
+  "candidate_ids": [
+    "TASK-20260411-001-candidate-001"
+  ],
+  "selected_recipe": "mvp_placeholder",
+  "selected_primitives": [
+    "wrapper"
+  ],
+  "risk_coverage": 1.0,
+  "notes": [
+    "CVE-2024-0001 的修复意图待补充"
+  ]
+}

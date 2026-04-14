@@ -1,0 +1,10 @@
+{
+  "task_id": "TASK-20260411-001",
+  "attempt_no": 4,
+  "stage": "validation",
+  "remaining_budget": {
+    "retries": 5
+  },
+  "disabled_strategies": [],
+  "termination_reason": "patch_apply_failed"
+}

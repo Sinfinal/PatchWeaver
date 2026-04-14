@@ -1,0 +1,132 @@
+{
+  "trace_id": "TASK-STAGE-II-20260414-185447-trace-001",
+  "task_id": "TASK-STAGE-II-20260414-185447",
+  "attempt_no": 1,
+  "state_transitions": [
+    {
+      "from_stage": "analyzed",
+      "to_stage": "rewrite_recipe",
+      "reason": "进入改写规划与补丁生成阶段。"
+    },
+    {
+      "from_stage": "rewrite_recipe",
+      "to_stage": "build",
+      "reason": "改写产物已落盘，完成 apply 预检查后进入构建阶段。"
+    },
+    {
+      "from_stage": "build",
+      "to_stage": "failure_analysis",
+      "reason": "构建未通过，转入失败归因阶段。"
+    },
+    {
+      "from_stage": "failure_analysis",
+      "to_stage": "validation",
+      "reason": "整理验证输入并输出验证结果。"
+    }
+  ],
+  "tool_calls": [
+    {
+      "tool_name": "build",
+      "action": "kpatch-build",
+      "status": "failed",
+      "detail": "构建后端: ssh\n远端主机: root@10.223.185.3:22\n构建命令: /usr/bin/kpatch-build\n源码目录: /usr/src/kernels/6.6.102-5.2.an23.x86_64\n配置文件: /usr/src/kernels/6.6.102-5.2.an23.x86_64/.config\nvmlinux: /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux\n\n[apply precheck]\nChecking patch net/netfilter/nf_tables_api.c...\n源码目录: /usr/src/kernels/6.6.102-5.2.an23.x86_64\n补丁路径: D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\rewrite\\rewritten.patch\n命令: cd /usr/src/kernels/6.6.102-5.2.an23.x86_64 && git apply --check --verbose /root/patchweaver/TASK-STAGE-II-20260414-185447/attempts/001/rewritten.patch\n[precheck stderr]\nChecking patch net/netfilter/nf_tables_api.c...\nerror: net/netfilter/nf_tables_api.c: No such file or directory\napply 级预检查未通过，已跳过远端构建。\n"
+    }
+  ],
+  "skill_route": {
+    "stage_name": "rewrite_recipe",
+    "candidate_skills": [
+      "rewrite_recipe"
+    ],
+    "selected_skill": "rewrite_recipe",
+    "rejected_skills": [],
+    "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=False。",
+    "readonly_subagent_allowed": false,
+    "contract_summary": [
+      "输入: patch_bundle.json, semantic_card.json, constraint_report.json",
+      "输出: rewrite_plan.json, rewritten.patch, transformation_trace.json",
+      "工具: template_engine, smpl_engine, diff_editor"
+    ],
+    "fallback_used": false,
+    "route_source": "registry"
+  },
+  "subagent_records": [],
+  "artifacts": [
+    {
+      "artifact_type": "rewrite_plan",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\rewrite\\rewrite_plan.json",
+      "summary": "候选改写规划"
+    },
+    {
+      "artifact_type": "rewritten_patch",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\rewrite\\rewritten.patch",
+      "summary": "单轮改写结果"
+    },
+    {
+      "artifact_type": "apply_precheck",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\rewrite\\apply_precheck.json",
+      "summary": "构建前 apply 预检查"
+    },
+    {
+      "artifact_type": "build_summary",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\artifacts\\build_summary.json",
+      "summary": "构建阶段结构化摘要"
+    },
+    {
+      "artifact_type": "failure_record",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\logs\\failure_record.json",
+      "summary": "构建失败归因"
+    },
+    {
+      "artifact_type": "failure_memory_snapshot",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\artifacts\\failure_memory_snapshot.json",
+      "summary": "失败经验快照"
+    },
+    {
+      "artifact_type": "recipe_memory_snapshot",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\artifacts\\recipe_memory_snapshot.json",
+      "summary": "配方经验快照"
+    },
+    {
+      "artifact_type": "semantic_precheck",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\artifacts\\semantic_precheck.json",
+      "summary": "验证前语义预检查"
+    },
+    {
+      "artifact_type": "validation_report",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\artifacts\\validation_report.json",
+      "summary": "验证结果摘要"
+    }
+  ],
+  "created_at": "2026-04-14T10:55:04.643253Z",
+  "extras": {
+    "stage_routes": {
+      "rewrite_recipe": {
+        "selected_skill": "rewrite_recipe",
+        "candidate_skills": [
+          "rewrite_recipe"
+        ],
+        "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=False。"
+      },
+      "failure_analysis": {
+        "selected_skill": "failure_analysis",
+        "candidate_skills": [
+          "failure_analysis"
+        ],
+        "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=True。"
+      },
+      "validation": {
+        "selected_skill": "validation",
+        "candidate_skills": [
+          "validation"
+        ],
+        "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=False。"
+      }
+    },
+    "dispatch_modes": {
+      "rewrite_recipe": "write-exclusive",
+      "build": "write-exclusive",
+      "failure_analysis": "read-parallel",
+      "validation": "write-exclusive"
+    }
+  }
+}

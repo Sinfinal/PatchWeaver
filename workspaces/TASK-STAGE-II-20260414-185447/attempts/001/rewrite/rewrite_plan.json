@@ -1,0 +1,59 @@
+{
+  "task_id": "TASK-STAGE-II-20260414-185447",
+  "plan_id": "TASK-STAGE-II-20260414-185447-plan-001",
+  "candidate_ids": [
+    "TASK-STAGE-II-20260414-185447-candidate-002",
+    "TASK-STAGE-II-20260414-185447-candidate-001"
+  ],
+  "selected_recipe": "minimal_livepatch_wrap",
+  "selected_primitives": [
+    "direct_apply"
+  ],
+  "target_files": [
+    "net/netfilter/nf_tables_api.c"
+  ],
+  "rule_hits": [
+    "direct_apply_ready"
+  ],
+  "risk_coverage": 1.0,
+  "selection_reason": "优先选择编辑半径最小、语义漂移最低且可直接输出 unified diff 的候选。",
+  "notes": [
+    "CVE-2024-1086 的修复意图待补充",
+    "候选数: 2",
+    "命中规则: direct_apply_ready"
+  ],
+  "candidate_summaries": [
+    {
+      "candidate_id": "TASK-STAGE-II-20260414-185447-candidate-002",
+      "recipe_name": "minimal_livepatch_wrap",
+      "primitives": [
+        "direct_apply"
+      ],
+      "target_functions": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "rule_hits": [
+        "direct_apply_ready"
+      ],
+      "expected_risk": 0.2,
+      "expected_semantic_drift": 0.15,
+      "expected_build_cost": 0.25
+    },
+    {
+      "candidate_id": "TASK-STAGE-II-20260414-185447-candidate-001",
+      "recipe_name": "direct_apply_patch",
+      "primitives": [
+        "direct_apply"
+      ],
+      "target_functions": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "rule_hits": [
+        "direct_apply_ready"
+      ],
+      "expected_risk": 0.3,
+      "expected_semantic_drift": 0.05,
+      "expected_build_cost": 0.1
+    }
+  ]
+}

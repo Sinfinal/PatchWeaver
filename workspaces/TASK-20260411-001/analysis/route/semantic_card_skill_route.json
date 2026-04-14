@@ -1,0 +1,10 @@
+{
+  "stage_name": "semantic_card",
+  "candidate_skills": [
+    "semantic_card"
+  ],
+  "selected_skill": "semantic_card",
+  "selection_reason": "命中阶段优先级最高的可见 skill。",
+  "fallback_used": false,
+  "route_source": "registry"
+}

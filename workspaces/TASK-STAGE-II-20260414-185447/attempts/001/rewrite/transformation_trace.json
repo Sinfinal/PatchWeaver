@@ -1,0 +1,52 @@
+{
+  "task_id": "TASK-STAGE-II-20260414-185447",
+  "plan_id": "TASK-STAGE-II-20260414-185447-plan-001",
+  "source_patch_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\normalized\\normalized.patch",
+  "rewritten_patch_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\rewrite\\rewritten.patch",
+  "steps": [
+    {
+      "step_id": "template-001",
+      "engine": "template",
+      "action": "render",
+      "recipe_name": "minimal_livepatch_wrap",
+      "primitive": null,
+      "target_files": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "summary": "命中模板 minimal_livepatch_wrap.patch.j2，已生成真实 unified diff。"
+    },
+    {
+      "step_id": "smpl-001",
+      "engine": "smpl",
+      "action": "pass-through",
+      "recipe_name": "minimal_livepatch_wrap",
+      "primitive": null,
+      "target_files": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "summary": "已定位 SmPL 规则 minimal_livepatch_wrap.cocci，当前版本保留 diff 形态并记录命中轨迹。"
+    },
+    {
+      "step_id": "diff-001",
+      "engine": "diff_editor",
+      "action": "write_unified_diff",
+      "recipe_name": "minimal_livepatch_wrap",
+      "primitive": "direct_apply",
+      "target_files": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "summary": "已输出可直接用于 apply 检查的 unified diff 文件。"
+    },
+    {
+      "step_id": "apply-001",
+      "engine": "apply_precheck",
+      "action": "skipped",
+      "recipe_name": "minimal_livepatch_wrap",
+      "primitive": null,
+      "target_files": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "summary": "远端 apply 预检查未完成，当前更像环境或工具问题，继续交给构建阶段判定。"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "fragment_ids": [
+    "system",
+    "bootstrap"
+  ],
+  "fragment_paths": [
+    "D:\\spaces\\ai\\PatchWeaver\\prompts\\system",
+    "D:\\spaces\\ai\\PatchWeaver\\prompts\\bootstrap"
+  ],
+  "truncation_marks": [],
+  "render_order": [
+    "system",
+    "bootstrap"
+  ],
+  "total_token_cost": 0
+}

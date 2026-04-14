@@ -1,0 +1,11 @@
+{
+  "task_id": "TASK-STAGE-II-20260414-185447",
+  "cve_id": "CVE-2024-1086",
+  "target_kernel": "6.6.102-5.2.an23.x86_64",
+  "status": "failed",
+  "max_attempts": 5,
+  "current_attempt": 1,
+  "workspace_dir": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447",
+  "created_at": "2026-04-14T10:54:55.369700Z",
+  "updated_at": "2026-04-14T10:55:04"
+}

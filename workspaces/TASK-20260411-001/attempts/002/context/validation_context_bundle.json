@@ -1,0 +1,45 @@
+{
+  "evidence_ids": [
+    "VD002-01",
+    "VD002-02",
+    "VD002-03"
+  ],
+  "token_cost": 215,
+  "duplicate_hits": 0,
+  "memory_hits": 0,
+  "source_spans": [
+    {
+      "evidence_id": "VD002-01",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\rewrite\\rewrite_plan.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-20260411-001\",\n  \"plan_id\": \"TASK-20260411-001-plan-001\",\n  \"candidate_ids\": [\n    \"TASK-20260411-001-candidate-001\"\n  ],\n  \"selected_recipe\": \"mvp_placeholder\",\n  \"selected_primitives\": [\n    \"wrapper\"\n  ],\n  \"risk_coverage\": 1.0,\n  \"notes\": [\n    \"CVE-2024-0001 的修复意图待补充\"\n  ]\n}",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "VD002-02",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\logs\\failure_record.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-20260411-001\",\n  \"attempt_id\": \"TASK-20260411-001-A002\",\n  \"stage_name\": \"build\",\n  \"failure_type\": \"compile_failed\",\n  \"summary\": \"构建后端: ssh\",\n  \"evidence\": [\n    \"构建后端: ssh\",\n    \"远端主机: root@10.223.185.3:22\",\n    \"构建命令: /usr/bin/kpatch-build\"\n  ],\n  \"created_at\": \"2026-04-11T08:07:33.075070Z\"\n}",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "VD002-03",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\002\\artifacts\\validation_report.json",
+      "excerpt": "{\n  \"load_result\": {\n    \"ok\": false,\n    \"detail\": \"\"\n  },\n  \"unload_result\": {\n    \"ok\": false,\n    \"detail\": \"\"\n  },\n  \"smoke_result\": {\n    \"ok\": false,\n    \"detail\": \"\"\n  },\n  \"semantic_guard_result\": {\n    \"ok\": false,\n    \"detail\": \"\"\n  }\n}",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    }
+  ],
+  "notes": [
+    "证据片段数: 3",
+    "记忆命中数: 0",
+    "阶段预算上限: 4000",
+    "调度模式: write-exclusive"
+  ]
+}

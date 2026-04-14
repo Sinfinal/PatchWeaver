@@ -1,0 +1,60 @@
+{
+  "evidence_ids": [
+    "RPT-02",
+    "RPT-04",
+    "RPT-03",
+    "RPT-01"
+  ],
+  "token_cost": 341,
+  "duplicate_hits": 0,
+  "memory_hits": 1,
+  "memory_summaries": [
+    "[RecipeMemory] minimal_livepatch_wrap: 风险=direct_apply_ready，原语=direct_apply，成功率=0%"
+  ],
+  "source_spans": [
+    {
+      "evidence_id": "RPT-02",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\analysis\\constraint_report.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-STAGE-II-20260414-185447\",\n  \"risk_items\": [\n    {\n      \"risk_type\": \"direct_apply_ready\",\n      \"severity\": \"medium\",\n      \"evidence\": [\n        \"规则命中: direct_apply_ready\",\n        \"涉及文件: net/netfilter/nf_tables_api.c\",\n        \"patch 摘要: From f342de4e2f33e0e39165d8639387aa6c19dff660 Mon Sep 17 00:00:00 2001 | From: Florian Westphal <fw@strlen.de> | Date: Sat, 20 Jan 2024 2",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "RPT-04",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\logs\\failure_record.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-STAGE-II-20260414-185447\",\n  \"attempt_id\": \"TASK-STAGE-II-20260414-185447-A001\",\n  \"stage_name\": \"build\",\n  \"failure_type\": \"patch_apply_failed\",\n  \"summary\": \"error: net/netfilter/nf_tables_api.c: No such file or directory\",\n  \"evidence\": [\n    \"apply 级预检查未通过，已跳过远端构建。\"\n  ],\n  \"created_at\": \"2026-04-14T10:55:04.370056Z\"\n}",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "RPT-03",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\rewrite\\rewrite_plan.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-STAGE-II-20260414-185447\",\n  \"plan_id\": \"TASK-STAGE-II-20260414-185447-plan-001\",\n  \"candidate_ids\": [\n    \"TASK-STAGE-II-20260414-185447-candidate-002\",\n    \"TASK-STAGE-II-20260414-185447-candidate-001\"\n  ],\n  \"selected_recipe\": \"minimal_livepatch_wrap\",\n  \"selected_primitives\": [\n    \"direct_apply\"\n  ],\n  \"target_files\": [\n    \"net/netfilter/nf_tables_api.c\"\n  ],\n  \"rule_hit",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "RPT-01",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\analysis\\semantic_card.json",
+      "excerpt": "{\n  \"bug_class\": \"cve_fix\",\n  \"root_cause\": \"CVE-2024-1086 的修复意图待补充\",\n  \"must_keep_conditions\": [],\n  \"must_keep_side_effects\": [],\n  \"critical_calls\": [],\n  \"touched_functions\": [\n    \"net/netfilter/nf_tables_api.c\"\n  ]\n}",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    }
+  ],
+  "notes": [
+    "证据片段数: 4",
+    "记忆命中数: 1",
+    "证据类型: json",
+    "阶段预算上限: 3200",
+    "调度模式: read-parallel",
+    "命中经验摘要: 1"
+  ]
+}

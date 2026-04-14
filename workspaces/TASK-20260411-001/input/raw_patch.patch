@@ -1,0 +1,8 @@
+From: PatchWeaver <noreply@patchweaver.local>
+Subject: [PATCH] CVE-2024-0001 placeholder fix
+
+--- a/kernel/example.c
++++ b/kernel/example.c
+@@
+-return old_value;
++return fixed_value;

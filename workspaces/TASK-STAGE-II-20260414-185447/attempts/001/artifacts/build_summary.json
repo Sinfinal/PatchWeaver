@@ -1,0 +1,18 @@
+{
+  "task_id": "TASK-STAGE-II-20260414-185447",
+  "attempt_id": "TASK-STAGE-II-20260414-185447-A001",
+  "backend": "ssh",
+  "builder_cmd": "/usr/bin/kpatch-build",
+  "status": "precheck_failed",
+  "summary": "apply 级预检查未通过，已跳过远端构建。",
+  "rewritten_patch_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\rewrite\\rewritten.patch",
+  "source_dir": "/usr/src/kernels/6.6.102-5.2.an23.x86_64",
+  "build_log_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\logs\\build.log",
+  "module_path": null,
+  "remote_patch_path": "/root/patchweaver/TASK-STAGE-II-20260414-185447/attempts/001/rewritten.patch",
+  "remote_output_dir": "/root/patchweaver/TASK-STAGE-II-20260414-185447/attempts/001/output",
+  "remote_module_path": null,
+  "failure_type": "patch_apply_failed",
+  "exit_code": null,
+  "created_at": "2026-04-14T10:55:04.342171Z"
+}

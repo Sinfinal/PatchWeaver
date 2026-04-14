@@ -1,0 +1,47 @@
+{
+  "evidence_ids": [
+    "RPT-01",
+    "RPT-02",
+    "RPT-03",
+    "RPT-04"
+  ],
+  "spans": [
+    {
+      "evidence_id": "RPT-01",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\semantic_card.json",
+      "excerpt": "{\n  \"bug_class\": \"cve_fix\",\n  \"root_cause\": \"CVE-2024-0001 的修复意图待补充\",\n  \"must_keep_conditions\": [],\n  \"must_keep_side_effects\": [],\n  \"critical_calls\": [],\n  \"touched_functions\": [\n    \"kernel/example.c\"\n  ]\n}",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "RPT-02",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\constraint_report.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-20260411-001\",\n  \"risk_items\": [\n    {\n      \"risk_type\": \"unknown_patchability\",\n      \"severity\": \"low\",\n      \"evidence\": [\n        \"涉及文件: kernel/example.c\"\n      ],\n      \"affected_functions\": [\n        \"example_fix\"\n      ],\n      \"required_primitives\": [\n        \"wrapper\"\n      ]\n    }\n  ],\n  \"high_risk_count\": 0,\n  \"requires_callback\": false,\n  \"requires_shadow_variable",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "RPT-03",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\rewrite\\rewrite_plan.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-20260411-001\",\n  \"plan_id\": \"TASK-20260411-001-plan-001\",\n  \"candidate_ids\": [\n    \"TASK-20260411-001-candidate-001\"\n  ],\n  \"selected_recipe\": \"mvp_placeholder\",\n  \"selected_primitives\": [\n    \"wrapper\"\n  ],\n  \"risk_coverage\": 1.0,\n  \"notes\": [\n    \"CVE-2024-0001 的修复意图待补充\"\n  ]\n}",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "RPT-04",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\logs\\failure_record.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-20260411-001\",\n  \"attempt_id\": \"TASK-20260411-001-A005\",\n  \"stage_name\": \"build\",\n  \"failure_type\": \"patch_apply_failed\",\n  \"summary\": \"ERROR: /root/patchweaver/TASK-20260411-001/attempts/005/rewritten.patch file failed to apply. Check /root/.kpatch/build.log for more details.\",\n  \"evidence\": [\n    \"ERROR: /root/patchweaver/TASK-20260411-001/attempts/005/rewritten.patch file f",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    }
+  ],
+  "memory_hits": []
+}

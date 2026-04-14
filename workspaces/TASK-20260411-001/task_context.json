@@ -1,0 +1,11 @@
+{
+  "task_id": "TASK-20260411-001",
+  "cve_id": "CVE-2024-0001",
+  "target_kernel": "6.6.102-5.2.an23.x86_64",
+  "status": "failed",
+  "max_attempts": 5,
+  "current_attempt": 5,
+  "workspace_dir": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001",
+  "created_at": "2026-04-11T04:25:49.214764Z",
+  "updated_at": "2026-04-11T09:38:04"
+}

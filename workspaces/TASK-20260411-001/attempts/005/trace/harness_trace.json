@@ -1,0 +1,100 @@
+{
+  "trace_id": "TASK-20260411-001-trace-005",
+  "task_id": "TASK-20260411-001",
+  "attempt_no": 5,
+  "state_transitions": [
+    {
+      "from_stage": "analyzed",
+      "to_stage": "rewrite_recipe",
+      "reason": "进入改写规划与补丁生成阶段。"
+    },
+    {
+      "from_stage": "rewrite_recipe",
+      "to_stage": "build",
+      "reason": "改写产物已落盘，准备进入构建阶段。"
+    },
+    {
+      "from_stage": "build",
+      "to_stage": "failure_analysis",
+      "reason": "构建未通过，转入失败归因阶段。"
+    },
+    {
+      "from_stage": "failure_analysis",
+      "to_stage": "validation",
+      "reason": "整理验证输入并输出验证结果。"
+    }
+  ],
+  "tool_calls": [
+    {
+      "tool_name": "build",
+      "action": "kpatch-build",
+      "status": "failed",
+      "detail": "构建后端: ssh\n远端主机: root@10.223.185.3:22\n构建命令: /usr/bin/kpatch-build\n源码目录: /usr/src/kernels/6.6.102-5.2.an23.x86_64\n配置文件: /usr/src/kernels/6.6.102-5.2.an23.x86_64/.config\nvmlinux: /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux\n\n[remote command]\nmkdir -p /root/patchweaver/TASK-20260411-001/attempts/005/output && kpatch-build -s /usr/src/kernels/6.6.102-5.2.an23.x86_64 -c /usr/src/kernels/6.6.102-5.2.an23.x86_64/.config -v /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux -n patchweaver-task-20260411-001-005 -o /root/patchweaver/TASK-20260411-001/attempts/005/output /root/patchweaver/TASK-20260411-001/attempts/005/rewritten.patch\n\n[stdout]\nUsing source directory at /usr/src/kernels/6.6.102-5.2.an23.x86_64\nTesting patch file(s)\n\n[stderr]\nERROR: /root/patchweaver/TASK-20260411-001/attempts/005/rewritten.patch file failed to apply. Check /root/.kpatch/build.log for more details.\n\n退出码: 1\n\n[remote kpatch log]\npatch: **** Only garbage was found in the patch input.\n"
+    }
+  ],
+  "skill_route": {
+    "stage_name": "rewrite_recipe",
+    "candidate_skills": [
+      "rewrite_recipe"
+    ],
+    "selected_skill": "rewrite_recipe",
+    "selection_reason": "命中阶段优先级最高的可见 skill。",
+    "fallback_used": false,
+    "route_source": "registry"
+  },
+  "subagent_records": [],
+  "artifacts": [
+    {
+      "artifact_type": "rewrite_plan",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\rewrite\\rewrite_plan.json",
+      "summary": "候选改写规划"
+    },
+    {
+      "artifact_type": "rewritten_patch",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\rewrite\\rewritten.patch",
+      "summary": "单轮改写结果"
+    },
+    {
+      "artifact_type": "failure_record",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\logs\\failure_record.json",
+      "summary": "构建失败归因"
+    },
+    {
+      "artifact_type": "validation_report",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\artifacts\\validation_report.json",
+      "summary": "验证结果摘要"
+    }
+  ],
+  "created_at": "2026-04-11T09:38:04.381212Z",
+  "extras": {
+    "stage_routes": {
+      "rewrite_recipe": {
+        "selected_skill": "rewrite_recipe",
+        "candidate_skills": [
+          "rewrite_recipe"
+        ],
+        "selection_reason": "命中阶段优先级最高的可见 skill。"
+      },
+      "failure_analysis": {
+        "selected_skill": "failure_analysis",
+        "candidate_skills": [
+          "failure_analysis"
+        ],
+        "selection_reason": "命中阶段优先级最高的可见 skill。"
+      },
+      "validation": {
+        "selected_skill": "validation",
+        "candidate_skills": [
+          "validation"
+        ],
+        "selection_reason": "命中阶段优先级最高的可见 skill。"
+      }
+    },
+    "dispatch_modes": {
+      "rewrite_recipe": "write-exclusive",
+      "build": "write-exclusive",
+      "failure_analysis": "read-parallel",
+      "validation": "write-exclusive"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "stage_name": "failure_analysis",
+  "system_prompt_version": "v1",
+  "worker_prompt_version": "v1",
+  "schema_name": "FailureRecord",
+  "budget_snapshot": {
+    "token_cost": 254
+  },
+  "bootstrap_fragments": [
+    "system/system_contract",
+    "bootstrap/contest_bootstrap"
+  ],
+  "prompt_sections": [
+    "阶段: failure_analysis",
+    "输出结构: FailureRecord",
+    "证据数量: 3",
+    "证据摘要: FA002-01、FA002-02、FA002-03",
+    "Bootstrap 数量: 2",
+    "Bootstrap 开销: 55",
+    "上下文备注: 证据片段数: 3；记忆命中数: 0；阶段预算上限: 4000"
+  ]
+}

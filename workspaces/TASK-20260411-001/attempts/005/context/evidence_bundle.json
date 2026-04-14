@@ -1,0 +1,37 @@
+{
+  "evidence_ids": [
+    "RW005-01",
+    "RW005-02",
+    "RW005-03"
+  ],
+  "spans": [
+    {
+      "evidence_id": "RW005-01",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\input\\patch_bundle.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-20260411-001\",\n  \"cve_id\": \"CVE-2024-0001\",\n  \"upstream_commit\": \"upstream-cve-2024-0001\",\n  \"stable_commit\": \"stable-cve-2024-0001\",\n  \"commit_message\": \"CVE-2024-0001: MVP 阶段占位修复链路\",\n  \"affected_files\": [\n    \"kernel/example.c\"\n  ],\n  \"raw_patch_path\": \"D:\\\\spaces\\\\ai\\\\PatchWeaver\\\\workspaces\\\\TASK-20260411-001\\\\input\\\\raw_patch.patch\",\n  \"normalized_patch_path\": \"D:\\\\spaces",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "RW005-02",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\semantic_card.json",
+      "excerpt": "{\n  \"bug_class\": \"cve_fix\",\n  \"root_cause\": \"CVE-2024-0001 的修复意图待补充\",\n  \"must_keep_conditions\": [],\n  \"must_keep_side_effects\": [],\n  \"critical_calls\": [],\n  \"touched_functions\": [\n    \"kernel/example.c\"\n  ]\n}",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "RW005-03",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\analysis\\constraint_report.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-20260411-001\",\n  \"risk_items\": [\n    {\n      \"risk_type\": \"unknown_patchability\",\n      \"severity\": \"low\",\n      \"evidence\": [\n        \"涉及文件: kernel/example.c\"\n      ],\n      \"affected_functions\": [\n        \"example_fix\"\n      ],\n      \"required_primitives\": [\n        \"wrapper\"\n      ]\n    }\n  ],\n  \"high_risk_count\": 0,\n  \"requires_callback\": false,\n  \"requires_shadow_variable",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    }
+  ],
+  "memory_hits": []
+}

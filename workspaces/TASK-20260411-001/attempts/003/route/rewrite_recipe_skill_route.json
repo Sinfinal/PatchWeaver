@@ -1,0 +1,10 @@
+{
+  "stage_name": "rewrite_recipe",
+  "candidate_skills": [
+    "rewrite_recipe"
+  ],
+  "selected_skill": "rewrite_recipe",
+  "selection_reason": "命中阶段优先级最高的可见 skill。",
+  "fallback_used": false,
+  "route_source": "registry"
+}

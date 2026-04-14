@@ -1,0 +1,38 @@
+{
+  "task_id": "TASK-20260410-001",
+  "cve_id": "CVE-2024-0001",
+  "upstream_commit": "upstream-cve-2024-0001",
+  "stable_commit": "stable-cve-2024-0001",
+  "commit_message": "CVE-2024-0001: MVP 阶段占位修复链路",
+  "affected_files": [
+    "kernel/example.c"
+  ],
+  "raw_patch_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\input\\raw_patch.patch",
+  "normalized_patch_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\normalized\\normalized.patch",
+  "source_evidence": [
+    {
+      "source_name": "nvd",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-0001",
+      "summary": "CVE-2024-0001 的 nvd 来源占位记录。",
+      "commit_id": null
+    },
+    {
+      "source_name": "linux-cve-announce",
+      "url": "https://lore.kernel.org/linux-cve-announce/",
+      "summary": "CVE-2024-0001 的 linux-cve-announce 来源占位记录。",
+      "commit_id": null
+    },
+    {
+      "source_name": "linux-stable",
+      "url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/",
+      "summary": "CVE-2024-0001 的 linux-stable 来源占位记录。",
+      "commit_id": null
+    },
+    {
+      "source_name": "upstream",
+      "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/",
+      "summary": "CVE-2024-0001 的 upstream 来源占位记录。",
+      "commit_id": null
+    }
+  ]
+}

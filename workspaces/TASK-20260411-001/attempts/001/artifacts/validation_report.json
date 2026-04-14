@@ -1,0 +1,18 @@
+{
+  "load_result": {
+    "ok": false,
+    "detail": ""
+  },
+  "unload_result": {
+    "ok": false,
+    "detail": ""
+  },
+  "smoke_result": {
+    "ok": false,
+    "detail": ""
+  },
+  "semantic_guard_result": {
+    "ok": false,
+    "detail": ""
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "stage_name": "rewrite_recipe",
+  "system_prompt_version": "v1",
+  "worker_prompt_version": "v1",
+  "schema_name": "RewritePlan",
+  "budget_snapshot": {
+    "token_cost": 252
+  },
+  "bootstrap_fragments": [
+    "system/system_contract",
+    "bootstrap/contest_bootstrap"
+  ],
+  "prompt_sections": [
+    "阶段: rewrite_recipe",
+    "输出结构: RewritePlan",
+    "证据数量: 3",
+    "证据摘要: RW003-01、RW003-02、RW003-03",
+    "Bootstrap 数量: 2",
+    "Bootstrap 开销: 55",
+    "上下文备注: 证据片段数: 3；记忆命中数: 0；阶段预算上限: 4000"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "stage_name": "validation",
+  "candidate_skills": [
+    "validation"
+  ],
+  "selected_skill": "validation",
+  "selection_reason": "命中阶段优先级最高的可见 skill。",
+  "fallback_used": false,
+  "route_source": "registry"
+}

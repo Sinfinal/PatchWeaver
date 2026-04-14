@@ -1,0 +1,37 @@
+{
+  "evidence_ids": [
+    "FA003-01",
+    "FA003-02",
+    "FA003-03"
+  ],
+  "spans": [
+    {
+      "evidence_id": "FA003-01",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\rewrite\\rewrite_plan.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-20260411-001\",\n  \"plan_id\": \"TASK-20260411-001-plan-001\",\n  \"candidate_ids\": [\n    \"TASK-20260411-001-candidate-001\"\n  ],\n  \"selected_recipe\": \"mvp_placeholder\",\n  \"selected_primitives\": [\n    \"wrapper\"\n  ],\n  \"risk_coverage\": 1.0,\n  \"notes\": [\n    \"CVE-2024-0001 的修复意图待补充\"\n  ]\n}",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "FA003-02",
+      "source_type": "json",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\logs\\failure_record.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-20260411-001\",\n  \"attempt_id\": \"TASK-20260411-001-A003\",\n  \"stage_name\": \"build\",\n  \"failure_type\": \"patch_apply_failed\",\n  \"summary\": \"ERROR: /root/patchweaver/TASK-20260411-001/attempts/003/rewritten.patch file failed to apply. Check /root/.kpatch/build.log for more details.\",\n  \"evidence\": [\n    \"构建命令: /usr/bin/kpatch-build\",\n    \"mkdir -p /root/patchweaver/TASK-20260411-00",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "FA003-03",
+      "source_type": "log",
+      "source_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\003\\logs\\build.log",
+      "excerpt": "构建后端: ssh\n远端主机: root@10.223.185.3:22\n构建命令: /usr/bin/kpatch-build\n源码目录: /usr/src/kernels/6.6.102-5.2.an23.x86_64\n配置文件: /usr/src/kernels/6.6.102-5.2.an23.x86_64/.config\nvmlinux: /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux\n\n[remote command]\nmkdir -p /root/patchweaver/TASK-20260411-001/attempts/003/output && kpatch-build -s /usr/src/kernels/6.6.102-5.2.an23.x86_64 -c /usr/src/kernels/6.",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    }
+  ],
+  "memory_hits": []
+}

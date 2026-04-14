@@ -1,0 +1,10 @@
+{
+  "stage_name": "retrieval",
+  "candidate_skills": [
+    "retrieval"
+  ],
+  "selected_skill": "retrieval",
+  "selection_reason": "命中阶段优先级最高的可见 skill。",
+  "fallback_used": false,
+  "route_source": "registry"
+}

@@ -1,0 +1,17 @@
+{
+  "stage_name": "validation",
+  "candidate_skills": [
+    "validation"
+  ],
+  "selected_skill": "validation",
+  "rejected_skills": [],
+  "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=False。",
+  "readonly_subagent_allowed": false,
+  "contract_summary": [
+    "输入: build_summary.json, rewritten.patch",
+    "输出: validation_report.json, semantic_precheck.json, load.log",
+    "工具: validator, load_tester, smoke_tester"
+  ],
+  "fallback_used": false,
+  "route_source": "registry"
+}

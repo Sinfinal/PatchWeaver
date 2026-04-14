@@ -1,0 +1,17 @@
+{
+  "stage_name": "reporting",
+  "candidate_skills": [
+    "reporting"
+  ],
+  "selected_skill": "reporting",
+  "rejected_skills": [],
+  "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=True。",
+  "readonly_subagent_allowed": true,
+  "contract_summary": [
+    "输入: report.json, harness_trace.json, evaluation_summary.json",
+    "输出: report.md, replay 摘要",
+    "工具: report_builder, replay_harness"
+  ],
+  "fallback_used": false,
+  "route_source": "registry"
+}

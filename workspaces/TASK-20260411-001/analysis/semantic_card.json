@@ -1,0 +1,10 @@
+{
+  "bug_class": "cve_fix",
+  "root_cause": "CVE-2024-0001 的修复意图待补充",
+  "must_keep_conditions": [],
+  "must_keep_side_effects": [],
+  "critical_calls": [],
+  "touched_functions": [
+    "kernel/example.c"
+  ]
+}

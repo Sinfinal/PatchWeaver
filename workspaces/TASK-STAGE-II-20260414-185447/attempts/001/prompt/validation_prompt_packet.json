@@ -1,0 +1,29 @@
+{
+  "stage_name": "validation",
+  "system_prompt_version": "v1",
+  "worker_prompt_version": "v1",
+  "schema_name": "ValidationReport",
+  "budget_snapshot": {
+    "token_cost": 317,
+    "duplicate_hits": 0,
+    "memory_hits": 1
+  },
+  "bootstrap_fragments": [
+    "system/system_contract",
+    "bootstrap/contest_bootstrap"
+  ],
+  "prompt_sections": [
+    "验证阶段任务：\n1. 区分语义预检查、加载卸载、冒烟验证和回归验证的层级。\n2. 没有 `.ko` 产物时，要输出结构化待执行说明，而不是空报告。\n3. 有 `.ko` 产物时，优先保证日志和状态的一致性与可追溯性。\n",
+    "输出必须区分 load、unload、smoke、semantic guard 四类结果，并保持状态字段稳定。\n",
+    "阶段: validation",
+    "选中 Skill: validation",
+    "Skill 契约摘要: 输入: build_summary.json, rewritten.patch；输出: validation_report.json, semantic_precheck.json, load.log；工具: validator, load_tester, smoke_tester",
+    "输出结构: ValidationReport",
+    "证据数量: 4",
+    "证据摘要: VD001-04、VD001-03、VD001-02、VD001-01",
+    "记忆摘要: [FailureMemory] patch_apply_failed: error: net/netfilter/nf_tables_api.c: No such file or directory，最近关联 recipe: minimal_livepatch_wrap",
+    "Bootstrap 数量: 2",
+    "Bootstrap 开销: 55",
+    "上下文备注: 证据片段数: 4；记忆命中数: 1；证据类型: json"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "task_id": "TASK-STAGE-II-20260414-185447",
+  "plan_id": "TASK-STAGE-II-20260414-185447-plan-001",
+  "selected_recipe": "minimal_livepatch_wrap",
+  "selected_primitives": [
+    "direct_apply"
+  ],
+  "target_files": [
+    "net/netfilter/nf_tables_api.c"
+  ],
+  "rule_hits": [
+    "direct_apply_ready"
+  ],
+  "selection_reason": "优先选择编辑半径最小、语义漂移最低且可直接输出 unified diff 的候选。",
+  "source_patch_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\normalized\\normalized.patch",
+  "source_commit": "f342de4e2f33e0e39165d8639387aa6c19dff660",
+  "apply_precheck_status": "skipped",
+  "notes": [
+    "CVE-2024-1086 的修复意图待补充",
+    "候选数: 2",
+    "命中规则: direct_apply_ready"
+  ]
+}

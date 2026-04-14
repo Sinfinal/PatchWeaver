@@ -1,0 +1,10 @@
+{
+  "task_id": "TASK-20260410-001",
+  "attempt_no": 1,
+  "stage": "run",
+  "remaining_budget": {
+    "retries": 5
+  },
+  "disabled_strategies": [],
+  "termination_reason": null
+}

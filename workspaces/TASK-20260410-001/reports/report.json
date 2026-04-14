@@ -1,0 +1,44 @@
+{
+  "task_summary": {
+    "task_id": "TASK-20260410-001",
+    "cve_id": "CVE-2024-0001",
+    "target_kernel": "6.6.102-5.2.an23.x86_64"
+  },
+  "attempt_digest": [],
+  "artifact_index": [
+    {
+      "artifact_type": "task_context",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\task_context.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "raw_patch",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\input\\raw_patch.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "normalized_patch",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\normalized\\normalized.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_card",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\analysis\\semantic_card.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "constraint_report",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\analysis\\constraint_report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "bootstrap_manifest",
+      "artifact_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\analysis\\bootstrap\\bootstrap_manifest.json",
+      "summary": ""
+    }
+  ],
+  "final_status": "analyzed",
+  "explanations": [
+    "当前报告基于 MVP 占位流程生成。"
+  ]
+}
