@@ -10,11 +10,22 @@ from patchweaver.models.evidence import EvidenceBundle
 class ContextAssembler:
     """把证据集合整理成阶段可用的上下文包。"""
 
+    def __init__(self, *, enable_dedup: bool = True, track_token_cost: bool = True) -> None:
+        """记录上下文装配阶段的行为开关。"""
+
+        self.enable_dedup = enable_dedup
+        self.track_token_cost = track_token_cost
+
     def assemble(self, evidence_bundle: EvidenceBundle) -> ContextBundle:
         """生成一份最小可用的 ContextBundle。"""
 
-        spans, duplicate_hits = dedupe_spans(evidence_bundle.spans)
-        token_cost = sum(max(1, len(span.excerpt) // 4) for span in spans)
+        if self.enable_dedup:
+            spans, duplicate_hits = dedupe_spans(evidence_bundle.spans)
+        else:
+            spans = list(evidence_bundle.spans)
+            duplicate_hits = 0
+
+        token_cost = sum(max(1, len(span.excerpt) // 4) for span in spans) if self.track_token_cost else 0
         source_types = sorted({span.source_type for span in spans})
         notes = [
             f"证据片段数: {len(spans)}",
@@ -23,6 +34,10 @@ class ContextAssembler:
         ]
         if duplicate_hits:
             notes.append(f"已抑制重复证据: {duplicate_hits}")
+        if not self.enable_dedup:
+            notes.append("证据去重: disabled")
+        if not self.track_token_cost:
+            notes.append("token 成本记录: disabled")
         return ContextBundle(
             evidence_ids=[span.evidence_id for span in spans],
             token_cost=token_cost,

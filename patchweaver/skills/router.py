@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from patchweaver.config.loader import load_skills_config
+from patchweaver.config.models import SkillsConfig
 from patchweaver.models.skill import SkillManifest, SkillRouteDecision
 from patchweaver.skills.registry import SkillRegistry
 from patchweaver.skills.subagent_policy import SubagentPolicy
@@ -12,14 +14,33 @@ from patchweaver.skills.subagent_policy import SubagentPolicy
 class SkillRouter:
     """根据阶段选择最合适的 skill。"""
 
-    def __init__(self, project_root: Path) -> None:
+    def __init__(self, project_root: Path, *, skills_config: SkillsConfig | None = None) -> None:
         """创建一个面向当前项目的 skill 路由器。"""
 
         self.registry = SkillRegistry(project_root)
-        self.subagent_policy = SubagentPolicy()
+        self.skills_config = skills_config or load_skills_config(project_root)
+        self.active_profile = self.skills_config.skill_profiles.get(self.skills_config.default_skill_profile)
+        self.subagent_policy = SubagentPolicy(
+            allow_readonly_subagent=self.active_profile.allow_readonly_subagent if self.active_profile is not None else True,
+            allowed_stages=self.active_profile.subagent_allowed_stages if self.active_profile is not None else None,
+            max_parallel=self.active_profile.subagent_max_parallel if self.active_profile is not None else 2,
+        )
 
     def route(self, stage_name: str) -> SkillRouteDecision:
         """为指定阶段生成一份路由决策。"""
+
+        if self.active_profile is not None and not self.active_profile.enable_skill_router:
+            return SkillRouteDecision(
+                stage_name=stage_name,
+                candidate_skills=[],
+                selected_skill=None,
+                rejected_skills=[],
+                selection_reason="当前 skill profile 已关闭 skill 路由，直接回退到 direct_worker。",
+                readonly_subagent_allowed=False,
+                contract_summary=[f"回退模式: {self.active_profile.fallback_dispatch}"],
+                fallback_used=True,
+                route_source="profile_disabled",
+            )
 
         manifests = self.registry.find_by_stage(stage_name)
         candidate_names = [manifest.skill_name for manifest in manifests]
@@ -31,8 +52,12 @@ class SkillRouter:
         reason = (
             f"命中阶段优先级最高的可见 skill，来源={selected_manifest.source_layer}，只读={selected_manifest.readonly}。"
             if selected_manifest is not None
-            else "当前阶段没有可用 skill，将回退到 direct_worker。"
+            else f"当前阶段没有可用 skill，将回退到 {self._fallback_dispatch()}。"
         )
+        if self.active_profile is not None:
+            contract_summary.append(f"调度模式: {self.active_profile.preferred_dispatch}")
+        if selected_manifest is not None and self.subagent_policy.allow(stage_name):
+            contract_summary.append(f"只读子代理并发上限: {self.subagent_policy.max_parallel}")
         return SkillRouteDecision(
             stage_name=stage_name,
             candidate_skills=candidate_names,
@@ -48,6 +73,13 @@ class SkillRouter:
             fallback_used=fallback_used,
             route_source="fallback" if fallback_used else "registry",
         )
+
+    def _fallback_dispatch(self) -> str:
+        """返回当前 skill profile 的回退模式。"""
+
+        if self.active_profile is None:
+            return "direct_worker"
+        return self.active_profile.fallback_dispatch
 
     def _rejected_reason(self, manifest: SkillManifest) -> str:
         """生成未选中 skill 的简要说明。"""

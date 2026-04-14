@@ -133,6 +133,7 @@ class TaskQueryService:
             task_id=final_task_id,
             cve_id=cve_id,
             target_kernel=target_kernel or runtime.default_kernel,
+            profile_name=runtime.profile_name,
             status="created",
             max_attempts=runtime.max_attempts,
             current_attempt=0,
@@ -247,22 +248,26 @@ class TaskQueryService:
     def analyze_task(self, task_id: str) -> dict[str, Any]:
         """触发分析阶段。"""
 
-        return self.context.build_task_runner().analyze_task(task_id)
+        task = self._require_task(task_id)
+        return self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).analyze_task(task_id)
 
     def run_task(self, task_id: str) -> dict[str, Any]:
         """执行单轮尝试。"""
 
-        return self.context.build_task_runner().run_task(task_id)
+        task = self._require_task(task_id)
+        return self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).run_task(task_id)
 
     def report_task(self, task_id: str) -> dict[str, Any]:
         """生成最终报告。"""
 
-        return self.context.build_task_runner().build_report(task_id)
+        task = self._require_task(task_id)
+        return self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).build_report(task_id)
 
     def replay_task(self, task_id: str) -> dict[str, Any]:
         """读取回放信息。"""
 
-        return self.context.build_task_runner().replay_task(task_id)
+        task = self._require_task(task_id)
+        return self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).replay_task(task_id)
 
     def _task_payload(self, task: TaskContext) -> dict[str, Any]:
         """把任务对象转成接口返回结构。"""
@@ -271,6 +276,7 @@ class TaskQueryService:
             "task_id": task.task_id,
             "cve_id": task.cve_id,
             "target_kernel": task.target_kernel,
+            "profile_name": task.profile_name,
             "status": task.status,
             "current_attempt": task.current_attempt,
             "max_attempts": task.max_attempts,
@@ -278,6 +284,14 @@ class TaskQueryService:
             "created_at": task.created_at.isoformat(),
             "updated_at": task.updated_at.isoformat(),
         }
+
+    def _require_task(self, task_id: str) -> TaskContext:
+        """读取任务对象，不存在时直接报错。"""
+
+        task = self.context.task_repo.get_task(task_id)
+        if task is None:
+            raise ValueError(f"未找到任务：{task_id}")
+        return task
 
     def _attempt_payload(self, task_dir: Path, attempt) -> dict[str, Any]:
         """整理单轮尝试的常用路径和状态。"""

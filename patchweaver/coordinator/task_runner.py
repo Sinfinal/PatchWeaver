@@ -14,6 +14,7 @@ from patchweaver.context.bootstrap_registry import BootstrapRegistry
 from patchweaver.context.budgeter import ContextBudgeter
 from patchweaver.context.retriever import ContextRetriever
 from patchweaver.harness.evaluator import Evaluator
+from patchweaver.harness.failover_controller import FailoverController
 from patchweaver.harness.replay import ReplayHarness
 from patchweaver.harness.orchestrator import HarnessOrchestrator
 from patchweaver.harness.policy_guard import PolicyGuard
@@ -46,9 +47,19 @@ from patchweaver.coordinator.services import (
 class TaskRunner:
     """负责暴露任务级主流程入口。"""
 
-    def __init__(self, runtime: Any, build_config: Any, verify_config: Any, prompts_config: Any) -> None:
+    def __init__(
+        self,
+        runtime: Any,
+        build_config: Any,
+        verify_config: Any,
+        prompts_config: Any,
+        skills_config: Any | None = None,
+    ) -> None:
         """绑定运行时配置，并装配各阶段 service。"""
 
+        prompt_profile = prompts_config.prompt_profiles.get(prompts_config.default_prompt_profile)
+        enable_dedup = prompt_profile.suppress_duplicate_evidence if prompt_profile is not None else True
+        track_token_cost = prompt_profile.track_token_cost if prompt_profile is not None else True
         services = TaskRunnerServices(
             runtime=runtime,
             build_config=build_config,
@@ -63,10 +74,10 @@ class TaskRunner:
             constraint_diagnoser=ConstraintDiagnoser(),
             context_retriever=ContextRetriever(),
             context_budgeter=ContextBudgeter(),
-            context_assembler=ContextAssembler(),
+            context_assembler=ContextAssembler(enable_dedup=enable_dedup, track_token_cost=track_token_cost),
             bootstrap_registry=BootstrapRegistry(),
             prompt_compiler=PromptCompiler(runtime.project_root),
-            skill_router=SkillRouter(runtime.project_root),
+            skill_router=SkillRouter(runtime.project_root, skills_config=skills_config),
             schema_guard=SchemaGuard(),
             policy_guard=PolicyGuard(),
             planner=JointPlanner(),
@@ -80,6 +91,7 @@ class TaskRunner:
             ),
             dual_memory=DualMemory(runtime.data_dir / "memory"),
             harness=HarnessOrchestrator(),
+            failover_controller=FailoverController(),
             evaluator=Evaluator(),
             replay_harness=ReplayHarness(),
             trace_writer=TraceWriter(),

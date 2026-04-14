@@ -108,3 +108,98 @@ def test_skill_router_respects_configured_source_priority() -> None:
 
     assert route.selected_skill == "project_reporting"
     assert "builtin_reporting" in route.candidate_skills
+
+
+def test_skill_router_respects_skill_profile_subagent_and_disable_switches() -> None:
+    project_root = _case_dir("skill-profile") / "skill-profile-project"
+    (project_root / "patchweaver").mkdir(parents=True, exist_ok=True)
+    (project_root / "config").mkdir(parents=True, exist_ok=True)
+    (project_root / "skills" / "project" / "project_retrieval").mkdir(parents=True, exist_ok=True)
+    (project_root / "pyproject.toml").write_text("[project]\nname='skill-profile-project'\nversion='0.1.0'\n", encoding="utf-8")
+    (project_root / "config" / "skills.yaml").write_text(
+        "\n".join(
+            [
+                "default_skill_profile: contest",
+                "skill_source_priority:",
+                "  - project",
+                "require_manifest: true",
+                "enforce_allowlist: true",
+                "allowed_skill_tags:",
+                "  - contest",
+                "skill_dirs:",
+                "  project: skills/project",
+                "skill_profiles:",
+                "  contest:",
+                "    enable_skill_router: true",
+                "    preferred_dispatch: skill_first",
+                "    fallback_dispatch: direct_worker",
+                "    enable_skill_fallback: true",
+                "    allow_readonly_subagent: false",
+                "    subagent_max_parallel: 1",
+                "    subagent_allowed_stages:",
+                "      - retrieval",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (project_root / "skills" / "project" / "project_retrieval" / "manifest.yaml").write_text(
+        "\n".join(
+            [
+                "name: project_retrieval",
+                "version: 0.1.0",
+                "enabled: true",
+                "visibility: project",
+                "priority: 10",
+                "readonly: true",
+                "allow_readonly_subagent: true",
+                "tags:",
+                "  - contest",
+                "entry:",
+                "  kind: workflow_template",
+                "  stage: retrieval",
+                "description: project retrieval skill",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    route = SkillRouter(project_root).route("retrieval")
+
+    assert route.selected_skill == "project_retrieval"
+    assert route.readonly_subagent_allowed is False
+
+    (project_root / "config" / "skills.yaml").write_text(
+        "\n".join(
+            [
+                "default_skill_profile: contest",
+                "skill_source_priority:",
+                "  - project",
+                "require_manifest: true",
+                "enforce_allowlist: true",
+                "allowed_skill_tags:",
+                "  - contest",
+                "skill_dirs:",
+                "  project: skills/project",
+                "skill_profiles:",
+                "  contest:",
+                "    enable_skill_router: false",
+                "    preferred_dispatch: skill_first",
+                "    fallback_dispatch: direct_worker",
+                "    enable_skill_fallback: true",
+                "    allow_readonly_subagent: true",
+                "    subagent_max_parallel: 2",
+                "    subagent_allowed_stages:",
+                "      - retrieval",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    disabled_route = SkillRouter(project_root).route("retrieval")
+
+    assert disabled_route.selected_skill is None
+    assert disabled_route.fallback_used is True
+    assert disabled_route.route_source == "profile_disabled"

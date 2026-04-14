@@ -36,11 +36,12 @@ class ReplayHarness:
             for candidate in [
                 latest_attempt_dir / "prompt" / "rewrite_recipe_prompt_packet.json",
                 latest_attempt_dir / "logs" / "failure_record.json",
+                latest_attempt_dir / "trace" / "failover.jsonl",
                 latest_attempt_dir / "trace" / "harness_trace.json",
                 latest_attempt_dir / "attempt_state.json",
                 latest_attempt_dir / "artifacts" / "validation_report.json",
             ]:
-                if candidate.exists():
+                if candidate.exists() and (candidate.suffix != ".jsonl" or candidate.stat().st_size > 0):
                     replay_files.append(str(candidate))
 
         report_path = task_dir / "reports" / "report.json"

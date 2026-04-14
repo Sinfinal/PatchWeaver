@@ -19,7 +19,7 @@ from typer.core import TyperGroup
 from patchweaver import __version__
 from patchweaver.builder.orchestrator import BuildOrchestrator
 from patchweaver.config.loader import load_build_config, load_logging_config, load_prompts_config, load_skills_config, load_verify_config
-from patchweaver.config.resolver import resolve_runtime
+from patchweaver.config.resolver import load_effective_configs, resolve_runtime
 from patchweaver.coordinator.task_runner import TaskRunner
 from patchweaver.harness.attempt_engine import AttemptEngine
 from patchweaver.harness.workspace_guard import WorkspaceGuard
@@ -90,6 +90,14 @@ def _should_use_color(*, plain: bool = False, no_color: bool = False) -> bool:
 def _emit_json(payload: dict[str, Any]) -> None:
     """输出结构化 JSON。"""
     typer.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+
+
+def _write_json_snapshot(path: Path, payload: dict[str, Any]) -> Path:
+    """把结构化结果额外落成一份 JSON 快照。"""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return path
 
 
 def _check_item(
@@ -379,6 +387,7 @@ def _task_payload(task: TaskContext) -> dict[str, Any]:
         "task_id": task.task_id,
         "cve_id": task.cve_id,
         "target_kernel": task.target_kernel,
+        "profile_name": task.profile_name,
         "status": task.status,
         "current_attempt": task.current_attempt,
         "max_attempts": task.max_attempts,
@@ -391,15 +400,30 @@ def _task_payload(task: TaskContext) -> dict[str, Any]:
 def _build_task_runner(runtime: Any) -> TaskRunner:
     """按当前运行时配置创建任务编排器。"""
 
-    build_config = load_build_config(runtime.project_root)
-    verify_config = load_verify_config(runtime.project_root)
-    prompts_config = load_prompts_config(runtime.project_root)
+    configs = load_effective_configs(project_root=runtime.project_root, profile_name=runtime.profile_name)
     return TaskRunner(
         runtime=runtime,
-        build_config=build_config,
-        verify_config=verify_config,
-        prompts_config=prompts_config,
+        build_config=configs["build"],
+        verify_config=configs["verify"],
+        prompts_config=configs["prompts"],
+        skills_config=configs["skills"],
     )
+
+
+def _resolve_task_runtime(task_id: str, base_runtime: Any) -> tuple[Any, TaskContext]:
+    """按任务自身绑定的运行档位解析实际运行时。"""
+
+    task = TaskRepository(base_runtime.database_path).get_task(task_id)
+    if task is None:
+        raise ValueError(f"未找到任务：{task_id}")
+
+    runtime = resolve_runtime(
+        project_root=base_runtime.project_root,
+        profile_name=task.profile_name,
+        cli_database_path=str(base_runtime.database_path),
+        cli_max_attempts=task.max_attempts,
+    )
+    return runtime, task
 
 
 def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills_config: Any, prompts_config: Any) -> dict[str, Any]:
@@ -812,6 +836,7 @@ def doctor(
     skills_config = load_skills_config(runtime.project_root)
     prompts_config = load_prompts_config(runtime.project_root)
     payload = _doctor_payload(runtime, build_config, logging_config, skills_config, prompts_config)
+    report_path = _write_json_snapshot(runtime.manifest_dir / "doctor_report.json", payload)
 
     # JSON 模式优先给脚本消费，不混入任何说明性文本。
     if json_output:
@@ -835,18 +860,21 @@ def doctor(
     typer.echo(
         f"汇总: 正常 {payload['summary']['ok']} / 提示 {payload['summary']['warn']} / 错误 {payload['summary']['error']}"
     )
+    typer.echo(f"诊断快照: {report_path}")
 
 
 @app.command("create")
 def create(
     cve: Annotated[str, typer.Option("--cve", help="指定要处理的 CVE ID。")] = ...,
     kernel: Annotated[str | None, typer.Option("--kernel", help="覆盖目标内核版本。")] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
+    max_attempts: Annotated[int | None, typer.Option("--max-attempts", help="覆盖最大尝试次数。")] = None,
     task_id: Annotated[str | None, typer.Option("--task-id", help="手工指定任务编号。")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
     """创建任务并初始化工作区骨架。"""
 
-    runtime = _load_runtime()
+    runtime = _load_runtime(profile=profile, max_attempts=max_attempts)
     task_repo = TaskRepository(runtime.database_path)
     attempt_repo = AttemptRepository(runtime.database_path)
     artifact_repo = ArtifactRepository(runtime.database_path)
@@ -860,6 +888,7 @@ def create(
         task_id=final_task_id,
         cve_id=cve,
         target_kernel=kernel or runtime.default_kernel,
+        profile_name=runtime.profile_name,
         status="created",
         max_attempts=runtime.max_attempts,
         current_attempt=0,
@@ -905,6 +934,7 @@ def run(
     """执行最小单轮尝试。"""
 
     runtime = _load_runtime()
+    runtime, _ = _resolve_task_runtime(task, runtime)
     runner = _build_task_runner(runtime)
     try:
         payload = runner.run_task(task)
@@ -975,6 +1005,7 @@ def analyze(
     """执行最小分析链路。"""
 
     runtime = _load_runtime()
+    runtime, _ = _resolve_task_runtime(task, runtime)
     runner = _build_task_runner(runtime)
     try:
         payload = runner.analyze_task(task)
@@ -1001,6 +1032,7 @@ def report(
     """生成任务报告。"""
 
     runtime = _load_runtime()
+    runtime, _ = _resolve_task_runtime(task, runtime)
     runner = _build_task_runner(runtime)
     try:
         payload = runner.build_report(task)
@@ -1025,6 +1057,7 @@ def replay(
     """查看最近一轮回放信息。"""
 
     runtime = _load_runtime()
+    runtime, _ = _resolve_task_runtime(task, runtime)
     runner = _build_task_runner(runtime)
     try:
         payload = runner.replay_task(task)

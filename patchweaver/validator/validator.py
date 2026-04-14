@@ -128,12 +128,16 @@ class Validator:
             notes.append(f"回归测试结果: {regression_result.status}")
             (logs_dir / "regression.log").write_text(regression_log or f"{regression_result.detail}\n", encoding="utf-8")
 
-        semantic_guard_result = self.semantic_guard.run(
-            semantic_precheck=precheck_result,
-            rewritten_patch_path=rewritten_patch_path,
-            build_succeeded=build_succeeded,
-            module_path=attempt.module_path,
-        )
+        semantic_guard_enabled = self.verify_config is None or self.verify_config.enable_semantic_guard
+        if semantic_guard_enabled:
+            semantic_guard_result = self.semantic_guard.run(
+                semantic_precheck=precheck_result,
+                rewritten_patch_path=rewritten_patch_path,
+                build_succeeded=build_succeeded,
+                module_path=attempt.module_path,
+            )
+        else:
+            semantic_guard_result = ValidationItem(status="skipped", ok=False, detail="配置已关闭语义守卫。")
 
         report = ValidationReport(
             load_result=load_result,

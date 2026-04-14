@@ -20,10 +20,10 @@ class TaskContext(BaseModel):
     task_id: str
     cve_id: str
     target_kernel: str
+    profile_name: str | None = None
     status: str = "created"
     max_attempts: int = 5
     current_attempt: int = 0
     workspace_dir: Path
     created_at: datetime = Field(default_factory=_utc_now)
     updated_at: datetime = Field(default_factory=_utc_now)
-

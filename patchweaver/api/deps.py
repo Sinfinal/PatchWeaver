@@ -8,15 +8,11 @@ from pathlib import Path
 
 from patchweaver.config.loader import (
     discover_project_root,
-    load_build_config,
     load_logging_config,
-    load_prompts_config,
     load_rules_config,
-    load_skills_config,
     load_system_config,
-    load_verify_config,
 )
-from patchweaver.config.resolver import resolve_runtime
+from patchweaver.config.resolver import load_effective_configs, resolve_runtime
 from patchweaver.coordinator.task_runner import TaskRunner
 from patchweaver.doctor.service import DoctorService
 from patchweaver.reporter.doctor_writer import DoctorWriter
@@ -44,14 +40,22 @@ class ApiContext:
     doctor_service: DoctorService
     doctor_writer: DoctorWriter
 
-    def build_task_runner(self) -> TaskRunner:
+    def build_task_runner(self, *, profile_name: str | None = None, max_attempts: int | None = None) -> TaskRunner:
         """按当前配置创建一个任务编排器。"""
 
+        runtime = resolve_runtime(
+            project_root=self.project_root,
+            profile_name=profile_name,
+            cli_database_path=str(self.runtime.database_path),
+            cli_max_attempts=max_attempts,
+        )
+        configs = load_effective_configs(project_root=self.project_root, profile_name=runtime.profile_name)
         return TaskRunner(
-            runtime=self.runtime,
-            build_config=self.build_config,
-            verify_config=self.verify_config,
-            prompts_config=self.prompts_config,
+            runtime=runtime,
+            build_config=configs["build"],
+            verify_config=configs["verify"],
+            prompts_config=configs["prompts"],
+            skills_config=configs["skills"],
         )
 
 
@@ -62,10 +66,7 @@ def get_api_context() -> ApiContext:
     project_root = discover_project_root()
     runtime = resolve_runtime(project_root=project_root)
     system_config = load_system_config(project_root)
-    build_config = load_build_config(project_root)
-    verify_config = load_verify_config(project_root)
-    prompts_config = load_prompts_config(project_root)
-    skills_config = load_skills_config(project_root)
+    effective_configs = load_effective_configs(project_root=project_root, profile_name=runtime.profile_name)
     rules_config = load_rules_config(project_root)
     logging_config = load_logging_config(project_root)
 
@@ -73,10 +74,10 @@ def get_api_context() -> ApiContext:
         project_root=project_root,
         runtime=runtime,
         system_config=system_config,
-        build_config=build_config,
-        verify_config=verify_config,
-        prompts_config=prompts_config,
-        skills_config=skills_config,
+        build_config=effective_configs["build"],
+        verify_config=effective_configs["verify"],
+        prompts_config=effective_configs["prompts"],
+        skills_config=effective_configs["skills"],
         rules_config=rules_config,
         logging_config=logging_config,
         task_repo=TaskRepository(runtime.database_path),

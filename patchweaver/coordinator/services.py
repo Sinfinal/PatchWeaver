@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from patchweaver.context.bootstrap_registry import BootstrapRegistry
 from patchweaver.harness.attempt_engine import AttemptEngine
-from patchweaver.harness.dispatch_policy import dispatch_mode
+from patchweaver.harness.dispatch_policy import dispatch_mode, is_write_stage
 from patchweaver.models.attempt import BuildSummary, FailureRecord
 from patchweaver.models.constraint import ConstraintReport
 from patchweaver.models.context import BootstrapManifest, ContextBundle
@@ -54,6 +54,7 @@ class TaskRunnerServices:
     validator: Any
     dual_memory: Any
     harness: Any
+    failover_controller: Any
     evaluator: Any
     replay_harness: Any
     trace_writer: Any
@@ -95,6 +96,7 @@ class CoordinatorSupport:
         self.validator = services.validator
         self.dual_memory = services.dual_memory
         self.harness = services.harness
+        self.failover_controller = services.failover_controller
         self.evaluator = services.evaluator
         self.replay_harness = services.replay_harness
         self.trace_writer = services.trace_writer
@@ -121,8 +123,12 @@ class CoordinatorSupport:
     ) -> dict[str, Any]:
         """为单个阶段输出 route 和 prompt 产物。"""
 
-        require_write = dispatch_mode(stage_name) == "write-exclusive"
-        self.policy_guard.ensure_stage_allowed(stage_name, require_write=require_write)
+        require_write = is_write_stage(stage_name)
+        self.policy_guard.ensure_stage_allowed(
+            stage_name,
+            require_write=require_write,
+            enable_read_parallel=self.runtime.enable_read_parallel,
+        )
 
         route = self.skill_router.route(stage_name)
         self.schema_guard.require_value(route.selected_skill, label=f"{stage_name} 路由结果")
@@ -143,6 +149,11 @@ class CoordinatorSupport:
             "route_path": route_path,
             "prompt_path": prompt_path,
         }
+
+    def dispatch_mode_for(self, stage_name: str) -> str:
+        """按当前运行时开关返回阶段调度模式。"""
+
+        return dispatch_mode(stage_name, enable_read_parallel=self.runtime.enable_read_parallel)
 
     def require_task(self, task_id: str) -> TaskContext:
         """读取任务，不存在时直接报错。"""
@@ -200,7 +211,7 @@ class CoordinatorSupport:
 
         notes = list(context_bundle.notes)
         notes.append(f"阶段预算上限: {budget['token_limit']}")
-        notes.append(f"调度模式: {dispatch_mode(stage_name)}")
+        notes.append(f"调度模式: {self.dispatch_mode_for(stage_name)}")
         if memory_hits:
             notes.append(f"命中经验摘要: {len(memory_hits)}")
         if context_bundle.token_cost > budget["token_limit"]:
@@ -294,7 +305,7 @@ class AnalysisService(CoordinatorSupport):
         analysis_trace = self.harness.attach_dispatch_mode(
             analysis_trace,
             stage_name="retrieval",
-            mode=dispatch_mode("retrieval"),
+            mode=self.dispatch_mode_for("retrieval"),
         )
         analysis_trace = self.harness.record_stage(
             analysis_trace,
@@ -306,7 +317,7 @@ class AnalysisService(CoordinatorSupport):
         analysis_trace = self.harness.attach_dispatch_mode(
             analysis_trace,
             stage_name="semantic_card",
-            mode=dispatch_mode("semantic_card"),
+            mode=self.dispatch_mode_for("semantic_card"),
         )
         analysis_trace = self.harness.record_stage(
             analysis_trace,
@@ -318,7 +329,7 @@ class AnalysisService(CoordinatorSupport):
         analysis_trace = self.harness.attach_dispatch_mode(
             analysis_trace,
             stage_name="constraint_diagnosis",
-            mode=dispatch_mode("constraint_diagnosis"),
+            mode=self.dispatch_mode_for("constraint_diagnosis"),
         )
         analysis_trace = self.harness.attach_artifact(
             analysis_trace,
@@ -378,6 +389,54 @@ class AnalysisService(CoordinatorSupport):
 
 class AttemptExecutionService(CoordinatorSupport):
     """负责单轮尝试的执行与落盘。"""
+
+    def _write_failover_record(self, *, attempt_dir: Path, failure_record: FailureRecord) -> Path | None:
+        """在启用窄状态回退时，为下一轮保留一份受控回退建议。"""
+
+        if not self.runtime.enable_narrow_failover or failure_record.failure_type in {"none", ""}:
+            return None
+
+        field_changes: dict[str, object] = {
+            "build_timeout_sec": {
+                "from": self.build_config.build_timeout_sec,
+                "to": self.build_config.build_timeout_sec + 300,
+            }
+        }
+        if self.runtime.enable_read_parallel and self.runtime.parallel_read_limit > 1:
+            field_changes["parallel_read_limit"] = {
+                "from": self.runtime.parallel_read_limit,
+                "to": 1,
+            }
+
+        current_prompt_profile = self.prompts_config.default_prompt_profile
+        alternate_prompt_profile = next(
+            (
+                profile_name
+                for profile_name in self.prompts_config.prompt_profiles
+                if profile_name != current_prompt_profile
+            ),
+            None,
+        )
+        if alternate_prompt_profile is not None:
+            field_changes["prompt_profile"] = {
+                "from": current_prompt_profile,
+                "to": alternate_prompt_profile,
+            }
+
+        failover_record = self.failover_controller.trigger(
+            stage_name="failure_analysis",
+            trigger_reason=(
+                f"单轮尝试失败，失败类型={failure_record.failure_type}，"
+                "为下一轮记录受控调用参数回退建议。"
+            ),
+            from_profile=self.runtime.profile_name or "default",
+            to_profile=f"{self.runtime.profile_name or 'default'}:narrow-failover",
+            field_changes=field_changes,
+        )
+        failover_path = attempt_dir / "trace" / "failover.jsonl"
+        with failover_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(failover_record.model_dump(mode="json"), ensure_ascii=False) + "\n")
+        return failover_path
 
     def run(self, task_id: str) -> dict[str, Any]:
         """执行最小单轮尝试链路。"""
@@ -535,6 +594,7 @@ class AttemptExecutionService(CoordinatorSupport):
             build_summary,
             attempt_dir / "artifacts" / "build_summary.json",
         )
+        failover_record_path = self._write_failover_record(attempt_dir=attempt_dir, failure_record=failure_record)
 
         validation_report, validation_artifacts = self.validator.run(
             task=task,
@@ -654,7 +714,7 @@ class AttemptExecutionService(CoordinatorSupport):
         trace = self.harness.attach_dispatch_mode(
             trace,
             stage_name="rewrite_recipe",
-            mode=dispatch_mode("rewrite_recipe"),
+            mode=self.dispatch_mode_for("rewrite_recipe"),
         )
         trace = self.harness.record_stage(
             trace,
@@ -662,7 +722,7 @@ class AttemptExecutionService(CoordinatorSupport):
             to_stage="build",
             reason="改写产物已落盘，完成 apply 预检查后进入构建阶段。",
         )
-        trace = self.harness.attach_dispatch_mode(trace, stage_name="build", mode=dispatch_mode("build"))
+        trace = self.harness.attach_dispatch_mode(trace, stage_name="build", mode=self.dispatch_mode_for("build"))
         trace = self.harness.record_tool_call(
             trace,
             tool_name="build",
@@ -681,7 +741,7 @@ class AttemptExecutionService(CoordinatorSupport):
             trace = self.harness.attach_dispatch_mode(
                 trace,
                 stage_name="failure_analysis",
-                mode=dispatch_mode("failure_analysis"),
+                mode=self.dispatch_mode_for("failure_analysis"),
             )
             previous_stage = "failure_analysis"
         else:
@@ -696,9 +756,9 @@ class AttemptExecutionService(CoordinatorSupport):
         trace = self.harness.attach_dispatch_mode(
             trace,
             stage_name="validation",
-            mode=dispatch_mode("validation"),
+            mode=self.dispatch_mode_for("validation"),
         )
-        for artifact_type, artifact_path, summary in [
+        trace_artifacts = [
             ("rewrite_plan", rewrite_plan_path, "候选改写规划"),
             ("rewritten_patch", rewritten_patch_path, "单轮改写结果"),
             ("apply_precheck", rewrite_meta["apply_precheck"], "构建前 apply 预检查"),
@@ -708,7 +768,10 @@ class AttemptExecutionService(CoordinatorSupport):
             ("recipe_memory_snapshot", recipe_memory_snapshot_path, "配方经验快照"),
             ("semantic_precheck", semantic_precheck_path, "验证前语义预检查"),
             ("validation_report", validation_report_path, "验证结果摘要"),
-        ]:
+        ]
+        if failover_record_path is not None:
+            trace_artifacts.append(("failover_record", failover_record_path, "窄状态回退建议"))
+        for artifact_type, artifact_path, summary in trace_artifacts:
             trace = self.harness.attach_artifact(
                 trace,
                 artifact_type=artifact_type,
@@ -748,6 +811,8 @@ class AttemptExecutionService(CoordinatorSupport):
             ("attempt_state", state_path),
             ("harness_trace", trace_path),
         ]
+        if failover_record_path is not None:
+            artifact_records.append(("failover_record", failover_record_path))
         for artifact_type, artifact_path in artifact_records:
             if artifact_path is None:
                 continue
@@ -784,6 +849,7 @@ class AttemptExecutionService(CoordinatorSupport):
             "build_log_path": str(attempt_record.build_log_path) if attempt_record.build_log_path else None,
             "trace_path": str(trace_path),
             "failure_record_path": str(failure_record_path),
+            "failover_record_path": str(failover_record_path) if failover_record_path is not None else None,
         }
 
 

@@ -73,6 +73,7 @@ class VerifyConfig(ConfigModel):
     """热补丁验证阶段的开关配置。"""
 
     # 验证开关保持独立，方便 dev/demo/full 三个档位按需组合。
+    enable_semantic_guard: bool = True
     enable_load_test: bool = True
     enable_unload_test: bool = True
     enable_smoke_test: bool = True

@@ -48,13 +48,14 @@ class TaskRepository:
         with connect_sqlite(self.database_path) as connection:
             connection.execute(
                 """
-                INSERT INTO tasks(task_id, cve_id, target_kernel, status, current_attempt, max_attempts, workspace_dir, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tasks(task_id, cve_id, target_kernel, profile_name, status, current_attempt, max_attempts, workspace_dir, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     task.task_id,
                     task.cve_id,
                     task.target_kernel,
+                    task.profile_name,
                     task.status,
                     task.current_attempt,
                     task.max_attempts,
@@ -72,7 +73,7 @@ class TaskRepository:
         with connect_sqlite(self.database_path) as connection:
             row = connection.execute(
                 """
-                SELECT task_id, cve_id, target_kernel, status, current_attempt, max_attempts, workspace_dir, created_at, updated_at
+                SELECT task_id, cve_id, target_kernel, profile_name, status, current_attempt, max_attempts, workspace_dir, created_at, updated_at
                 FROM tasks
                 WHERE task_id = ?
                 """,
@@ -86,6 +87,7 @@ class TaskRepository:
             task_id=row["task_id"],
             cve_id=row["cve_id"],
             target_kernel=row["target_kernel"],
+            profile_name=row["profile_name"],
             status=row["status"],
             current_attempt=row["current_attempt"],
             max_attempts=row["max_attempts"],
@@ -100,7 +102,7 @@ class TaskRepository:
         with connect_sqlite(self.database_path) as connection:
             rows = connection.execute(
                 """
-                SELECT task_id, cve_id, target_kernel, status, current_attempt, max_attempts, workspace_dir, created_at, updated_at
+                SELECT task_id, cve_id, target_kernel, profile_name, status, current_attempt, max_attempts, workspace_dir, created_at, updated_at
                 FROM tasks
                 ORDER BY created_at DESC
                 LIMIT ?
@@ -113,6 +115,7 @@ class TaskRepository:
                 task_id=row["task_id"],
                 cve_id=row["cve_id"],
                 target_kernel=row["target_kernel"],
+                profile_name=row["profile_name"],
                 status=row["status"],
                 current_attempt=row["current_attempt"],
                 max_attempts=row["max_attempts"],

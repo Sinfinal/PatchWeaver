@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     task_id TEXT NOT NULL UNIQUE,
     cve_id TEXT NOT NULL,
     target_kernel TEXT,
+    profile_name TEXT,
     status TEXT NOT NULL DEFAULT 'created',
     current_attempt INTEGER NOT NULL DEFAULT 0,
     max_attempts INTEGER NOT NULL DEFAULT 5,
@@ -200,6 +201,7 @@ def initialize_sqlite_db(database_path: Path) -> Path:
 
         # 后续阶段新增字段时，优先走这里做轻量兼容，避免频繁重写整套建表 SQL。
         # 旧版本库需要补齐后续阶段新增的关键字段。
+        _ensure_column(connection, "tasks", "profile_name", "TEXT")
         _ensure_column(connection, "attempts", "attempt_id", "TEXT")
         _ensure_column(connection, "attempts", "rewritten_patch_path", "TEXT")
         _ensure_column(connection, "attempts", "summary_json", "TEXT")
