@@ -1,0 +1,36 @@
+[
+  {
+    "fixture_id": "linux-kernel-cve-2024-1086",
+    "cve_id": "CVE-2024-1086",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_artifacts": [
+      "patch_bundle.json",
+      "constraint_report.json",
+      "rewrite_plan.json",
+      "report.json"
+    ],
+    "expected_outcome": "至少完成真实来源链整理、改写规划和回放产物归档。"
+  },
+  {
+    "fixture_id": "linux-kernel-cve-2022-0185",
+    "cve_id": "CVE-2022-0185",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_artifacts": [
+      "patch_bundle.json",
+      "rewritten.patch",
+      "validation_report.json",
+      "report.json"
+    ],
+    "expected_outcome": "至少形成一条可复用的固定样例记录，供 replay 和阶段验收复用。"
+  }
+]

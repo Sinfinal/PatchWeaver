@@ -13,11 +13,14 @@ from patchweaver.context.assembler import ContextAssembler
 from patchweaver.context.bootstrap_registry import BootstrapRegistry
 from patchweaver.context.budgeter import ContextBudgeter
 from patchweaver.context.retriever import ContextRetriever
+from patchweaver.harness.evaluator import Evaluator
+from patchweaver.harness.replay import ReplayHarness
 from patchweaver.harness.orchestrator import HarnessOrchestrator
 from patchweaver.harness.policy_guard import PolicyGuard
 from patchweaver.harness.schema_guard import SchemaGuard
 from patchweaver.harness.trace_writer import TraceWriter
 from patchweaver.harness.workspace_guard import WorkspaceGuard
+from patchweaver.memory.dual_memory import DualMemory
 from patchweaver.planner.joint_planner import JointPlanner
 from patchweaver.prompting.compiler import PromptCompiler
 from patchweaver.reporter.json_writer import JsonWriter
@@ -62,7 +65,7 @@ class TaskRunner:
             context_budgeter=ContextBudgeter(),
             context_assembler=ContextAssembler(),
             bootstrap_registry=BootstrapRegistry(),
-            prompt_compiler=PromptCompiler(),
+            prompt_compiler=PromptCompiler(runtime.project_root),
             skill_router=SkillRouter(runtime.project_root),
             schema_guard=SchemaGuard(),
             policy_guard=PolicyGuard(),
@@ -75,7 +78,10 @@ class TaskRunner:
                 build_config=build_config,
                 project_root=runtime.project_root,
             ),
+            dual_memory=DualMemory(runtime.data_dir / "memory"),
             harness=HarnessOrchestrator(),
+            evaluator=Evaluator(),
+            replay_harness=ReplayHarness(),
             trace_writer=TraceWriter(),
             json_writer=JsonWriter(),
             md_writer=MdWriter(),

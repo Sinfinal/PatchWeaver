@@ -2,10 +2,22 @@ name: constraint_diagnosis
 version: 0.1.0
 enabled: true
 visibility: project
+priority: 30
+readonly: true
 tags:
   - contest
   - core
+input_contract:
+  - patch_bundle.json
+  - semantic_card.json
+output_contract:
+  - constraint_report.json
+evidence_tags:
+  - risk_rule
+  - primitive
+tool_allowlist:
+  - risk_rule_registry
 entry:
-  kind: placeholder
+  kind: workflow_template
   stage: constraint_diagnosis
 description: constraint_diagnosis 阶段能力包，负责输出热补丁约束诊断结果。

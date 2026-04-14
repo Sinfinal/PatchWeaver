@@ -2,10 +2,27 @@ name: retrieval
 version: 0.1.0
 enabled: true
 visibility: project
+priority: 10
+readonly: true
+allow_readonly_subagent: true
 tags:
   - contest
   - core
+input_contract:
+  - task.cve_id
+  - task.target_kernel
+output_contract:
+  - patch_bundle.json
+  - source_evidence.json
+  - raw_patch.patch
+evidence_tags:
+  - nvd
+  - cvelist
+  - stable
+tool_allowlist:
+  - http_fetch
+  - patch_parser
 entry:
-  kind: placeholder
+  kind: workflow_template
   stage: retrieval
 description: retrieval 阶段能力包，负责整理漏洞来源与修复链路。

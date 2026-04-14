@@ -15,17 +15,20 @@ class ContextAssembler:
 
         spans, duplicate_hits = dedupe_spans(evidence_bundle.spans)
         token_cost = sum(max(1, len(span.excerpt) // 4) for span in spans)
+        source_types = sorted({span.source_type for span in spans})
         notes = [
             f"证据片段数: {len(spans)}",
             f"记忆命中数: {len(evidence_bundle.memory_hits)}",
+            f"证据类型: {', '.join(source_types) if source_types else 'none'}",
         ]
         if duplicate_hits:
             notes.append(f"已抑制重复证据: {duplicate_hits}")
         return ContextBundle(
-            evidence_ids=evidence_bundle.evidence_ids,
+            evidence_ids=[span.evidence_id for span in spans],
             token_cost=token_cost,
             duplicate_hits=duplicate_hits,
             memory_hits=len(evidence_bundle.memory_hits),
+            memory_summaries=list(evidence_bundle.memory_hits),
             source_spans=spans,
             notes=notes,
         )

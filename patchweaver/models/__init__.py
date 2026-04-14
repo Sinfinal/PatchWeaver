@@ -7,6 +7,7 @@ from patchweaver.models.doctor import DoctorCheck, DoctorReport
 from patchweaver.models.evidence import EvidenceBundle, EvidenceSpan
 from patchweaver.models.failover import FailoverRecord
 from patchweaver.models.harness import ArtifactRef, HarnessTrace, StateTransition, SubagentRecord, ToolCallRecord
+from patchweaver.models.memory import FailureMemoryEntry, RecipeMemoryEntry
 from patchweaver.models.patch import PatchBundle, SourceEvidence
 from patchweaver.models.prompt import PromptPacket
 from patchweaver.models.report import AttemptDigest, FinalReport
@@ -37,12 +38,14 @@ __all__ = [
     "EvidenceSpan",
     "FailoverRecord",
     "FailureRecord",
+    "FailureMemoryEntry",
     "FinalReport",
     "HarnessTrace",
     "PatchBundle",
     "PromptPacket",
     "RewriteCandidate",
     "RewritePlan",
+    "RecipeMemoryEntry",
     "RiskItem",
     "SemanticCard",
     "SkillManifest",

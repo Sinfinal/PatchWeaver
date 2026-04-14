@@ -1,0 +1,13 @@
+id: missing_fentry
+description: patch 涉及 ftrace / fentry 相关路径，直接 apply 后可能缺少稳定入口。
+severity: high
+detection:
+  kind: regex_any
+  patterns:
+    - "__fentry__"
+    - "\\bfentry\\b"
+    - "ftrace"
+primitive:
+  - wrapper
+forbidden_actions:
+  - direct_trampoline_injection

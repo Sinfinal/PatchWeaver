@@ -52,7 +52,10 @@ class TaskRunnerServices:
     builder: Any
     failure_classifier: Any
     validator: Any
+    dual_memory: Any
     harness: Any
+    evaluator: Any
+    replay_harness: Any
     trace_writer: Any
     json_writer: Any
     md_writer: Any
@@ -90,7 +93,10 @@ class CoordinatorSupport:
         self.builder = services.builder
         self.failure_classifier = services.failure_classifier
         self.validator = services.validator
+        self.dual_memory = services.dual_memory
         self.harness = services.harness
+        self.evaluator = services.evaluator
+        self.replay_harness = services.replay_harness
         self.trace_writer = services.trace_writer
         self.json_writer = services.json_writer
         self.md_writer = services.md_writer
@@ -125,6 +131,7 @@ class CoordinatorSupport:
             context_bundle=context_bundle,
             bootstrap_manifest=bootstrap_manifest,
             schema_name=schema_name,
+            route=route,
         )
         self.schema_guard.require_value(prompt_packet.prompt_sections, label=f"{stage_name} 提示包")
 
@@ -177,13 +184,25 @@ class CoordinatorSupport:
     def assemble_context(self, *, stage_name: str, evidence_bundle: EvidenceBundle) -> ContextBundle:
         """按阶段预算生成上下文包。"""
 
-        selected = self.context_retriever.select(evidence_bundle)
+        prompt_profile = self.prompts_config.prompt_profiles.get(self.prompts_config.default_prompt_profile)
+        max_evidence = prompt_profile.max_evidence_snippets if prompt_profile is not None else 8
+        max_memory_hits = prompt_profile.max_memory_hits if prompt_profile is not None else 3
+        memory_hits = self.dual_memory.recall(stage_name=stage_name, evidence_bundle=evidence_bundle, limit=max_memory_hits)
+        enriched_bundle = evidence_bundle.model_copy(update={"memory_hits": memory_hits})
+        selected = self.context_retriever.select(
+            enriched_bundle,
+            stage_name=stage_name,
+            max_evidence=max_evidence,
+            max_memory_hits=max_memory_hits,
+        )
         context_bundle = self.context_assembler.assemble(selected)
         budget = self.context_budgeter.budget_for(stage_name)
 
         notes = list(context_bundle.notes)
         notes.append(f"阶段预算上限: {budget['token_limit']}")
         notes.append(f"调度模式: {dispatch_mode(stage_name)}")
+        if memory_hits:
+            notes.append(f"命中经验摘要: {len(memory_hits)}")
         if context_bundle.token_cost > budget["token_limit"]:
             notes.append("当前上下文已超过默认预算，后续应补充裁剪策略。")
         return context_bundle.model_copy(update={"notes": notes})
@@ -543,6 +562,23 @@ class AttemptExecutionService(CoordinatorSupport):
         load_log_path = Path(str(validation_artifacts["load_log"]))
         unload_log_path = Path(str(validation_artifacts["unload_log"]))
         smoke_log_path = Path(str(validation_artifacts["smoke_log"]))
+        memory_snapshot = self.dual_memory.record_attempt(
+            task=task,
+            plan=plan,
+            attempt=attempt_record,
+            failure_record=failure_record,
+            validation_report=validation_report,
+        )
+        failure_memory_snapshot_path = attempt_dir / "artifacts" / "failure_memory_snapshot.json"
+        recipe_memory_snapshot_path = attempt_dir / "artifacts" / "recipe_memory_snapshot.json"
+        failure_memory_snapshot_path.write_text(
+            json.dumps(memory_snapshot["failure_memory"], ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        recipe_memory_snapshot_path.write_text(
+            json.dumps(memory_snapshot["recipe_memory"], ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
 
         failure_packet: dict[str, Any] | None = None
         failure_context_path: Path | None = None
@@ -668,6 +704,8 @@ class AttemptExecutionService(CoordinatorSupport):
             ("apply_precheck", rewrite_meta["apply_precheck"], "构建前 apply 预检查"),
             ("build_summary", build_summary_path, "构建阶段结构化摘要"),
             ("failure_record", failure_record_path, "构建失败归因"),
+            ("failure_memory_snapshot", failure_memory_snapshot_path, "失败经验快照"),
+            ("recipe_memory_snapshot", recipe_memory_snapshot_path, "配方经验快照"),
             ("semantic_precheck", semantic_precheck_path, "验证前语义预检查"),
             ("validation_report", validation_report_path, "验证结果摘要"),
         ]:
@@ -695,6 +733,8 @@ class AttemptExecutionService(CoordinatorSupport):
             ("build_precheck", build_precheck_path),
             ("build_summary", build_summary_path),
             ("failure_record", failure_record_path),
+            ("failure_memory_snapshot", failure_memory_snapshot_path),
+            ("recipe_memory_snapshot", recipe_memory_snapshot_path),
             ("validate_log", validate_log_path),
             ("semantic_precheck", semantic_precheck_path),
             ("load_log", load_log_path),
@@ -758,6 +798,7 @@ class ReportService(CoordinatorSupport):
         attempts = self.attempt_repo.list_attempts(task_id)
         artifacts = self.artifact_repo.list_artifacts(task_id)
         bootstrap_manifest = self.build_bootstrap_manifest()
+        evaluation_summary = self.evaluator.summarize(attempts=attempts, artifacts=artifacts)
 
         report_sources = [
             task_dir / "analysis" / "semantic_card.json",
@@ -796,6 +837,7 @@ class ReportService(CoordinatorSupport):
         explanations = [
             f"当前共执行 {len(attempts)} 轮尝试。",
             "分析、归因和报告阶段按只读路径整理证据，改写与构建阶段走写入独占路径。",
+            f"当前成功率为 {evaluation_summary['success_rate']:.0%}，已归档产物类型 {len(evaluation_summary['artifact_type_counts'])} 类。",
         ]
         if attempts:
             latest = attempts[-1]
@@ -810,6 +852,11 @@ class ReportService(CoordinatorSupport):
 
         json_path = self.json_writer.write_model(report, task_dir / "reports" / "report.json")
         md_path = self.md_writer.write_report(report, task_dir / "reports" / "report.md")
+        evaluation_summary_path = task_dir / "reports" / "evaluation_summary.json"
+        evaluation_summary_path.write_text(
+            json.dumps(evaluation_summary, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
 
         for artifact_type, artifact_path in [
             ("reporting_evidence_bundle", report_evidence_path),
@@ -817,6 +864,7 @@ class ReportService(CoordinatorSupport):
             ("reporting_bootstrap_manifest", report_bootstrap_path),
             ("reporting_skill_route", report_packet["route_path"]),
             ("reporting_prompt_packet", report_packet["prompt_path"]),
+            ("evaluation_summary", evaluation_summary_path),
             ("final_report_json", json_path),
             ("final_report_md", md_path),
         ]:
@@ -841,38 +889,9 @@ class ReplayService(CoordinatorSupport):
         task_dir = self.workspace_guard.create_task_workspace(task)
         latest_trace = self.attempt_repo.latest_trace_summary(task_id)
         attempts = self.attempt_repo.list_attempts(task_id)
-        latest_attempt = attempts[-1] if attempts else None
-        report_path = task_dir / "reports" / "report.json"
-
-        stage_routes = {}
-        dispatch_modes = {}
-        if latest_trace:
-            summary = latest_trace.get("summary") or {}
-            extras = summary.get("extras") or {}
-            stage_routes = extras.get("stage_routes") or {}
-            dispatch_modes = extras.get("dispatch_modes") or {}
-
-        replay_files: list[str] = []
-        if latest_attempt is not None:
-            latest_attempt_dir = task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}"
-            for candidate in [
-                latest_attempt_dir / "prompt" / "rewrite_recipe_prompt_packet.json",
-                latest_attempt_dir / "logs" / "failure_record.json",
-                latest_attempt_dir / "trace" / "harness_trace.json",
-                latest_attempt_dir / "attempt_state.json",
-            ]:
-                if candidate.exists():
-                    replay_files.append(str(candidate))
-
-        return {
-            "command": "replay",
-            "task_id": task.task_id,
-            "latest_attempt_id": latest_attempt.attempt_id if latest_attempt else None,
-            "latest_attempt_status": latest_attempt.status if latest_attempt else None,
-            "trace_path": latest_trace["trace_path"] if latest_trace else None,
-            "report_path": str(report_path) if report_path.exists() else None,
-            "stage_routes": stage_routes,
-            "dispatch_modes": dispatch_modes,
-            "replay_files": replay_files,
-            "status": "ok",
-        }
+        return self.replay_harness.build_summary(
+            task=task,
+            task_dir=task_dir,
+            attempts=attempts,
+            latest_trace=latest_trace,
+        )

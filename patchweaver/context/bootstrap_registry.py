@@ -11,6 +11,8 @@ from patchweaver.models.context import BootstrapManifest
 class BootstrapRegistry:
     """维护 bootstrap 片段列表和注入顺序。"""
 
+    MAX_TOTAL_TOKEN_COST = 900
+
     def build_manifest(self, fragment_paths: list[Path]) -> BootstrapManifest:
         """把片段路径整理为结构化 manifest。"""
 
@@ -24,8 +26,11 @@ class BootstrapRegistry:
         for path in resolved:
             text = path.read_text(encoding="utf-8")
             token_cost = max(1, len(text) // 4)
-            total_token_cost += token_cost
             fragment_id = f"{path.parent.name}/{path.stem}"
+            if total_token_cost + token_cost > self.MAX_TOTAL_TOKEN_COST:
+                truncation_marks.append(build_truncation_mark(fragment_id, total_token_cost + token_cost, self.MAX_TOTAL_TOKEN_COST))
+                continue
+            total_token_cost += token_cost
             fragment_ids.append(fragment_id)
             fragment_paths_text.append(str(path))
             render_order.append(fragment_id)

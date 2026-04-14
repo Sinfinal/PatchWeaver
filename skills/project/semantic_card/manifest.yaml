@@ -2,10 +2,22 @@ name: semantic_card
 version: 0.1.0
 enabled: true
 visibility: project
+priority: 20
+readonly: true
 tags:
   - contest
   - core
+input_contract:
+  - patch_bundle.json
+  - normalized.patch
+output_contract:
+  - semantic_card.json
+evidence_tags:
+  - patch_intent
+  - root_cause
+tool_allowlist:
+  - semantic_parser
 entry:
-  kind: placeholder
+  kind: workflow_template
   stage: semantic_card
 description: semantic_card 阶段能力包，负责抽取最小修复语义边界。

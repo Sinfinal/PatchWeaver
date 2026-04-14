@@ -14,6 +14,7 @@ class ContextBundle(BaseModel):
     token_cost: int = 0
     duplicate_hits: int = 0
     memory_hits: int = 0
+    memory_summaries: list[str] = Field(default_factory=list)
     source_spans: list[EvidenceSpan] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
@@ -26,4 +27,3 @@ class BootstrapManifest(BaseModel):
     truncation_marks: list[str] = Field(default_factory=list)
     render_order: list[str] = Field(default_factory=list)
     total_token_cost: int = 0
-

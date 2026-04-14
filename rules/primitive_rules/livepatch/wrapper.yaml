@@ -1,0 +1,6 @@
+name: wrapper
+category: livepatch
+summary: 当 patch 触及高风险约束时，优先通过包装层缩小直接改动半径。
+constraints:
+  - 适用于 init section、header ABI、global data 等高风险场景
+  - 必须保留原 patch 的关键语义边界

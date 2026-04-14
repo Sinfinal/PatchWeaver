@@ -2,10 +2,24 @@ name: failure_analysis
 version: 0.1.0
 enabled: true
 visibility: project
+priority: 50
+readonly: true
+allow_readonly_subagent: true
 tags:
   - contest
   - core
+input_contract:
+  - build.log
+  - failure_record.json
+output_contract:
+  - 失败归因摘要
+  - 下一轮优先动作
+evidence_tags:
+  - build_failure
+  - kpatch_constraint
+tool_allowlist:
+  - failure_classifier
 entry:
-  kind: placeholder
+  kind: workflow_template
   stage: failure_analysis
 description: failure_analysis 阶段能力包，负责整理构建失败归因。

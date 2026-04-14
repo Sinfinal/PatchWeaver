@@ -2,10 +2,26 @@ name: validation
 version: 0.1.0
 enabled: true
 visibility: project
+priority: 60
+readonly: false
 tags:
   - contest
   - core
+input_contract:
+  - build_summary.json
+  - rewritten.patch
+output_contract:
+  - validation_report.json
+  - semantic_precheck.json
+  - load.log
+evidence_tags:
+  - semantic_guard
+  - smoke
+tool_allowlist:
+  - validator
+  - load_tester
+  - smoke_tester
 entry:
-  kind: placeholder
+  kind: workflow_template
   stage: validation
 description: validation 阶段能力包，负责加载与回归验证结果整理。

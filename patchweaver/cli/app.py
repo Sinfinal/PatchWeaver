@@ -733,6 +733,7 @@ def init_command(
         _resolve_project_path(runtime.project_root, logging_config.file_path).parent,
         _resolve_project_path(runtime.project_root, logging_config.jsonl_path).parent,
         (runtime.project_root / "prompts" / "contracts").resolve(),
+        (runtime.project_root / "prompts" / "stages").resolve(),
     ]
     paths_to_create.extend(
         _resolve_project_path(runtime.project_root, raw_dir).resolve()

@@ -2,10 +2,26 @@ name: reporting
 version: 0.1.0
 enabled: true
 visibility: project
+priority: 70
+readonly: true
+allow_readonly_subagent: true
 tags:
   - contest
   - core
+input_contract:
+  - report.json
+  - harness_trace.json
+  - evaluation_summary.json
+output_contract:
+  - report.md
+  - replay 摘要
+evidence_tags:
+  - report
+  - replay
+tool_allowlist:
+  - report_builder
+  - replay_harness
 entry:
-  kind: placeholder
+  kind: workflow_template
   stage: reporting
 description: reporting 阶段能力包，负责生成结构化报告与交付摘要。

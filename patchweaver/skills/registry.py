@@ -9,6 +9,7 @@ from patchweaver.models.skill import SkillManifest
 from patchweaver.skills.allowlist import is_skill_allowed
 from patchweaver.skills.manifest_loader import load_skill_manifest
 from patchweaver.skills.source_policy import resolve_skill_roots
+from patchweaver.skills.visibility_resolver import VisibilityResolver
 
 
 class SkillRegistry:
@@ -18,12 +19,16 @@ class SkillRegistry:
         """记录项目根目录。"""
 
         self.project_root = project_root
+        self.visibility_resolver = VisibilityResolver()
 
     def discover(self) -> list[SkillManifest]:
         """扫描当前项目可见的 skill manifest。"""
 
         skills_config = load_skills_config(self.project_root)
         enabled_skills = set(skills_config.enabled_skills)
+        source_priority = {
+            source_name: index for index, source_name in enumerate(skills_config.skill_source_priority)
+        }
         manifests: list[SkillManifest] = []
         for source_layer, root in resolve_skill_roots(self.project_root):
             if not root.exists():
@@ -36,9 +41,16 @@ class SkillRegistry:
                     continue
                 if enabled_skills and manifest.skill_name not in enabled_skills:
                     continue
-                if is_skill_allowed(self.project_root, manifest):
+                if self.visibility_resolver.is_visible(manifest) and is_skill_allowed(self.project_root, manifest):
                     manifests.append(manifest)
-        return manifests
+        return sorted(
+            manifests,
+            key=lambda item: (
+                item.preferred_rank,
+                source_priority.get(item.source_layer, len(source_priority)),
+                item.skill_name,
+            ),
+        )
 
     def find_by_stage(self, stage_name: str) -> list[SkillManifest]:
         """读取某一阶段可见的 skill 列表。"""

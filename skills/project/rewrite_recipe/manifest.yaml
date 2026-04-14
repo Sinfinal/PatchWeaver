@@ -2,10 +2,28 @@ name: rewrite_recipe
 version: 0.1.0
 enabled: true
 visibility: project
+priority: 40
+readonly: false
 tags:
   - contest
   - core
+input_contract:
+  - patch_bundle.json
+  - semantic_card.json
+  - constraint_report.json
+output_contract:
+  - rewrite_plan.json
+  - rewritten.patch
+  - transformation_trace.json
+evidence_tags:
+  - recipe
+  - primitive
+  - diff
+tool_allowlist:
+  - template_engine
+  - smpl_engine
+  - diff_editor
 entry:
-  kind: placeholder
+  kind: workflow_template
   stage: rewrite_recipe
 description: rewrite_recipe 阶段能力包，负责组织改写规划与候选原语。

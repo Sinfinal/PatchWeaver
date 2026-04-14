@@ -13,3 +13,9 @@ class TemplateLoader:
 
         return path.read_text(encoding="utf-8")
 
+    def load_optional(self, path: Path, *, fallback: str) -> str:
+        """在模板不存在时返回回退文本。"""
+
+        if not path.exists():
+            return fallback
+        return self.load(path)

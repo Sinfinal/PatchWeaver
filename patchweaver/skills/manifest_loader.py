@@ -19,9 +19,16 @@ def load_skill_manifest(manifest_path: Path, *, source_layer: str) -> SkillManif
         skill_name=raw.get("name", manifest_path.parent.name),
         source_layer=source_layer,
         visibility=str(raw.get("visibility", source_layer)),
+        preferred_rank=int(raw.get("priority", 100)),
+        readonly=bool(raw.get("readonly", True)),
+        allow_readonly_subagent=bool(raw.get("allow_readonly_subagent", False)),
         allowed_tags=list(raw.get("tags") or []),
         input_schema=_to_optional_str(raw.get("input_schema")),
         output_schema=_to_optional_str(raw.get("output_schema")),
+        input_contract=[str(item) for item in raw.get("input_contract") or []],
+        output_contract=[str(item) for item in raw.get("output_contract") or []],
+        evidence_tags=[str(item) for item in raw.get("evidence_tags") or []],
+        tool_allowlist=[str(item) for item in raw.get("tool_allowlist") or []],
         entry_kind=str(entry.get("kind", "placeholder")),
         stage_name=str(entry.get("stage", manifest_path.parent.name)),
         description=str(raw.get("description", "")),
@@ -36,4 +43,3 @@ def _to_optional_str(value: Any) -> str | None:
     if value is None:
         return None
     return str(value)
-
