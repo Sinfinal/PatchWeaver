@@ -40,7 +40,7 @@ data/manifests/*
 *.log
 
 # Generated workspaces and caches
-workspaces/*
+
 !workspaces/.gitkeep
 data/cache/*
 !data/cache/.gitkeep
