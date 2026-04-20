@@ -1,5 +1,4 @@
 import { useLocation } from "react-router-dom";
-import { getApiBase } from "../../services/http";
 import { projectSummary } from "../../content/projectContent";
 import { useUiStore } from "../../store/uiStore";
 
@@ -12,12 +11,32 @@ const pageMeta = [
   {
     match: /^\/tasks\/[^/]+$/,
     title: "任务详情",
-    subtitle: "查看某个任务从分析到回放的完整证据链与产物索引。",
+    subtitle: "查看任务从输入、分析、改写到构建、验证和回放的完整证据链。",
   },
   {
     match: /^\/tasks/,
     title: "任务中心",
-    subtitle: "聚焦任务列表、失败类型分布与快速过滤。",
+    subtitle: "围绕状态、失败类型和目标内核快速筛选任务，并直接进入详情排障。",
+  },
+  {
+    match: /^\/reports\/tasks\/[^/]+$/,
+    title: "任务报告",
+    subtitle: "集中查看任务级报告、回放摘要和关键交付产物。",
+  },
+  {
+    match: /^\/reports\/fixtures\/[^/]+\/[^/]+$/,
+    title: "样例详情",
+    subtitle: "查看单个固定样例的任务摘要、失败归因和回放对比结果。",
+  },
+  {
+    match: /^\/reports\/fixtures\/[^/]+$/,
+    title: "固定样例评测",
+    subtitle: "按评测分组查看 summary.json、summary.md 和单样例结果清单。",
+  },
+  {
+    match: /^\/reports/,
+    title: "报告与评测",
+    subtitle: "围绕任务报告、固定样例与阶段统计构建统一的展示与复盘入口。",
   },
   {
     match: /^\/doctor/,
@@ -27,27 +46,27 @@ const pageMeta = [
   {
     match: /^\/rules/,
     title: "规则与配方",
-    subtitle: "查看 risk rules、primitive rules 与 recipe 目录结构。",
+    subtitle: "查看风险规则、原语规则与 Recipe 的目录现状。",
   },
   {
     match: /^\/skills/,
-    title: "技能注册",
-    subtitle: "查看 skill source priority、阶段入口与启用状态。",
+    title: "技能与上下文",
+    subtitle: "查看 Skill Registry、来源优先级和阶段路由入口。",
   },
   {
     match: /^\/logs/,
-    title: "日志尾流",
+    title: "系统日志",
     subtitle: "围绕 system log 与 latest build log 做快速排障。",
   },
   {
     match: /^\/settings/,
     title: "配置快照",
-    subtitle: "核对系统默认值、工作区路径与可交付配置。",
+    subtitle: "核对系统默认值、工作区路径与交付配置。",
   },
   {
     match: /^\/overview/,
-    title: "工程总览",
-    subtitle: "保留任务、状态、故障与日志等最核心的运行视图。",
+    title: "控制台总览",
+    subtitle: "把任务、异常、评测与日志浓缩到一屏可读的工程视图。",
   },
 ];
 
@@ -69,15 +88,12 @@ export function AppHeader(): JSX.Element {
       <div className="pw-topbar-controls">
         <div className="pw-control-row">
           <div className="pw-control-pill">
-            <strong>{getApiBase()}</strong>
-          </div>
-          <div className="pw-control-pill">
-            <span className="pw-control-label">Kernel</span>
+            <span className="pw-control-label">默认内核</span>
             <strong>6.6.102-5.2.an23.x86_64</strong>
           </div>
           <div className="pw-control-pill">
-            <span className="pw-control-label">Refresh</span>
-            <strong>{autoRefresh ? `${refreshIntervalSec}s` : "Off"}</strong>
+            <span className="pw-control-label">自动刷新</span>
+            <strong>{autoRefresh ? `每 ${refreshIntervalSec}s` : "已暂停"}</strong>
           </div>
         </div>
         <div className="pw-control-row compact">

@@ -25,7 +25,7 @@ export function TaskListPage(): JSX.Element {
     <div className="pw-grid">
       <SectionCard
         title="任务中心"
-        subtitle="围绕 CVE、状态、失败类型和目标内核做快速过滤，并直接跳入任务详情。"
+        subtitle="围绕 CVE、状态、失败类型和目标内核做快速筛选，并直接跳入任务详情。"
         actions={
           <Link className="pw-btn primary" to="/tasks/new">
             创建任务

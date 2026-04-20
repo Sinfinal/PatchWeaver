@@ -76,6 +76,7 @@ export function TaskDetailPage(): JSX.Element {
       queryClient.invalidateQueries({ queryKey: ["task-artifacts", taskId] });
       queryClient.invalidateQueries({ queryKey: ["overview"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["task-report", taskId] });
     },
   });
 
@@ -131,7 +132,7 @@ export function TaskDetailPage(): JSX.Element {
         actions={
           <div className="pw-btn-row">
             <button className="pw-btn" type="button" onClick={() => actionMutation.mutate("analyze")} disabled={actionMutation.isPending}>
-              执行分析
+              分析
             </button>
             <button
               className="pw-btn primary"
@@ -139,10 +140,16 @@ export function TaskDetailPage(): JSX.Element {
               onClick={() => actionMutation.mutate("run")}
               disabled={actionMutation.isPending}
             >
-              运行任务
+              执行一轮
             </button>
             <button className="pw-btn" type="button" onClick={() => actionMutation.mutate("report")} disabled={actionMutation.isPending}>
               生成报告
+            </button>
+            <button className="pw-btn" type="button" onClick={() => setSelectedTab("replay")}>
+              查看回放
+            </button>
+            <button className="pw-btn" type="button" onClick={() => void detailQuery.refetch()}>
+              刷新
             </button>
           </div>
         }
@@ -179,11 +186,17 @@ export function TaskDetailPage(): JSX.Element {
         </div>
       </SectionCard>
 
-      <SectionCard title="阶段时间线" subtitle="用于判断任务当前停在主链路的哪一段，以及哪些阶段已经生成证据。">
+      <SectionCard
+        title="阶段时间线"
+        subtitle="用于判断任务当前停在主链路的哪一段，以及哪些阶段已经生成证据。"
+      >
         <StageTimeline items={detail.timeline} />
       </SectionCard>
 
-      <SectionCard title="任务证据面板" subtitle="左侧用于筛选当前关注标签，右侧直接预览实际产物内容。">
+      <SectionCard
+        title="任务证据面板"
+        subtitle="左侧用于切换当前关注标签，右侧直接预览对应产物内容。"
+      >
         <div className="pw-tabs">
           {tabs.map((item) => (
             <button
@@ -213,7 +226,7 @@ export function TaskDetailPage(): JSX.Element {
                       onClick={() => setSelectedPath(path)}
                     >
                       <strong>{path}</strong>
-                      <span className="pw-inline-note">点击在右侧代码面板预览</span>
+                      <span className="pw-inline-note">点击后在右侧代码面板预览</span>
                     </button>
                   ))}
                 </div>
@@ -305,7 +318,7 @@ function renderTabSummary(
         <div className="pw-list-item">
           <strong>阶段评测摘要</strong>
           <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 240 }}>
-            {JSON.stringify(detail.evaluation_summary ?? {}, null, 2) || "暂无阶段评测摘要"}
+            {asPrettyJson(detail.evaluation_summary, "暂无阶段评测摘要。")}
           </pre>
         </div>
       </div>
@@ -330,10 +343,10 @@ function renderTabSummary(
               第 {attempt.attempt_no} 轮 · {attempt.attempt_id}
             </strong>
             <div className="pw-inline-note">
-              状态 {attempt.status} · 失败类型 {attempt.failure_type ?? "无"}
+              状态 {attempt.status}，失败类型 {attempt.failure_type ?? "无"}
             </div>
             <div className="pw-inline-note">
-              开始 {formatTime(attempt.started_at)} · 结束 {formatTime(attempt.finished_at)}
+              开始 {formatTime(attempt.started_at)}，结束 {formatTime(attempt.finished_at)}
             </div>
           </button>
         ))}
@@ -411,7 +424,7 @@ function renderTabSummary(
       <div className="pw-list">
         <div className="pw-list-item">
           <strong>全量产物浏览</strong>
-          <div className="pw-inline-note">这个标签会加载任务工作区下的完整 artifact 树，适合做精细排障与答辩回放。</div>
+          <div className="pw-inline-note">这个标签会加载任务工作区下的完整 artifact 树，适合精细排障与答辩回放。</div>
         </div>
       </div>
     );

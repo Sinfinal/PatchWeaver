@@ -6,7 +6,7 @@ import { controlPlanes, projectSummary } from "../../content/projectContent";
 import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
 import { fetchOverview } from "../../services/overview";
 import type { TaskListItem } from "../../types/tasks";
-import { formatTime, shortenPath } from "../../utils/format";
+import { formatTime, shortenPath, toFixtureGroupPath } from "../../utils/format";
 
 export function OverviewPage(): JSX.Element {
   const liveQueryOptions = useLiveQueryOptions();
@@ -20,9 +20,13 @@ export function OverviewPage(): JSX.Element {
   const runtimeStats = overview
     ? [
         { label: "任务总数", value: overview.metrics.total_tasks, meta: "全部任务" },
-        { label: "运行中", value: overview.metrics.running_tasks, meta: "当前活跃" },
-        { label: "成功率", value: `${overview.metrics.success_rate}%`, meta: overview.metrics.build_backend },
-        { label: "失败任务", value: overview.metrics.failed_tasks, meta: overview.metrics.build_ready ? "构建就绪" : "等待构建" },
+        { label: "运行中", value: overview.metrics.running_tasks, meta: "当前活跃任务" },
+        { label: "成功率", value: `${overview.metrics.success_rate.toFixed(2)}%`, meta: overview.metrics.build_backend },
+        {
+          label: "失败任务",
+          value: overview.metrics.failed_tasks,
+          meta: overview.metrics.build_ready ? "构建链路已就绪" : "构建环境待检查",
+        },
       ]
     : [
         { label: "任务总数", value: "—", meta: "等待接口" },
@@ -36,7 +40,7 @@ export function OverviewPage(): JSX.Element {
   const recentEvents = overview?.events?.slice(0, 4) ?? [];
   const focusStats = [
     { label: "构建引擎", value: overview?.metrics.build_backend ?? "等待接口" },
-    { label: "系统状态", value: overview?.metrics.build_ready ? "可执行" : overview ? "待准备" : "等待接口" },
+    { label: "系统状态", value: overview?.metrics.build_ready ? "可执行" : overview ? "待检查" : "等待接口" },
     { label: "事件流", value: overview ? `${overview.events.length} 条` : "等待接口" },
   ];
 
@@ -58,19 +62,19 @@ export function OverviewPage(): JSX.Element {
               <Link className="pw-btn primary" to="/tasks/new">
                 创建任务
               </Link>
-              <Link className="pw-btn" to="/tasks">
-                查看任务
+              <Link className="pw-btn" to="/reports">
+                报告中心
               </Link>
               <Link className="pw-btn" to="/doctor">
                 环境诊断
               </Link>
             </div>
-            {overviewQuery.isLoading ? <div className="pw-note-banner">正在同步实时总览数据...</div> : null}
-            {overviewQuery.isError ? <div className="pw-note-banner">当前无法连接后端，已回退到静态工程布局。</div> : null}
+            {overviewQuery.isLoading ? <div className="pw-note-banner">正在同步总览数据...</div> : null}
+            {overviewQuery.isError ? <div className="pw-note-banner">当前无法连接后端，页面已回退到静态布局。</div> : null}
           </div>
           <aside className="pw-overview-focus-card">
             <span className="pw-overview-focus-kicker">Console Focus</span>
-            <strong className="pw-overview-focus-title">只保留最重要的运行、排障与交付视图</strong>
+            <strong className="pw-overview-focus-title">把最关键的运行、排障与交付视图留在首屏</strong>
             <div className="pw-overview-focus-grid">
               {focusStats.map((item) => (
                 <article key={item.label} className="pw-overview-focus-stat">
@@ -102,15 +106,15 @@ export function OverviewPage(): JSX.Element {
 
       <div className="pw-overview-grid">
         <div className="pw-overview-column pw-overview-column-main">
-          <SectionCard title="任务队列" className="pw-overview-panel">
+          <SectionCard title="任务队列" subtitle="最近任务、运行任务和失败任务统一从这里回看。" className="pw-overview-panel">
             {overview ? (
               <TaskTable items={overview.recent_tasks as TaskListItem[]} />
             ) : (
-              <div className="pw-empty">后端可用后，这里会回显最近任务与当前状态。</div>
+              <div className="pw-empty">后端可用后，这里会显示最近任务与当前状态。</div>
             )}
           </SectionCard>
 
-          <SectionCard title="日志尾流" className="pw-overview-panel">
+          <SectionCard title="日志尾流" subtitle="保留系统层与构建层两条快速排障入口。" className="pw-overview-panel">
             {overview ? (
               <div className="pw-log-grid pw-log-grid-wide">
                 <div className="pw-log-card">
@@ -125,13 +129,13 @@ export function OverviewPage(): JSX.Element {
                 </div>
               </div>
             ) : (
-              <div className="pw-empty">后端可用后，这里会展示最新 system/build log 片段。</div>
+              <div className="pw-empty">后端可用后，这里会展示最近 system/build log 片段。</div>
             )}
           </SectionCard>
         </div>
 
         <div className="pw-overview-column pw-overview-column-side">
-          <SectionCard title="异常信号" className="pw-overview-panel">
+          <SectionCard title="异常信号" subtitle="按 failure_type 聚合最近失败，用于快速识别风险热点。" className="pw-overview-panel">
             {failureDistribution.length ? (
               <div className="pw-signal-stack">
                 {failureDistribution.map((item) => (
@@ -151,29 +155,37 @@ export function OverviewPage(): JSX.Element {
             )}
           </SectionCard>
 
-          <SectionCard title="阶段评测" className="pw-overview-panel">
+          <SectionCard
+            title="固定样例评测"
+            subtitle="直接联到报告中心中的分组摘要，便于阶段汇报与封版核对。"
+            className="pw-overview-panel"
+          >
             {evaluationSummaries.length ? (
               <div className="pw-list">
                 {evaluationSummaries.map((item) => (
-                  <div key={item.fixture_name} className="pw-list-item">
+                  <Link
+                    key={item.fixture_name}
+                    className="pw-list-item pw-link-card"
+                    to={`/reports/fixtures/${toFixtureGroupPath(item.fixture_name)}`}
+                  >
                     <strong>{item.fixture_name}</strong>
                     <div className="pw-inline-note">
-                      成功 {item.success_count}/{item.matched_fixtures} · 成功率 {(item.success_rate * 100).toFixed(2)}%
+                      成功 {item.success_count}/{item.matched_fixtures}，成功率 {(item.success_rate * 100).toFixed(2)}%
                     </div>
                     <div className="pw-inline-note">
-                      样例 {item.total_fixtures} · 缺失 {item.missing_fixtures} · 平均尝试 {item.average_attempts}
+                      样例 {item.total_fixtures}，缺失 {item.missing_fixtures}，平均尝试 {item.average_attempts}
                     </div>
-                    <div className="pw-inline-note">JSON: {shortenPath(item.summary_json_path)}</div>
+                    <div className="pw-inline-note">摘要路径: {shortenPath(item.summary_json_path)}</div>
                     <div className="pw-inline-note">更新时间: {formatTime(item.updated_at)}</div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
-              <div className="pw-empty">当前还没有阶段评测摘要，执行 evaluate 后这里会自动汇总。</div>
+              <div className="pw-empty">当前还没有固定样例摘要，执行评测后这里会自动汇总。</div>
             )}
           </SectionCard>
 
-          <SectionCard title="最近事件" className="pw-overview-panel">
+          <SectionCard title="最近事件" subtitle="保留任务级动态，便于答辩时快速定位。" className="pw-overview-panel">
             {recentEvents.length ? (
               <div className="pw-event-feed">
                 {recentEvents.map((item) => (

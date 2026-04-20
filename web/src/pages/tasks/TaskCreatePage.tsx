@@ -17,13 +17,16 @@ export function TaskCreatePage(): JSX.Element {
 
   return (
     <div className="pw-grid detail">
-      <SectionCard title="创建任务" subtitle="新任务会生成独立工作区，并沿着统一主链路沉淀日志、报告和回放文件。">
+      <SectionCard
+        title="创建任务"
+        subtitle="新任务会生成独立工作区，并沿着统一主链沉淀日志、报告和回放文件。"
+      >
         <TaskCreateForm submitting={createMutation.isPending} onSubmit={createMutation.mutateAsync} />
         {createMutation.isError ? <div className="pw-empty">任务创建失败，请检查后端返回的错误信息或配置状态。</div> : null}
       </SectionCard>
 
       <div className="pw-grid">
-        <SectionCard title="推荐默认值" subtitle="当前竞赛和联调环境默认对齐 Anolis OS 23.4。">
+        <SectionCard title="推荐默认值" subtitle="当前联调和展示环境默认对齐 Anolis OS 23.4。">
           <div className="pw-list">
             <div className="pw-list-item">
               <strong>目标内核</strong>
@@ -31,7 +34,7 @@ export function TaskCreatePage(): JSX.Element {
             </div>
             <div className="pw-list-item">
               <strong>推荐档位</strong>
-              <div className="pw-inline-note">首次联调优先 `demo`，本地快速排错可切到 `dev`。</div>
+              <div className="pw-inline-note">首次联调优先使用 `demo`，本地快速排错可切到 `dev`。</div>
             </div>
           </div>
         </SectionCard>
@@ -49,7 +52,7 @@ export function TaskCreatePage(): JSX.Element {
           </div>
         </SectionCard>
 
-        <SectionCard title="任务会经过什么" subtitle="创建后会沿着这条链路逐步生成可观测证据。">
+        <SectionCard title="任务会经过什么" subtitle="创建后会沿着这条链路逐步生成可观察证据。">
           <div className="pw-list">
             {architectureStages.slice(0, 4).map((stage) => (
               <div key={stage.id} className="pw-list-item">

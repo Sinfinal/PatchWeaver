@@ -3,6 +3,10 @@ import { AppShell } from "../components/layout/AppShell";
 import { DoctorPage } from "../pages/doctor/DoctorPage";
 import { LogsPage } from "../pages/logs/LogsPage";
 import { OverviewPage } from "../pages/overview/OverviewPage";
+import { ReportFixtureDetailPage } from "../pages/reports/ReportFixtureDetailPage";
+import { ReportFixtureGroupPage } from "../pages/reports/ReportFixtureGroupPage";
+import { ReportsPage } from "../pages/reports/ReportsPage";
+import { ReportTaskPage } from "../pages/reports/ReportTaskPage";
 import { RulesPage } from "../pages/rules/RulesPage";
 import { SettingsPage } from "../pages/settings/SettingsPage";
 import { SkillsPage } from "../pages/skills/SkillsPage";
@@ -25,6 +29,10 @@ export const router = createBrowserRouter(
         { path: "tasks", element: <TaskListPage /> },
         { path: "tasks/new", element: <TaskCreatePage /> },
         { path: "tasks/:taskId", element: <TaskDetailPage /> },
+        { path: "reports", element: <ReportsPage /> },
+        { path: "reports/tasks/:taskId", element: <ReportTaskPage /> },
+        { path: "reports/fixtures/:fixtureGroup", element: <ReportFixtureGroupPage /> },
+        { path: "reports/fixtures/:fixtureGroup/:fixtureId", element: <ReportFixtureDetailPage /> },
         { path: "doctor", element: <DoctorPage /> },
         { path: "rules", element: <RulesPage /> },
         { path: "skills", element: <SkillsPage /> },
