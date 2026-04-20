@@ -82,22 +82,6 @@ export const architectureStages: StageCard[] = [
   },
 ];
 
-export const skillHighlights = [
-  { title: "retrieval", description: "负责来源链与 patch 证据整理。", meta: "先 stable，后 upstream。" },
-  { title: "rewrite_recipe", description: "负责候选配方、原语选择和改写提示组织。", meta: "只写主链允许的产物。" },
-  { title: "failure_analysis", description: "负责构建失败解释、回退建议和下一轮提示。", meta: "默认只读旁路。" },
-  { title: "validation", description: "负责验证矩阵、语义守卫和阶段报告输入。", meta: "围绕 validation_report 汇总。" },
-] as const;
-
-export const settingsFacts = [
-  { title: "目标内核", description: "6.6.102-5.2.an23.x86_64" },
-  { title: "目标系统", description: "Anolis OS 23.4" },
-  { title: "构建工具", description: "kpatch-build" },
-  { title: "模型拓扑", description: "单主模型 + 可选辅助模型" },
-  { title: "状态真相源", description: "SQLite + workspace artifacts" },
-] as const;
-
-export const buildProfiles = [
 export const buildProfiles: ProfileCard[] = [
   {
     name: "dev",
@@ -184,6 +168,10 @@ export const settingsFacts: HighlightCard[] = [
   {
     title: "构建工具",
     description: "kpatch-build",
+  },
+  {
+    title: "模型拓扑",
+    description: "单主模型 + 可选辅助模型",
   },
   {
     title: "状态真相源",
