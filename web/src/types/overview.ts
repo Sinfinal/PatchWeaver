@@ -9,6 +9,8 @@ export type OverviewMetricBlock = {
   validation_passed: number;
   validation_failed: number;
   latest_evaluation_summary?: string | null;
+  delivery_ready: boolean;
+  selected_model: string;
 };
 
 export type OverviewTask = {
@@ -56,6 +58,21 @@ export type LogTailBlock = {
 
 export type OverviewResponse = {
   metrics: OverviewMetricBlock;
+  release: {
+    submission_root: string;
+    final_manifest_path?: string | null;
+    final_gate_path?: string | null;
+    final_gate_status?: string | null;
+    evaluation_count: number;
+    selected_models: {
+      topology: string;
+      primary_model: string;
+      development_model: string;
+      delivery_model: string;
+      fallback_model: string;
+      helper_models: Record<string, string>;
+    };
+  };
   evaluation_summaries: EvaluationSummaryItem[];
   recent_tasks: OverviewTask[];
   failure_distribution: FailureDistributionItem[];
@@ -66,9 +83,11 @@ export type OverviewResponse = {
   events: EventItem[];
   logs_tail: {
     system_log: LogTailBlock;
+    jsonl_log?: LogTailBlock | null;
     latest_build_log?: LogTailBlock | null;
     paths: {
       system_log: string;
+      jsonl_log?: string | null;
       latest_build_log?: string | null;
     };
   };

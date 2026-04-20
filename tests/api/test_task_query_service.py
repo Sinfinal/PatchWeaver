@@ -130,9 +130,15 @@ def test_task_query_service_detail_contains_phase_outputs() -> None:
             return replay_payload
 
     context = SimpleNamespace(
+        project_root=project_root,
         task_repo=task_repo,
         attempt_repo=attempt_repo,
         artifact_repo=artifact_repo,
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
         build_task_runner=lambda profile_name=None, max_attempts=None: _RunnerStub(),
     )
 
@@ -143,4 +149,5 @@ def test_task_query_service_detail_contains_phase_outputs() -> None:
     assert detail["evaluation_summary"]["fixture_name"] == "challenge_dev"
     assert detail["replay"]["status"] == "ok"
     assert detail["attempts"][0]["planning_hints_path"].endswith("planning_hints.json")
+    assert detail["report_closure"]["closure_ok"] is True
     assert any(item["stage"] == "report" and item["status"] == "completed" for item in detail["timeline"])

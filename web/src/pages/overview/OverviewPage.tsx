@@ -37,6 +37,7 @@ export function OverviewPage(): JSX.Element {
   const focusStats = [
     { label: "构建引擎", value: overview?.metrics.build_backend ?? "等待接口" },
     { label: "系统状态", value: overview?.metrics.build_ready ? "可执行" : overview ? "待准备" : "等待接口" },
+    { label: "默认模型", value: overview?.metrics.selected_model ?? "等待接口" },
     { label: "事件流", value: overview ? `${overview.events.length} 条` : "等待接口" },
   ];
 
@@ -170,6 +171,42 @@ export function OverviewPage(): JSX.Element {
               </div>
             ) : (
               <div className="pw-empty">当前还没有阶段评测摘要，执行 evaluate 后这里会自动汇总。</div>
+            )}
+          </SectionCard>
+
+          <SectionCard title="封版交付" className="pw-overview-panel">
+            {overview ? (
+              <div className="pw-list">
+                <div className="pw-list-item">
+                  <strong>门禁状态</strong>
+                  <div className="pw-inline-note">{overview.release.final_gate_status ?? "未执行 gate"}</div>
+                </div>
+                <div className="pw-list-item">
+                  <strong>final_manifest</strong>
+                  <div className="pw-inline-note">{shortenPath(overview.release.final_manifest_path ?? "未生成")}</div>
+                </div>
+                <div className="pw-list-item">
+                  <strong>submission 根目录</strong>
+                  <div className="pw-inline-note">{shortenPath(overview.release.submission_root)}</div>
+                </div>
+                <div className="pw-list-item">
+                  <strong>模型口径</strong>
+                  <div className="pw-inline-note">
+                    主模型 {overview.release.selected_models.primary_model} / 交付 {overview.release.selected_models.delivery_model}
+                  </div>
+                  <div className="pw-inline-note">拓扑: {overview.release.selected_models.topology}</div>
+                  <div className="pw-inline-note">
+                    辅助:{" "}
+                    {Object.entries(overview.release.selected_models.helper_models).length
+                      ? Object.entries(overview.release.selected_models.helper_models)
+                          .map(([name, model]) => `${name}=${model}`)
+                          .join("，")
+                      : "未配置"}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="pw-empty">后端可用后，这里会展示 final manifest 和最终门禁状态。</div>
             )}
           </SectionCard>
 

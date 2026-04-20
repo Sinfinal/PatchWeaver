@@ -150,6 +150,26 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
             project_root=project_root,
         ),
         build_config=SimpleNamespace(),
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+        models_config=SimpleNamespace(
+            topology="single_primary_with_optional_helpers",
+            default_model="qwen-plus-2025-07-28",
+            development_model="qwen-plus-2025-07-28",
+            delivery_model="qwen-plus-2025-07-28",
+            api_key_env="PATCHWEAVER_BAILIAN_API_KEY",
+            fallback_model="qwen-plus-2025-07-28",
+            helper_models={
+                "code_assistant": "qwen-coder-turbo-0919",
+                "vision": "qwen-vl-plus-2025-05-07",
+            },
+        ),
+        task_repo=task_repo,
+        attempt_repo=attempt_repo,
+        artifact_repo=artifact_repo,
     )
     service = OverviewService(context)
     service.log_service = SimpleNamespace(
@@ -169,6 +189,15 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
             "config_ok": True,
         },
     )
+    monkeypatch.setattr(
+        "patchweaver.reporter.release_service.BuildOrchestrator.probe_environment",
+        lambda self: {
+            "backend": "ssh",
+            "builder_ok": True,
+            "selected_source_ok": True,
+            "config_ok": True,
+        },
+    )
 
     payload = service.get_overview()
 
@@ -177,6 +206,9 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
     assert payload["metrics"]["success_tasks"] == 1
     assert payload["metrics"]["validation_passed"] == 1
     assert payload["metrics"]["latest_evaluation_summary"] == str(challenge_summary_path)
+    assert payload["metrics"]["selected_model"] == "qwen-plus-2025-07-28"
     assert [item["fixture_name"] for item in payload["evaluation_summaries"]] == ["challenge_dev", "holdout"]
     assert payload["evaluation_summaries"][0]["summary_json_path"] == str(challenge_summary_path)
     assert payload["failure_distribution"][0]["failure_type"] == "missing_fentry"
+    assert payload["release"]["selected_models"]["topology"] == "single_primary_with_optional_helpers"
+    assert payload["release"]["selected_models"]["helper_models"]["code_assistant"] == "qwen-coder-turbo-0919"

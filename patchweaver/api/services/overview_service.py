@@ -10,6 +10,7 @@ from typing import Any
 from patchweaver.api.deps import ApiContext
 from patchweaver.api.services.log_service import LogService
 from patchweaver.builder.orchestrator import BuildOrchestrator
+from patchweaver.reporter.release_service import ReleaseService
 from patchweaver.storage.sqlite import connect_sqlite
 
 
@@ -27,6 +28,15 @@ class OverviewService:
 
         database_path = self.context.runtime.database_path
         build_env = BuildOrchestrator(self.context.build_config).probe_environment()
+        release_snapshot = ReleaseService(
+            runtime=self.context.runtime,
+            build_config=self.context.build_config,
+            logging_config=self.context.logging_config,
+            models_config=self.context.models_config,
+            task_repo=self.context.task_repo,
+            attempt_repo=self.context.attempt_repo,
+            artifact_repo=self.context.artifact_repo,
+        ).snapshot()
         evaluation_summaries = self._load_evaluation_summaries()
         with connect_sqlite(database_path) as connection:
             total_tasks = self._count(connection, "SELECT COUNT(*) FROM tasks")
@@ -86,7 +96,10 @@ class OverviewService:
                 "validation_passed": next((row["total"] for row in validation_distribution if row["status"] == "passed"), 0),
                 "validation_failed": next((row["total"] for row in validation_distribution if row["status"] == "failed"), 0),
                 "latest_evaluation_summary": latest_evaluation["artifact_path"] if latest_evaluation is not None else None,
+                "delivery_ready": release_snapshot.get("final_gate_status") == "passed",
+                "selected_model": self.context.models_config.delivery_model,
             },
+            "release": release_snapshot,
             "evaluation_summaries": evaluation_summaries,
             "recent_tasks": [
                 {

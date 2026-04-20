@@ -18,18 +18,27 @@ from typer.core import TyperGroup
 
 from patchweaver import __version__
 from patchweaver.builder.orchestrator import BuildOrchestrator
-from patchweaver.config.loader import load_build_config, load_logging_config, load_prompts_config, load_skills_config, load_verify_config
+from patchweaver.config.loader import (
+    load_build_config,
+    load_logging_config,
+    load_models_config,
+    load_prompts_config,
+    load_skills_config,
+    load_verify_config,
+)
 from patchweaver.config.resolver import load_effective_configs, resolve_runtime
 from patchweaver.coordinator.task_runner import TaskRunner
 from patchweaver.harness.attempt_engine import AttemptEngine
 from patchweaver.harness.evaluator import Evaluator
 from patchweaver.harness.workspace_guard import WorkspaceGuard
 from patchweaver.models.task import TaskContext
+from patchweaver.observability.run_logger import RunLogger
+from patchweaver.reporter.release_service import ReleaseService
+from patchweaver.reporter.stats_writer import StatsWriter
 from patchweaver.storage.artifact_repo import ArtifactRepository
 from patchweaver.storage.attempt_repo import AttemptRepository
 from patchweaver.storage.sqlite import initialize_sqlite_db
 from patchweaver.storage.task_repo import TaskRepository
-from patchweaver.reporter.stats_writer import StatsWriter
 
 class PatchWeaverHelpGroup(TyperGroup):
     """统一渲染更适合人读的帮助页。"""
@@ -245,7 +254,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
     program_name = command.name or "patchweaver"
     commands = {name: command.get_command(ctx, name) for name in command.list_commands(ctx)}
     task_commands = ["create", "analyze", "run", "report", "replay", "evaluate"]
-    env_commands = ["init", "doctor", "paths", "init-db", "db", "serve-api", "status", "version"]
+    env_commands = ["init", "doctor", "paths", "models", "finalize", "gate", "init-db", "db", "serve-api", "status", "version"]
     lines = [
         f"{_style_help('PatchWeaver', fg='bright_blue', bold=True)} {_style_help(__version__, fg='bright_yellow', bold=True)}"
         " — 从上游 CVE 修复补丁到 livepatch 构建尝试的最小工程壳。",
@@ -294,6 +303,9 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
     lines.extend(_wrap_help_entry("patchweaver serve-api --reload", "启动 FastAPI 接口，供 Web 控制台开发调试。", width=30, color="bright_green"))
     lines.extend(_wrap_help_entry("patchweaver db path", "查看当前配置解析出来的数据库路径。", width=30, color="bright_green"))
     lines.extend(_wrap_help_entry("patchweaver evaluate --fixture contest_samples", "按固定样例集输出阶段评测汇总。", width=30, color="bright_green"))
+    lines.extend(_wrap_help_entry("patchweaver models --json", "查看当前模型分工和百炼环境变量状态。", width=30, color="bright_green"))
+    lines.extend(_wrap_help_entry("patchweaver finalize", "生成 submission 目录和 final_manifest。", width=30, color="bright_green"))
+    lines.extend(_wrap_help_entry("patchweaver gate", "执行第四阶段最终门禁检查。", width=30, color="bright_green"))
     lines.extend(
         [
             "",
@@ -413,6 +425,26 @@ def _build_task_runner(runtime: Any) -> TaskRunner:
     )
 
 
+def _build_release_service(runtime: Any) -> ReleaseService:
+    """按当前运行时配置创建第四阶段交付服务。"""
+
+    return ReleaseService(
+        runtime=runtime,
+        build_config=load_build_config(runtime.project_root),
+        logging_config=load_logging_config(runtime.project_root),
+        models_config=load_models_config(runtime.project_root),
+        task_repo=TaskRepository(runtime.database_path),
+        attempt_repo=AttemptRepository(runtime.database_path),
+        artifact_repo=ArtifactRepository(runtime.database_path),
+    )
+
+
+def _build_run_logger(runtime: Any) -> RunLogger:
+    """创建当前命令使用的运行日志写入器。"""
+
+    return RunLogger(runtime.project_root, load_logging_config(runtime.project_root))
+
+
 def _resolve_task_runtime(task_id: str, base_runtime: Any) -> tuple[Any, TaskContext]:
     """按任务自身绑定的运行档位解析实际运行时。"""
 
@@ -483,6 +515,7 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
                     "fixture_id": fixture_id,
                     "cve_id": fixture.get("cve_id"),
                     "target_kernel": fixture.get("target_kernel"),
+                    "sample_group": fixture.get("sample_group") or fixture.get("group") or "unmatched",
                     "matched": False,
                     "task_id": None,
                     "final_status": "missing",
@@ -519,6 +552,7 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
                 "fixture_id": fixture_id,
                 "cve_id": matched_task.cve_id,
                 "target_kernel": matched_task.target_kernel,
+                "sample_group": fixture.get("sample_group") or fixture.get("group") or "default",
                 "matched": True,
                 "task_id": matched_task.task_id,
                 "final_status": matched_task.status,
@@ -546,7 +580,14 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
     }
 
 
-def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills_config: Any, prompts_config: Any) -> dict[str, Any]:
+def _doctor_payload(
+    runtime: Any,
+    build_config: Any,
+    logging_config: Any,
+    skills_config: Any,
+    prompts_config: Any,
+    models_config: Any,
+) -> dict[str, Any]:
     """组装 doctor 命令的完整检查结果。"""
     checks: list[dict[str, Any]] = []
 
@@ -572,6 +613,8 @@ def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills
         "unidiff": "补丁解析",
         "rich": "终端输出",
         "paramiko": "SSH 构建通道",
+        "fastapi": "Web API",
+        "uvicorn": "API 启动器",
     }
     for module_name, description in required_modules.items():
         ok = importlib.util.find_spec(module_name) is not None
@@ -586,10 +629,55 @@ def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills
         "prompts.yaml",
         "rules.yaml",
         "logging.yaml",
+        "models.yaml",
     ]
     for filename in config_files:
         config_path = runtime.config_dir / filename
         checks.append(_check_item(category="config_file", name=filename, label=f"配置文件 `{filename}`", ok=config_path.exists(), detail=str(config_path)))
+
+    submission_root = (runtime.project_root / "submission").resolve()
+    checks.extend(
+        [
+            _check_item(
+                category="models",
+                name="model_topology",
+                label="模型拓扑",
+                ok=models_config.topology == "single_primary_with_optional_helpers",
+                detail=models_config.topology,
+                failed_status="error",
+            ),
+            _check_item(
+                category="models",
+                name="default_model",
+                label="主模型",
+                ok=bool(models_config.default_model),
+                detail=models_config.default_model,
+                failed_status="error",
+            ),
+            _check_item(
+                category="models",
+                name="delivery_model",
+                label="正式交付模型",
+                ok=bool(models_config.delivery_model),
+                detail=models_config.delivery_model,
+                failed_status="error",
+            ),
+            _check_item(
+                category="models",
+                name="api_key_env",
+                label="百炼 API Key 环境变量",
+                ok=bool(os.getenv(models_config.api_key_env)),
+                detail=models_config.api_key_env,
+            ),
+            _check_item(
+                category="delivery",
+                name="submission_root",
+                label="submission 根目录",
+                ok=submission_root.exists(),
+                detail=str(submission_root),
+            ),
+        ]
+    )
 
     # 构建环境单独列出来，后面如果 doctor 报黄，基本一眼就能看出是环境问题还是代码问题。
     checks.append(
@@ -862,6 +950,7 @@ def init_command(
     """初始化最小运行目录。"""
 
     runtime = _load_runtime(profile=profile, db_path=db_path, max_attempts=max_attempts)
+    run_logger = _build_run_logger(runtime)
     logging_config = load_logging_config(runtime.project_root)
     skills_config = load_skills_config(runtime.project_root)
     prompts_config = load_prompts_config(runtime.project_root)
@@ -905,6 +994,13 @@ def init_command(
     final_path: Path | None = None
     if with_db:
         final_path = initialize_sqlite_db(runtime.database_path)
+    run_logger.info(
+        "cli.init",
+        "完成最小工程初始化。",
+        with_db=with_db,
+        created_path_count=len(created_paths),
+        manifest_template_count=len(created_manifest_templates),
+    )
 
     if json_output:
         _emit_json(
@@ -955,7 +1051,8 @@ def doctor(
     logging_config = load_logging_config(runtime.project_root)
     skills_config = load_skills_config(runtime.project_root)
     prompts_config = load_prompts_config(runtime.project_root)
-    payload = _doctor_payload(runtime, build_config, logging_config, skills_config, prompts_config)
+    models_config = load_models_config(runtime.project_root)
+    payload = _doctor_payload(runtime, build_config, logging_config, skills_config, prompts_config, models_config)
     report_path = _write_json_snapshot(runtime.manifest_dir / "doctor_report.json", payload)
 
     # JSON 模式优先给脚本消费，不混入任何说明性文本。
@@ -983,6 +1080,53 @@ def doctor(
     typer.echo(f"诊断快照: {report_path}")
 
 
+@app.command("models")
+def models(
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """查看当前模型配置和环境变量状态。"""
+
+    runtime = _load_runtime()
+    models_config = load_models_config(runtime.project_root)
+    payload = {
+        "command": "models",
+        "provider": models_config.provider,
+        "endpoint_mode": models_config.endpoint_mode,
+        "base_url": models_config.base_url,
+        "api_key_env": models_config.api_key_env,
+        "api_key_ready": bool(os.getenv(models_config.api_key_env)),
+        "topology": models_config.topology,
+        "default_model": models_config.default_model,
+        "development_model": models_config.development_model,
+        "delivery_model": models_config.delivery_model,
+        "fallback_model": models_config.fallback_model,
+        "helper_models": models_config.helper_models,
+        "helper_notes": models_config.helper_notes,
+        "execution_boundaries": models_config.execution_boundaries,
+    }
+    if json_output:
+        _emit_json(payload)
+        return
+
+    typer.echo(f"模型供应方: {payload['provider']}")
+    typer.echo(f"调用模式: {payload['endpoint_mode']}")
+    typer.echo(f"接口地址: {payload['base_url']}")
+    typer.echo(f"API Key 环境变量: {payload['api_key_env']}")
+    typer.echo(f"API Key 就绪: {payload['api_key_ready']}")
+    typer.echo(f"模型拓扑: {payload['topology']}")
+    typer.echo(f"主模型: {payload['default_model']}")
+    typer.echo(f"开发口径: {payload['development_model']}")
+    typer.echo(f"交付口径: {payload['delivery_model']}")
+    typer.echo(f"回退模型: {payload['fallback_model']}")
+    typer.echo("辅助模型:")
+    for helper_name, model_name in payload["helper_models"].items():
+        note = payload["helper_notes"].get(helper_name, "")
+        typer.echo(f"  - {helper_name}: {model_name} | {note}")
+    typer.echo("执行边界:")
+    for line in payload["execution_boundaries"]:
+        typer.echo(f"  - {line}")
+
+
 @app.command("create")
 def create(
     cve: Annotated[str, typer.Option("--cve", help="指定要处理的 CVE ID。")] = ...,
@@ -995,6 +1139,7 @@ def create(
     """创建任务并初始化工作区骨架。"""
 
     runtime = _load_runtime(profile=profile, max_attempts=max_attempts)
+    run_logger = _build_run_logger(runtime)
     task_repo = TaskRepository(runtime.database_path)
     attempt_repo = AttemptRepository(runtime.database_path)
     artifact_repo = ArtifactRepository(runtime.database_path)
@@ -1035,6 +1180,14 @@ def create(
         "prepared_attempt_dir": str(task_dir / "attempts" / "001"),
         "status": "ok",
     }
+    run_logger.info(
+        "cli.create",
+        "创建任务并初始化工作区。",
+        task_id=task.task_id,
+        cve_id=task.cve_id,
+        target_kernel=task.target_kernel,
+        profile_name=task.profile_name,
+    )
     if json_output:
         _emit_json(payload)
         return
@@ -1055,12 +1208,22 @@ def run(
 
     runtime = _load_runtime()
     runtime, _ = _resolve_task_runtime(task, runtime)
+    run_logger = _build_run_logger(runtime)
     runner = _build_task_runner(runtime)
     try:
         payload = runner.run_task(task)
     except Exception as exc:
+        run_logger.error("cli.run", "单轮执行失败。", task_id=task, error=str(exc))
         typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
+    run_logger.info(
+        "cli.run",
+        "完成单轮执行。",
+        task_id=payload["task_id"],
+        attempt_id=payload["attempt_id"],
+        status=payload["status"],
+        failure_type=payload["failure_type"],
+    )
 
     if json_output:
         _emit_json(payload)
@@ -1126,12 +1289,15 @@ def analyze(
 
     runtime = _load_runtime()
     runtime, _ = _resolve_task_runtime(task, runtime)
+    run_logger = _build_run_logger(runtime)
     runner = _build_task_runner(runtime)
     try:
         payload = runner.analyze_task(task)
     except Exception as exc:
+        run_logger.error("cli.analyze", "分析阶段执行失败。", task_id=task, error=str(exc))
         typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
+    run_logger.info("cli.analyze", "完成分析阶段。", task_id=payload["task_id"])
 
     if json_output:
         _emit_json(payload)
@@ -1153,12 +1319,15 @@ def report(
 
     runtime = _load_runtime()
     runtime, _ = _resolve_task_runtime(task, runtime)
+    run_logger = _build_run_logger(runtime)
     runner = _build_task_runner(runtime)
     try:
         payload = runner.build_report(task)
     except Exception as exc:
+        run_logger.error("cli.report", "报告生成失败。", task_id=task, error=str(exc))
         typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
+    run_logger.info("cli.report", "生成最终报告。", task_id=payload["task_id"], report_json=payload["report_json"])
 
     if json_output:
         _emit_json(payload)
@@ -1178,12 +1347,15 @@ def replay(
 
     runtime = _load_runtime()
     runtime, _ = _resolve_task_runtime(task, runtime)
+    run_logger = _build_run_logger(runtime)
     runner = _build_task_runner(runtime)
     try:
         payload = runner.replay_task(task)
     except Exception as exc:
+        run_logger.error("cli.replay", "回放信息读取失败。", task_id=task, error=str(exc))
         typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
+    run_logger.info("cli.replay", "读取任务回放信息。", task_id=payload["task_id"])
 
     if json_output:
         _emit_json(payload)
@@ -1206,11 +1378,20 @@ def evaluate(
     """按固定样例集输出阶段评测结果。"""
 
     runtime = _load_runtime(profile=profile, db_path=db_path)
+    run_logger = _build_run_logger(runtime)
     try:
         payload = _evaluate_fixture_set(runtime, fixture)
     except Exception as exc:
+        run_logger.error("cli.evaluate", "阶段评测执行失败。", fixture=fixture, error=str(exc))
         typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc
+    run_logger.info(
+        "cli.evaluate",
+        "完成阶段评测。",
+        fixture_name=payload["fixture_name"],
+        fixture_count=payload["fixture_count"],
+        summary_json=payload["summary_json"],
+    )
 
     if json_output:
         _emit_json(payload)
@@ -1237,10 +1418,54 @@ def init_db(
 
     runtime = _load_runtime(profile=profile, db_path=db_path)
     final_path = initialize_sqlite_db(runtime.database_path)
+    _build_run_logger(runtime).info("cli.init_db", "初始化 SQLite 数据库。", database_path=str(final_path))
     if json_output:
         _emit_json({"command": "init-db", "database_path": str(final_path), "status": "ok"})
         return
     typer.echo(f"已初始化 SQLite 数据库：{final_path}")
+
+
+@app.command("finalize")
+def finalize(
+    profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
+    db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """生成 submission 目录和 final manifest。"""
+
+    runtime = _load_runtime(profile=profile, db_path=db_path)
+    run_logger = _build_run_logger(runtime)
+    payload = _build_release_service(runtime).prepare_submission()
+    run_logger.info("cli.finalize", "生成 submission 目录和 final manifest。", manifest=payload["final_manifest_json"])
+    if json_output:
+        _emit_json(payload)
+        return
+
+    typer.echo(f"submission 根目录: {payload['submission_root']}")
+    typer.echo(f"final_manifest.json: {payload['final_manifest_json']}")
+    typer.echo(f"final_manifest.md: {payload['final_manifest_md']}")
+
+
+@app.command("gate")
+def gate(
+    profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
+    db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """执行第四阶段最终门禁检查。"""
+
+    runtime = _load_runtime(profile=profile, db_path=db_path)
+    run_logger = _build_run_logger(runtime)
+    payload = _build_release_service(runtime).run_gate()
+    run_logger.info("cli.gate", "执行最终门禁检查。", status=payload["status"], gate_report=payload["final_gate_json"])
+    if json_output:
+        _emit_json(payload)
+        return
+
+    typer.echo(f"总体状态: {payload['status']}")
+    typer.echo(f"gate.json: {payload['final_gate_json']}")
+    typer.echo(f"gate.md: {payload['final_gate_md']}")
+    typer.echo(f"通过: {payload['summary']['passed']} / 带限制通过: {payload['summary']['limited']} / 未通过: {payload['summary']['failed']}")
 
 
 @app.command("serve-api")
@@ -1254,6 +1479,8 @@ def serve_api(
     # API 服务默认直接复用当前仓库里的 patchweaver.api.app，不再单独维护第二套启动脚本。
     import uvicorn
 
+    runtime = _load_runtime()
+    _build_run_logger(runtime).info("cli.serve_api", "启动 Web 控制台后端接口。", host=host, port=port, reload=reload)
     typer.echo(f"启动 PatchWeaver API: http://{host}:{port}")
     uvicorn.run("patchweaver.api.app:app", host=host, port=port, reload=reload)
 

@@ -11,6 +11,7 @@ from patchweaver.config.resolver import resolve_runtime
 from patchweaver.harness.attempt_engine import AttemptEngine
 from patchweaver.harness.workspace_guard import WorkspaceGuard
 from patchweaver.models.task import TaskContext
+from patchweaver.observability.run_logger import RunLogger
 from patchweaver.storage.sqlite import connect_sqlite
 
 
@@ -21,6 +22,7 @@ class TaskQueryService:
         """保存 API 共享上下文。"""
 
         self.context = context
+        self.run_logger = RunLogger(context.project_root, context.logging_config)
 
     def list_tasks(
         self,
@@ -170,6 +172,13 @@ class TaskQueryService:
             artifact_path=request_path,
             metadata={"summary": "Web 创建请求快照"},
         )
+        self.run_logger.info(
+            "web.create_task",
+            "通过 Web 创建任务。",
+            task_id=task.task_id,
+            cve_id=task.cve_id,
+            profile_name=task.profile_name,
+        )
 
         return {
             "task": self._task_payload(task),
@@ -235,6 +244,25 @@ class TaskQueryService:
                 "md_path": str(task_dir / "reports" / "report.md"),
                 "evaluation_summary_path": str(task_dir / "reports" / "evaluation_summary.json"),
             },
+            "report_closure": {
+                "report_json_path": str(task_dir / "reports" / "report.json"),
+                "report_md_path": str(task_dir / "reports" / "report.md"),
+                "build_log_path": str(latest_attempt.build_log_path) if latest_attempt and latest_attempt.build_log_path else None,
+                "validation_report_path": str(latest_validation_path) if latest_validation_path is not None else None,
+                "trace_path": str(latest_trace_path) if latest_trace_path is not None else None,
+                "workspace_dir": str(task_dir),
+                "closure_ok": bool(
+                    (task_dir / "reports" / "report.json").exists()
+                    and (task_dir / "reports" / "report.md").exists()
+                    and latest_validation_path is not None
+                    and latest_validation_path.exists()
+                    and latest_trace_path is not None
+                    and latest_trace_path.exists()
+                    and latest_attempt is not None
+                    and latest_attempt.build_log_path is not None
+                    and Path(latest_attempt.build_log_path).exists()
+                ),
+            },
             "replay": replay,
             "timeline": self._build_timeline(task_dir, attempts),
             "artifact_index": [
@@ -253,25 +281,33 @@ class TaskQueryService:
         """触发分析阶段。"""
 
         task = self._require_task(task_id)
-        return self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).analyze_task(task_id)
+        payload = self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).analyze_task(task_id)
+        self.run_logger.info("web.analyze_task", "通过 Web 触发分析阶段。", task_id=task_id)
+        return payload
 
     def run_task(self, task_id: str) -> dict[str, Any]:
         """执行单轮尝试。"""
 
         task = self._require_task(task_id)
-        return self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).run_task(task_id)
+        payload = self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).run_task(task_id)
+        self.run_logger.info("web.run_task", "通过 Web 触发单轮执行。", task_id=task_id)
+        return payload
 
     def report_task(self, task_id: str) -> dict[str, Any]:
         """生成最终报告。"""
 
         task = self._require_task(task_id)
-        return self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).build_report(task_id)
+        payload = self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).build_report(task_id)
+        self.run_logger.info("web.report_task", "通过 Web 生成最终报告。", task_id=task_id)
+        return payload
 
     def replay_task(self, task_id: str) -> dict[str, Any]:
         """读取回放信息。"""
 
         task = self._require_task(task_id)
-        return self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).replay_task(task_id)
+        payload = self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).replay_task(task_id)
+        self.run_logger.info("web.replay_task", "通过 Web 读取任务回放。", task_id=task_id)
+        return payload
 
     def _task_payload(self, task: TaskContext) -> dict[str, Any]:
         """把任务对象转成接口返回结构。"""

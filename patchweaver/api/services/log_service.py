@@ -95,12 +95,15 @@ class LogService:
         """返回系统日志和最近构建日志的尾部内容。"""
 
         system_log_path = (self.context.project_root / self.context.logging_config.file_path).resolve()
+        jsonl_log_path = (self.context.project_root / self.context.logging_config.jsonl_path).resolve()
         latest_build_log = self._latest_build_log()
         return {
             "system_log": self._tail_file(system_log_path, limit),
+            "jsonl_log": self._tail_file(jsonl_log_path, limit) if self.context.logging_config.enable_jsonl else None,
             "latest_build_log": self._tail_file(latest_build_log, limit) if latest_build_log else None,
             "paths": {
                 "system_log": str(system_log_path),
+                "jsonl_log": str(jsonl_log_path) if self.context.logging_config.enable_jsonl else None,
                 "latest_build_log": str(latest_build_log) if latest_build_log else None,
             },
         }

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
 from patchweaver.api.deps import ApiContext
+from patchweaver.reporter.release_service import ReleaseService
 from patchweaver.skills.manifest_loader import load_skill_manifest
 from patchweaver.skills.source_policy import resolve_skill_roots
 
@@ -84,6 +86,15 @@ class CatalogService:
     def list_settings(self) -> dict[str, Any]:
         """输出几类主要配置，便于控制台查看。"""
 
+        release_snapshot = ReleaseService(
+            runtime=self.context.runtime,
+            build_config=self.context.build_config,
+            logging_config=self.context.logging_config,
+            models_config=self.context.models_config,
+            task_repo=self.context.task_repo,
+            attempt_repo=self.context.attempt_repo,
+            artifact_repo=self.context.artifact_repo,
+        ).snapshot()
         return {
             "system": self.context.system_config.model_dump(),
             "build": self.context.build_config.model_dump(),
@@ -92,6 +103,11 @@ class CatalogService:
             "skills": self.context.skills_config.model_dump(),
             "rules": self.context.rules_config.model_dump(),
             "logging": self.context.logging_config.model_dump(),
+            "models": {
+                **self.context.models_config.model_dump(),
+                "api_key_ready": bool(os.getenv(self.context.models_config.api_key_env)),
+            },
+            "delivery": release_snapshot,
         }
 
     def _scan_dir(self, path: Path) -> dict[str, Any]:

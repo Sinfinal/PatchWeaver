@@ -58,6 +58,12 @@ class ReplayHarness:
             "stage_routes": stage_routes,
             "dispatch_modes": dispatch_modes,
             "replay_files": replay_files,
+            "closure_paths": {
+                "task_dir": str(task_dir),
+                "report_json": str(report_path) if report_path.exists() else None,
+                "evaluation_summary": str(evaluation_summary_path) if evaluation_summary_path.exists() else None,
+                "latest_build_log": str(latest_attempt.build_log_path) if latest_attempt and latest_attempt.build_log_path else None,
+            },
             "comparison": replay_comparison or {},
             "status": "ok",
         }

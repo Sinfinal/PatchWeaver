@@ -1,0 +1,195 @@
+{
+  "generated_at": "2026-04-20T12:15:30.533142+00:00",
+  "status": "passed",
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "limited": 0,
+    "failed": 0,
+    "status": "passed"
+  },
+  "submission_root": "D:\\spaces\\ai\\PatchWeaver\\submission",
+  "evaluation_summaries": [
+    {
+      "fixture_name": "contest_samples",
+      "success_count": 0,
+      "matched_fixtures": 1,
+      "missing_fixtures": 1,
+      "success_rate": 0.0,
+      "summary_json_path": "D:\\spaces\\ai\\PatchWeaver\\data\\evaluations\\contest_samples\\summary.json",
+      "summary_md_path": "D:\\spaces\\ai\\PatchWeaver\\data\\evaluations\\contest_samples\\summary.md"
+    }
+  ],
+  "task_closures": [
+    {
+      "task_id": "TASK-SEED-20260420-1086",
+      "task_status": "analyzed",
+      "current_attempt": 0,
+      "latest_failure_type": null,
+      "report_json_path": null,
+      "report_md_path": null,
+      "build_log_path": null,
+      "validation_report_path": null,
+      "trace_path": null,
+      "workspace_dir": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-SEED-20260420-1086",
+      "closure_ok": false
+    },
+    {
+      "task_id": "TASK-STAGE-II-20260414-185447",
+      "task_status": "failed",
+      "current_attempt": 1,
+      "latest_failure_type": "patch_apply_failed",
+      "report_json_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\reports\\report.json",
+      "report_md_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\reports\\report.md",
+      "build_log_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\logs\\build.log",
+      "validation_report_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\artifacts\\validation_report.json",
+      "trace_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\trace\\harness_trace.json",
+      "workspace_dir": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447",
+      "closure_ok": true
+    },
+    {
+      "task_id": "TASK-20260411-001",
+      "task_status": "failed",
+      "current_attempt": 5,
+      "latest_failure_type": "patch_apply_failed",
+      "report_json_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\report.json",
+      "report_md_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\report.md",
+      "build_log_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\logs\\build.log",
+      "validation_report_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\artifacts\\validation_report.json",
+      "trace_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\trace\\harness_trace.json",
+      "workspace_dir": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001",
+      "closure_ok": true
+    },
+    {
+      "task_id": "TASK-20260410-001",
+      "task_status": "failed",
+      "current_attempt": 1,
+      "latest_failure_type": "build_env_missing",
+      "report_json_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\reports\\report.json",
+      "report_md_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\reports\\report.md",
+      "build_log_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\attempts\\001\\logs\\build.log",
+      "validation_report_path": null,
+      "trace_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\attempts\\001\\trace\\harness_trace.json",
+      "workspace_dir": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001",
+      "closure_ok": false
+    }
+  ],
+  "goal_check": [
+    {
+      "goal": "理解修复意图",
+      "status": "已实现",
+      "detail": "分析阶段已固化 semantic_card 输出和任务详情回显。"
+    },
+    {
+      "goal": "识别热补丁约束",
+      "status": "已实现",
+      "detail": "约束诊断结果会落到 constraint_report，并进入报告和详情页。"
+    },
+    {
+      "goal": "生成可解释的改写方案",
+      "status": "已实现",
+      "detail": "rewrite_plan、planning_hints 和 route/prompt 产物已形成可回看链路。"
+    },
+    {
+      "goal": "自动执行构建与验证",
+      "status": "已实现",
+      "detail": "BuildOrchestrator 和 Validator 已接入主链，实际效果依赖构建环境和样例运行结果。"
+    },
+    {
+      "goal": "对失败进行归因并驱动下一轮尝试",
+      "status": "部分实现",
+      "detail": "失败归因、failover 记录和回放链已经落地，多轮自动收敛能力仍以迭代增强为主。"
+    },
+    {
+      "goal": "输出结构化报告、日志和产物",
+      "status": "已实现",
+      "detail": "report.json、report.md、evaluation summary、system log 和 artifact index 已形成统一出口。"
+    }
+  ],
+  "checks": [
+    {
+      "name": "doctor_snapshot",
+      "status": "passed",
+      "detail": "doctor 快照已生成。",
+      "evidence": "D:\\spaces\\ai\\PatchWeaver\\data\\manifests\\doctor_report.json"
+    },
+    {
+      "name": "database_ready",
+      "status": "passed",
+      "detail": "SQLite 数据库可用。",
+      "evidence": "D:\\spaces\\ai\\PatchWeaver\\data\\patchweaver.db"
+    },
+    {
+      "name": "evaluation_summary",
+      "status": "passed",
+      "detail": "已发现 1 组阶段评测摘要。",
+      "evidence": "D:\\spaces\\ai\\PatchWeaver\\data\\evaluations"
+    },
+    {
+      "name": "task_report_closure",
+      "status": "passed",
+      "detail": "至少有一条任务已经打通报告、日志和 trace 闭环。",
+      "evidence": "D:\\spaces\\ai\\PatchWeaver\\workspaces"
+    },
+    {
+      "name": "system_log",
+      "status": "passed",
+      "detail": "系统日志文件已存在。",
+      "evidence": "D:\\spaces\\ai\\PatchWeaver\\data\\logs\\patchweaver.log"
+    },
+    {
+      "name": "jsonl_log",
+      "status": "passed",
+      "detail": "JSONL 事件日志已存在。",
+      "evidence": "D:\\spaces\\ai\\PatchWeaver\\data\\logs\\patchweaver.jsonl"
+    },
+    {
+      "name": "web_console",
+      "status": "passed",
+      "detail": "Web 控制台源码目录存在。",
+      "evidence": "D:\\spaces\\ai\\PatchWeaver\\web"
+    },
+    {
+      "name": "build_backend",
+      "status": "passed",
+      "detail": "构建环境预检通过。",
+      "evidence": "root@10.223.185.3:22"
+    },
+    {
+      "name": "models_config",
+      "status": "passed",
+      "detail": "模型配置文件已就位。",
+      "evidence": "D:\\spaces\\ai\\PatchWeaver\\config\\models.yaml"
+    },
+    {
+      "name": "model_topology",
+      "status": "passed",
+      "detail": "模型拓扑已收敛为单主模型 + 可选辅助模型。",
+      "evidence": "single_primary_with_optional_helpers"
+    },
+    {
+      "name": "bailian_api_key",
+      "status": "passed",
+      "detail": "已检测到百炼 API Key 环境变量。",
+      "evidence": "PATCHWEAVER_BAILIAN_API_KEY"
+    },
+    {
+      "name": "submission_layout",
+      "status": "passed",
+      "detail": "submission 目录结构已建立。",
+      "evidence": "D:\\spaces\\ai\\PatchWeaver\\submission"
+    },
+    {
+      "name": "final_manifest",
+      "status": "passed",
+      "detail": "final_manifest 已生成。",
+      "evidence": "D:\\spaces\\ai\\PatchWeaver\\submission\\manifests\\final_manifest.json"
+    },
+    {
+      "name": "model_statement",
+      "status": "passed",
+      "detail": "模型选型说明已写入 submission/docs。",
+      "evidence": "D:\\spaces\\ai\\PatchWeaver\\submission\\docs\\PatchWeaver-模型选型说明.md"
+    }
+  ]
+}

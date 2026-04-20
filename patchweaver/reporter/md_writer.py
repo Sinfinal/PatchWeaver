@@ -27,10 +27,34 @@ class MdWriter:
             lines.extend(["", "## 尝试摘要"])
             for item in report.attempt_digest:
                 lines.append(f"- 第 {item.attempt_no} 轮: {item.status} ({item.failure_type or '无'})")
+        if report.analysis_summary:
+            lines.extend(["", "## 分析结果"])
+            for key, value in report.analysis_summary.items():
+                lines.append(f"- {key}: {value}")
+        if report.build_summary:
+            lines.extend(["", "## 构建结果"])
+            for key, value in report.build_summary.items():
+                lines.append(f"- {key}: {value}")
+        if report.validation_summary:
+            lines.extend(["", "## 验证结果"])
+            for key, value in report.validation_summary.items():
+                lines.append(f"- {key}: {value}")
+        if report.replay_summary:
+            lines.extend(["", "## 回放索引"])
+            for key, value in report.replay_summary.items():
+                lines.append(f"- {key}: {value}")
+        if report.key_paths:
+            lines.extend(["", "## 关键路径"])
+            for key, value in report.key_paths.items():
+                lines.append(f"- {key}: {value}")
         if report.evaluation_summary:
             lines.extend(["", "## 评测摘要"])
             for key, value in report.evaluation_summary.items():
                 lines.append(f"- {key}: {value}")
+        if report.known_limits:
+            lines.extend(["", "## 当前限制"])
+            for item in report.known_limits:
+                lines.append(f"- {item}")
         if report.explanations:
             lines.extend(["", "## 说明"])
             for item in report.explanations:

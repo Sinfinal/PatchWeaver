@@ -34,6 +34,7 @@ export const settingsFacts = [
   { title: "目标内核", description: "6.6.102-5.2.an23.x86_64" },
   { title: "目标系统", description: "Anolis OS 23.4" },
   { title: "构建工具", description: "kpatch-build" },
+  { title: "模型拓扑", description: "单主模型 + 可选辅助模型" },
   { title: "状态真相源", description: "SQLite + workspace artifacts" },
 ] as const;
 

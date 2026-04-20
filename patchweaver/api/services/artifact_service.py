@@ -39,6 +39,7 @@ class ArtifactService:
             "root": str(root),
             "tree": self._build_tree(items),
             "items": items,
+            "key_artifacts": self._collect_key_artifacts(root),
         }
 
     def read_content(self, task_id: str, relative_path: str, *, max_chars: int = 24000) -> dict[str, Any]:
@@ -146,3 +147,31 @@ class ArtifactService:
         if suffix in {".log", ".txt", ".yaml", ".yml"}:
             return "text"
         return "text"
+
+    def _collect_key_artifacts(self, root: Path) -> dict[str, str | None]:
+        """提取第四阶段常用的关键产物路径。"""
+
+        report_json = root / "reports" / "report.json"
+        report_md = root / "reports" / "report.md"
+        latest_attempt_dir = self._latest_attempt_dir(root)
+        build_log = latest_attempt_dir / "logs" / "build.log" if latest_attempt_dir else None
+        validation_report = latest_attempt_dir / "artifacts" / "validation_report.json" if latest_attempt_dir else None
+        trace_path = latest_attempt_dir / "trace" / "harness_trace.json" if latest_attempt_dir else None
+        return {
+            "report_json": str(report_json) if report_json.exists() else None,
+            "report_md": str(report_md) if report_md.exists() else None,
+            "build_log": str(build_log) if build_log is not None and build_log.exists() else None,
+            "validation_report": str(validation_report) if validation_report is not None and validation_report.exists() else None,
+            "trace_path": str(trace_path) if trace_path is not None and trace_path.exists() else None,
+        }
+
+    def _latest_attempt_dir(self, root: Path) -> Path | None:
+        """定位任务目录下最近一轮尝试目录。"""
+
+        attempts_root = root / "attempts"
+        if not attempts_root.exists():
+            return None
+        candidates = [path for path in attempts_root.iterdir() if path.is_dir()]
+        if not candidates:
+            return None
+        return sorted(candidates)[-1]

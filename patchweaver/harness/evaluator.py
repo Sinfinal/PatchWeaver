@@ -60,15 +60,25 @@ class Evaluator:
             for item in matched_items
             if item.get("final_status") in {"built", "reported", "succeeded"}
         )
+        failed = sum(
+            1
+            for item in matched_items
+            if item.get("final_status") not in {"built", "reported", "succeeded"}
+        )
         average_attempts = (
             sum(float(item.get("attempts", 0)) for item in matched_items) / len(matched_items)
             if matched_items
             else 0.0
         )
+        status_distribution = Counter(item.get("final_status") or "unknown" for item in matched_items)
         failure_distribution = Counter(
             item.get("latest_failure_type") or "none"
             for item in matched_items
             if item.get("latest_failure_type")
+        )
+        group_distribution = Counter(
+            str((item.get("sample_group") or item.get("group") or "default"))
+            for item in results
         )
 
         return {
@@ -77,9 +87,12 @@ class Evaluator:
             "matched_fixtures": matched,
             "missing_fixtures": total - matched,
             "success_count": succeeded,
+            "failed_count": failed,
             "success_rate": round((succeeded / matched), 4) if matched else 0.0,
             "average_attempts": round(average_attempts, 2),
+            "status_distribution": dict(status_distribution),
             "failure_distribution": dict(failure_distribution),
+            "group_distribution": dict(group_distribution),
             "fixtures": results,
         }
 

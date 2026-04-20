@@ -164,6 +164,47 @@ class LoggingConfig(ConfigModel):
     jsonl_path: str = "data/logs/patchweaver.jsonl"
 
 
+class ModelsConfig(ConfigModel):
+    """模型后端、主模型拓扑和辅助模型边界配置。"""
+
+    provider: Literal["bailian", "custom"] = "bailian"
+    endpoint_mode: Literal["openai_compatible", "native"] = "openai_compatible"
+    base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    api_key_env: str = "PATCHWEAVER_BAILIAN_API_KEY"
+    topology: Literal["single_primary_with_optional_helpers"] = "single_primary_with_optional_helpers"
+    default_model: str = "qwen-plus-2025-07-28"
+    development_model: str = "qwen-plus-2025-07-28"
+    delivery_model: str = "qwen-plus-2025-07-28"
+    fallback_model: str = "qwen-plus-2025-07-28"
+    helper_models: dict[str, str] = Field(
+        default_factory=lambda: {
+            "code_assistant": "qwen-coder-turbo-0919",
+            "vision": "qwen-vl-plus-2025-05-07",
+            "log_summary": "qwen-plus-2025-07-28",
+        }
+    )
+    helper_notes: dict[str, str] = Field(
+        default_factory=lambda: {
+            "code_assistant": "用于草拟局部改写提示、模板和代码片段，不直接决定最终放行结果。",
+            "vision": "用于截图识别、页面检查和演示材料辅助场景。",
+            "log_summary": "用于长日志压缩、失败解释和材料摘要，不直接替代构建判定。",
+        }
+    )
+    execution_boundaries: list[str] = Field(
+        default_factory=lambda: [
+            "模型负责语义分析、草拟和解释，最终执行判定仍由规则、原语、Recipe、构建和验证链负责。",
+            "不采用多模型协同主执行链，不通过多模型投票决定是否放行构建或验证。",
+            "辅助模型只用于解释增强、视觉辅助和摘要压缩，不直接负责最终 patch 定稿。",
+        ]
+    )
+
+    @property
+    def vision_model(self) -> str | None:
+        """返回视觉辅助模型。"""
+
+        return self.helper_models.get("vision")
+
+
 class ResolvedRuntime(ConfigModel):
     """命令行解析后的生效运行时快照。"""
 

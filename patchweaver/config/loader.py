@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from patchweaver.config.models import (
     BuildConfig,
     LoggingConfig,
+    ModelsConfig,
     ProfilesConfig,
     PromptsConfig,
     RulesConfig,
@@ -109,3 +110,10 @@ def load_logging_config(project_root: Path | None = None) -> LoggingConfig:
     """加载 logging.yaml。"""
     root = discover_project_root(project_root)
     return load_model(config_path(root, "logging.yaml"), LoggingConfig)
+
+
+def load_models_config(project_root: Path | None = None) -> ModelsConfig:
+    """加载 models.yaml。"""
+
+    root = discover_project_root(project_root)
+    return load_model(config_path(root, "models.yaml"), ModelsConfig)

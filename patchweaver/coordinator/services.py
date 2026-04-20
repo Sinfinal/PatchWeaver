@@ -1021,6 +1021,9 @@ class ReportService(CoordinatorSupport):
             explanations=explanations,
         )
 
+        report.key_paths["report_json"] = str(task_dir / "reports" / "report.json")
+        report.key_paths["report_md"] = str(task_dir / "reports" / "report.md")
+        report.replay_summary["evaluation_summary_path"] = str(task_dir / "reports" / "evaluation_summary.json")
         json_path = self.json_writer.write_model(report, task_dir / "reports" / "report.json")
         md_path = self.md_writer.write_report(report, task_dir / "reports" / "report.md")
         evaluation_summary_path = task_dir / "reports" / "evaluation_summary.json"

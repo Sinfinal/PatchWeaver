@@ -24,4 +24,10 @@ class FinalReport(BaseModel):
     artifact_index: list[ArtifactRef] = Field(default_factory=list)
     final_status: str
     evaluation_summary: dict[str, object] = Field(default_factory=dict)
+    analysis_summary: dict[str, object] = Field(default_factory=dict)
+    build_summary: dict[str, object] = Field(default_factory=dict)
+    validation_summary: dict[str, object] = Field(default_factory=dict)
+    replay_summary: dict[str, object] = Field(default_factory=dict)
+    key_paths: dict[str, str | None] = Field(default_factory=dict)
+    known_limits: list[str] = Field(default_factory=list)
     explanations: list[str] = Field(default_factory=list)

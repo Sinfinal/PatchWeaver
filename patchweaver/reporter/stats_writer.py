@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -24,16 +25,35 @@ class StatsWriter:
         lines = [
             "# PatchWeaver 阶段评测摘要",
             "",
+            f"- 生成时间: {datetime.now(timezone.utc).isoformat()}",
             f"- 固定样例集: {payload.get('fixture_name', 'unknown')}",
             f"- 样例总数: {payload.get('total_fixtures', 0)}",
             f"- 命中样例: {payload.get('matched_fixtures', 0)}",
             f"- 缺失样例: {payload.get('missing_fixtures', 0)}",
             f"- 成功数: {payload.get('success_count', 0)}",
+            f"- 失败数: {payload.get('failed_count', 0)}",
             f"- 成功率: {payload.get('success_rate', 0):.2%}" if isinstance(payload.get("success_rate"), float) else f"- 成功率: {payload.get('success_rate', 0)}",
             f"- 平均尝试轮次: {payload.get('average_attempts', 0)}",
             "",
-            "## 失败分布",
+            "## 状态分布",
         ]
+
+        status_distribution = payload.get("status_distribution") or {}
+        if status_distribution:
+            for name, count in status_distribution.items():
+                lines.append(f"- {name}: {count}")
+        else:
+            lines.append("- 当前没有状态分布记录。")
+
+        lines.extend(["", "## 分组分布"])
+        group_distribution = payload.get("group_distribution") or {}
+        if group_distribution:
+            for name, count in group_distribution.items():
+                lines.append(f"- {name}: {count}")
+        else:
+            lines.append("- 当前没有分组分布记录。")
+
+        lines.extend(["", "## 失败分布"])
 
         failure_distribution = payload.get("failure_distribution") or {}
         if failure_distribution:
