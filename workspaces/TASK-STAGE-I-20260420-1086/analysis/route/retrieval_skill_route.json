@@ -1,0 +1,19 @@
+{
+  "stage_name": "retrieval",
+  "candidate_skills": [
+    "retrieval"
+  ],
+  "selected_skill": "retrieval",
+  "rejected_skills": [],
+  "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=True。",
+  "readonly_subagent_allowed": true,
+  "contract_summary": [
+    "输入: task.cve_id, task.target_kernel",
+    "输出: patch_bundle.json, source_evidence.json, raw_patch.patch",
+    "工具: http_fetch, patch_parser",
+    "调度模式: skill_first",
+    "只读子代理并发上限: 2"
+  ],
+  "fallback_used": false,
+  "route_source": "registry"
+}

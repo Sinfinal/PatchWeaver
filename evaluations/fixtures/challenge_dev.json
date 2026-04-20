@@ -1,0 +1,20 @@
+[
+  {
+    "fixture_id": "linux-kernel-cve-2024-1086",
+    "cve_id": "CVE-2024-1086",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "challenge_dev",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_artifacts": [
+      "patch_bundle.json",
+      "constraint_report.json",
+      "rewrite_plan.json",
+      "report.json"
+    ],
+    "expected_outcome": "用于日常联调和规则优化，重点观察来源链、改写规划和报告归档是否稳定。"
+  }
+]

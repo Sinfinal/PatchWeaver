@@ -1,0 +1,20 @@
+[
+  {
+    "fixture_id": "linux-kernel-cve-2022-0185",
+    "cve_id": "CVE-2022-0185",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "holdout",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_artifacts": [
+      "patch_bundle.json",
+      "rewritten.patch",
+      "validation_report.json",
+      "report.json"
+    ],
+    "expected_outcome": "用于阶段验收和盲测回归，不参与日常规则特调。"
+  }
+]

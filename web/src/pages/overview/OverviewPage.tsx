@@ -6,7 +6,7 @@ import { controlPlanes, projectSummary } from "../../content/projectContent";
 import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
 import { fetchOverview } from "../../services/overview";
 import type { TaskListItem } from "../../types/tasks";
-import { formatTime } from "../../utils/format";
+import { formatTime, shortenPath } from "../../utils/format";
 
 export function OverviewPage(): JSX.Element {
   const liveQueryOptions = useLiveQueryOptions();
@@ -31,6 +31,7 @@ export function OverviewPage(): JSX.Element {
         { label: "失败任务", value: "—", meta: "等待接口" },
       ];
   const failureDistribution = overview?.failure_distribution?.slice(0, 4) ?? [];
+  const evaluationSummaries = overview?.evaluation_summaries ?? [];
   const maxFailureTotal = failureDistribution.reduce((max, item) => Math.max(max, item.total), 1);
   const recentEvents = overview?.events?.slice(0, 4) ?? [];
   const focusStats = [
@@ -147,6 +148,28 @@ export function OverviewPage(): JSX.Element {
               </div>
             ) : (
               <div className="pw-empty">暂无失败分布。</div>
+            )}
+          </SectionCard>
+
+          <SectionCard title="阶段评测" className="pw-overview-panel">
+            {evaluationSummaries.length ? (
+              <div className="pw-list">
+                {evaluationSummaries.map((item) => (
+                  <div key={item.fixture_name} className="pw-list-item">
+                    <strong>{item.fixture_name}</strong>
+                    <div className="pw-inline-note">
+                      成功 {item.success_count}/{item.matched_fixtures} · 成功率 {(item.success_rate * 100).toFixed(2)}%
+                    </div>
+                    <div className="pw-inline-note">
+                      样例 {item.total_fixtures} · 缺失 {item.missing_fixtures} · 平均尝试 {item.average_attempts}
+                    </div>
+                    <div className="pw-inline-note">JSON: {shortenPath(item.summary_json_path)}</div>
+                    <div className="pw-inline-note">更新时间: {formatTime(item.updated_at)}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="pw-empty">当前还没有阶段评测摘要，执行 evaluate 后这里会自动汇总。</div>
             )}
           </SectionCard>
 

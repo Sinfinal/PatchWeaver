@@ -26,6 +26,20 @@ export type FailureDistributionItem = {
   total: number;
 };
 
+export type EvaluationSummaryItem = {
+  fixture_name: string;
+  total_fixtures: number;
+  matched_fixtures: number;
+  missing_fixtures: number;
+  success_count: number;
+  success_rate: number;
+  average_attempts: number;
+  failure_distribution: Record<string, number>;
+  summary_json_path: string;
+  summary_md_path: string;
+  updated_at: string;
+};
+
 export type EventItem = {
   timestamp: string;
   kind: string;
@@ -42,6 +56,7 @@ export type LogTailBlock = {
 
 export type OverviewResponse = {
   metrics: OverviewMetricBlock;
+  evaluation_summaries: EvaluationSummaryItem[];
   recent_tasks: OverviewTask[];
   failure_distribution: FailureDistributionItem[];
   validation_distribution: Array<{

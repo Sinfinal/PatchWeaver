@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from patchweaver.api.deps import ApiContext
@@ -24,6 +27,7 @@ class OverviewService:
 
         database_path = self.context.runtime.database_path
         build_env = BuildOrchestrator(self.context.build_config).probe_environment()
+        evaluation_summaries = self._load_evaluation_summaries()
         with connect_sqlite(database_path) as connection:
             total_tasks = self._count(connection, "SELECT COUNT(*) FROM tasks")
             failed_tasks = self._count(connection, "SELECT COUNT(*) FROM tasks WHERE status = 'failed'")
@@ -83,6 +87,7 @@ class OverviewService:
                 "validation_failed": next((row["total"] for row in validation_distribution if row["status"] == "failed"), 0),
                 "latest_evaluation_summary": latest_evaluation["artifact_path"] if latest_evaluation is not None else None,
             },
+            "evaluation_summaries": evaluation_summaries,
             "recent_tasks": [
                 {
                     "task_id": row["task_id"],
@@ -104,6 +109,71 @@ class OverviewService:
             "events": self.log_service.get_events(limit=12),
             "logs_tail": self.log_service.tail_logs(limit=40),
         }
+
+    def _load_evaluation_summaries(self) -> list[dict[str, Any]]:
+        """读取阶段评测摘要，供总览页直接展示。"""
+
+        evaluations_dir = self.context.runtime.data_dir / "evaluations"
+        if not evaluations_dir.exists():
+            return []
+
+        preferred_order = {
+            "challenge_dev": 0,
+            "holdout": 1,
+            "contest_samples": 2,
+        }
+        summary_items: list[dict[str, Any]] = []
+
+        # 第三阶段以后，总览页需要能直接看到固定样例和 holdout 的阶段结果，
+        # 这里统一从 data/evaluations 下收拢，避免前端自己再去猜目录结构。
+        for summary_path in sorted(evaluations_dir.glob("*/summary.json")):
+            payload = self._read_json(summary_path)
+            if not isinstance(payload, dict):
+                continue
+
+            fixture_name = str(payload.get("fixture_name") or summary_path.parent.name)
+            summary_items.append(
+                {
+                    "fixture_name": fixture_name,
+                    "total_fixtures": int(payload.get("total_fixtures", 0) or 0),
+                    "matched_fixtures": int(payload.get("matched_fixtures", 0) or 0),
+                    "missing_fixtures": int(payload.get("missing_fixtures", 0) or 0),
+                    "success_count": int(payload.get("success_count", 0) or 0),
+                    "success_rate": float(payload.get("success_rate", 0.0) or 0.0),
+                    "average_attempts": float(payload.get("average_attempts", 0.0) or 0.0),
+                    "failure_distribution": payload.get("failure_distribution") or {},
+                    "summary_json_path": str(summary_path),
+                    "summary_md_path": str(summary_path.with_name("summary.md")),
+                    "updated_at": summary_path.stat().st_mtime,
+                    "sort_order": preferred_order.get(fixture_name, 99),
+                }
+            )
+
+        summary_items.sort(
+            key=lambda item: (
+                int(item["sort_order"]),
+                -float(item["updated_at"]),
+                str(item["fixture_name"]),
+            )
+        )
+        for item in summary_items:
+            item.pop("sort_order", None)
+            item["updated_at"] = self._format_timestamp(float(item["updated_at"]))
+        return summary_items
+
+    def _read_json(self, path: Path) -> dict[str, Any] | None:
+        """安全读取 JSON 文件。"""
+
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        return payload if isinstance(payload, dict) else None
+
+    def _format_timestamp(self, value: float) -> str:
+        """把文件修改时间转成展示友好的字符串。"""
+
+        return datetime.fromtimestamp(value).isoformat()
 
     def _count(self, connection, sql: str) -> int:
         """执行单值计数查询。"""

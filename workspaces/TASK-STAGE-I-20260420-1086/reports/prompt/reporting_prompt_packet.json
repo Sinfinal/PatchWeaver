@@ -1,0 +1,29 @@
+{
+  "stage_name": "reporting",
+  "system_prompt_version": "v1",
+  "worker_prompt_version": "v1",
+  "schema_name": "FinalReport",
+  "budget_snapshot": {
+    "token_cost": 155,
+    "duplicate_hits": 0,
+    "memory_hits": 1
+  },
+  "bootstrap_fragments": [
+    "system/system_contract",
+    "bootstrap/contest_bootstrap"
+  ],
+  "prompt_sections": [
+    "报告阶段任务：\n1. 用评委能快速理解的方式整理任务结果、失败归因、验证结果和关键产物。\n2. 保留证据链，不省略会影响判断的失败信息。\n3. 报告、日志、回放和统计口径必须保持一致。\n",
+    "输出必须覆盖任务摘要、尝试轮摘要、关键产物索引和最终状态，不遗漏失败证据链。\n",
+    "阶段: reporting",
+    "选中 Skill: reporting",
+    "Skill 契约摘要: 输入: report.json, harness_trace.json, evaluation_summary.json；输出: report.md, replay 摘要；工具: report_builder, replay_harness",
+    "输出结构: FinalReport",
+    "证据数量: 2",
+    "证据摘要: RPT-02、RPT-01",
+    "记忆摘要: [RecipeMemory] minimal_livepatch_wrap: 风险=direct_apply_ready，原语=direct_apply，成功率=0%",
+    "Bootstrap 数量: 2",
+    "Bootstrap 开销: 55",
+    "上下文备注: 证据片段数: 2；记忆命中数: 1；证据类型: json"
+  ]
+}

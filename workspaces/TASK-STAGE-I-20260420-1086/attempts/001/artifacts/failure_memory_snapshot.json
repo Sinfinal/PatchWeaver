@@ -1,0 +1,42 @@
+[
+  {
+    "entry_id": "FM-935c2095ec",
+    "task_id": "TASK-STAGE-I-20260420-1086",
+    "cve_id": "CVE-2024-1086",
+    "attempt_id": "TASK-STAGE-I-20260420-1086-A001",
+    "stage_name": "build",
+    "failure_type": "patch_apply_failed",
+    "summary": "error: net/netfilter/nf_tables_api.c: No such file or directory",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-STAGE-I-20260420-1086-candidate-001",
+    "evidence": [
+      "apply 级预检查未通过，已跳过远端构建。"
+    ],
+    "keywords": [
+      "apply",
+      "build",
+      "patch_apply_failed"
+    ],
+    "created_at": "2026-04-20T08:02:02.593894Z"
+  },
+  {
+    "entry_id": "FM-6bf29d72ba",
+    "task_id": "TASK-STAGE-II-20260414-185447",
+    "cve_id": "CVE-2024-1086",
+    "attempt_id": "TASK-STAGE-II-20260414-185447-A001",
+    "stage_name": "build",
+    "failure_type": "patch_apply_failed",
+    "summary": "error: net/netfilter/nf_tables_api.c: No such file or directory",
+    "recipe_name": "minimal_livepatch_wrap",
+    "candidate_id": "TASK-STAGE-II-20260414-185447-candidate-002",
+    "evidence": [
+      "apply 级预检查未通过，已跳过远端构建。"
+    ],
+    "keywords": [
+      "apply",
+      "build",
+      "patch_apply_failed"
+    ],
+    "created_at": "2026-04-14T10:55:04.393984Z"
+  }
+]

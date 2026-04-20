@@ -1,0 +1,29 @@
+{
+  "stage_name": "retrieval",
+  "system_prompt_version": "v1",
+  "worker_prompt_version": "v1",
+  "schema_name": "PatchBundle",
+  "budget_snapshot": {
+    "token_cost": 255,
+    "duplicate_hits": 0,
+    "memory_hits": 0
+  },
+  "bootstrap_fragments": [
+    "system/system_contract",
+    "bootstrap/contest_bootstrap"
+  ],
+  "prompt_sections": [
+    "检索阶段任务：\n1. 围绕真实 `CVE` 组织来源链，优先稳定分支回补提交，再回退上游提交。\n2. 输出的每条来源都必须能回指到具体链接、提交号或 patch 原文。\n3. 避免把论坛讨论、二手转载或无 commit 证据的页面当成主来源。\n",
+    "输出必须给出真实 patch 来源链，至少包含提交号、来源链接、原始 patch 路径和来源证据摘要。\n",
+    "阶段: retrieval",
+    "选中 Skill: retrieval",
+    "Skill 契约摘要: 输入: task.cve_id, task.target_kernel；输出: patch_bundle.json, source_evidence.json, raw_patch.patch；工具: http_fetch, patch_parser",
+    "输出结构: PatchBundle",
+    "证据数量: 3",
+    "证据摘要: ANL-03、ANL-01、ANL-02",
+    "记忆摘要: 无",
+    "Bootstrap 数量: 2",
+    "Bootstrap 开销: 55",
+    "上下文备注: 证据片段数: 3；记忆命中数: 0；证据类型: json"
+  ]
+}

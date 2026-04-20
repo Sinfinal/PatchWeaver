@@ -1,0 +1,7 @@
+{
+  "status": "passed",
+  "ok": true,
+  "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+  "command": null,
+  "log_path": null
+}

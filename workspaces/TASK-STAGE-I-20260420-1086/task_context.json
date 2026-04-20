@@ -1,0 +1,12 @@
+{
+  "task_id": "TASK-STAGE-I-20260420-1086",
+  "cve_id": "CVE-2024-1086",
+  "target_kernel": "6.6.102-5.2.an23.x86_64",
+  "profile_name": null,
+  "status": "analyzed",
+  "max_attempts": 5,
+  "current_attempt": 0,
+  "workspace_dir": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086",
+  "created_at": "2026-04-20T07:49:46.326798Z",
+  "updated_at": "2026-04-20T08:01:32"
+}
