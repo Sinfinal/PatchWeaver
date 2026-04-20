@@ -183,7 +183,7 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
     monkeypatch.setattr(
         "patchweaver.api.services.overview_service.BuildOrchestrator.probe_environment",
         lambda self: {
-            "backend": "ssh",
+            "backend": "local",
             "builder_ok": True,
             "selected_source_ok": True,
             "config_ok": True,
@@ -192,7 +192,7 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
     monkeypatch.setattr(
         "patchweaver.reporter.release_service.BuildOrchestrator.probe_environment",
         lambda self: {
-            "backend": "ssh",
+            "backend": "local",
             "builder_ok": True,
             "selected_source_ok": True,
             "config_ok": True,

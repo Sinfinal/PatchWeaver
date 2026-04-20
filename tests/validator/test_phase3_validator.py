@@ -20,10 +20,10 @@ def _case_dir(case_name: str) -> Path:
 
 
 class _LoadTesterStub:
-    def load(self, *, module_path: Path | None, remote_module_path: str | None = None):
+    def load(self, *, module_path: Path | None):
         return ValidationItem(status="passed", ok=True, detail="模块加载测试通过。"), "load ok\n"
 
-    def unload(self, *, module_path: Path | None, remote_module_path: str | None = None):
+    def unload(self, *, module_path: Path | None):
         return ValidationItem(status="passed", ok=True, detail="模块卸载测试通过。"), "unload ok\n"
 
 

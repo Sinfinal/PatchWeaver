@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 from uuid import uuid4
 
@@ -105,6 +106,88 @@ def test_local_apply_precheck_accepts_valid_unified_diff() -> None:
 
     assert result.ok is True
     assert result.failure_type is None
+
+
+def test_local_build_executes_real_local_flow(monkeypatch) -> None:
+    tmp_path = _case_dir("build-local-flow")
+    source_dir = tmp_path / "kernel"
+    _write_kernel_tree(source_dir)
+    patch_path = tmp_path / "rewritten.patch"
+    patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/foo.c b/foo.c",
+                "--- a/foo.c",
+                "+++ b/foo.c",
+                "@@ -1 +1 @@",
+                "-int value = 1;",
+                "+int value = 2;",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    build_log_path = tmp_path / "attempts" / "001" / "logs" / "build.log"
+
+    build_config = BuildConfig(
+        build_backend="local",
+        kernel_src_dir=str(source_dir),
+        kernel_devel_dir=str(source_dir),
+        vmlinux_path=str(source_dir / "vmlinux"),
+        kpatch_build_cmd="kpatch-build",
+        build_timeout_sec=120,
+    )
+    orchestrator = BuildOrchestrator(build_config)
+
+    def fake_which(command: str) -> str | None:
+        if command == "git":
+            return "/usr/bin/git"
+        if command == "kpatch-build":
+            return "/usr/bin/kpatch-build"
+        return None
+
+    def fake_run(command, cwd=None, capture_output=None, text=None, encoding=None, errors=None, check=None, timeout=None):
+        if "apply" in command:
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        output_dir = Path(command[command.index("-o") + 1])
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "demo_patch.ko").write_text("fake ko\n", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "kpatch build ok\n", "")
+
+    monkeypatch.setattr("patchweaver.builder.orchestrator.which", fake_which)
+    monkeypatch.setattr("patchweaver.builder.orchestrator.subprocess.run", fake_run)
+
+    task = TaskContext(
+        task_id="TASK-TEST-LOCAL-BUILD",
+        cve_id="CVE-2099-0100",
+        target_kernel="6.6.102-5.2.an23.x86_64",
+        workspace_dir=tmp_path / "workspace",
+    )
+    plan = RewritePlan(
+        task_id=task.task_id,
+        plan_id=f"{task.task_id}-plan-001",
+        candidate_ids=["cand-001"],
+        selected_recipe="direct_apply_patch",
+        selected_primitives=["direct_apply"],
+        target_files=["foo.c"],
+        selection_reason="unit test",
+    )
+
+    attempt, build_log, precheck, summary = orchestrator.execute_build(
+        task=task,
+        attempt_no=1,
+        plan=plan,
+        rewritten_patch_path=patch_path,
+        build_log_path=build_log_path,
+    )
+
+    assert precheck.ok is True
+    assert attempt.status == "built"
+    assert attempt.module_path is not None and attempt.module_path.exists()
+    assert summary.status == "built"
+    assert summary.module_path is not None and summary.module_path.exists()
+    assert "[local command]" in build_log
 
 
 def test_local_apply_precheck_marks_target_already_patched() -> None:

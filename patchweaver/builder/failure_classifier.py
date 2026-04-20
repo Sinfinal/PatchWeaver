@@ -27,10 +27,6 @@ class FailureClassifier:
 
         if "未找到构建命令" in build_log or "kpatch-build 未找到" in build_log:
             failure_type = "build_env_missing"
-        elif "缺少远端登录密码" in build_log or "缺少远端密码环境变量" in build_log:
-            failure_type = "remote_auth_missing"
-        elif "远端连接失败" in build_log or "远端执行失败" in build_log:
-            failure_type = "remote_connect_failed"
         elif "找不到可用的内核源码目录" in build_log:
             failure_type = "kernel_src_missing"
         elif "没有找到 .config" in build_log or "源码目录中没有找到 .config" in build_log:
@@ -59,8 +55,6 @@ class FailureClassifier:
             failure_type = "kpatch_constraint"
         elif "command not found" in lowered_log:
             failure_type = "build_env_missing"
-        elif "未接入真实构建" in build_log:
-            failure_type = "build_not_implemented"
 
         lines = [line.strip() for line in build_log.strip().splitlines() if line.strip()]
         summary = "构建失败"

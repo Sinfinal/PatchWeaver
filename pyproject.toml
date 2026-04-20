@@ -25,7 +25,7 @@ dependencies = [
   "unidiff>=0.7",
   #终端美化
   "rich>=13.7",
-  #SSH 构建机接入
+  #验证机同步与部署脚本
   "paramiko>=4.0",
   #Web API
   "fastapi>=0.115",

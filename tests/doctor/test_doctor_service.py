@@ -10,7 +10,7 @@ def test_doctor_service_builds_summary_counts() -> None:
         checks=[
             DoctorCheck(category="runtime", name="python", label="Python", ok=True, status="ok", detail="ok"),
             DoctorCheck(category="build", name="kernel", label="Kernel", ok=False, status="warn", detail="missing"),
-            DoctorCheck(category="ssh", name="remote", label="Remote", ok=False, status="error", detail="offline"),
+            DoctorCheck(category="build", name="toolchain", label="Toolchain", ok=False, status="error", detail="missing"),
         ],
     )
 

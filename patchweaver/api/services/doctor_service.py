@@ -44,7 +44,6 @@ class DoctorApiService:
             "typer": "Typer",
             "pydantic": "Pydantic",
             "yaml": "PyYAML",
-            "paramiko": "Paramiko",
         }.items():
             installed = importlib.util.find_spec(module_name) is not None
             checks.append(self._check("python_module", module_name, f"Python 模块 `{module_name}`", installed, label))
@@ -135,7 +134,7 @@ class DoctorApiService:
             self._check(
                 "build_backend",
                 "selected_source_dir",
-                "源码目录",
+                "当前运行机源码目录",
                 bool(build_env.get("selected_source_ok")),
                 str(build_env.get("selected_source_dir") or "未找到"),
                 failed_status="error",
@@ -143,7 +142,7 @@ class DoctorApiService:
             self._check(
                 "build_backend",
                 "config_path",
-                "内核配置文件",
+                "当前运行机内核配置文件",
                 bool(build_env.get("config_ok")),
                 str(build_env.get("config_path") or "未找到"),
                 failed_status="error",
@@ -151,41 +150,12 @@ class DoctorApiService:
             self._check(
                 "build_backend",
                 "vmlinux_path",
-                "vmlinux 文件",
+                "当前运行机 vmlinux 文件",
                 bool(build_env.get("vmlinux_ok")),
                 str(build_env.get("vmlinux_path") or "未找到"),
                 failed_status="error",
             ),
         ]
-        if build_env["backend"] == "ssh":
-            checks.extend(
-                [
-                    self._check(
-                        "remote_env",
-                        "remote_host",
-                        "远端构建机",
-                        bool(build_env.get("remote_host")),
-                        build_env.get("host_label") or "未配置",
-                        failed_status="error",
-                    ),
-                    self._check(
-                        "remote_env",
-                        "remote_auth",
-                        "远端密码环境变量",
-                        bool(build_env.get("password_present")),
-                        build_env.get("remote_password_env") or "未配置",
-                        failed_status="error",
-                    ),
-                    self._check(
-                        "remote_env",
-                        "remote_connection",
-                        "远端连通性",
-                        bool(build_env.get("reachable")),
-                        build_env.get("error") or "连接正常",
-                        failed_status="error",
-                    ),
-                ]
-            )
         return checks
 
     def _check(

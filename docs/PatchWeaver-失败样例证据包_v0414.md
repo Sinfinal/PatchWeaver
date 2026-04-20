@@ -18,7 +18,7 @@
 
 - `6.6.102-5.2.an23.x86_64`
 
-远端构建机：
+验证机构建环境：
 
 - `10.223.185.3`
 
@@ -47,7 +47,7 @@
 5. 上下文与提示词打包
 6. 改写计划生成
 7. `rewritten.patch` 落盘
-8. 远端 `apply` 预检查
+8. 验证机本地 `apply` 预检查
 9. 失败归因记录
 10. 报告生成
 11. 回放信息生成
@@ -75,7 +75,7 @@
 
 ## 5. 失败位置与失败类型
 
-本样例最终失败在远端 `apply` 预检查阶段。
+本样例最终失败在验证机本地 `apply` 预检查阶段。
 
 关键文件：
 
@@ -87,11 +87,11 @@
 
 - 失败类型：`patch_apply_failed`
 - 失败摘要：`error: net/netfilter/nf_tables_api.c: No such file or directory`
-- 参与预检查的目录：远端 `kernel_devel_dir` 对应目录
+- 参与预检查的目录：验证机本地 `kernel_devel_dir` 对应目录
 
 从 `build.log` 和 `doctor` 结果可以进一步确认：
 
-- 远端主机可达
+- 验证机环境可用
 - `kpatch-build` 存在
 - `.config` 存在
 - `vmlinux` 存在
@@ -144,7 +144,7 @@
 
 针对本样例，下一步动作已经比较清楚：
 
-1. 在远端补齐完整内核源码树
+1. 在验证机上补齐完整内核源码树
 2. 修正 `kernel_src_dir`
 3. 重新执行 `apply` 预检查
 4. 再进入 `kpatch-build`

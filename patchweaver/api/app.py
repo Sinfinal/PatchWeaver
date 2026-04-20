@@ -18,6 +18,7 @@ from patchweaver.config.loader import discover_project_root
 def create_app() -> FastAPI:
     """创建 FastAPI 应用实例。"""
 
+    web_dist_dir = _resolve_web_dist_dir()
     app = FastAPI(
         title="PatchWeaver API",
         version=__version__,
@@ -49,22 +50,30 @@ def create_app() -> FastAPI:
 
     @app.get("/")
     def index() -> RedirectResponse:
-        """开发阶段默认跳转到接口文档。"""
+        """默认优先跳转到 Web 控制台；若前端未构建则回退到接口文档。"""
 
+        if web_dist_dir.exists():
+            return RedirectResponse(url="/console/")
         return RedirectResponse(url="/docs")
 
-    _mount_web_dist(app)
+    _mount_web_dist(app, web_dist_dir)
     return app
 
 
-def _mount_web_dist(app: FastAPI) -> None:
-    """如果前端已经构建，则把静态资源挂到 /console。"""
+def _resolve_web_dist_dir() -> Path:
+    """返回前端构建产物目录。"""
 
     project_root = discover_project_root()
-    dist_dir = (project_root / "web" / "dist").resolve()
+    return (project_root / "web" / "dist").resolve()
+
+
+def _mount_web_dist(app: FastAPI, dist_dir: Path | None = None) -> None:
+    """如果前端已经构建，则把静态资源挂到 /console。"""
+
+    dist_dir = dist_dir or _resolve_web_dist_dir()
     if not dist_dir.exists():
         return
-    app.mount("/console", StaticFiles(directory=Path(dist_dir), html=True), name="console")
+    app.mount("/console", StaticFiles(directory=dist_dir, html=True), name="console")
 
 
 app = create_app()

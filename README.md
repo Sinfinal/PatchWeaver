@@ -89,7 +89,7 @@ python -m patchweaver --help
 python -m patchweaver init --with-db --json
 ```
 
-检查本地与远端构建环境：
+检查当前运行机的本机构建环境：
 
 ```bash
 python -m patchweaver doctor --json
@@ -119,6 +119,15 @@ python -m patchweaver run --task TASK-DEMO-001 --json
 python -m patchweaver report --task TASK-DEMO-001 --json
 python -m patchweaver replay --task TASK-DEMO-001 --json
 ```
+
+在 Linux 验证机上安装并启动 Web/API 常驻服务：
+
+```bash
+python -m patchweaver install-api-service
+systemctl status patchweaver-web --no-pager
+```
+
+默认服务地址来自 `config/system.yaml`，当前默认监听 `0.0.0.0:18084`。
 
 ## 6. 典型输出
 

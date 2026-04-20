@@ -27,6 +27,10 @@ class SystemConfig(ConfigModel):
     trace_mode: Literal["full", "compact"] = "full"
     manifest_dir: str = "data/manifests"
     report_formats: list[str] = Field(default_factory=lambda: ["json", "md"])
+    api_host: str = "0.0.0.0"
+    api_port: int = 18084
+    api_service_name: str = "patchweaver-web"
+    auto_install_api_service: bool = True
 
 
 class ProfileSettings(ConfigModel):
@@ -51,22 +55,16 @@ class ProfilesConfig(ConfigModel):
 
 
 class BuildConfig(ConfigModel):
-    """构建阶段使用的路径、后端和远端连接配置。"""
+    """构建阶段使用的本机路径与命令配置。"""
 
-    # 这里的路径默认按目标构建环境理解。
-    # 本地后端直接访问本机路径，SSH 后端则把它们当成远端路径使用。
-    build_backend: Literal["local", "ssh"] = "local"
+    # 当前工程固定采用“当前运行机本机构建”模式。
+    # 开发机与验证机之间只做代码同步，不再把验证机抽象成单独的构建后端。
+    build_backend: Literal["local"] = "local"
     kernel_src_dir: str = "/opt/kernel-src"
     kernel_devel_dir: str = "/usr/src/kernels/6.6.102-5.2.an23.x86_64"
     vmlinux_path: str = "/usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux"
     kpatch_build_cmd: str = "kpatch-build"
     build_timeout_sec: int = 3600
-    remote_host: str | None = None
-    remote_port: int = 22
-    remote_username: str | None = None
-    remote_password_env: str | None = None
-    remote_workspace_root: str = "/root/patchweaver"
-    remote_connect_timeout_sec: int = 15
 
 
 class VerifyConfig(ConfigModel):

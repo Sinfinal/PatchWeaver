@@ -89,7 +89,7 @@ python -m patchweaver --help
 python -m patchweaver init --with-db --json
 ```
 
-检查本地与远端构建环境：
+检查当前运行机的本机构建环境：
 
 ```bash
 python -m patchweaver doctor --json

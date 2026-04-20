@@ -1,17 +1,13 @@
-"""构建编排与后端接入。"""
+"""构建编排与本机构建执行。"""
 
 from __future__ import annotations
 
-import os
 import shlex
-import stat
 import subprocess
 from datetime import datetime, timezone
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from shutil import which
 from typing import Any
-
-import paramiko
 
 from patchweaver.models.attempt import AttemptRecord, BuildPrecheck, BuildSummary
 from patchweaver.models.rewrite import RewritePlan
@@ -19,7 +15,7 @@ from patchweaver.models.task import TaskContext
 
 
 class BuildOrchestrator:
-    """负责组织单轮构建，并统一封装本地与 SSH 后端。"""
+    """负责组织单轮本机构建。"""
 
     def __init__(self, build_config: Any) -> None:
         """保存构建配置，供预检和执行阶段复用。"""
@@ -37,10 +33,8 @@ class BuildOrchestrator:
         )
 
     def probe_environment(self) -> dict[str, Any]:
-        """检查当前构建后端的关键环境是否齐备。"""
+        """检查当前运行机上的构建环境是否齐备。"""
 
-        if self.build_config.build_backend == "ssh":
-            return self._probe_remote_environment()
         return self._probe_local_environment()
 
     def precheck_patch(
@@ -51,7 +45,7 @@ class BuildOrchestrator:
         rewritten_patch_path: Path,
         source_dir: Path | None = None,
     ) -> BuildPrecheck:
-        """对本地改写补丁执行 apply 级预检查。"""
+        """对改写补丁执行 apply 级预检查。"""
 
         selected_source_dir = source_dir
         if selected_source_dir is None:
@@ -137,16 +131,8 @@ class BuildOrchestrator:
         rewritten_patch_path: Path,
         build_log_path: Path,
     ) -> tuple[AttemptRecord, str, BuildPrecheck, BuildSummary]:
-        """执行一轮构建尝试。"""
+        """执行一轮本机构建尝试。"""
 
-        if self.build_config.build_backend == "ssh":
-            return self._execute_remote_build(
-                task=task,
-                attempt_no=attempt_no,
-                plan=plan,
-                rewritten_patch_path=rewritten_patch_path,
-                build_log_path=build_log_path,
-            )
         return self._execute_local_build(
             task=task,
             attempt_no=attempt_no,
@@ -183,78 +169,6 @@ class BuildOrchestrator:
             "vmlinux_path": self.build_config.vmlinux_path,
             "vmlinux_ok": Path(self.build_config.vmlinux_path).exists(),
         }
-
-    def _probe_remote_environment(self) -> dict[str, Any]:
-        """检查远端构建环境。"""
-
-        host_label = self._remote_host_label()
-        password = self._remote_password()
-        probe: dict[str, Any] = {
-            "backend": "ssh",
-            "builder_cmd": self.build_config.kpatch_build_cmd,
-            "remote_host": self.build_config.remote_host,
-            "remote_port": self.build_config.remote_port,
-            "remote_username": self.build_config.remote_username,
-            "remote_password_env": self.build_config.remote_password_env,
-            "password_present": bool(password),
-            "remote_workspace_root": self.build_config.remote_workspace_root,
-            "host_label": host_label,
-            "reachable": False,
-            "builder_path": None,
-            "builder_ok": False,
-            "kernel_src_dir": self.build_config.kernel_src_dir,
-            "kernel_src_ok": False,
-            "kernel_devel_dir": self.build_config.kernel_devel_dir,
-            "kernel_devel_ok": False,
-            "selected_source_dir": None,
-            "selected_source_ok": False,
-            "selected_source_reason": None,
-            "config_path": None,
-            "config_ok": False,
-            "vmlinux_path": self.build_config.vmlinux_path,
-            "vmlinux_ok": False,
-            "error": None,
-        }
-
-        if not self.build_config.remote_host or not self.build_config.remote_username:
-            probe["error"] = "缺少远端主机或登录用户配置。"
-            return probe
-        if not self.build_config.remote_password_env:
-            probe["error"] = "未配置远端密码环境变量名。"
-            return probe
-        if not password:
-            probe["error"] = f"缺少远端密码环境变量：{self.build_config.remote_password_env}"
-            return probe
-
-        client: paramiko.SSHClient | None = None
-        sftp: paramiko.SFTPClient | None = None
-        try:
-            client = self._connect_remote(password)
-            sftp = client.open_sftp()
-            probe["reachable"] = True
-            probe["builder_path"] = self._remote_command_output(client, f"command -v {shlex.quote(self.build_config.kpatch_build_cmd)}")
-            probe["builder_ok"] = bool(probe["builder_path"])
-            probe["kernel_src_ok"] = self._remote_kernel_tree_ok(sftp, self.build_config.kernel_src_dir)
-            probe["kernel_devel_ok"] = self._remote_kernel_tree_ok(sftp, self.build_config.kernel_devel_dir)
-
-            selected_source_dir, selected_source_reason = self._select_remote_source_dir(sftp)
-            probe["selected_source_dir"] = selected_source_dir
-            probe["selected_source_reason"] = selected_source_reason
-            probe["selected_source_ok"] = selected_source_dir is not None
-
-            config_path = f"{selected_source_dir}/.config" if selected_source_dir else None
-            probe["config_path"] = config_path
-            probe["config_ok"] = bool(config_path and self._remote_file_exists(sftp, config_path))
-            probe["vmlinux_ok"] = self._remote_file_exists(sftp, self.build_config.vmlinux_path)
-        except Exception as exc:
-            probe["error"] = f"远端连接失败：{exc}"
-        finally:
-            if sftp is not None:
-                sftp.close()
-            if client is not None:
-                client.close()
-
-        return probe
 
     def _execute_local_build(
         self,
@@ -333,7 +247,7 @@ class BuildOrchestrator:
 
         if not precheck.ok:
             failure_type = precheck.failure_type or "patch_apply_failed"
-            summary_text = "apply 级预检查未通过，已跳过本地构建。"
+            summary_text = "apply 级预检查未通过，已跳过本机构建。"
             lines.append(summary_text)
             summary = BuildSummary(
                 task_id=task.task_id,
@@ -366,278 +280,94 @@ class BuildOrchestrator:
                 summary,
             )
 
-        failure_type = "build_not_implemented"
-        lines.append("本地 apply 级预检查已通过，但当前版本优先接入真实 SSH 构建机，本地 Linux 构建流程暂未展开。")
+        output_dir = build_log_path.parent.parent / "output"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        builder_cmd = probe["builder_path"] or self.build_config.kpatch_build_cmd
+        selected_source_dir = Path(str(probe["selected_source_dir"]))
+        command = [
+            builder_cmd,
+            "-s",
+            str(selected_source_dir),
+            "-c",
+            str(probe["config_path"]),
+            "-v",
+            self.build_config.vmlinux_path,
+            "-n",
+            self._module_name(task.task_id, attempt_no),
+            "-o",
+            str(output_dir),
+            str(rewritten_patch_path.resolve()),
+        ]
+        command_text = " ".join(shlex.quote(part) for part in command)
+        lines.extend(["", "[local command]", command_text])
+
+        exit_code: int | None = None
+        module_path: Path | None = None
+        failure_type = None
+        stdout_text = ""
+        stderr_text = ""
+
+        try:
+            result = subprocess.run(
+                command,
+                cwd=str(selected_source_dir),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=False,
+                timeout=self.build_config.build_timeout_sec,
+            )
+            stdout_text = result.stdout.strip()
+            stderr_text = result.stderr.strip()
+            exit_code = result.returncode
+        except subprocess.TimeoutExpired as exc:
+            stdout_text = self._normalize_process_output(exc.stdout).strip()
+            stderr_text = self._normalize_process_output(exc.stderr).strip()
+            exit_code = -1
+            failure_type = "compile_failed"
+            lines.append(f"构建命令超时：{self.build_config.build_timeout_sec} 秒。")
+
+        lines.extend(
+            [
+                "",
+                "[stdout]",
+                stdout_text or "<empty>",
+                "",
+                "[stderr]",
+                stderr_text or "<empty>",
+                "",
+                f"退出码: {exit_code}",
+            ]
+        )
+
+        if exit_code == 0:
+            module_path = self._find_local_module(output_dir)
+            if module_path is None:
+                lines.append("本机构建命令返回成功，但输出目录中没有找到 .ko 文件。")
+                exit_code = 2
+                failure_type = "compile_failed"
+        else:
+            failure_type = failure_type or self._classify_command_failure(stdout_text=stdout_text, stderr_text=stderr_text)
+            local_kpatch_log = self._read_local_kpatch_log()
+            if local_kpatch_log:
+                lines.extend(["", "[local kpatch log]", local_kpatch_log])
+
+        status = "built" if exit_code == 0 and module_path is not None else "failed"
+        final_failure_type = None if status == "built" else (failure_type or "compile_failed")
+        build_log = "\n".join(lines) + "\n"
+        build_log_path.write_text(build_log, encoding="utf-8")
         summary = BuildSummary(
             task_id=task.task_id,
             attempt_id=record.attempt_id,
             backend="local",
-            builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
-            status="failed",
-            summary="本地构建链尚未实现，已在 apply 级预检查后停止。",
+            builder_cmd=builder_cmd,
+            status=status,
+            summary="本机构建成功，并已记录模块产物。" if status == "built" else "本机构建失败，已生成结构化失败摘要。",
             rewritten_patch_path=rewritten_patch_path,
             source_dir=precheck.source_dir,
             build_log_path=build_log_path,
-            failure_type=failure_type,
-        )
-        build_log = "\n".join(lines) + "\n"
-        build_log_path.write_text(build_log, encoding="utf-8")
-        return (
-            record.model_copy(
-                update={
-                    "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
-                    "status": "failed",
-                    "failure_type": failure_type,
-                    "build_log_path": build_log_path,
-                    "module_path": None,
-                    "rewritten_patch_path": rewritten_patch_path,
-                    "finished_at": datetime.now(timezone.utc),
-                }
-            ),
-            build_log,
-            precheck,
-            summary,
-        )
-
-    def _execute_remote_build(
-        self,
-        *,
-        task: TaskContext,
-        attempt_no: int,
-        plan: RewritePlan,
-        rewritten_patch_path: Path,
-        build_log_path: Path,
-    ) -> tuple[AttemptRecord, str, BuildPrecheck, BuildSummary]:
-        """执行远端构建。"""
-
-        record = self.start_attempt(task_id=task.task_id, attempt_no=attempt_no)
-        build_log_path.parent.mkdir(parents=True, exist_ok=True)
-        probe = self._probe_remote_environment()
-
-        lines = [
-            "构建后端: ssh",
-            f"远端主机: {probe['host_label']}",
-            f"构建命令: {probe['builder_path'] or self.build_config.kpatch_build_cmd}",
-            f"源码目录: {probe['selected_source_dir'] or '未找到'}",
-            f"配置文件: {probe['config_path'] or '未找到'}",
-            f"vmlinux: {self.build_config.vmlinux_path}",
-        ]
-
-        failure_type = self._probe_failure_type(probe)
-        if failure_type is not None:
-            message = probe.get("error") or self._failure_message(failure_type)
-            lines.append(message)
-            precheck = self._precheck_not_run(
-                task_id=task.task_id,
-                attempt_id=record.attempt_id,
-                backend="ssh",
-                rewritten_patch_path=rewritten_patch_path,
-                source_dir=probe.get("selected_source_dir"),
-                failure_type=failure_type,
-                summary=message,
-            )
-            summary = BuildSummary(
-                task_id=task.task_id,
-                attempt_id=record.attempt_id,
-                backend="ssh",
-                builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
-                status="failed",
-                summary=message,
-                rewritten_patch_path=rewritten_patch_path,
-                source_dir=probe.get("selected_source_dir"),
-                build_log_path=build_log_path,
-                failure_type=failure_type,
-            )
-            build_log = "\n".join(lines) + "\n"
-            build_log_path.write_text(build_log, encoding="utf-8")
-            return (
-                record.model_copy(
-                    update={
-                        "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
-                        "status": "failed",
-                        "failure_type": failure_type,
-                        "build_log_path": build_log_path,
-                        "module_path": None,
-                        "rewritten_patch_path": rewritten_patch_path,
-                        "finished_at": datetime.now(timezone.utc),
-                    }
-                ),
-                build_log,
-                precheck,
-                summary,
-            )
-
-        password = self._remote_password()
-        assert password is not None  # 这里的密码存在性已经在 probe 阶段确认过。
-
-        client: paramiko.SSHClient | None = None
-        sftp: paramiko.SFTPClient | None = None
-        module_path: Path | None = None
-        remote_module_path: str | None = None
-        exit_code = 1
-        precheck: BuildPrecheck
-        remote_patch_path_str: str | None = None
-        remote_output_dir_str: str | None = None
-        selected_source_dir = str(probe["selected_source_dir"])
-        try:
-            client = self._connect_remote(password)
-            sftp = client.open_sftp()
-
-            remote_attempt_dir = PurePosixPath(self.build_config.remote_workspace_root) / task.task_id / "attempts" / f"{attempt_no:03d}"
-            remote_output_dir = remote_attempt_dir / "output"
-            remote_patch_path = remote_attempt_dir / "rewritten.patch"
-            remote_patch_path_str = remote_patch_path.as_posix()
-            remote_output_dir_str = remote_output_dir.as_posix()
-
-            self._remote_mkdirs(client, remote_output_dir)
-            sftp.put(str(rewritten_patch_path), remote_patch_path_str)
-
-            precheck = self._run_remote_apply_precheck(
-                client=client,
-                task_id=task.task_id,
-                attempt_id=record.attempt_id,
-                rewritten_patch_path=rewritten_patch_path,
-                remote_patch_path=remote_patch_path_str,
-                source_dir=selected_source_dir,
-            )
-            lines.extend(self._format_precheck_lines(precheck))
-
-            if not precheck.ok:
-                failure_type = precheck.failure_type or "patch_apply_failed"
-                summary_text = "apply 级预检查未通过，已跳过远端构建。"
-                lines.append(summary_text)
-                summary = BuildSummary(
-                    task_id=task.task_id,
-                    attempt_id=record.attempt_id,
-                    backend="ssh",
-                    builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
-                    status="precheck_failed",
-                    summary=summary_text,
-                    rewritten_patch_path=rewritten_patch_path,
-                    source_dir=selected_source_dir,
-                    build_log_path=build_log_path,
-                    remote_patch_path=remote_patch_path_str,
-                    remote_output_dir=remote_output_dir_str,
-                    failure_type=failure_type,
-                )
-                build_log = "\n".join(lines) + "\n"
-                build_log_path.write_text(build_log, encoding="utf-8")
-                return (
-                    record.model_copy(
-                        update={
-                            "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
-                            "status": "failed",
-                            "failure_type": failure_type,
-                            "build_log_path": build_log_path,
-                            "module_path": None,
-                            "rewritten_patch_path": rewritten_patch_path,
-                            "finished_at": datetime.now(timezone.utc),
-                        }
-                    ),
-                    build_log,
-                    precheck,
-                    summary,
-                )
-
-            module_name = self._module_name(task.task_id, attempt_no)
-            build_command = " ".join(
-                [
-                    shlex.quote(self.build_config.kpatch_build_cmd),
-                    "-s",
-                    shlex.quote(selected_source_dir),
-                    "-c",
-                    shlex.quote(str(probe["config_path"])),
-                    "-v",
-                    shlex.quote(self.build_config.vmlinux_path),
-                    "-n",
-                    shlex.quote(module_name),
-                    "-o",
-                    shlex.quote(remote_output_dir_str),
-                    shlex.quote(remote_patch_path_str),
-                ]
-            )
-            command = f"mkdir -p {shlex.quote(remote_output_dir_str)} && {build_command}"
-            stdout_text, stderr_text, exit_code = self._remote_command(client, command, timeout=self.build_config.build_timeout_sec)
-
-            lines.extend(
-                [
-                    "",
-                    "[remote command]",
-                    command,
-                    "",
-                    "[stdout]",
-                    stdout_text or "<empty>",
-                    "",
-                    "[stderr]",
-                    stderr_text or "<empty>",
-                    "",
-                    f"退出码: {exit_code}",
-                ]
-            )
-
-            if exit_code == 0:
-                remote_module_path = self._find_remote_module(client, remote_output_dir)
-                if remote_module_path:
-                    local_module_dir = build_log_path.parent.parent / "artifacts" / "module"
-                    local_module_dir.mkdir(parents=True, exist_ok=True)
-                    module_path = local_module_dir / Path(remote_module_path).name
-                    sftp.get(remote_module_path, str(module_path))
-                else:
-                    lines.append("远端构建命令返回成功，但输出目录中没有找到 .ko 文件。")
-                    exit_code = 2
-                    failure_type = "compile_failed"
-            else:
-                remote_kpatch_log = self._read_remote_kpatch_log(client)
-                if remote_kpatch_log:
-                    lines.extend(
-                        [
-                            "",
-                            "[remote kpatch log]",
-                            remote_kpatch_log,
-                        ]
-                    )
-                failure_type = self._classify_command_failure(stdout_text=stdout_text, stderr_text=stderr_text)
-        except Exception as exc:
-            lines.append(f"远端执行失败: {exc}")
-            failure_type = "remote_connect_failed"
-            precheck = self._precheck_not_run(
-                task_id=task.task_id,
-                attempt_id=record.attempt_id,
-                backend="ssh",
-                rewritten_patch_path=rewritten_patch_path,
-                source_dir=selected_source_dir,
-                failure_type=failure_type,
-                summary=f"远端执行失败：{exc}",
-            )
-        finally:
-            if sftp is not None:
-                sftp.close()
-            if client is not None:
-                client.close()
-
-        if exit_code == 0 and module_path is not None:
-            status = "built"
-            final_failure_type = None
-        else:
-            status = "failed"
-            final_failure_type = failure_type or "compile_failed"
-
-        build_log = "\n".join(lines) + "\n"
-        build_log_path.write_text(build_log, encoding="utf-8")
-        summary = BuildSummary(
-            task_id=task.task_id,
-            attempt_id=record.attempt_id,
-            backend="ssh",
-            builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
-            status=status,
-            summary="远端构建成功，并已拉回模块产物。" if status == "built" else "远端构建失败，已生成结构化失败摘要。",
-            rewritten_patch_path=rewritten_patch_path,
-            source_dir=selected_source_dir,
-            build_log_path=build_log_path,
             module_path=module_path,
-            remote_patch_path=remote_patch_path_str,
-            remote_output_dir=remote_output_dir_str,
-            remote_module_path=remote_module_path,
             failure_type=final_failure_type,
             exit_code=exit_code,
         )
@@ -656,55 +386,6 @@ class BuildOrchestrator:
             build_log,
             precheck,
             summary,
-        )
-
-    def _run_remote_apply_precheck(
-        self,
-        *,
-        client: paramiko.SSHClient,
-        task_id: str,
-        attempt_id: str,
-        rewritten_patch_path: Path,
-        remote_patch_path: str,
-        source_dir: str,
-    ) -> BuildPrecheck:
-        """在远端源码树上执行 apply 级预检查。"""
-
-        command = (
-            f"cd {shlex.quote(source_dir)} && "
-            f"git apply --check --verbose {shlex.quote(remote_patch_path)}"
-        )
-        stdout_text, stderr_text, exit_code = self._remote_command(client, command, timeout=60)
-        ok = exit_code == 0
-        failure_type = None
-        summary = "apply 级预检查通过。"
-        if not ok:
-            failure_type = self._classify_apply_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
-            if failure_type == "patch_apply_failed":
-                reverse_command = (
-                    f"cd {shlex.quote(source_dir)} && "
-                    f"git apply --reverse --check --verbose {shlex.quote(remote_patch_path)}"
-                )
-                _, _, reverse_exit_code = self._remote_command(client, reverse_command, timeout=60)
-                if reverse_exit_code == 0:
-                    failure_type = "target_already_patched"
-            summary = self._summarize_precheck_failure(
-                stdout_text=stdout_text,
-                stderr_text=stderr_text,
-                failure_type=failure_type,
-            )
-        return BuildPrecheck(
-            task_id=task_id,
-            attempt_id=attempt_id,
-            backend="ssh",
-            ok=ok,
-            summary=summary,
-            patch_path=rewritten_patch_path,
-            source_dir=source_dir,
-            command=command,
-            failure_type=failure_type,
-            stdout_excerpt=stdout_text[:2000],
-            stderr_excerpt=stderr_text[:2000],
         )
 
     def _precheck_not_run(
@@ -762,118 +443,13 @@ class BuildOrchestrator:
 
         return None, None
 
-    def _select_remote_source_dir(self, sftp: paramiko.SFTPClient) -> tuple[str | None, str | None]:
-        """挑选远端可用的源码目录。"""
-
-        if self._remote_kernel_tree_ok(sftp, self.build_config.kernel_src_dir):
-            return self.build_config.kernel_src_dir, "kernel_src_dir"
-        if self._remote_kernel_tree_ok(sftp, self.build_config.kernel_devel_dir):
-            return self.build_config.kernel_devel_dir, "kernel_devel_dir_fallback"
-        return None, None
-
     def _local_kernel_tree_ok(self, path: Path) -> bool:
         """判断本地目录能否作为内核源码树使用。"""
 
         return path.is_dir() and (path / "Makefile").exists()
 
-    def _remote_kernel_tree_ok(self, sftp: paramiko.SFTPClient, path: str) -> bool:
-        """判断远端目录能否作为内核源码树使用。"""
-
-        return self._remote_dir_exists(sftp, path) and self._remote_file_exists(sftp, f"{path}/Makefile")
-
-    def _remote_file_exists(self, sftp: paramiko.SFTPClient, path: str) -> bool:
-        """检查远端文件是否存在。"""
-
-        try:
-            remote_stat = sftp.stat(path)
-        except OSError:
-            return False
-        return stat.S_ISREG(remote_stat.st_mode)
-
-    def _remote_dir_exists(self, sftp: paramiko.SFTPClient, path: str) -> bool:
-        """检查远端目录是否存在。"""
-
-        try:
-            remote_stat = sftp.stat(path)
-        except OSError:
-            return False
-        return stat.S_ISDIR(remote_stat.st_mode)
-
-    def _remote_password(self) -> str | None:
-        """读取远端密码环境变量。"""
-
-        if not self.build_config.remote_password_env:
-            return None
-        return os.getenv(self.build_config.remote_password_env)
-
-    def _remote_host_label(self) -> str:
-        """生成远端主机展示名。"""
-
-        username = self.build_config.remote_username or "unknown"
-        host = self.build_config.remote_host or "unknown"
-        port = self.build_config.remote_port or 22
-        return f"{username}@{host}:{port}"
-
-    def _connect_remote(self, password: str) -> paramiko.SSHClient:
-        """建立远端 SSH 连接。"""
-
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(
-            hostname=self.build_config.remote_host,
-            port=self.build_config.remote_port,
-            username=self.build_config.remote_username,
-            password=password,
-            timeout=self.build_config.remote_connect_timeout_sec,
-        )
-        return client
-
-    def _remote_command_output(self, client: paramiko.SSHClient, command: str) -> str | None:
-        """执行远端命令并返回 stdout。"""
-
-        stdout_text, _, exit_code = self._remote_command(client, command, timeout=20)
-        if exit_code != 0:
-            return None
-        text = stdout_text.strip()
-        return text or None
-
-    def _remote_command(self, client: paramiko.SSHClient, command: str, *, timeout: int) -> tuple[str, str, int]:
-        """执行远端命令并返回标准输出、错误输出和退出码。"""
-
-        stdin, stdout, stderr = client.exec_command(command, timeout=timeout)
-        stdout_text = stdout.read().decode("utf-8", errors="replace").strip()
-        stderr_text = stderr.read().decode("utf-8", errors="replace").strip()
-        exit_code = stdout.channel.recv_exit_status()
-        return stdout_text, stderr_text, exit_code
-
-    def _remote_mkdirs(self, client: paramiko.SSHClient, remote_dir: PurePosixPath) -> None:
-        """在远端递归创建目录。"""
-
-        command = f"mkdir -p {shlex.quote(remote_dir.as_posix())}"
-        _, stderr_text, exit_code = self._remote_command(client, command, timeout=20)
-        if exit_code != 0:
-            raise RuntimeError(stderr_text or f"创建远端目录失败：{remote_dir}")
-
-    def _find_remote_module(self, client: paramiko.SSHClient, remote_output_dir: PurePosixPath) -> str | None:
-        """在远端输出目录中查找构建出来的模块。"""
-
-        command = f"find {shlex.quote(remote_output_dir.as_posix())} -type f -name '*.ko' | sort | head -n 1"
-        return self._remote_command_output(client, command)
-
-    def _read_remote_kpatch_log(self, client: paramiko.SSHClient) -> str | None:
-        """读取远端 kpatch 的最近一段调试日志。"""
-
-        command = "if [ -f /root/.kpatch/build.log ]; then tail -n 40 /root/.kpatch/build.log; fi"
-        return self._remote_command_output(client, command)
-
     def _probe_failure_type(self, probe: dict[str, Any]) -> str | None:
         """把预检结果映射成统一失败类型。"""
-
-        if probe["backend"] == "ssh":
-            if not probe.get("password_present"):
-                return "remote_auth_missing"
-            if probe.get("error"):
-                return "remote_connect_failed"
 
         if not probe.get("builder_ok"):
             return "build_env_missing"
@@ -889,8 +465,6 @@ class BuildOrchestrator:
         """生成更容易看懂的失败提示。"""
 
         messages = {
-            "remote_auth_missing": "缺少远端登录密码，先在本地环境变量中提供密码后再试。",
-            "remote_connect_failed": "远端连接失败，请检查 IP、端口、账号或网络连通性。",
             "build_env_missing": f"未找到构建命令：{self.build_config.kpatch_build_cmd}",
             "kernel_src_missing": "找不到可用的内核源码目录，kernel_src_dir 和 kernel_devel_dir 都未通过校验。",
             "kernel_config_missing": "源码目录中没有找到 .config，暂时无法继续构建。",
@@ -951,8 +525,40 @@ class BuildOrchestrator:
             return "kpatch_constraint"
         return "compile_failed"
 
+    def _find_local_module(self, output_dir: Path) -> Path | None:
+        """在输出目录中查找构建生成的模块。"""
+
+        candidates = sorted(output_dir.rglob("*.ko"))
+        return candidates[0] if candidates else None
+
+    def _read_local_kpatch_log(self) -> str | None:
+        """读取当前运行机上最近的 kpatch 调试日志。"""
+
+        log_path = Path.home() / ".kpatch" / "build.log"
+        if not log_path.exists():
+            return None
+        try:
+            return self._tail_text(log_path, line_count=40)
+        except OSError:
+            return None
+
+    def _tail_text(self, path: Path, *, line_count: int) -> str:
+        """读取文本文件最后若干行。"""
+
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        return "\n".join(lines[-line_count:]).strip()
+
+    def _normalize_process_output(self, value: str | bytes | None) -> str:
+        """把 subprocess 的异常输出统一整理成字符串。"""
+
+        if value is None:
+            return ""
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="replace")
+        return value
+
     def _module_name(self, task_id: str, attempt_no: int) -> str:
-        """生成远端模块名。"""
+        """生成模块名。"""
 
         normalized = task_id.lower().replace("_", "-")
         return f"patchweaver-{normalized}-{attempt_no:03d}"

@@ -111,11 +111,11 @@ def test_release_service_writes_manifest_and_gate(monkeypatch, tmp_path: Path) -
     monkeypatch.setattr(
         "patchweaver.reporter.release_service.BuildOrchestrator.probe_environment",
         lambda self: {
-            "backend": "ssh",
+            "backend": "local",
             "builder_ok": True,
             "selected_source_ok": True,
             "config_ok": True,
-            "host_label": "root@10.0.0.1:22",
+            "selected_source_dir": "/opt/kernel-src",
         },
     )
 

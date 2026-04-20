@@ -84,9 +84,6 @@ class BuildSummary(BaseModel):
     source_dir: str | None = None
     build_log_path: Path | None = None
     module_path: Path | None = None
-    remote_patch_path: str | None = None
-    remote_output_dir: str | None = None
-    remote_module_path: str | None = None
     failure_type: str | None = None
     exit_code: int | None = None
     created_at: datetime = Field(default_factory=_utc_now)

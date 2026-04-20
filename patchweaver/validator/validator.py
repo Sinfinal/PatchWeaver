@@ -84,7 +84,6 @@ class Validator:
         ]
 
         build_succeeded = attempt.status == "built"
-        remote_module_path = build_summary.remote_module_path if build_summary is not None else None
         history_attempts = history_attempts or []
 
         load_result = self._pending_item("构建尚未产出可验证模块，暂不执行加载测试。")
@@ -109,7 +108,6 @@ class Validator:
             if self.verify_config.enable_load_test:
                 load_result, load_log = self.load_tester.load(
                     module_path=attempt.module_path,
-                    remote_module_path=remote_module_path,
                 )
                 load_result = self._attach_log_path(load_result, logs_dir / "load.log")
                 (logs_dir / "load.log").write_text(load_log or f"{load_result.detail}\n", encoding="utf-8")
@@ -121,7 +119,6 @@ class Validator:
             if self.verify_config.enable_unload_test and load_result.ok:
                 unload_result, unload_log = self.load_tester.unload(
                     module_path=attempt.module_path,
-                    remote_module_path=remote_module_path,
                 )
                 unload_result = self._attach_log_path(unload_result, logs_dir / "unload.log")
                 (logs_dir / "unload.log").write_text(unload_log or f"{unload_result.detail}\n", encoding="utf-8")

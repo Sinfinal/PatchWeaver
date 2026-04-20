@@ -22,8 +22,6 @@ class ReportBuilder:
             return "validation", "继续执行加载、卸载、smoke 和 selftest，补齐最小验证闭环。"
 
         mapping: dict[str, tuple[str, str]] = {
-            "remote_auth_missing": ("build_env", "补齐远端认证信息并重新执行环境自检。"),
-            "remote_connect_failed": ("build_env", "检查远端 SSH 连通性和构建机可达性。"),
             "build_env_missing": ("build_env", "补齐 kpatch-build、git 等构建依赖后重试。"),
             "kernel_src_missing": ("source_tree", "补齐可用于 apply 和构建的完整内核源码树。"),
             "kernel_config_missing": ("build_env", "补齐 .config 后重新执行预检查。"),
@@ -32,7 +30,6 @@ class ReportBuilder:
             "target_already_patched": ("target_state", "目标源码已包含修复；请切换未修复内核、调整样例或显式识别已修复状态。"),
             "compile_failed": ("compile", "分析编译报错并收缩改写范围。"),
             "kpatch_constraint": ("kpatch_constraint", "根据 kpatch 约束调整原语和改写策略。"),
-            "build_not_implemented": ("build_backend", "补齐构建后端流程或切换到可用构建机。"),
         }
         return mapping.get(
             latest.failure_type or "",

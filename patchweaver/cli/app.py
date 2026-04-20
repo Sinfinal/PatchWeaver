@@ -17,6 +17,11 @@ import typer
 from typer.core import TyperGroup
 
 from patchweaver import __version__
+from patchweaver.api.service_manager import (
+    DEFAULT_API_SERVICE_NAME,
+    install_systemd_service,
+    wait_for_api_ready,
+)
 from patchweaver.builder.orchestrator import BuildOrchestrator
 from patchweaver.config.loader import (
     load_build_config,
@@ -24,6 +29,7 @@ from patchweaver.config.loader import (
     load_models_config,
     load_prompts_config,
     load_skills_config,
+    load_system_config,
     load_verify_config,
 )
 from patchweaver.config.resolver import load_effective_configs, resolve_runtime
@@ -254,7 +260,20 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
     program_name = command.name or "patchweaver"
     commands = {name: command.get_command(ctx, name) for name in command.list_commands(ctx)}
     task_commands = ["create", "analyze", "run", "report", "replay", "evaluate"]
-    env_commands = ["init", "doctor", "paths", "models", "finalize", "gate", "init-db", "db", "serve-api", "status", "version"]
+    env_commands = [
+        "init",
+        "doctor",
+        "paths",
+        "models",
+        "install-api-service",
+        "finalize",
+        "gate",
+        "init-db",
+        "db",
+        "serve-api",
+        "status",
+        "version",
+    ]
     lines = [
         f"{_style_help('PatchWeaver', fg='bright_blue', bold=True)} {_style_help(__version__, fg='bright_yellow', bold=True)}"
         " — 从上游 CVE 修复补丁到 livepatch 构建尝试的最小工程壳。",
@@ -301,6 +320,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
     lines.extend(_wrap_help_entry("patchweaver init --with-db", "初始化最小工程目录，并同时建立 SQLite 数据库。", width=30, color="bright_green"))
     lines.extend(_wrap_help_entry("patchweaver paths --json", "输出当前生效的路径、运行时和 manifest 目录。", width=30, color="bright_green"))
     lines.extend(_wrap_help_entry("patchweaver serve-api --reload", "启动 FastAPI 接口，供 Web 控制台开发调试。", width=30, color="bright_green"))
+    lines.extend(_wrap_help_entry("patchweaver install-api-service", "在 Linux 验证机上安装并启动 Web/API 的 systemd 服务。", width=30, color="bright_green"))
     lines.extend(_wrap_help_entry("patchweaver db path", "查看当前配置解析出来的数据库路径。", width=30, color="bright_green"))
     lines.extend(_wrap_help_entry("patchweaver evaluate --fixture contest_samples", "按固定样例集输出阶段评测汇总。", width=30, color="bright_green"))
     lines.extend(_wrap_help_entry("patchweaver models --json", "查看当前模型分工和百炼环境变量状态。", width=30, color="bright_green"))
@@ -612,7 +632,6 @@ def _doctor_payload(
         "jinja2": "模板渲染",
         "unidiff": "补丁解析",
         "rich": "终端输出",
-        "paramiko": "SSH 构建通道",
         "fastapi": "Web API",
         "uvicorn": "API 启动器",
     }
@@ -685,109 +704,48 @@ def _doctor_payload(
             category="build_backend",
             name="build_backend",
             label="构建后端",
-            ok=True,
+            ok=build_env["backend"] == "local",
             detail=build_env["backend"],
+            failed_status="error",
         )
     )
 
-    if build_env["backend"] == "ssh":
-        checks.extend(
-            [
-                _check_item(
-                    category="build_env",
-                    name="remote_host",
-                    label="远端构建主机",
-                    ok=bool(build_env.get("remote_host")),
-                    detail=build_env.get("host_label") or "未配置",
-                    failed_status="error",
-                ),
-                _check_item(
-                    category="build_env",
-                    name="remote_password_env",
-                    label="远端密码环境变量",
-                    ok=bool(build_env.get("password_present")),
-                    detail=build_env.get("remote_password_env") or "未配置",
-                    failed_status="error",
-                ),
-                _check_item(
-                    category="build_env",
-                    name="remote_connection",
-                    label="远端连接",
-                    ok=bool(build_env.get("reachable")),
-                    detail=build_env.get("error") or "连接正常",
-                    failed_status="error",
-                ),
-                _check_item(
-                    category="external_command",
-                    name=build_config.kpatch_build_cmd,
-                    label=f"远端构建命令 `{build_config.kpatch_build_cmd}`",
-                    ok=bool(build_env.get("builder_ok")),
-                    detail=build_env.get("builder_path") or "远端未找到",
-                    failed_status="error",
-                ),
-                _check_item(
-                    category="build_env",
-                    name="selected_source_dir",
-                    label="远端源码目录",
-                    ok=bool(build_env.get("selected_source_ok")),
-                    detail=build_env.get("selected_source_dir") or "未找到可用目录",
-                    failed_status="error",
-                ),
-                _check_item(
-                    category="build_env",
-                    name="config_path",
-                    label="远端 .config",
-                    ok=bool(build_env.get("config_ok")),
-                    detail=build_env.get("config_path") or "未找到",
-                    failed_status="error",
-                ),
-                _check_item(
-                    category="build_env",
-                    name="vmlinux_path",
-                    label="远端 vmlinux",
-                    ok=bool(build_env.get("vmlinux_ok")),
-                    detail=build_env.get("vmlinux_path") or "未配置",
-                    failed_status="error",
-                ),
-            ]
-        )
-    else:
-        checks.extend(
-            [
-                _check_item(
-                    category="external_command",
-                    name=build_config.kpatch_build_cmd,
-                    label=f"构建命令 `{build_config.kpatch_build_cmd}`",
-                    ok=bool(build_env.get("builder_ok")),
-                    detail=build_env.get("builder_path") or "当前 PATH 中未找到",
-                    failed_status="error",
-                ),
-                _check_item(
-                    category="build_env",
-                    name="selected_source_dir",
-                    label="内核源码目录",
-                    ok=bool(build_env.get("selected_source_ok")),
-                    detail=build_env.get("selected_source_dir") or "未找到可用目录",
-                    failed_status="error",
-                ),
-                _check_item(
-                    category="build_env",
-                    name="config_path",
-                    label="内核 .config",
-                    ok=bool(build_env.get("config_ok")),
-                    detail=build_env.get("config_path") or "未找到",
-                    failed_status="error",
-                ),
-                _check_item(
-                    category="build_env",
-                    name="vmlinux_path",
-                    label="vmlinux 路径",
-                    ok=bool(build_env.get("vmlinux_ok")),
-                    detail=build_env.get("vmlinux_path") or "未配置",
-                    failed_status="error",
-                ),
-            ]
-        )
+    checks.extend(
+        [
+            _check_item(
+                category="external_command",
+                name=build_config.kpatch_build_cmd,
+                label=f"本机构建命令 `{build_config.kpatch_build_cmd}`",
+                ok=bool(build_env.get("builder_ok")),
+                detail=build_env.get("builder_path") or "当前 PATH 中未找到",
+                failed_status="error",
+            ),
+            _check_item(
+                category="build_env",
+                name="selected_source_dir",
+                label="当前运行机内核源码目录",
+                ok=bool(build_env.get("selected_source_ok")),
+                detail=build_env.get("selected_source_dir") or "未找到可用目录",
+                failed_status="error",
+            ),
+            _check_item(
+                category="build_env",
+                name="config_path",
+                label="当前运行机内核 .config",
+                ok=bool(build_env.get("config_ok")),
+                detail=build_env.get("config_path") or "未找到",
+                failed_status="error",
+            ),
+            _check_item(
+                category="build_env",
+                name="vmlinux_path",
+                label="当前运行机 vmlinux 路径",
+                ok=bool(build_env.get("vmlinux_ok")),
+                detail=build_env.get("vmlinux_path") or "未配置",
+                failed_status="error",
+            ),
+        ]
+    )
 
     for source_name, raw_path in skill_roots.items():
         skill_root = Path(raw_path)
@@ -1468,10 +1426,85 @@ def gate(
     typer.echo(f"通过: {payload['summary']['passed']} / 带限制通过: {payload['summary']['limited']} / 未通过: {payload['summary']['failed']}")
 
 
+@app.command("install-api-service")
+def install_api_service_command(
+    service_name: Annotated[str | None, typer.Option("--service-name", help="systemd 服务名。")] = None,
+    host: Annotated[str | None, typer.Option("--host", help="API 服务监听地址。")] = None,
+    port: Annotated[int | None, typer.Option("--port", help="API 服务监听端口。")] = None,
+    enable: Annotated[bool, typer.Option("--enable/--no-enable", help="是否加入开机自启。")] = True,
+    start: Annotated[bool, typer.Option("--start/--no-start", help="安装后是否立即启动。")] = True,
+    timeout_sec: Annotated[int, typer.Option("--timeout-sec", help="等待健康检查通过的秒数。")] = 15,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """在 Linux 验证机上安装并启动 Web/API 的 systemd 服务。"""
+
+    runtime = _load_runtime()
+    run_logger = _build_run_logger(runtime)
+    system_config = load_system_config(runtime.project_root)
+
+    final_service_name = service_name or system_config.api_service_name or DEFAULT_API_SERVICE_NAME
+    final_host = host or system_config.api_host
+    final_port = port or system_config.api_port
+
+    if platform.system() != "Linux":
+        typer.secho("错误: install-api-service 仅支持 Linux + systemd 环境。", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
+    try:
+        install_payload = install_systemd_service(
+            service_name=final_service_name,
+            python_executable=Path(sys.executable).resolve(),
+            project_root=runtime.project_root,
+            host=final_host,
+            port=final_port,
+            enable=enable,
+            start=start,
+        )
+        ready_payload = wait_for_api_ready(host=final_host, port=final_port, timeout_sec=float(timeout_sec)) if start else None
+    except Exception as exc:
+        typer.secho(f"错误: API 服务安装失败: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+
+    payload = {
+        "command": "install-api-service",
+        "project_root": str(runtime.project_root),
+        "service_name": final_service_name,
+        "host": final_host,
+        "port": final_port,
+        "enable": enable,
+        "start": start,
+        "healthz": install_payload["healthz"],
+        "console": install_payload["console"],
+        "unit_path": install_payload["unit_path"],
+        "ready": ready_payload["ready"] if ready_payload else False,
+    }
+    snapshot_path = _write_json_snapshot(runtime.manifest_dir / "api_service_install.json", payload)
+    run_logger.info(
+        "cli.install_api_service",
+        "已安装 Web/API 的 systemd 服务。",
+        service_name=final_service_name,
+        host=final_host,
+        port=final_port,
+        enable=enable,
+        start=start,
+        snapshot_path=str(snapshot_path),
+    )
+
+    if json_output:
+        _emit_json(payload)
+        return
+
+    typer.echo(f"已安装 API 服务: {final_service_name}")
+    typer.echo(f"unit 文件: {payload['unit_path']}")
+    typer.echo(f"healthz: {payload['healthz']}")
+    typer.echo(f"console: {payload['console']}")
+    typer.echo(f"快照: {snapshot_path}")
+
+
 @app.command("serve-api")
 def serve_api(
-    host: Annotated[str, typer.Option("--host", help="指定 API 监听地址。")] = "127.0.0.1",
-    port: Annotated[int, typer.Option("--port", help="指定 API 监听端口。")] = 18080,
+    host: Annotated[str | None, typer.Option("--host", help="指定 API 监听地址。")] = None,
+    port: Annotated[int | None, typer.Option("--port", help="指定 API 监听端口。")] = None,
     reload: Annotated[bool, typer.Option("--reload", help="开发阶段开启自动重载。")] = False,
 ) -> None:
     """启动 Web 控制台后端接口。"""
@@ -1480,9 +1513,12 @@ def serve_api(
     import uvicorn
 
     runtime = _load_runtime()
-    _build_run_logger(runtime).info("cli.serve_api", "启动 Web 控制台后端接口。", host=host, port=port, reload=reload)
-    typer.echo(f"启动 PatchWeaver API: http://{host}:{port}")
-    uvicorn.run("patchweaver.api.app:app", host=host, port=port, reload=reload)
+    system_config = load_system_config(runtime.project_root)
+    final_host = host or system_config.api_host
+    final_port = port or system_config.api_port
+    _build_run_logger(runtime).info("cli.serve_api", "启动 Web 控制台后端接口。", host=final_host, port=final_port, reload=reload)
+    typer.echo(f"启动 PatchWeaver API: http://{final_host}:{final_port}")
+    uvicorn.run("patchweaver.api.app:app", host=final_host, port=final_port, reload=reload)
 
 
 @db_app.command("init")
