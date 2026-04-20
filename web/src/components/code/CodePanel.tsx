@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { shortenPath } from "../../utils/format";
 
 type CodePanelProps = {
   title: string;
@@ -14,7 +15,7 @@ export function CodePanel({ title, path, content, emptyText, actions }: CodePane
       <div className="pw-code-toolbar">
         <div>
           <strong>{title}</strong>
-          <div className="pw-inline-note">{path ?? "未选择文件"}</div>
+          <div className="pw-inline-note">{path ? shortenPath(path) : "暂无路径"}</div>
         </div>
         {actions}
       </div>

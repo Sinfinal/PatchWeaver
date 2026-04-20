@@ -4,11 +4,12 @@ type SectionCardProps = PropsWithChildren<{
   title?: string;
   subtitle?: string;
   actions?: ReactNode;
+  className?: string;
 }>;
 
-export function SectionCard({ title, subtitle, actions, children }: SectionCardProps): JSX.Element {
+export function SectionCard({ title, subtitle, actions, className, children }: SectionCardProps): JSX.Element {
   return (
-    <section className="pw-panel pw-section">
+    <section className={`pw-panel pw-section${className ? ` ${className}` : ""}`}>
       {title ? (
         <div className="pw-section-header">
           <div>

@@ -1,97 +1,173 @@
 import { useQuery } from "@tanstack/react-query";
-import { MetricCard } from "../../components/cards/MetricCard";
+import { Link } from "react-router-dom";
 import { SectionCard } from "../../components/layout/SectionCard";
 import { TaskTable } from "../../components/tables/TaskTable";
+import { controlPlanes, projectSummary } from "../../content/projectContent";
+import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
 import { fetchOverview } from "../../services/overview";
 import type { TaskListItem } from "../../types/tasks";
+import { formatTime } from "../../utils/format";
 
 export function OverviewPage(): JSX.Element {
+  const liveQueryOptions = useLiveQueryOptions();
   const overviewQuery = useQuery({
     queryKey: ["overview"],
     queryFn: fetchOverview,
+    ...liveQueryOptions,
   });
 
-  if (overviewQuery.isLoading) {
-    return <div className="pw-empty">总览数据加载中...</div>;
-  }
-
-  if (overviewQuery.isError || !overviewQuery.data) {
-    return <div className="pw-empty">总览数据加载失败。</div>;
-  }
-
-  const { metrics, recent_tasks, failure_distribution, events, logs_tail } = overviewQuery.data;
+  const overview = overviewQuery.data;
+  const runtimeStats = overview
+    ? [
+        { label: "任务总数", value: overview.metrics.total_tasks, meta: "全部任务" },
+        { label: "运行中", value: overview.metrics.running_tasks, meta: "当前活跃" },
+        { label: "成功率", value: `${overview.metrics.success_rate}%`, meta: overview.metrics.build_backend },
+        { label: "失败任务", value: overview.metrics.failed_tasks, meta: overview.metrics.build_ready ? "构建就绪" : "等待构建" },
+      ]
+    : [
+        { label: "任务总数", value: "—", meta: "等待接口" },
+        { label: "运行中", value: "—", meta: "等待接口" },
+        { label: "成功率", value: "—", meta: "等待接口" },
+        { label: "失败任务", value: "—", meta: "等待接口" },
+      ];
+  const failureDistribution = overview?.failure_distribution?.slice(0, 4) ?? [];
+  const maxFailureTotal = failureDistribution.reduce((max, item) => Math.max(max, item.total), 1);
+  const recentEvents = overview?.events?.slice(0, 4) ?? [];
+  const focusStats = [
+    { label: "构建引擎", value: overview?.metrics.build_backend ?? "等待接口" },
+    { label: "系统状态", value: overview?.metrics.build_ready ? "可执行" : overview ? "待准备" : "等待接口" },
+    { label: "事件流", value: overview ? `${overview.events.length} 条` : "等待接口" },
+  ];
 
   return (
-    <div className="pw-grid">
-      <SectionCard title="运行概览" subtitle="任务状态、构建后端和失败分布的首屏快照">
-        <div className="pw-grid metrics">
-          <MetricCard label="总任务数" value={metrics.total_tasks} />
-          <MetricCard label="运行中任务" value={metrics.running_tasks} />
-          <MetricCard label="成功任务" value={metrics.success_tasks} />
-          <MetricCard label="失败任务" value={metrics.failed_tasks} />
-          <MetricCard label="成功率" value={`${metrics.success_rate}%`} />
-          <MetricCard
-            label="构建后端"
-            value={metrics.build_backend}
-            meta={metrics.build_ready ? "当前后端已通过关键预检" : "当前后端仍有预检缺项"}
-          />
+    <div className="pw-overview">
+      <SectionCard className="pw-overview-hero-card">
+        <div className="pw-overview-hero pw-overview-hero-refined">
+          <div className="pw-overview-hero-copy">
+            <div className="pw-overview-eyebrow">{projectSummary.alias} / Livepatch Console</div>
+            <h3 className="pw-overview-headline">{projectSummary.title}</h3>
+            <p className="pw-overview-lead">{projectSummary.subtitle}</p>
+            <div className="pw-pill-row">
+              <span className="pw-chip">Anolis OS 23.4</span>
+              <span className="pw-chip">kpatch-build</span>
+              <span className="pw-chip">FastAPI + React</span>
+              <span className="pw-chip">可回放证据</span>
+            </div>
+            <div className="pw-btn-row">
+              <Link className="pw-btn primary" to="/tasks/new">
+                创建任务
+              </Link>
+              <Link className="pw-btn" to="/tasks">
+                查看任务
+              </Link>
+              <Link className="pw-btn" to="/doctor">
+                环境诊断
+              </Link>
+            </div>
+            {overviewQuery.isLoading ? <div className="pw-note-banner">正在同步实时总览数据...</div> : null}
+            {overviewQuery.isError ? <div className="pw-note-banner">当前无法连接后端，已回退到静态工程布局。</div> : null}
+          </div>
+          <aside className="pw-overview-focus-card">
+            <span className="pw-overview-focus-kicker">Console Focus</span>
+            <strong className="pw-overview-focus-title">只保留最重要的运行、排障与交付视图</strong>
+            <div className="pw-overview-focus-grid">
+              {focusStats.map((item) => (
+                <article key={item.label} className="pw-overview-focus-stat">
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                </article>
+              ))}
+            </div>
+            <div className="pw-overview-focus-track">
+              {controlPlanes.map((item) => (
+                <span key={item.title} className="pw-overview-focus-pill">
+                  {item.title}
+                </span>
+              ))}
+            </div>
+          </aside>
         </div>
       </SectionCard>
 
-      <div className="pw-grid two">
-        <SectionCard title="最近任务" subtitle="点击行可进入详情页">
-          <TaskTable items={recent_tasks as TaskListItem[]} />
-        </SectionCard>
-        <SectionCard title="失败类型分布" subtitle="按 failure_record 聚合">
-          {failure_distribution.length > 0 ? (
-            <div className="pw-list">
-              {failure_distribution.map((item) => (
-                <div key={item.failure_type} className="pw-list-item">
-                  <strong>{item.failure_type}</strong>
-                  <span className="pw-inline-note">累计 {item.total} 次</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="pw-empty">当前还没有失败归因记录。</div>
-          )}
-        </SectionCard>
+      <div className="pw-overview-band">
+        {runtimeStats.map((item) => (
+          <article key={item.label} className="pw-runtime-card pw-runtime-card-band">
+            <span className="pw-runtime-label">{item.label}</span>
+            <strong className="pw-runtime-value">{item.value}</strong>
+            <span className="pw-runtime-meta">{item.meta}</span>
+          </article>
+        ))}
       </div>
 
-      <div className="pw-grid two">
-        <SectionCard title="近期事件" subtitle="任务、尝试轮和失败归因统一汇总">
-          {events.length > 0 ? (
-            <div className="pw-list">
-              {events.map((item) => (
-                <div key={`${item.kind}-${item.timestamp}-${item.title}`} className="pw-list-item">
-                  <strong>{item.title}</strong>
-                  <div className="pw-inline-note">{item.timestamp}</div>
-                  <div className="pw-inline-note">{item.detail}</div>
+      <div className="pw-overview-grid">
+        <div className="pw-overview-column pw-overview-column-main">
+          <SectionCard title="任务队列" className="pw-overview-panel">
+            {overview ? (
+              <TaskTable items={overview.recent_tasks as TaskListItem[]} />
+            ) : (
+              <div className="pw-empty">后端可用后，这里会回显最近任务与当前状态。</div>
+            )}
+          </SectionCard>
+
+          <SectionCard title="日志尾流" className="pw-overview-panel">
+            {overview ? (
+              <div className="pw-log-grid pw-log-grid-wide">
+                <div className="pw-log-card">
+                  <span className="pw-log-label">system_log</span>
+                  <pre className="pw-code-content pw-code-compact">{overview.logs_tail.system_log.lines.join("\n") || "暂无日志"}</pre>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="pw-empty">当前没有可展示的事件。</div>
-          )}
-        </SectionCard>
-        <SectionCard title="日志尾流" subtitle="系统日志与最近构建日志的尾部内容">
-          <div className="pw-list">
-            <div className="pw-list-item">
-              <strong>系统日志</strong>
-              <div className="pw-inline-note">{logs_tail.paths.system_log}</div>
-              <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 220 }}>
-                {logs_tail.system_log.lines.join("\n") || "当前没有系统日志。"}
-              </pre>
-            </div>
-            <div className="pw-list-item">
-              <strong>最近构建日志</strong>
-              <div className="pw-inline-note">{logs_tail.paths.latest_build_log ?? "暂无路径"}</div>
-              <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 220 }}>
-                {logs_tail.latest_build_log?.lines.join("\n") || "当前没有构建日志。"}
-              </pre>
-            </div>
-          </div>
-        </SectionCard>
+                <div className="pw-log-card">
+                  <span className="pw-log-label">latest_build_log</span>
+                  <pre className="pw-code-content pw-code-compact">
+                    {overview.logs_tail.latest_build_log?.lines.join("\n") || "暂无构建日志"}
+                  </pre>
+                </div>
+              </div>
+            ) : (
+              <div className="pw-empty">后端可用后，这里会展示最新 system/build log 片段。</div>
+            )}
+          </SectionCard>
+        </div>
+
+        <div className="pw-overview-column pw-overview-column-side">
+          <SectionCard title="异常信号" className="pw-overview-panel">
+            {failureDistribution.length ? (
+              <div className="pw-signal-stack">
+                {failureDistribution.map((item) => (
+                  <div key={item.failure_type} className="pw-signal-meter">
+                    <div className="pw-signal-meter-copy">
+                      <strong>{item.failure_type}</strong>
+                      <span>{item.total} 次</span>
+                    </div>
+                    <div className="pw-signal-meter-bar">
+                      <span style={{ width: `${(item.total / maxFailureTotal) * 100}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="pw-empty">暂无失败分布。</div>
+            )}
+          </SectionCard>
+
+          <SectionCard title="最近事件" className="pw-overview-panel">
+            {recentEvents.length ? (
+              <div className="pw-event-feed">
+                {recentEvents.map((item) => (
+                  <article key={`${item.kind}-${item.timestamp}-${item.title}`} className="pw-event-feed-item">
+                    <div className="pw-event-feed-meta">
+                      <span className="pw-event-kind">{item.kind}</span>
+                      <span>{formatTime(item.timestamp)}</span>
+                    </div>
+                    <strong>{item.title}</strong>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="pw-empty">暂无事件流。</div>
+            )}
+          </SectionCard>
+        </div>
       </div>
     </div>
   );
