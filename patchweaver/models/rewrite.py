@@ -76,4 +76,5 @@ class ApplyPrecheckReport(BaseModel):
     summary: str
     stdout: str | None = None
     stderr: str | None = None
+    failure_type: str | None = None
 

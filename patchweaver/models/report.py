@@ -31,3 +31,5 @@ class FinalReport(BaseModel):
     key_paths: dict[str, str | None] = Field(default_factory=dict)
     known_limits: list[str] = Field(default_factory=list)
     explanations: list[str] = Field(default_factory=list)
+    next_priority_layer: str | None = None
+    next_action: str | None = None

@@ -515,6 +515,7 @@ class AttemptExecutionService(CoordinatorSupport):
         build_summary: BuildSummary | None = None
 
         if apply_precheck_report.status == "failed":
+            precheck_failure_type = apply_precheck_report.failure_type or "patch_apply_failed"
             build_log = "\n".join(
                 [
                     "构建阶段已跳过。",
@@ -536,7 +537,7 @@ class AttemptExecutionService(CoordinatorSupport):
                 update={
                     "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
                     "status": "failed",
-                    "failure_type": "patch_apply_failed",
+                    "failure_type": precheck_failure_type,
                     "build_log_path": build_log_path,
                     "module_path": None,
                     "rewritten_patch_path": rewritten_patch_path,
@@ -549,7 +550,7 @@ class AttemptExecutionService(CoordinatorSupport):
                 task_id=task.task_id,
                 attempt_id=attempt_record.attempt_id,
                 stage_name="rewrite",
-                failure_type="patch_apply_failed",
+                failure_type=precheck_failure_type,
                 summary=apply_precheck_report.summary,
                 evidence=[
                     item
@@ -567,7 +568,7 @@ class AttemptExecutionService(CoordinatorSupport):
                 rewritten_patch_path=rewritten_patch_path,
                 source_dir=apply_precheck_report.target_source_dir,
                 build_log_path=build_log_path,
-                failure_type="patch_apply_failed",
+                failure_type=precheck_failure_type,
             )
         else:
             attempt_record, build_log, build_precheck, build_summary = self.builder.execute_build(

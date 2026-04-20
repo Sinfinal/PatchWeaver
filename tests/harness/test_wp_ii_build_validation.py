@@ -18,6 +18,8 @@ from patchweaver.models.semantic import SemanticCard
 from patchweaver.models.skill import SkillRouteDecision
 from patchweaver.models.task import TaskContext
 from patchweaver.models.validation import ValidationItem, ValidationReport
+from patchweaver.reporter.report_builder import ReportBuilder
+from patchweaver.rewriter.diff_editor import DiffEditor
 from patchweaver.validator.validator import Validator
 
 
@@ -103,6 +105,207 @@ def test_local_apply_precheck_accepts_valid_unified_diff() -> None:
 
     assert result.ok is True
     assert result.failure_type is None
+
+
+def test_local_apply_precheck_marks_target_already_patched() -> None:
+    tmp_path = _case_dir("build-precheck-already-patched")
+    source_dir = tmp_path / "kernel"
+    _write_kernel_tree(source_dir)
+    patch_path = tmp_path / "rewritten.patch"
+    patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/foo.c b/foo.c",
+                "--- a/foo.c",
+                "+++ b/foo.c",
+                "@@ -1 +1 @@",
+                "-int value = 1;",
+                "+int value = 2;",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (source_dir / "foo.c").write_text("int value = 2;\n", encoding="utf-8")
+
+    build_config = BuildConfig(
+        build_backend="local",
+        kernel_src_dir=str(source_dir),
+        kernel_devel_dir=str(source_dir),
+        vmlinux_path=str(source_dir / "vmlinux"),
+        kpatch_build_cmd="git",
+    )
+    orchestrator = BuildOrchestrator(build_config)
+
+    result = orchestrator.precheck_patch(
+        task_id="TASK-TEST-ALREADY-001",
+        attempt_id="TASK-TEST-ALREADY-001-A001",
+        rewritten_patch_path=patch_path,
+        source_dir=source_dir,
+    )
+
+    assert result.ok is False
+    assert result.failure_type == "target_already_patched"
+    assert "已包含该补丁" in result.summary
+
+
+def test_diff_editor_apply_precheck_marks_target_already_patched() -> None:
+    tmp_path = _case_dir("diff-editor-already-patched")
+    source_dir = tmp_path / "kernel"
+    _write_kernel_tree(source_dir)
+    patch_path = tmp_path / "rewritten.patch"
+    patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/foo.c b/foo.c",
+                "--- a/foo.c",
+                "+++ b/foo.c",
+                "@@ -1 +1 @@",
+                "-int value = 1;",
+                "+int value = 2;",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (source_dir / "foo.c").write_text("int value = 2;\n", encoding="utf-8")
+
+    build_config = BuildConfig(
+        build_backend="local",
+        kernel_src_dir=str(source_dir),
+        kernel_devel_dir=str(source_dir),
+        vmlinux_path=str(source_dir / "vmlinux"),
+        kpatch_build_cmd="git",
+    )
+    orchestrator = BuildOrchestrator(build_config)
+    diff_editor = DiffEditor()
+
+    result = diff_editor.apply_precheck(
+        builder=orchestrator,
+        patch_path=patch_path,
+        task_id="TASK-TEST-ALREADY-002",
+        attempt_no=1,
+    )
+
+    assert result.status == "failed"
+    assert result.failure_type == "target_already_patched"
+    assert "已包含该补丁" in result.summary
+
+
+def test_diff_editor_heuristic_detects_reordered_already_patched_block() -> None:
+    tmp_path = _case_dir("diff-editor-heuristic-already-patched")
+    source_dir = tmp_path / "kernel"
+    _write_kernel_tree(source_dir)
+    target_file = source_dir / "net" / "netfilter" / "nf_tables_api.c"
+    target_file.parent.mkdir(parents=True, exist_ok=True)
+    target_file.write_text(
+        "\n".join(
+            [
+                "static int nft_verdict_init(const struct nft_ctx *ctx, struct nft_data *data,",
+                "                            struct nft_data_desc *desc, genmask_t genmask)",
+                "{",
+                "data->verdict.code = ntohl(nla_get_be32(tb[NFTA_VERDICT_CODE]));",
+                "",
+                "switch (data->verdict.code) {",
+                "case NF_ACCEPT:",
+                "case NF_DROP:",
+                "case NF_QUEUE:",
+                "    break;",
+                "case NFT_CONTINUE:",
+                "case NFT_BREAK:",
+                "case NFT_RETURN:",
+                "    break;",
+                "case NFT_JUMP:",
+                "case NFT_GOTO:",
+                "    data->verdict.chain = chain;",
+                "    break;",
+                "default:",
+                "    return -EINVAL;",
+                "}",
+                "",
+                "desc->len = sizeof(data->verdict);",
+                "}",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    patch_path = tmp_path / "rewritten.patch"
+    patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/net/netfilter/nf_tables_api.c b/net/netfilter/nf_tables_api.c",
+                "index 02f45424644b4..c537104411e7d 100644",
+                "--- a/net/netfilter/nf_tables_api.c",
+                "+++ b/net/netfilter/nf_tables_api.c",
+                "@@ -10992,16 +10992,10 @@ static int nft_verdict_init(const struct nft_ctx *ctx, struct nft_data *data,",
+                " \tdata->verdict.code = ntohl(nla_get_be32(tb[NFTA_VERDICT_CODE]));",
+                " ",
+                " \tswitch (data->verdict.code) {",
+                "-\tdefault:",
+                "-\t\tswitch (data->verdict.code & NF_VERDICT_MASK) {",
+                "-\t\tcase NF_ACCEPT:",
+                "-\t\tcase NF_DROP:",
+                "-\t\tcase NF_QUEUE:",
+                "-\t\t\tbreak;",
+                "-\t\tdefault:",
+                "-\t\t\treturn -EINVAL;",
+                "-\t\t}",
+                "-\t\tfallthrough;",
+                "+\tcase NF_ACCEPT:",
+                "+\tcase NF_DROP:",
+                "+\tcase NF_QUEUE:",
+                "+\t\tbreak;",
+                " \tcase NFT_CONTINUE:",
+                " \tcase NFT_BREAK:",
+                " \tcase NFT_RETURN:",
+                "@@ -11036,6 +11030,8 @@ static int nft_verdict_init(const struct nft_ctx *ctx, struct nft_data *data,",
+                " ",
+                " \t\tdata->verdict.chain = chain;",
+                " \t\tbreak;",
+                "+\tdefault:",
+                "+\t\treturn -EINVAL;",
+                " \t}",
+                " ",
+                " \tdesc->len = sizeof(data->verdict);",
+                " ",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    diff_editor = DiffEditor()
+
+    assert diff_editor._patch_looks_already_applied_locally(
+        patch_path=patch_path,
+        source_dir=source_dir,
+    )
+
+
+def test_report_builder_emits_next_priority_for_already_patched() -> None:
+    report = ReportBuilder().build_report(
+        task=TaskContext(
+            task_id="TASK-TEST-REPORT-001",
+            cve_id="CVE-2099-0009",
+            target_kernel="6.6.102-5.2.an23.x86_64",
+            workspace_dir=Path("D:/PatchWeaver/workspaces/TASK-TEST-REPORT-001"),
+        ),
+        attempts=[
+            AttemptRecord(
+                task_id="TASK-TEST-REPORT-001",
+                attempt_no=1,
+                attempt_id="TASK-TEST-REPORT-001-A001",
+                status="failed",
+                failure_type="target_already_patched",
+            )
+        ],
+        artifacts=[],
+        evaluation_summary={},
+        explanations=[],
+    )
+
+    assert report.next_priority_layer == "target_state"
+    assert report.next_action is not None
 
 
 def test_validator_outputs_structured_pending_validation_when_module_missing() -> None:

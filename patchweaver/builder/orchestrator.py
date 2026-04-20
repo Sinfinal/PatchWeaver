@@ -92,8 +92,27 @@ class BuildOrchestrator:
         stdout_text = result.stdout.strip()
         stderr_text = result.stderr.strip()
         ok = result.returncode == 0
-        failure_type = None if ok else self._classify_apply_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
-        summary = "apply 级预检查通过。" if ok else self._summarize_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
+        failure_type = None
+        summary = "apply 级预检查通过。"
+        if not ok:
+            failure_type = self._classify_apply_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
+            if failure_type == "patch_apply_failed":
+                reverse_result = subprocess.run(
+                    [git_path, "apply", "--reverse", "--check", "--verbose", str(rewritten_patch_path.resolve())],
+                    cwd=selected_source_dir,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    check=False,
+                )
+                if reverse_result.returncode == 0:
+                    failure_type = "target_already_patched"
+            summary = self._summarize_precheck_failure(
+                stdout_text=stdout_text,
+                stderr_text=stderr_text,
+                failure_type=failure_type,
+            )
 
         return BuildPrecheck(
             task_id=task_id,
@@ -657,8 +676,23 @@ class BuildOrchestrator:
         )
         stdout_text, stderr_text, exit_code = self._remote_command(client, command, timeout=60)
         ok = exit_code == 0
-        failure_type = None if ok else self._classify_apply_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
-        summary = "apply 级预检查通过。" if ok else self._summarize_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
+        failure_type = None
+        summary = "apply 级预检查通过。"
+        if not ok:
+            failure_type = self._classify_apply_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
+            if failure_type == "patch_apply_failed":
+                reverse_command = (
+                    f"cd {shlex.quote(source_dir)} && "
+                    f"git apply --reverse --check --verbose {shlex.quote(remote_patch_path)}"
+                )
+                _, _, reverse_exit_code = self._remote_command(client, reverse_command, timeout=60)
+                if reverse_exit_code == 0:
+                    failure_type = "target_already_patched"
+            summary = self._summarize_precheck_failure(
+                stdout_text=stdout_text,
+                stderr_text=stderr_text,
+                failure_type=failure_type,
+            )
         return BuildPrecheck(
             task_id=task_id,
             attempt_id=attempt_id,
@@ -861,12 +895,21 @@ class BuildOrchestrator:
             "kernel_src_missing": "找不到可用的内核源码目录，kernel_src_dir 和 kernel_devel_dir 都未通过校验。",
             "kernel_config_missing": "源码目录中没有找到 .config，暂时无法继续构建。",
             "vmlinux_missing": "找不到可用的 vmlinux 文件，无法继续构建。",
+            "target_already_patched": "目标源码已包含该补丁，无需重复应用，请更换未修复内核或切换样例。",
         }
         return messages.get(failure_type, "构建环境检查未通过。")
 
-    def _summarize_precheck_failure(self, *, stdout_text: str, stderr_text: str) -> str:
+    def _summarize_precheck_failure(
+        self,
+        *,
+        stdout_text: str,
+        stderr_text: str,
+        failure_type: str | None = None,
+    ) -> str:
         """为 apply 级预检查生成摘要。"""
 
+        if failure_type == "target_already_patched":
+            return "目标源码已包含该补丁，apply 预检查判定无需重复应用。"
         for raw_text in [stderr_text, stdout_text]:
             for line in raw_text.splitlines():
                 stripped = line.strip()

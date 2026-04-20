@@ -11,6 +11,34 @@ from patchweaver.models.attempt import AttemptRecord
 class ReportBuilder:
     """负责汇总任务结果并生成最终报告。"""
 
+    def _next_step(self, *, attempts: list[AttemptRecord]) -> tuple[str | None, str | None]:
+        """根据最新尝试结果给出下一轮优先修复层和动作建议。"""
+
+        if not attempts:
+            return None, None
+
+        latest = attempts[-1]
+        if latest.status == "built":
+            return "validation", "继续执行加载、卸载、smoke 和 selftest，补齐最小验证闭环。"
+
+        mapping: dict[str, tuple[str, str]] = {
+            "remote_auth_missing": ("build_env", "补齐远端认证信息并重新执行环境自检。"),
+            "remote_connect_failed": ("build_env", "检查远端 SSH 连通性和构建机可达性。"),
+            "build_env_missing": ("build_env", "补齐 kpatch-build、git 等构建依赖后重试。"),
+            "kernel_src_missing": ("source_tree", "补齐可用于 apply 和构建的完整内核源码树。"),
+            "kernel_config_missing": ("build_env", "补齐 .config 后重新执行预检查。"),
+            "vmlinux_missing": ("build_env", "补齐 vmlinux 调试符号文件后重试。"),
+            "patch_apply_failed": ("patch_apply", "优先检查补丁上下文与目标源码差异，必要时补 backport 改写。"),
+            "target_already_patched": ("target_state", "目标源码已包含修复；请切换未修复内核、调整样例或显式识别已修复状态。"),
+            "compile_failed": ("compile", "分析编译报错并收缩改写范围。"),
+            "kpatch_constraint": ("kpatch_constraint", "根据 kpatch 约束调整原语和改写策略。"),
+            "build_not_implemented": ("build_backend", "补齐构建后端流程或切换到可用构建机。"),
+        }
+        return mapping.get(
+            latest.failure_type or "",
+            ("failure_analysis", "继续补充失败归因信息，明确下一轮优先修改层。"),
+        )
+
     def build_report(
         self,
         *,
@@ -24,6 +52,7 @@ class ReportBuilder:
 
         artifact_lookup = self._artifact_lookup(artifacts)
         latest_attempt = attempts[-1] if attempts else None
+        next_priority_layer, next_action = self._next_step(attempts=attempts)
         known_limits: list[str] = []
         if latest_attempt is None:
             known_limits.append("当前还没有尝试轮记录，报告只包含任务骨架。")
@@ -82,6 +111,8 @@ class ReportBuilder:
             },
             known_limits=known_limits,
             explanations=explanations or [],
+            next_priority_layer=next_priority_layer,
+            next_action=next_action,
         )
 
     def _artifact_lookup(self, artifacts: list[ArtifactRef]) -> dict[str, str]:

@@ -554,30 +554,25 @@ code {
 
 .pw-sidebar-brand {
   position: relative;
-  margin-bottom: 18px;
-  padding-left: 2px;
+  display: grid;
+  gap: 4px;
+  margin-bottom: 22px;
+  padding: 10px 2px 14px;
 }
 
-.pw-sidebar-monogram {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    linear-gradient(135deg, rgba(83, 210, 178, 0.18), rgba(97, 184, 255, 0.16)),
-    rgba(255, 255, 255, 0.02);
-  color: #f4f8ff;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+.pw-sidebar-brand::before {
+  content: "";
+  width: 48px;
+  height: 1px;
+  margin-bottom: 10px;
+  background: linear-gradient(90deg, rgba(83, 210, 178, 0.9), rgba(97, 184, 255, 0.2), transparent);
 }
 
 .pw-sidebar-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.08;
   letter-spacing: -0.03em;
 }
 
@@ -586,14 +581,15 @@ code {
   font-size: 11px;
   margin: 0;
   line-height: 1.5;
+  letter-spacing: 0.04em;
 }
 
 .pw-sidebar-line {
-  width: 60px;
-  height: 2px;
-  margin-top: 14px;
+  width: 92px;
+  height: 1px;
+  margin-top: 12px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent-main), rgba(97, 184, 255, 0), rgba(255, 255, 255, 0));
+  background: linear-gradient(90deg, var(--accent-main), rgba(97, 184, 255, 0.18), rgba(255, 255, 255, 0));
 }
 
 .pw-nav-section + .pw-nav-section {
@@ -656,8 +652,18 @@ code {
   transition: opacity 160ms ease;
 }
 
-.pw-nav-link.active,
 .pw-nav-link:hover {
+  background: rgba(255, 255, 255, 0.028);
+  color: #dbe7fb;
+  border-color: rgba(97, 184, 255, 0.08);
+  transform: translateX(1px);
+}
+
+.pw-nav-link:hover::after {
+  opacity: 0.75;
+}
+
+.pw-nav-link.active {
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-main);
   border-color: rgba(97, 184, 255, 0.14);
@@ -666,9 +672,7 @@ code {
 }
 
 .pw-nav-link.active::before,
-.pw-nav-link.active::after,
-.pw-nav-link:hover::before,
-.pw-nav-link:hover::after {
+.pw-nav-link.active::after {
   opacity: 1;
 }
 

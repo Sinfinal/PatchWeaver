@@ -37,6 +37,8 @@ class FailureClassifier:
             failure_type = "kernel_config_missing"
         elif "找不到可用的 vmlinux" in build_log or "vmlinux 文件" in build_log:
             failure_type = "vmlinux_missing"
+        elif "目标源码已包含该补丁" in build_log or "无需重复应用" in build_log:
+            failure_type = "target_already_patched"
         elif "apply 级预检查未通过" in build_log:
             failure_type = "patch_apply_failed"
         elif "file failed to apply" in lowered_log:
@@ -82,6 +84,12 @@ class FailureClassifier:
                 or "apply 级预检查未通过" in line
                 or "patch does not apply" in line.lower()
                 or "no valid patches in input" in line.lower()
+            ][:3] or evidence
+        elif failure_type == "target_already_patched":
+            evidence = [
+                line
+                for line in lines
+                if "目标源码已包含该补丁" in line or "无需重复应用" in line
             ][:3] or evidence
         elif failure_type == "kpatch_constraint":
             evidence = [

@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import shlex
 import subprocess
+from collections.abc import Callable, Iterable
 from pathlib import Path, PurePosixPath
 from shutil import which
 from uuid import uuid4
 
 from patchweaver.models.rewrite import ApplyPrecheckReport, RewritePlan, TransformationStep
+from unidiff import PatchSet
 
 
 class DiffEditor:
@@ -107,9 +109,46 @@ class DiffEditor:
                 summary="本地 apply 预检查通过。",
                 stdout=stdout,
                 stderr=stderr,
+                failure_type=None,
             )
 
         if self._is_patch_apply_failure(combined):
+            reverse_completed = subprocess.run(
+                ["git", "apply", "--reverse", "--check", "--verbose", str(patch_path)],
+                cwd=str(source_dir),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            if reverse_completed.returncode == 0:
+                return ApplyPrecheckReport(
+                    status="failed",
+                    ok=False,
+                    backend="local",
+                    target_source_dir=str(source_dir),
+                    command=" ".join(command),
+                    checked_patch_path=str(patch_path),
+                    exit_code=completed.returncode,
+                    summary="本地 apply 预检查显示目标源码已包含该补丁，无需重复应用。",
+                    stdout=stdout,
+                    stderr=stderr,
+                    failure_type="target_already_patched",
+                )
+            if self._patch_looks_already_applied_locally(patch_path=patch_path, source_dir=Path(str(source_dir))):
+                return ApplyPrecheckReport(
+                    status="failed",
+                    ok=False,
+                    backend="local",
+                    target_source_dir=str(source_dir),
+                    command=" ".join(command),
+                    checked_patch_path=str(patch_path),
+                    exit_code=completed.returncode,
+                    summary="本地 apply 预检查显示目标源码已包含该补丁，无需重复应用。",
+                    stdout=stdout,
+                    stderr=stderr,
+                    failure_type="target_already_patched",
+                )
             return ApplyPrecheckReport(
                 status="failed",
                 ok=False,
@@ -121,6 +160,7 @@ class DiffEditor:
                 summary="本地 apply 预检查未通过，补丁当前无法应用到目标源码树。",
                 stdout=stdout,
                 stderr=stderr,
+                failure_type="patch_apply_failed",
             )
 
         return ApplyPrecheckReport(
@@ -134,6 +174,7 @@ class DiffEditor:
             summary="本地 apply 预检查未完成，当前更像环境或工具问题，继续交给构建阶段判定。",
             stdout=stdout,
             stderr=stderr,
+            failure_type="build_env_missing",
         )
 
     def _remote_apply_precheck(
@@ -206,8 +247,50 @@ class DiffEditor:
                     summary="远端 apply 预检查通过。",
                     stdout=stdout_text or None,
                     stderr=stderr_text or None,
+                    failure_type=None,
                 )
             if self._is_patch_apply_failure(combined):
+                reverse_command = (
+                    f"cd {shlex.quote(str(source_dir))} && "
+                    f"git apply --reverse --check --verbose {shlex.quote(remote_patch_path.as_posix())}"
+                )
+                reverse_stdout, reverse_stderr, reverse_exit_code = builder._remote_command(
+                    client,
+                    reverse_command,
+                    timeout=120,
+                )
+                if reverse_exit_code == 0:
+                    return ApplyPrecheckReport(
+                        status="failed",
+                        ok=False,
+                        backend="ssh",
+                        target_source_dir=str(source_dir),
+                        command=command,
+                        checked_patch_path=remote_patch_path.as_posix(),
+                        exit_code=exit_code,
+                        summary="远端 apply 预检查显示目标源码已包含该补丁，无需重复应用。",
+                        stdout=stdout_text or reverse_stdout or None,
+                        stderr=stderr_text or reverse_stderr or None,
+                        failure_type="target_already_patched",
+                    )
+                if self._patch_looks_already_applied_remote(
+                    patch_path=patch_path,
+                    source_dir=str(source_dir),
+                    sftp=sftp,
+                ):
+                    return ApplyPrecheckReport(
+                        status="failed",
+                        ok=False,
+                        backend="ssh",
+                        target_source_dir=str(source_dir),
+                        command=command,
+                        checked_patch_path=remote_patch_path.as_posix(),
+                        exit_code=exit_code,
+                        summary="远端 apply 预检查显示目标源码已包含该补丁，无需重复应用。",
+                        stdout=stdout_text or reverse_stdout or None,
+                        stderr=stderr_text or reverse_stderr or None,
+                        failure_type="target_already_patched",
+                    )
                 return ApplyPrecheckReport(
                     status="failed",
                     ok=False,
@@ -219,6 +302,7 @@ class DiffEditor:
                     summary="远端 apply 预检查未通过，补丁当前无法应用到目标源码树。",
                     stdout=stdout_text or None,
                     stderr=stderr_text or None,
+                    failure_type="patch_apply_failed",
                 )
             return ApplyPrecheckReport(
                 status="skipped",
@@ -231,6 +315,7 @@ class DiffEditor:
                 summary="远端 apply 预检查未完成，当前更像环境或工具问题，继续交给构建阶段判定。",
                 stdout=stdout_text or None,
                 stderr=stderr_text or None,
+                failure_type="build_env_missing",
             )
         except Exception as exc:  # pragma: no cover - 远端依赖
             return ApplyPrecheckReport(
@@ -241,6 +326,7 @@ class DiffEditor:
                 command=command,
                 checked_patch_path=remote_patch_path.as_posix(),
                 summary=f"远端 apply 预检查执行失败：{exc}",
+                failure_type="remote_connect_failed",
             )
         finally:
             if sftp is not None:
@@ -261,3 +347,115 @@ class DiffEditor:
             "error: corrupt patch",
         ]
         return any(marker in lowered for marker in markers)
+
+    def _patch_looks_already_applied_locally(self, *, patch_path: Path, source_dir: Path) -> bool:
+        """根据文件内容启发式判断补丁是否已在本地源码树中体现。"""
+
+        return self._patch_looks_already_applied(
+            patch_path=patch_path,
+            reader=lambda relative_path: self._read_local_text(source_dir / relative_path),
+        )
+
+    def _patch_looks_already_applied_remote(self, *, patch_path: Path, source_dir: str, sftp: object) -> bool:
+        """根据文件内容启发式判断补丁是否已在远端源码树中体现。"""
+
+        source_root = PurePosixPath(source_dir)
+        return self._patch_looks_already_applied(
+            patch_path=patch_path,
+            reader=lambda relative_path: self._read_remote_text(sftp, source_root / relative_path),
+        )
+
+    def _patch_looks_already_applied(self, *, patch_path: Path, reader: Callable[[str], str | None]) -> bool:
+        """检查补丁新增行是否已存在且旧行是否已消失。"""
+
+        with patch_path.open("r", encoding="utf-8", errors="replace") as handle:
+            patch_set = PatchSet(handle)
+
+        inspected = False
+        for patched_file in patch_set:
+            relative_path = getattr(patched_file, "path", None)
+            if not relative_path:
+                continue
+            target_text = reader(relative_path)
+            if target_text is None:
+                return False
+            target_lines = self._normalize_lines(target_text.splitlines())
+            file_inspected = False
+            for hunk in patched_file:
+                for added_block, removed_block in self._collect_change_blocks(hunk):
+                    if added_block and not self._contains_block(target_lines, added_block):
+                        return False
+                    if removed_block and self._contains_block(target_lines, removed_block):
+                        return False
+                    file_inspected = True
+
+            inspected = inspected or file_inspected
+
+        return inspected
+
+    def _collect_change_blocks(self, hunk: object) -> list[tuple[list[str], list[str]]]:
+        """按上下文行切分 hunk 内连续变更块。"""
+
+        blocks: list[tuple[list[str], list[str]]] = []
+        added_lines: list[str] = []
+        removed_lines: list[str] = []
+
+        def flush() -> None:
+            nonlocal added_lines, removed_lines
+            normalized_added = self._normalize_lines(added_lines)
+            normalized_removed = self._normalize_lines(removed_lines)
+            if normalized_added or normalized_removed:
+                blocks.append((normalized_added, normalized_removed))
+            added_lines = []
+            removed_lines = []
+
+        for line in hunk:
+            value = line.value.rstrip("\n")
+            if line.line_type == "+":
+                added_lines.append(value)
+            elif line.line_type == "-":
+                removed_lines.append(value)
+            else:
+                flush()
+        flush()
+        return blocks
+
+    def _normalize_lines(self, lines: Iterable[str]) -> list[str]:
+        """规整行内容，减少缩进差异对匹配的影响。"""
+
+        normalized: list[str] = []
+        for line in lines:
+            compact = " ".join(line.strip().split())
+            if compact:
+                normalized.append(compact)
+        return normalized
+
+    def _contains_block(self, target_lines: list[str], block_lines: list[str]) -> bool:
+        """判断目标文件中是否存在按顺序连续出现的代码块。"""
+
+        if not block_lines or len(target_lines) < len(block_lines):
+            return False
+        for index in range(len(target_lines) - len(block_lines) + 1):
+            if target_lines[index : index + len(block_lines)] == block_lines:
+                return True
+        return False
+
+    def _read_local_text(self, path: Path) -> str | None:
+        """读取本地源码文件。"""
+
+        if not path.exists():
+            return None
+        return path.read_text(encoding="utf-8", errors="replace")
+
+    def _read_remote_text(self, sftp: object, path: PurePosixPath) -> str | None:
+        """读取远端源码文件。"""
+
+        try:
+            handle = sftp.open(path.as_posix(), "r")
+        except OSError:
+            return None
+        with handle:
+            content = handle.read()
+        if isinstance(content, bytes):
+            return content.decode("utf-8", errors="replace")
+        return str(content)

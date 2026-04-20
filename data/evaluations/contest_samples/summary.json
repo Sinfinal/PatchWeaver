@@ -1,39 +1,49 @@
 {
   "fixture_name": "contest_samples",
   "total_fixtures": 2,
-  "matched_fixtures": 1,
-  "missing_fixtures": 1,
+  "matched_fixtures": 2,
+  "missing_fixtures": 0,
   "success_count": 0,
+  "failed_count": 2,
   "success_rate": 0.0,
-  "average_attempts": 1.0,
+  "average_attempts": 6.5,
+  "status_distribution": {
+    "failed": 2
+  },
   "failure_distribution": {
-    "patch_apply_failed": 1
+    "target_already_patched": 2
+  },
+  "group_distribution": {
+    "default": 2
   },
   "fixtures": [
     {
       "fixture_id": "linux-kernel-cve-2024-1086",
       "cve_id": "CVE-2024-1086",
       "target_kernel": "6.6.102-5.2.an23.x86_64",
+      "sample_group": "default",
       "matched": true,
-      "task_id": "TASK-STAGE-II-20260414-185447",
+      "task_id": "TASK-TEST-20260420-01",
       "final_status": "failed",
-      "attempts": 1,
-      "latest_failure_type": "patch_apply_failed",
-      "evaluation_summary_path": "D:\\spaces\\ai\\PatchWeaver\\data\\evaluations\\contest_samples\\linux-kernel-cve-2024-1086.json"
+      "attempts": 7,
+      "latest_failure_type": "target_already_patched",
+      "evaluation_summary_path": "D:\\PatchWeaver\\data\\evaluations\\contest_samples\\linux-kernel-cve-2024-1086.json"
     },
     {
       "fixture_id": "linux-kernel-cve-2022-0185",
       "cve_id": "CVE-2022-0185",
       "target_kernel": "6.6.102-5.2.an23.x86_64",
-      "matched": false,
-      "task_id": null,
-      "final_status": "missing",
-      "attempts": 0,
-      "latest_failure_type": null,
-      "evaluation_summary_path": null
+      "sample_group": "default",
+      "matched": true,
+      "task_id": "TASK-TEST-20260420-02",
+      "final_status": "failed",
+      "attempts": 6,
+      "latest_failure_type": "target_already_patched",
+      "evaluation_summary_path": "D:\\PatchWeaver\\data\\evaluations\\contest_samples\\linux-kernel-cve-2022-0185.json"
     }
   ],
   "generated_files": [
-    "D:\\spaces\\ai\\PatchWeaver\\data\\evaluations\\contest_samples\\linux-kernel-cve-2024-1086.json"
+    "D:\\PatchWeaver\\data\\evaluations\\contest_samples\\linux-kernel-cve-2024-1086.json",
+    "D:\\PatchWeaver\\data\\evaluations\\contest_samples\\linux-kernel-cve-2022-0185.json"
   ]
 }

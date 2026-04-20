@@ -59,5 +59,11 @@ class MdWriter:
             lines.extend(["", "## 说明"])
             for item in report.explanations:
                 lines.append(f"- {item}")
+        if report.next_priority_layer or report.next_action:
+            lines.extend(["", "## 下一步"])
+            if report.next_priority_layer:
+                lines.append(f"- next_priority_layer: {report.next_priority_layer}")
+            if report.next_action:
+                lines.append(f"- next_action: {report.next_action}")
         target_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         return target_path

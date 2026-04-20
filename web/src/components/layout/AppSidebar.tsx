@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const navGroups = [
   {
@@ -33,22 +33,25 @@ const navGroups = [
 
 export function AppSidebar(): JSX.Element {
   const location = useLocation();
+  const pathname = location.pathname.replace(/\/+$/, "") || "/";
 
   const isItemActive = (to: string): boolean => {
+    if (to === "/overview") {
+      return pathname === "/" || pathname === "/overview";
+    }
     if (to === "/tasks") {
-      return location.pathname === "/tasks" || /^\/tasks\/[^/]+$/.test(location.pathname);
+      return pathname === "/tasks" || /^\/tasks\/(?!new$)[^/]+$/.test(pathname);
     }
     if (to === "/tasks/new") {
-      return location.pathname === "/tasks/new";
+      return pathname === "/tasks/new";
     }
-    return location.pathname === to || location.pathname.startsWith(`${to}/`);
+    return pathname === to || pathname.startsWith(`${to}/`);
   };
 
   return (
     <aside className="pw-sidebar">
       <div className="pw-sidebar-orb" />
       <div className="pw-sidebar-brand">
-        <div className="pw-sidebar-monogram">PW</div>
         <h1 className="pw-sidebar-title">PatchWeaver</h1>
         <p className="pw-sidebar-subtitle">补天控制台</p>
         <div className="pw-sidebar-line" />
@@ -58,13 +61,14 @@ export function AppSidebar(): JSX.Element {
           <div className="pw-nav-section-title">{group.title}</div>
           <nav className="pw-nav">
             {group.items.map((item) => (
-              <NavLink
+              <Link
                 key={item.to}
                 to={item.to}
+                aria-current={isItemActive(item.to) ? "page" : undefined}
                 className={`pw-nav-link${isItemActive(item.to) ? " active" : ""}`}
               >
                 <span className="pw-nav-link-title">{item.label}</span>
-              </NavLink>
+              </Link>
             ))}
           </nav>
         </div>

@@ -18,5 +18,269 @@
       "patch_apply_failed"
     ],
     "created_at": "2026-04-14T10:55:04.393984Z"
+  },
+  {
+    "entry_id": "FM-c144bc271b",
+    "task_id": "TASK-TEST-20260420-01",
+    "cve_id": "CVE-2024-1086",
+    "attempt_id": "TASK-TEST-20260420-01-A001",
+    "stage_name": "build",
+    "failure_type": "remote_auth_missing",
+    "summary": "构建后端: ssh",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-01-candidate-001",
+    "evidence": [
+      "构建后端: ssh",
+      "远端主机: root@10.223.185.3:22",
+      "构建命令: kpatch-build"
+    ],
+    "keywords": [
+      "build",
+      "remote_auth_missing"
+    ],
+    "created_at": "2026-04-20T12:32:36.740774Z"
+  },
+  {
+    "entry_id": "FM-829b721b3a",
+    "task_id": "TASK-TEST-20260420-02",
+    "cve_id": "CVE-2022-0185",
+    "attempt_id": "TASK-TEST-20260420-02-A001",
+    "stage_name": "build",
+    "failure_type": "remote_auth_missing",
+    "summary": "构建后端: ssh",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-02-candidate-001",
+    "evidence": [
+      "构建后端: ssh",
+      "远端主机: root@10.223.185.3:22",
+      "构建命令: kpatch-build"
+    ],
+    "keywords": [
+      "build",
+      "remote_auth_missing"
+    ],
+    "created_at": "2026-04-20T12:35:34.253640Z"
+  },
+  {
+    "entry_id": "FM-5062b89695",
+    "task_id": "TASK-TEST-20260420-01",
+    "cve_id": "CVE-2024-1086",
+    "attempt_id": "TASK-TEST-20260420-01-A002",
+    "stage_name": "build",
+    "failure_type": "remote_connect_failed",
+    "summary": "构建后端: ssh",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-01-candidate-001",
+    "evidence": [
+      "构建后端: ssh",
+      "远端主机: root@10.223.185.3:22",
+      "构建命令: kpatch-build"
+    ],
+    "keywords": [
+      "build",
+      "remote_connect_failed"
+    ],
+    "created_at": "2026-04-20T12:46:50.628276Z"
+  },
+  {
+    "entry_id": "FM-317f9de481",
+    "task_id": "TASK-TEST-20260420-02",
+    "cve_id": "CVE-2022-0185",
+    "attempt_id": "TASK-TEST-20260420-02-A002",
+    "stage_name": "build",
+    "failure_type": "remote_connect_failed",
+    "summary": "构建后端: ssh",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-02-candidate-001",
+    "evidence": [
+      "构建后端: ssh",
+      "远端主机: root@10.223.185.3:22",
+      "构建命令: kpatch-build"
+    ],
+    "keywords": [
+      "build",
+      "remote_connect_failed"
+    ],
+    "created_at": "2026-04-20T12:47:35.804031Z"
+  },
+  {
+    "entry_id": "FM-ebc3ca62d9",
+    "task_id": "TASK-TEST-20260420-01",
+    "cve_id": "CVE-2024-1086",
+    "attempt_id": "TASK-TEST-20260420-01-A003",
+    "stage_name": "build",
+    "failure_type": "patch_apply_failed",
+    "summary": "error: net/netfilter/nf_tables_api.c: No such file or directory",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-01-candidate-001",
+    "evidence": [
+      "apply 级预检查未通过，已跳过远端构建。"
+    ],
+    "keywords": [
+      "apply",
+      "build",
+      "patch_apply_failed"
+    ],
+    "created_at": "2026-04-20T12:50:36.079254Z"
+  },
+  {
+    "entry_id": "FM-494d2e4ba9",
+    "task_id": "TASK-TEST-20260420-02",
+    "cve_id": "CVE-2022-0185",
+    "attempt_id": "TASK-TEST-20260420-02-A003",
+    "stage_name": "build",
+    "failure_type": "patch_apply_failed",
+    "summary": "error: fs/fs_context.c: No such file or directory",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-02-candidate-001",
+    "evidence": [
+      "apply 级预检查未通过，已跳过远端构建。"
+    ],
+    "keywords": [
+      "apply",
+      "build",
+      "patch_apply_failed"
+    ],
+    "created_at": "2026-04-20T12:50:53.176176Z"
+  },
+  {
+    "entry_id": "FM-affd5ae575",
+    "task_id": "TASK-TEST-20260420-02",
+    "cve_id": "CVE-2022-0185",
+    "attempt_id": "TASK-TEST-20260420-02-A004",
+    "stage_name": "rewrite",
+    "failure_type": "patch_apply_failed",
+    "summary": "远端 apply 预检查未通过，补丁当前无法应用到目标源码树。",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-02-candidate-001",
+    "evidence": [
+      "Checking patch fs/fs_context.c...\nerror: while searching for:\n\t\t\t      param->key);?\n\t}?\n?\n\tif (len > PAGE_SIZE - 2 - size)?\n\t\treturn invalf(fc, \"VFS: Legacy: Cumulative options too large\");?\n\tif (strchr(param->key, ',') ||?\n\t    (param->type == fs_value_is_string &&?\n\nerror: patch failed: fs/fs_context.c:548\nerror: fs/fs_context.c: patch does not apply"
+    ],
+    "keywords": [
+      "apply",
+      "patch_apply_failed",
+      "rewrite"
+    ],
+    "created_at": "2026-04-20T13:12:39.475484Z"
+  },
+  {
+    "entry_id": "FM-1f839e8c4d",
+    "task_id": "TASK-TEST-20260420-01",
+    "cve_id": "CVE-2024-1086",
+    "attempt_id": "TASK-TEST-20260420-01-A004",
+    "stage_name": "rewrite",
+    "failure_type": "patch_apply_failed",
+    "summary": "远端 apply 预检查未通过，补丁当前无法应用到目标源码树。",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-01-candidate-001",
+    "evidence": [
+      "Checking patch net/netfilter/nf_tables_api.c...\nerror: while searching for:\n\tdata->verdict.code = ntohl(nla_get_be32(tb[NFTA_VERDICT_CODE]));?\n?\n\tswitch (data->verdict.code) {?\n\tdefault:?\n\t\tswitch (data->verdict.code & NF_VERDICT_MASK) {?\n\t\tcase NF_ACCEPT:?\n\t\tcase NF_DROP:?\n\t\tcase NF_QUEUE:?\n\t\t\tbreak;?\n\t\tdefault:?\n\t\t\treturn -EINVAL;?\n\t\t}?\n\t\tfallthrough;?\n\tcase NFT_CONTINUE:?\n\tcase NFT_BREAK:?\n\tcase NFT_RETURN:?\n\nerror: patch failed: net/netfilter/nf_tables_api.c:10992\nerror: net/netfilter/nf_tables_api.c: patch does not apply"
+    ],
+    "keywords": [
+      "apply",
+      "patch_apply_failed",
+      "rewrite"
+    ],
+    "created_at": "2026-04-20T13:12:39.580335Z"
+  },
+  {
+    "entry_id": "FM-5c357b56df",
+    "task_id": "TASK-TEST-20260420-01",
+    "cve_id": "CVE-2024-1086",
+    "attempt_id": "TASK-TEST-20260420-01-A005",
+    "stage_name": "rewrite",
+    "failure_type": "patch_apply_failed",
+    "summary": "远端 apply 预检查未通过，补丁当前无法应用到目标源码树。",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-01-candidate-001",
+    "evidence": [
+      "Checking patch net/netfilter/nf_tables_api.c...\nerror: while searching for:\n\tdata->verdict.code = ntohl(nla_get_be32(tb[NFTA_VERDICT_CODE]));?\n?\n\tswitch (data->verdict.code) {?\n\tdefault:?\n\t\tswitch (data->verdict.code & NF_VERDICT_MASK) {?\n\t\tcase NF_ACCEPT:?\n\t\tcase NF_DROP:?\n\t\tcase NF_QUEUE:?\n\t\t\tbreak;?\n\t\tdefault:?\n\t\t\treturn -EINVAL;?\n\t\t}?\n\t\tfallthrough;?\n\tcase NFT_CONTINUE:?\n\tcase NFT_BREAK:?\n\tcase NFT_RETURN:?\n\nerror: patch failed: net/netfilter/nf_tables_api.c:10992\nerror: net/netfilter/nf_tables_api.c: patch does not apply"
+    ],
+    "keywords": [
+      "apply",
+      "patch_apply_failed",
+      "rewrite"
+    ],
+    "created_at": "2026-04-20T13:26:30.621138Z"
+  },
+  {
+    "entry_id": "FM-1457782af3",
+    "task_id": "TASK-TEST-20260420-02",
+    "cve_id": "CVE-2022-0185",
+    "attempt_id": "TASK-TEST-20260420-02-A005",
+    "stage_name": "rewrite",
+    "failure_type": "patch_apply_failed",
+    "summary": "远端 apply 预检查未通过，补丁当前无法应用到目标源码树。",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-02-candidate-001",
+    "evidence": [
+      "Checking patch fs/fs_context.c...\nerror: while searching for:\n\t\t\t      param->key);?\n\t}?\n?\n\tif (len > PAGE_SIZE - 2 - size)?\n\t\treturn invalf(fc, \"VFS: Legacy: Cumulative options too large\");?\n\tif (strchr(param->key, ',') ||?\n\t    (param->type == fs_value_is_string &&?\n\nerror: patch failed: fs/fs_context.c:548\nerror: fs/fs_context.c: patch does not apply"
+    ],
+    "keywords": [
+      "apply",
+      "patch_apply_failed",
+      "rewrite"
+    ],
+    "created_at": "2026-04-20T13:26:30.723926Z"
+  },
+  {
+    "entry_id": "FM-496b93b71a",
+    "task_id": "TASK-TEST-20260420-01",
+    "cve_id": "CVE-2024-1086",
+    "attempt_id": "TASK-TEST-20260420-01-A006",
+    "stage_name": "rewrite",
+    "failure_type": "patch_apply_failed",
+    "summary": "远端 apply 预检查未通过，补丁当前无法应用到目标源码树。",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-01-candidate-001",
+    "evidence": [
+      "Checking patch net/netfilter/nf_tables_api.c...\nerror: while searching for:\n\tdata->verdict.code = ntohl(nla_get_be32(tb[NFTA_VERDICT_CODE]));?\n?\n\tswitch (data->verdict.code) {?\n\tdefault:?\n\t\tswitch (data->verdict.code & NF_VERDICT_MASK) {?\n\t\tcase NF_ACCEPT:?\n\t\tcase NF_DROP:?\n\t\tcase NF_QUEUE:?\n\t\t\tbreak;?\n\t\tdefault:?\n\t\t\treturn -EINVAL;?\n\t\t}?\n\t\tfallthrough;?\n\tcase NFT_CONTINUE:?\n\tcase NFT_BREAK:?\n\tcase NFT_RETURN:?\n\nerror: patch failed: net/netfilter/nf_tables_api.c:10992\nerror: net/netfilter/nf_tables_api.c: patch does not apply"
+    ],
+    "keywords": [
+      "apply",
+      "patch_apply_failed",
+      "rewrite"
+    ],
+    "created_at": "2026-04-20T13:33:13.248620Z"
+  },
+  {
+    "entry_id": "FM-683af1c64f",
+    "task_id": "TASK-TEST-20260420-01",
+    "cve_id": "CVE-2024-1086",
+    "attempt_id": "TASK-TEST-20260420-01-A007",
+    "stage_name": "rewrite",
+    "failure_type": "target_already_patched",
+    "summary": "远端 apply 预检查显示目标源码已包含该补丁，无需重复应用。",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-01-candidate-001",
+    "evidence": [
+      "Checking patch net/netfilter/nf_tables_api.c...\nerror: while searching for:\n\tdata->verdict.code = ntohl(nla_get_be32(tb[NFTA_VERDICT_CODE]));?\n?\n\tswitch (data->verdict.code) {?\n\tdefault:?\n\t\tswitch (data->verdict.code & NF_VERDICT_MASK) {?\n\t\tcase NF_ACCEPT:?\n\t\tcase NF_DROP:?\n\t\tcase NF_QUEUE:?\n\t\t\tbreak;?\n\t\tdefault:?\n\t\t\treturn -EINVAL;?\n\t\t}?\n\t\tfallthrough;?\n\tcase NFT_CONTINUE:?\n\tcase NFT_BREAK:?\n\tcase NFT_RETURN:?\n\nerror: patch failed: net/netfilter/nf_tables_api.c:10992\nerror: net/netfilter/nf_tables_api.c: patch does not apply"
+    ],
+    "keywords": [
+      "apply",
+      "rewrite",
+      "target_already_patched"
+    ],
+    "created_at": "2026-04-20T13:39:02.894470Z"
+  },
+  {
+    "entry_id": "FM-8d6e10060d",
+    "task_id": "TASK-TEST-20260420-02",
+    "cve_id": "CVE-2022-0185",
+    "attempt_id": "TASK-TEST-20260420-02-A006",
+    "stage_name": "rewrite",
+    "failure_type": "target_already_patched",
+    "summary": "远端 apply 预检查显示目标源码已包含该补丁，无需重复应用。",
+    "recipe_name": "direct_apply_patch",
+    "candidate_id": "TASK-TEST-20260420-02-candidate-001",
+    "evidence": [
+      "Checking patch fs/fs_context.c...\nerror: while searching for:\n\t\t\t      param->key);?\n\t}?\n?\n\tif (len > PAGE_SIZE - 2 - size)?\n\t\treturn invalf(fc, \"VFS: Legacy: Cumulative options too large\");?\n\tif (strchr(param->key, ',') ||?\n\t    (param->type == fs_value_is_string &&?\n\nerror: patch failed: fs/fs_context.c:548\nerror: fs/fs_context.c: patch does not apply"
+    ],
+    "keywords": [
+      "apply",
+      "rewrite",
+      "target_already_patched"
+    ],
+    "created_at": "2026-04-20T13:39:33.624020Z"
   }
 ]
