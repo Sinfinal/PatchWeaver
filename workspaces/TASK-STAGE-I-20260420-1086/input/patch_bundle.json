@@ -1,0 +1,94 @@
+{
+  "task_id": "TASK-STAGE-I-20260420-1086",
+  "cve_id": "CVE-2024-1086",
+  "upstream_commit": "f342de4e2f33e0e39165d8639387aa6c19dff660",
+  "stable_commit": null,
+  "commit_message": "netfilter: nf_tables: reject QUEUE/DROP verdict parameters",
+  "affected_files": [
+    "net/netfilter/nf_tables_api.c"
+  ],
+  "raw_patch_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\input\\raw_patch.patch",
+  "normalized_patch_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\normalized\\normalized.patch",
+  "source_evidence": [
+    {
+      "source_name": "nvd",
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2024-1086",
+      "summary": "A use-after-free vulnerability in the Linux kernel's netfilter: nf_tables component can be exploited to achieve local privilege escalation. The nft_verdict_init() function allows positive values as drop error within the hook verdict, and h…",
+      "commit_id": null,
+      "stage": "metadata",
+      "reference_type": "cve_record",
+      "title": "Use-after-free in Linux kernel's netfilter: nf_tables component",
+      "preferred": false
+    },
+    {
+      "source_name": "cvelistV5",
+      "url": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2024/1xxx/CVE-2024-1086.json",
+      "summary": "A use-after-free vulnerability in the Linux kernel's netfilter: nf_tables component can be exploited to achieve local privilege escalation. The nft_verdict_init() function allows positive values as drop error within the hook verdict, and h…",
+      "commit_id": null,
+      "stage": "metadata",
+      "reference_type": "cve_record",
+      "title": "Use-after-free in Linux kernel's netfilter: nf_tables component",
+      "preferred": false
+    },
+    {
+      "source_name": "linux-cve-announce",
+      "url": "http://www.openwall.com/lists/oss-security/2024/04/10/22",
+      "summary": "CVE-2024-1086 的公告/流程来源：http://www.openwall.com/lists/oss-security/2024/04/10/22",
+      "commit_id": null,
+      "stage": "announce",
+      "reference_type": "advisory",
+      "title": null,
+      "preferred": false
+    },
+    {
+      "source_name": "linux-cve-announce",
+      "url": "http://www.openwall.com/lists/oss-security/2024/04/10/23",
+      "summary": "CVE-2024-1086 的公告/流程来源：http://www.openwall.com/lists/oss-security/2024/04/10/23",
+      "commit_id": null,
+      "stage": "announce",
+      "reference_type": "advisory",
+      "title": null,
+      "preferred": false
+    },
+    {
+      "source_name": "linux-cve-announce",
+      "url": "http://www.openwall.com/lists/oss-security/2024/04/14/1",
+      "summary": "CVE-2024-1086 的公告/流程来源：http://www.openwall.com/lists/oss-security/2024/04/14/1",
+      "commit_id": null,
+      "stage": "announce",
+      "reference_type": "advisory",
+      "title": null,
+      "preferred": false
+    },
+    {
+      "source_name": "linux-cve-announce",
+      "url": "http://www.openwall.com/lists/oss-security/2024/04/15/2",
+      "summary": "CVE-2024-1086 的公告/流程来源：http://www.openwall.com/lists/oss-security/2024/04/15/2",
+      "commit_id": null,
+      "stage": "announce",
+      "reference_type": "advisory",
+      "title": null,
+      "preferred": false
+    },
+    {
+      "source_name": "linux-cve-announce",
+      "url": "http://www.openwall.com/lists/oss-security/2024/04/17/5",
+      "summary": "CVE-2024-1086 的公告/流程来源：http://www.openwall.com/lists/oss-security/2024/04/17/5",
+      "commit_id": null,
+      "stage": "announce",
+      "reference_type": "advisory",
+      "title": null,
+      "preferred": false
+    },
+    {
+      "source_name": "upstream",
+      "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=f342de4e2f33e0e39165d8639387aa6c19dff660",
+      "summary": "upstream 提交 f342de4e2f33e0e39165d8639387aa6c19dff660，在无 stable backport 时作为回退来源。",
+      "commit_id": "f342de4e2f33e0e39165d8639387aa6c19dff660",
+      "stage": "patch",
+      "reference_type": "upstream_commit",
+      "title": null,
+      "preferred": true
+    }
+  ]
+}

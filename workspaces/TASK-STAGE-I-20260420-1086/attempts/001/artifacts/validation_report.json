@@ -1,0 +1,125 @@
+{
+  "semantic_precheck_result": {
+    "status": "passed",
+    "ok": true,
+    "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+    "command": null,
+    "log_path": null
+  },
+  "load_result": {
+    "status": "pending",
+    "ok": false,
+    "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+    "command": null,
+    "log_path": null
+  },
+  "unload_result": {
+    "status": "pending",
+    "ok": false,
+    "detail": "尚未执行加载测试，暂不执行卸载测试。",
+    "command": null,
+    "log_path": null
+  },
+  "smoke_result": {
+    "status": "pending",
+    "ok": false,
+    "detail": "尚未满足冒烟测试前置条件。",
+    "command": null,
+    "log_path": null
+  },
+  "selftest_result": {
+    "status": "pending",
+    "ok": false,
+    "detail": "当前轮尚未满足自检前置条件。",
+    "command": null,
+    "log_path": null
+  },
+  "regression_result": {
+    "status": "skipped",
+    "ok": false,
+    "detail": "配置已关闭回归验证。",
+    "command": null,
+    "log_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\attempts\\001\\logs\\regression.log"
+  },
+  "semantic_guard_result": {
+    "status": "pending",
+    "ok": false,
+    "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+    "command": null,
+    "log_path": null
+  },
+  "validation_matrix": [
+    {
+      "name": "semantic_precheck",
+      "category": "static",
+      "enabled": true,
+      "status": "passed",
+      "risk_level": "medium",
+      "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+      "log_path": null
+    },
+    {
+      "name": "selftest",
+      "category": "dynamic",
+      "enabled": false,
+      "status": "pending",
+      "risk_level": "medium",
+      "detail": "当前轮尚未满足自检前置条件。",
+      "log_path": null
+    },
+    {
+      "name": "load_test",
+      "category": "dynamic",
+      "enabled": true,
+      "status": "pending",
+      "risk_level": "medium",
+      "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+      "log_path": null
+    },
+    {
+      "name": "unload_test",
+      "category": "dynamic",
+      "enabled": true,
+      "status": "pending",
+      "risk_level": "medium",
+      "detail": "尚未执行加载测试，暂不执行卸载测试。",
+      "log_path": null
+    },
+    {
+      "name": "smoke_test",
+      "category": "dynamic",
+      "enabled": true,
+      "status": "pending",
+      "risk_level": "medium",
+      "detail": "尚未满足冒烟测试前置条件。",
+      "log_path": null
+    },
+    {
+      "name": "semantic_guard",
+      "category": "guard",
+      "enabled": true,
+      "status": "pending",
+      "risk_level": "medium",
+      "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+      "log_path": null
+    },
+    {
+      "name": "regression",
+      "category": "regression",
+      "enabled": false,
+      "status": "skipped",
+      "risk_level": "medium",
+      "detail": "配置已关闭回归验证。",
+      "log_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\attempts\\001\\logs\\regression.log"
+    }
+  ],
+  "validation_intensity": "standard",
+  "status": "pending",
+  "notes": [
+    "验证任务: TASK-STAGE-I-20260420-1086",
+    "构建状态: failed",
+    "风险等级: medium",
+    "验证强度: standard",
+    "本轮未构建出模块产物，动态验证阶段维持待执行状态。"
+  ]
+}

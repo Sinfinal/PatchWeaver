@@ -1,0 +1,76 @@
+{
+  "task_id": "TASK-STAGE-I-20260420-1086",
+  "plan_id": "TASK-STAGE-I-20260420-1086-plan-001",
+  "candidate_ids": [
+    "TASK-STAGE-I-20260420-1086-candidate-001",
+    "TASK-STAGE-I-20260420-1086-candidate-002"
+  ],
+  "selected_recipe": "direct_apply_patch",
+  "selected_primitives": [
+    "direct_apply"
+  ],
+  "target_files": [
+    "net/netfilter/nf_tables_api.c"
+  ],
+  "rule_hits": [
+    "direct_apply_ready"
+  ],
+  "risk_coverage": 1.0,
+  "selection_reason": "优先选择综合得分最高的候选，当前命中 direct_apply_patch，排序得分 0.604。",
+  "notes": [
+    "CVE-2024-1086 的修复意图待补充",
+    "候选数: 2",
+    "命中规则: direct_apply_ready",
+    "排序依据: 预估风险 0.28；语义漂移 0.04；构建代价 0.08"
+  ],
+  "candidate_summaries": [
+    {
+      "candidate_id": "TASK-STAGE-I-20260420-1086-candidate-001",
+      "recipe_name": "direct_apply_patch",
+      "primitives": [
+        "direct_apply"
+      ],
+      "target_functions": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "rule_hits": [
+        "direct_apply_ready"
+      ],
+      "expected_risk": 0.28,
+      "expected_semantic_drift": 0.04,
+      "expected_build_cost": 0.08,
+      "history_success_rate": 0.0,
+      "failure_pressure": 0.0,
+      "ranking_score": 0.604,
+      "ranking_reasons": [
+        "预估风险 0.28",
+        "语义漂移 0.04",
+        "构建代价 0.08"
+      ]
+    },
+    {
+      "candidate_id": "TASK-STAGE-I-20260420-1086-candidate-002",
+      "recipe_name": "minimal_livepatch_wrap",
+      "primitives": [
+        "direct_apply"
+      ],
+      "target_functions": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "rule_hits": [
+        "direct_apply_ready"
+      ],
+      "expected_risk": 0.29,
+      "expected_semantic_drift": 0.14,
+      "expected_build_cost": 0.24,
+      "history_success_rate": 0.0,
+      "failure_pressure": 0.0,
+      "ranking_score": 0.5594,
+      "ranking_reasons": [
+        "预估风险 0.29",
+        "语义漂移 0.14",
+        "构建代价 0.24"
+      ]
+    }
+  ]
+}

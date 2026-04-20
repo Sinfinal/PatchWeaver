@@ -1,0 +1,37 @@
+{
+  "evidence_ids": [
+    "RW001-01",
+    "RW001-02",
+    "RW001-03"
+  ],
+  "spans": [
+    {
+      "evidence_id": "RW001-01",
+      "source_type": "json",
+      "source_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\input\\patch_bundle.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-STAGE-I-20260420-1086\",\n  \"cve_id\": \"CVE-2024-1086\",\n  \"upstream_commit\": \"f342de4e2f33e0e39165d8639387aa6c19dff660\",\n  \"stable_commit\": null,\n  \"commit_message\": \"netfilter: nf_tables: reject QUEUE/DROP verdict parameters\",\n  \"affected_files\": [\n    \"net/netfilter/nf_tables_api.c\"\n  ],\n  \"raw_patch_path\": \"F:\\\\Work_Space\\\\PatchWeaver\\\\workspaces\\\\TASK-STAGE-I-20260420-1086\\\\i",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "RW001-02",
+      "source_type": "json",
+      "source_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\semantic_card.json",
+      "excerpt": "{\n  \"bug_class\": \"cve_fix\",\n  \"root_cause\": \"CVE-2024-1086 的修复意图待补充\",\n  \"must_keep_conditions\": [],\n  \"must_keep_side_effects\": [],\n  \"critical_calls\": [],\n  \"touched_functions\": [\n    \"net/netfilter/nf_tables_api.c\"\n  ]\n}",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "RW001-03",
+      "source_type": "json",
+      "source_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\constraint_report.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-STAGE-I-20260420-1086\",\n  \"risk_items\": [\n    {\n      \"risk_type\": \"direct_apply_ready\",\n      \"severity\": \"medium\",\n      \"evidence\": [\n        \"规则命中: direct_apply_ready\",\n        \"涉及文件: net/netfilter/nf_tables_api.c\",\n        \"patch 摘要: From f342de4e2f33e0e39165d8639387aa6c19dff660 Mon Sep 17 00:00:00 2001 | From: Florian Westphal <fw@strlen.de> | Date: Sat, 20 Jan 2024 22:5",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    }
+  ],
+  "memory_hits": []
+}

@@ -1,0 +1,37 @@
+{
+  "evidence_ids": [
+    "FA001-01",
+    "FA001-02",
+    "FA001-03"
+  ],
+  "spans": [
+    {
+      "evidence_id": "FA001-01",
+      "source_type": "json",
+      "source_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\attempts\\001\\rewrite\\rewrite_plan.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-STAGE-I-20260420-1086\",\n  \"plan_id\": \"TASK-STAGE-I-20260420-1086-plan-001\",\n  \"candidate_ids\": [\n    \"TASK-STAGE-I-20260420-1086-candidate-001\",\n    \"TASK-STAGE-I-20260420-1086-candidate-002\"\n  ],\n  \"selected_recipe\": \"direct_apply_patch\",\n  \"selected_primitives\": [\n    \"direct_apply\"\n  ],\n  \"target_files\": [\n    \"net/netfilter/nf_tables_api.c\"\n  ],\n  \"rule_hits\": [\n    \"direc",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "FA001-02",
+      "source_type": "json",
+      "source_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\attempts\\001\\logs\\failure_record.json",
+      "excerpt": "{\n  \"task_id\": \"TASK-STAGE-I-20260420-1086\",\n  \"attempt_id\": \"TASK-STAGE-I-20260420-1086-A001\",\n  \"stage_name\": \"build\",\n  \"failure_type\": \"patch_apply_failed\",\n  \"summary\": \"error: net/netfilter/nf_tables_api.c: No such file or directory\",\n  \"evidence\": [\n    \"apply 级预检查未通过，已跳过远端构建。\"\n  ],\n  \"created_at\": \"2026-04-20T08:02:02.543584Z\"\n}",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    },
+    {
+      "evidence_id": "FA001-03",
+      "source_type": "log",
+      "source_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\attempts\\001\\logs\\build.log",
+      "excerpt": "构建后端: ssh\n远端主机: root@10.223.185.3:22\n构建命令: /usr/bin/kpatch-build\n源码目录: /usr/src/kernels/6.6.102-5.2.an23.x86_64\n配置文件: /usr/src/kernels/6.6.102-5.2.an23.x86_64/.config\nvmlinux: /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux\n\n[apply precheck]\nChecking patch net/netfilter/nf_tables_api.c...\n源码目录: /usr/src/kernels/6.6.102-5.2.an23.x86_64\n补丁路径: F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAG",
+      "start_line": 1,
+      "end_line": 20,
+      "score": 1.0
+    }
+  ],
+  "memory_hits": []
+}

@@ -1,0 +1,29 @@
+{
+  "stage_name": "rewrite_recipe",
+  "system_prompt_version": "v1",
+  "worker_prompt_version": "v1",
+  "schema_name": "RewritePlan",
+  "budget_snapshot": {
+    "token_cost": 255,
+    "duplicate_hits": 0,
+    "memory_hits": 2
+  },
+  "bootstrap_fragments": [
+    "system/system_contract",
+    "bootstrap/contest_bootstrap"
+  ],
+  "prompt_sections": [
+    "改写规划阶段任务：\n1. 在规则、原语、recipe 和经验摘要之间做最小闭环选择。\n2. 目标是输出可 apply、可解释、可构建的 `unified diff`。\n3. 若存在高风险约束，优先缩小直接改动半径，而不是盲目保留原 patch 形态。\n",
+    "# RewritePlan 输出提醒\n\n- 需要给出 `plan_id`\n- 需要给出候选 `candidate_ids`\n- 需要给出 `selected_primitives`\n- 需要给出简短说明，说明为什么这样选\n",
+    "阶段: rewrite_recipe",
+    "选中 Skill: rewrite_recipe",
+    "Skill 契约摘要: 输入: patch_bundle.json, semantic_card.json, constraint_report.json；输出: rewrite_plan.json, rewritten.patch, transformation_trace.json；工具: template_engine, smpl_engine, diff_editor",
+    "输出结构: RewritePlan",
+    "证据数量: 3",
+    "证据摘要: RW001-03、RW001-02、RW001-01",
+    "记忆摘要: [RecipeMemory] minimal_livepatch_wrap: 风险=direct_apply_ready，原语=direct_apply，成功率=0%；[FailureMemory] patch_apply_failed: error: net/netfilter/nf_tables_api.c: No such file or directory，最近关联 recipe: minimal_livepatch_wrap",
+    "Bootstrap 数量: 2",
+    "Bootstrap 开销: 55",
+    "上下文备注: 证据片段数: 3；记忆命中数: 2；证据类型: json"
+  ]
+}

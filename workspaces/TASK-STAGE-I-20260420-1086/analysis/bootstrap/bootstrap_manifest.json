@@ -1,0 +1,16 @@
+{
+  "fragment_ids": [
+    "system/system_contract",
+    "bootstrap/contest_bootstrap"
+  ],
+  "fragment_paths": [
+    "F:\\Work_Space\\PatchWeaver\\prompts\\system\\system_contract.md",
+    "F:\\Work_Space\\PatchWeaver\\prompts\\bootstrap\\contest_bootstrap.md"
+  ],
+  "truncation_marks": [],
+  "render_order": [
+    "system/system_contract",
+    "bootstrap/contest_bootstrap"
+  ],
+  "total_token_cost": 55
+}
