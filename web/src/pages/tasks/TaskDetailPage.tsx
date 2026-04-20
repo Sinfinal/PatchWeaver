@@ -242,6 +242,12 @@ function renderTabSummary(
             {JSON.stringify(detail.latest_validation ?? {}, null, 2) || "暂无验证记录"}
           </pre>
         </div>
+        <div className="pw-list-item">
+          <strong>阶段评测摘要</strong>
+          <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 240 }}>
+            {JSON.stringify(detail.evaluation_summary ?? {}, null, 2) || "暂无阶段评测摘要"}
+          </pre>
+        </div>
       </div>
     );
   }

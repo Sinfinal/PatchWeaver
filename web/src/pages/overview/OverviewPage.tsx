@@ -29,6 +29,8 @@ export function OverviewPage(): JSX.Element {
           <MetricCard label="运行中任务" value={metrics.running_tasks} />
           <MetricCard label="成功任务" value={metrics.success_tasks} />
           <MetricCard label="失败任务" value={metrics.failed_tasks} />
+          <MetricCard label="验证通过" value={metrics.validation_passed} />
+          <MetricCard label="验证失败" value={metrics.validation_failed} />
           <MetricCard label="成功率" value={`${metrics.success_rate}%`} />
           <MetricCard
             label="构建后端"
@@ -55,6 +57,31 @@ export function OverviewPage(): JSX.Element {
           ) : (
             <div className="pw-empty">当前还没有失败归因记录。</div>
           )}
+        </SectionCard>
+      </div>
+
+      <div className="pw-grid two">
+        <SectionCard title="验证结果分布" subtitle="按 validation_record 聚合">
+          {overviewQuery.data.validation_distribution.length > 0 ? (
+            <div className="pw-list">
+              {overviewQuery.data.validation_distribution.map((item) => (
+                <div key={item.status} className="pw-list-item">
+                  <strong>{item.status}</strong>
+                  <span className="pw-inline-note">累计 {item.total} 次</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="pw-empty">当前还没有验证结果记录。</div>
+          )}
+        </SectionCard>
+        <SectionCard title="最近阶段评测" subtitle="固定样例评测输出的最新摘要路径">
+          <div className="pw-list">
+            <div className="pw-list-item">
+              <strong>评测摘要路径</strong>
+              <div className="pw-inline-note">{metrics.latest_evaluation_summary ?? "当前还没有阶段评测摘要。"}</div>
+            </div>
+          </div>
         </SectionCard>
       </div>
 

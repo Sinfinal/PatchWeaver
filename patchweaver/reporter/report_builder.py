@@ -17,6 +17,7 @@ class ReportBuilder:
         task: TaskContext,
         attempts: list[AttemptRecord],
         artifacts: list[ArtifactRef],
+        evaluation_summary: dict[str, object] | None = None,
         explanations: list[str] | None = None,
     ) -> FinalReport:
         """根据任务、尝试和产物索引生成报告。"""
@@ -38,5 +39,6 @@ class ReportBuilder:
             ],
             artifact_index=artifacts,
             final_status=task.status,
+            evaluation_summary=evaluation_summary or {},
             explanations=explanations or [],
         )

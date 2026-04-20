@@ -37,6 +37,7 @@ def test_evaluator_summarizes_attempts_and_artifacts() -> None:
     assert summary["failed_attempts"] == 1
     assert summary["failure_breakdown"]["patch_apply_failed"] == 1
     assert summary["artifact_type_counts"]["rewrite_plan"] == 2
+    assert summary["latest_status"] == "built"
 
 
 def test_replay_harness_collects_stage_routes_dispatch_modes_and_files() -> None:
@@ -94,6 +95,7 @@ def test_replay_harness_collects_stage_routes_dispatch_modes_and_files() -> None
         task_dir=task_dir,
         attempts=attempts,
         latest_trace=latest_trace,
+        replay_comparison={"attempt_count": 1, "items": [{"attempt_no": 1}]},
     )
 
     assert summary["latest_attempt_id"] == f"{task.task_id}-A001"
@@ -101,3 +103,65 @@ def test_replay_harness_collects_stage_routes_dispatch_modes_and_files() -> None
     assert summary["dispatch_modes"]["failure_analysis"] == "read-parallel"
     assert len(summary["replay_files"]) == 5
     assert summary["report_path"] == str(task_dir / "reports" / "report.json")
+    assert summary["comparison"]["attempt_count"] == 1
+
+
+def test_evaluator_summarizes_fixture_set() -> None:
+    summary = Evaluator().summarize_fixture_set(
+        fixture_name="contest_samples",
+        fixtures=[
+            {"fixture_id": "fixture-1"},
+            {"fixture_id": "fixture-2"},
+        ],
+        results=[
+            {
+                "fixture_id": "fixture-1",
+                "final_status": "built",
+                "attempts": 2,
+                "latest_failure_type": None,
+            },
+            {
+                "fixture_id": "fixture-2",
+                "final_status": "failed",
+                "attempts": 3,
+                "latest_failure_type": "compile_failed",
+            },
+        ],
+    )
+
+    assert summary["fixture_name"] == "contest_samples"
+    assert summary["matched_fixtures"] == 2
+    assert summary["success_count"] == 1
+    assert summary["success_rate"] == 0.5
+    assert summary["failure_distribution"]["compile_failed"] == 1
+
+
+def test_evaluator_skips_missing_fixture_from_summary() -> None:
+    summary = Evaluator().summarize_fixture_set(
+        fixture_name="contest_samples",
+        fixtures=[
+            {"fixture_id": "fixture-1"},
+            {"fixture_id": "fixture-2"},
+        ],
+        results=[
+            {
+                "fixture_id": "fixture-1",
+                "matched": True,
+                "final_status": "failed",
+                "attempts": 1,
+                "latest_failure_type": "patch_apply_failed",
+            },
+            {
+                "fixture_id": "fixture-2",
+                "matched": False,
+                "final_status": "missing",
+                "attempts": 0,
+                "latest_failure_type": None,
+            },
+        ],
+    )
+
+    assert summary["matched_fixtures"] == 1
+    assert summary["missing_fixtures"] == 1
+    assert summary["average_attempts"] == 1.0
+    assert summary["failure_distribution"]["patch_apply_failed"] == 1

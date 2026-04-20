@@ -42,6 +42,9 @@ export type TaskAttempt = {
   finished_at?: string | null;
   failure_record_path: string;
   validation_report_path: string;
+  validation_matrix_path: string;
+  semantic_guard_path: string;
+  planning_hints_path: string;
   harness_trace_path: string;
   rewrite_plan_path: string;
 };
@@ -64,9 +67,11 @@ export type ReplayPayload = {
   latest_attempt_status?: string | null;
   trace_path?: string | null;
   report_path?: string | null;
+  evaluation_summary_path?: string | null;
   stage_routes: Record<string, unknown>;
   dispatch_modes: Record<string, unknown>;
   replay_files: string[];
+  comparison: Record<string, unknown>;
   status: string;
 };
 
@@ -84,9 +89,11 @@ export type TaskDetailResponse = {
   latest_validation?: Record<string, unknown> | null;
   latest_trace?: Record<string, unknown> | null;
   latest_rewrite_plan?: Record<string, unknown> | null;
+  evaluation_summary?: Record<string, unknown> | null;
   reports: {
     json_path: string;
     md_path: string;
+    evaluation_summary_path: string;
   };
   replay: ReplayPayload;
   timeline: TimelineNode[];

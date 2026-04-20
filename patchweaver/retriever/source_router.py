@@ -120,17 +120,42 @@ class RetrieverSourceRouter:
     def patch_url_for_commit(self, url: str) -> str | None:
         """把 commit 链接转换为可直接下载的 patch 链接。"""
 
+        if url.lower().endswith(".patch"):
+            return url
+
         commit_id = self.extract_commit_id(url)
         if commit_id is None:
             return None
 
+        parsed = urlparse(url)
         source_name = self.classify_reference(url)
+        kernel_org_patch = self._kernel_org_patch_url(parsed.path, commit_id=commit_id, source_name=source_name)
+        if kernel_org_patch is not None:
+            return kernel_org_patch
         if source_name == "linux-stable":
             return f"https://github.com/gregkh/linux/commit/{commit_id}.patch"
         if source_name == "upstream":
             return f"https://github.com/torvalds/linux/commit/{commit_id}.patch"
-        if url.lower().endswith(".patch"):
-            return url
+        return None
+
+    def _kernel_org_patch_url(self, path: str, *, commit_id: str, source_name: str) -> str | None:
+        """优先为 git.kernel.org 链接生成 patch 地址。"""
+
+        repo_root = self._kernel_org_repo_root(path, source_name=source_name)
+        if repo_root is None:
+            return None
+        return f"https://git.kernel.org{repo_root}/patch/?id={commit_id}"
+
+    def _kernel_org_repo_root(self, path: str, *, source_name: str) -> str | None:
+        """从 git.kernel.org 路径中抽出仓库根路径。"""
+
+        match = re.search(r"(/pub/scm/linux/kernel/git/.+?\.git)/(?:commit|patch)/", path)
+        if match:
+            return match.group(1)
+        if source_name == "linux-stable":
+            return "/pub/scm/linux/kernel/git/stable/linux.git"
+        if source_name == "upstream":
+            return "/pub/scm/linux/kernel/git/torvalds/linux.git"
         return None
 
     def _split_cve_id(self, cve_id: str) -> tuple[str, str]:

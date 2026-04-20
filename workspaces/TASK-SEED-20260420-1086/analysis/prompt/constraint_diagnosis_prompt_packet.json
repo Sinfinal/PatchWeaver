@@ -1,0 +1,29 @@
+{
+  "stage_name": "constraint_diagnosis",
+  "system_prompt_version": "v1",
+  "worker_prompt_version": "v1",
+  "schema_name": "ConstraintReport",
+  "budget_snapshot": {
+    "token_cost": 255,
+    "duplicate_hits": 0,
+    "memory_hits": 0
+  },
+  "bootstrap_fragments": [
+    "system/system_contract",
+    "bootstrap/contest_bootstrap"
+  ],
+  "prompt_sections": [
+    "约束诊断阶段任务：\n1. 从补丁内容和受影响文件中识别 livepatch 风险类型。\n2. 给出风险与原语的映射关系，并指出禁止动作。\n3. 结论要服务后续 recipe 选择，而不是输出泛泛而谈的安全建议。\n",
+    "输出必须说明风险类型、严重级别、证据摘要以及对应的 livepatch 原语需求。\n",
+    "阶段: constraint_diagnosis",
+    "选中 Skill: constraint_diagnosis",
+    "Skill 契约摘要: 输入: patch_bundle.json, semantic_card.json；输出: constraint_report.json；工具: risk_rule_registry",
+    "输出结构: ConstraintReport",
+    "证据数量: 3",
+    "证据摘要: ANL-03、ANL-01、ANL-02",
+    "记忆摘要: 无",
+    "Bootstrap 数量: 2",
+    "Bootstrap 开销: 55",
+    "上下文备注: 证据片段数: 3；记忆命中数: 0；证据类型: json"
+  ]
+}

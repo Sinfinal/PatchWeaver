@@ -6,6 +6,9 @@ export type OverviewMetricBlock = {
   success_rate: number;
   build_backend: string;
   build_ready: boolean;
+  validation_passed: number;
+  validation_failed: number;
+  latest_evaluation_summary?: string | null;
 };
 
 export type OverviewTask = {
@@ -41,6 +44,10 @@ export type OverviewResponse = {
   metrics: OverviewMetricBlock;
   recent_tasks: OverviewTask[];
   failure_distribution: FailureDistributionItem[];
+  validation_distribution: Array<{
+    status: string;
+    total: number;
+  }>;
   events: EventItem[];
   logs_tail: {
     system_log: LogTailBlock;

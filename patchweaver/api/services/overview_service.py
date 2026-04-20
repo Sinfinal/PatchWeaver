@@ -49,6 +49,23 @@ class OverviewService:
                 LIMIT 8
                 """
             ).fetchall()
+            validation_distribution = connection.execute(
+                """
+                SELECT status, COUNT(*) AS total
+                FROM validation_records
+                GROUP BY status
+                ORDER BY total DESC, status ASC
+                """
+            ).fetchall()
+            latest_evaluation = connection.execute(
+                """
+                SELECT artifact_path
+                FROM artifacts
+                WHERE artifact_type = 'evaluation_summary'
+                ORDER BY id DESC
+                LIMIT 1
+                """
+            ).fetchone()
 
         finished_tasks = success_tasks + failed_tasks
         success_rate = round((success_tasks / finished_tasks) * 100, 2) if finished_tasks else 0.0
@@ -62,6 +79,9 @@ class OverviewService:
                 "success_rate": success_rate,
                 "build_backend": build_env["backend"],
                 "build_ready": bool(build_env.get("builder_ok") and build_env.get("selected_source_ok") and build_env.get("config_ok")),
+                "validation_passed": next((row["total"] for row in validation_distribution if row["status"] == "passed"), 0),
+                "validation_failed": next((row["total"] for row in validation_distribution if row["status"] == "failed"), 0),
+                "latest_evaluation_summary": latest_evaluation["artifact_path"] if latest_evaluation is not None else None,
             },
             "recent_tasks": [
                 {
@@ -77,6 +97,9 @@ class OverviewService:
             ],
             "failure_distribution": [
                 {"failure_type": row["failure_type"] or "unknown", "total": row["total"]} for row in failure_distribution
+            ],
+            "validation_distribution": [
+                {"status": row["status"], "total": row["total"]} for row in validation_distribution
             ],
             "events": self.log_service.get_events(limit=12),
             "logs_tail": self.log_service.tail_logs(limit=40),

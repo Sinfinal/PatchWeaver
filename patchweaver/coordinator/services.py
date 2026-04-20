@@ -474,7 +474,30 @@ class AttemptExecutionService(CoordinatorSupport):
             base_dir=attempt_dir,
         )
 
-        plan = self.planner.plan(task_id=task.task_id, semantic_card=semantic_card, constraint_report=constraint_report)
+        ranking_hints = self.dual_memory.build_ranking_hints(
+            risk_types=[item.risk_type for item in constraint_report.risk_items]
+        )
+        planning_hints_path = attempt_dir / "rewrite" / "planning_hints.json"
+        planning_hints_path.parent.mkdir(parents=True, exist_ok=True)
+        planning_hints_path.write_text(
+            json.dumps(ranking_hints, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+        try:
+            plan = self.planner.plan(
+                task_id=task.task_id,
+                semantic_card=semantic_card,
+                constraint_report=constraint_report,
+                ranking_hints=ranking_hints,
+            )
+        except TypeError:
+            # 兼容旧测试桩和早期实现，避免第三期新增排序提示后把前两期基线打断。
+            plan = self.planner.plan(
+                task_id=task.task_id,
+                semantic_card=semantic_card,
+                constraint_report=constraint_report,
+            )
         rewrite_plan_path = self.json_writer.write_model(plan, attempt_dir / "rewrite" / "rewrite_plan.json")
         rewrite_meta = self.rewriter.execute(
             plan=plan,
@@ -596,32 +619,104 @@ class AttemptExecutionService(CoordinatorSupport):
         )
         failover_record_path = self._write_failover_record(attempt_dir=attempt_dir, failure_record=failure_record)
 
-        validation_report, validation_artifacts = self.validator.run(
-            task=task,
-            attempt=attempt_record,
-            attempt_dir=attempt_dir,
-            rewritten_patch_path=rewritten_patch_path,
-            build_summary=build_summary,
-        )
+        history_attempts = self.attempt_repo.list_attempts(task_id)[:-1]
+        try:
+            validation_report, validation_artifacts = self.validator.run(
+                task=task,
+                attempt=attempt_record,
+                attempt_dir=attempt_dir,
+                rewritten_patch_path=rewritten_patch_path,
+                build_summary=build_summary,
+                constraint_report=constraint_report,
+                history_attempts=history_attempts,
+            )
+        except TypeError:
+            validation_report, validation_artifacts = self.validator.run(
+                task=task,
+                attempt=attempt_record,
+                attempt_dir=attempt_dir,
+                rewritten_patch_path=rewritten_patch_path,
+                build_summary=build_summary,
+            )
         validate_log_path = attempt_dir / "logs" / "validate.log"
         validate_log_lines = [
+            f"semantic_precheck: {validation_report.semantic_precheck_result.status} - {validation_report.semantic_precheck_result.detail}",
+            f"selftest: {validation_report.selftest_result.status} - {validation_report.selftest_result.detail}",
             f"load: {validation_report.load_result.status} - {validation_report.load_result.detail}",
             f"unload: {validation_report.unload_result.status} - {validation_report.unload_result.detail}",
             f"smoke: {validation_report.smoke_result.status} - {validation_report.smoke_result.detail}",
+            f"regression: {validation_report.regression_result.status} - {validation_report.regression_result.detail}",
             (
                 f"semantic_guard: {validation_report.semantic_guard_result.status}"
                 f" - {validation_report.semantic_guard_result.detail}"
             ),
+            f"validation_status: {validation_report.status}",
         ]
         if validation_report.notes:
             validate_log_lines.extend(["", "[notes]", *validation_report.notes])
         validate_log_path.write_text("\n".join(validate_log_lines) + "\n", encoding="utf-8")
         self.attempt_repo.save_validation_report(attempt_record.attempt_id, validation_report)
-        validation_report_path = Path(str(validation_artifacts["validation_report"]))
-        semantic_precheck_path = Path(str(validation_artifacts["semantic_precheck"]))
-        load_log_path = Path(str(validation_artifacts["load_log"]))
-        unload_log_path = Path(str(validation_artifacts["unload_log"]))
-        smoke_log_path = Path(str(validation_artifacts["smoke_log"]))
+
+        def resolve_validation_artifact(name: str, fallback: Path, content: str) -> Path:
+            """解析验证产物路径，缺失时补一个兼容占位文件。"""
+
+            value = validation_artifacts.get(name)
+            resolved = Path(str(value)) if value is not None else fallback
+            resolved.parent.mkdir(parents=True, exist_ok=True)
+            if not resolved.exists():
+                resolved.write_text(content, encoding="utf-8")
+            return resolved
+
+        validation_report_path = resolve_validation_artifact(
+            "validation_report",
+            attempt_dir / "artifacts" / "validation_report.json",
+            validation_report.model_dump_json(indent=2),
+        )
+        semantic_precheck_path = resolve_validation_artifact(
+            "semantic_precheck",
+            attempt_dir / "artifacts" / "semantic_precheck.json",
+            json.dumps({"status": validation_report.semantic_precheck_result.status}, ensure_ascii=False, indent=2),
+        )
+        semantic_guard_path = resolve_validation_artifact(
+            "semantic_guard",
+            attempt_dir / "artifacts" / "semantic_guard.json",
+            validation_report.semantic_guard_result.model_dump_json(indent=2),
+        )
+        validation_matrix_path = resolve_validation_artifact(
+            "validation_matrix",
+            attempt_dir / "artifacts" / "validation_matrix.json",
+            validation_report.model_dump_json(indent=2),
+        )
+        selftest_log_path = resolve_validation_artifact(
+            "selftest_log",
+            attempt_dir / "logs" / "selftest.log",
+            "selftest: fallback placeholder\n",
+        )
+        load_log_path = resolve_validation_artifact(
+            "load_log",
+            attempt_dir / "logs" / "load.log",
+            "load: fallback placeholder\n",
+        )
+        unload_log_path = resolve_validation_artifact(
+            "unload_log",
+            attempt_dir / "logs" / "unload.log",
+            "unload: fallback placeholder\n",
+        )
+        smoke_log_path = resolve_validation_artifact(
+            "smoke_log",
+            attempt_dir / "logs" / "smoke.log",
+            "smoke: fallback placeholder\n",
+        )
+        regression_log_path = resolve_validation_artifact(
+            "regression_log",
+            attempt_dir / "logs" / "regression.log",
+            "regression: fallback placeholder\n",
+        )
+        regression_summary_path = resolve_validation_artifact(
+            "regression_summary",
+            attempt_dir / "artifacts" / "regression_summary.json",
+            validation_report.regression_result.model_dump_json(indent=2),
+        )
         memory_snapshot = self.dual_memory.record_attempt(
             task=task,
             plan=plan,
@@ -760,6 +855,7 @@ class AttemptExecutionService(CoordinatorSupport):
         )
         trace_artifacts = [
             ("rewrite_plan", rewrite_plan_path, "候选改写规划"),
+            ("planning_hints", planning_hints_path, "排序与经验提示"),
             ("rewritten_patch", rewritten_patch_path, "单轮改写结果"),
             ("apply_precheck", rewrite_meta["apply_precheck"], "构建前 apply 预检查"),
             ("build_summary", build_summary_path, "构建阶段结构化摘要"),
@@ -767,6 +863,8 @@ class AttemptExecutionService(CoordinatorSupport):
             ("failure_memory_snapshot", failure_memory_snapshot_path, "失败经验快照"),
             ("recipe_memory_snapshot", recipe_memory_snapshot_path, "配方经验快照"),
             ("semantic_precheck", semantic_precheck_path, "验证前语义预检查"),
+            ("semantic_guard", semantic_guard_path, "语义守卫结果"),
+            ("validation_matrix", validation_matrix_path, "验证矩阵"),
             ("validation_report", validation_report_path, "验证结果摘要"),
         ]
         if failover_record_path is not None:
@@ -788,6 +886,7 @@ class AttemptExecutionService(CoordinatorSupport):
             ("rewrite_skill_route", rewrite_packet["route_path"]),
             ("rewrite_prompt_packet", rewrite_packet["prompt_path"]),
             ("rewrite_plan", rewrite_plan_path),
+            ("planning_hints", planning_hints_path),
             ("rewritten_patch", rewritten_patch_path),
             ("rewrite_reason", rewrite_meta["rewrite_reason"]),
             ("transformation_trace", rewrite_meta["transformation_trace"]),
@@ -800,9 +899,14 @@ class AttemptExecutionService(CoordinatorSupport):
             ("recipe_memory_snapshot", recipe_memory_snapshot_path),
             ("validate_log", validate_log_path),
             ("semantic_precheck", semantic_precheck_path),
+            ("semantic_guard", semantic_guard_path),
+            ("validation_matrix", validation_matrix_path),
+            ("selftest_log", selftest_log_path),
             ("load_log", load_log_path),
             ("unload_log", unload_log_path),
             ("smoke_log", smoke_log_path),
+            ("regression_log", regression_log_path),
+            ("regression_summary", regression_summary_path),
             ("validation_report", validation_report_path),
             ("validation_evidence_bundle", validation_evidence_path),
             ("validation_context_bundle", validation_context_path),
@@ -913,6 +1017,7 @@ class ReportService(CoordinatorSupport):
             task=task,
             attempts=attempts,
             artifacts=artifacts,
+            evaluation_summary=evaluation_summary,
             explanations=explanations,
         )
 
@@ -955,9 +1060,11 @@ class ReplayService(CoordinatorSupport):
         task_dir = self.workspace_guard.create_task_workspace(task)
         latest_trace = self.attempt_repo.latest_trace_summary(task_id)
         attempts = self.attempt_repo.list_attempts(task_id)
+        replay_comparison = self.evaluator.replay_comparison(task_id=task.task_id, attempts=attempts, task_dir=task_dir)
         return self.replay_harness.build_summary(
             task=task,
             task_dir=task_dir,
             attempts=attempts,
             latest_trace=latest_trace,
+            replay_comparison=replay_comparison,
         )

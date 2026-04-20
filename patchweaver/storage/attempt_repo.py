@@ -118,24 +118,18 @@ class AttemptRepository:
         if attempt_row_id is None:
             raise ValueError(f"尝试轮不存在：{attempt_id}")
 
-        if report.load_result.status == "passed" and report.unload_result.status == "passed":
-            validation_status = "passed"
-        elif any(
-            item.status == "failed"
-            for item in [report.load_result, report.unload_result, report.smoke_result, report.semantic_guard_result]
-        ):
-            validation_status = "failed"
-        else:
-            validation_status = "partial"
+        validation_status = report.status
 
         with connect_sqlite(self.database_path) as connection:
             connection.execute(
                 """
                 INSERT INTO validation_records(
                     attempt_id, status, load_ok, unload_ok, smoke_ok, regression_ok, summary,
-                    load_result_json, unload_result_json, smoke_result_json, semantic_guard_result_json
+                    load_result_json, unload_result_json, smoke_result_json, semantic_guard_result_json,
+                    semantic_precheck_result_json, selftest_result_json, regression_result_json, validation_matrix_json,
+                    validation_intensity
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     attempt_row_id,
@@ -143,12 +137,17 @@ class AttemptRepository:
                     int(report.load_result.ok),
                     int(report.unload_result.ok),
                     int(report.smoke_result.ok),
-                    0,
+                    int(report.regression_result.ok),
                     "；".join(report.notes) if report.notes else "验证结果已记录",
                     report.load_result.model_dump_json(),
                     report.unload_result.model_dump_json(),
                     report.smoke_result.model_dump_json(),
                     report.semantic_guard_result.model_dump_json(),
+                    report.semantic_precheck_result.model_dump_json(),
+                    report.selftest_result.model_dump_json(),
+                    report.regression_result.model_dump_json(),
+                    json.dumps([item.model_dump(mode="json") for item in report.validation_matrix], ensure_ascii=False),
+                    report.validation_intensity,
                 ),
             )
             connection.commit()

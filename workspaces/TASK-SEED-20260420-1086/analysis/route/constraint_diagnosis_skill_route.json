@@ -1,0 +1,18 @@
+{
+  "stage_name": "constraint_diagnosis",
+  "candidate_skills": [
+    "constraint_diagnosis"
+  ],
+  "selected_skill": "constraint_diagnosis",
+  "rejected_skills": [],
+  "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=True。",
+  "readonly_subagent_allowed": false,
+  "contract_summary": [
+    "输入: patch_bundle.json, semantic_card.json",
+    "输出: constraint_report.json",
+    "工具: risk_rule_registry",
+    "调度模式: skill_first"
+  ],
+  "fallback_used": false,
+  "route_source": "registry"
+}

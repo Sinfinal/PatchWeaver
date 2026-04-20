@@ -1,0 +1,24 @@
+{
+  "task_id": "TASK-SEED-20260420-1086",
+  "risk_items": [
+    {
+      "risk_type": "direct_apply_ready",
+      "severity": "medium",
+      "evidence": [
+        "规则命中: direct_apply_ready",
+        "涉及文件: net/netfilter/nf_tables_api.c",
+        "patch 摘要: From f342de4e2f33e0e39165d8639387aa6c19dff660 Mon Sep 17 00:00:00 2001 | From: Florian Westphal <fw@strlen.de> | Date: Sat, 20 Jan 2024 22:50:04 +0100"
+      ],
+      "affected_functions": [
+        "nf_tables_api"
+      ],
+      "required_primitives": [
+        "direct_apply"
+      ]
+    }
+  ],
+  "high_risk_count": 0,
+  "requires_callback": false,
+  "requires_shadow_variable": false,
+  "summary": "已完成最小约束分析。"
+}

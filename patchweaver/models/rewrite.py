@@ -19,6 +19,10 @@ class RewriteCandidate(BaseModel):
     expected_risk: float = 0.0
     expected_semantic_drift: float = 0.0
     expected_build_cost: float = 0.0
+    history_success_rate: float = 0.0
+    failure_pressure: float = 0.0
+    ranking_score: float = 0.0
+    ranking_reasons: list[str] = Field(default_factory=list)
 
 
 class RewritePlan(BaseModel):

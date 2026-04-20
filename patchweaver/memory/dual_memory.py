@@ -87,6 +87,46 @@ class DualMemory:
             return self.failure_memory.recall(keywords=keywords, limit=limit)
         return []
 
+    def build_ranking_hints(self, *, risk_types: list[str]) -> dict[str, object]:
+        """为候选排序整理一份轻量经验提示。"""
+
+        normalized_risks = [item for item in dict.fromkeys(risk_types) if item]
+        recipe_entries = self.repository.load_recipe_entries()
+        failure_entries = self.repository.load_failure_entries()
+
+        recipe_stats: dict[str, dict[str, object]] = {}
+        for entry in recipe_entries:
+            if normalized_risks and not set(entry.risk_types).intersection(normalized_risks):
+                continue
+            success_rate = entry.successes / entry.attempts if entry.attempts else 0.0
+            failure_rate = entry.failures / entry.attempts if entry.attempts else 0.0
+            current = recipe_stats.get(entry.recipe_name)
+            candidate_payload = {
+                "attempts": entry.attempts,
+                "success_rate": round(success_rate, 4),
+                "failure_rate": round(failure_rate, 4),
+                "last_status": entry.last_status,
+                "last_summary": entry.last_summary,
+                "risk_types": list(entry.risk_types),
+            }
+            if current is None or candidate_payload["attempts"] >= int(current["attempts"]):
+                recipe_stats[entry.recipe_name] = candidate_payload
+
+        failure_pressure: dict[str, int] = {}
+        recent_failures: dict[str, str] = {}
+        for entry in failure_entries:
+            if normalized_risks and entry.failure_type not in normalized_risks:
+                continue
+            failure_pressure[entry.failure_type] = failure_pressure.get(entry.failure_type, 0) + 1
+            recent_failures.setdefault(entry.failure_type, entry.summary)
+
+        return {
+            "risk_types": normalized_risks,
+            "recipe_stats": recipe_stats,
+            "failure_pressure": failure_pressure,
+            "recent_failures": recent_failures,
+        }
+
     def _keywords(self, evidence_bundle: EvidenceBundle) -> list[str]:
         """从证据中提取最小关键字集合。"""
 

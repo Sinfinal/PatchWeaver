@@ -23,5 +23,5 @@ class FinalReport(BaseModel):
     attempt_digest: list[AttemptDigest] = Field(default_factory=list)
     artifact_index: list[ArtifactRef] = Field(default_factory=list)
     final_status: str
+    evaluation_summary: dict[str, object] = Field(default_factory=dict)
     explanations: list[str] = Field(default_factory=list)
-

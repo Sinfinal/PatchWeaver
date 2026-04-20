@@ -207,9 +207,11 @@ class TaskQueryService:
             "latest_attempt_status": None,
             "trace_path": None,
             "report_path": None,
+            "evaluation_summary_path": None,
             "stage_routes": {},
             "dispatch_modes": {},
             "replay_files": [],
+            "comparison": {},
             "status": "empty",
         }
 
@@ -227,9 +229,11 @@ class TaskQueryService:
             "latest_validation": self._load_json(latest_validation_path),
             "latest_trace": self._load_json(latest_trace_path),
             "latest_rewrite_plan": self._load_json(latest_rewrite_plan_path),
+            "evaluation_summary": self._load_json(task_dir / "reports" / "evaluation_summary.json"),
             "reports": {
                 "json_path": str(task_dir / "reports" / "report.json"),
                 "md_path": str(task_dir / "reports" / "report.md"),
+                "evaluation_summary_path": str(task_dir / "reports" / "evaluation_summary.json"),
             },
             "replay": replay,
             "timeline": self._build_timeline(task_dir, attempts),
@@ -309,6 +313,9 @@ class TaskQueryService:
             "finished_at": attempt.finished_at.isoformat() if attempt.finished_at else None,
             "failure_record_path": str(attempt_dir / "logs" / "failure_record.json"),
             "validation_report_path": str(attempt_dir / "artifacts" / "validation_report.json"),
+            "validation_matrix_path": str(attempt_dir / "artifacts" / "validation_matrix.json"),
+            "semantic_guard_path": str(attempt_dir / "artifacts" / "semantic_guard.json"),
+            "planning_hints_path": str(attempt_dir / "rewrite" / "planning_hints.json"),
             "harness_trace_path": str(attempt_dir / "trace" / "harness_trace.json"),
             "rewrite_plan_path": str(attempt_dir / "rewrite" / "rewrite_plan.json"),
         }

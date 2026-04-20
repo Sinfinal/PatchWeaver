@@ -209,6 +209,11 @@ def initialize_sqlite_db(database_path: Path) -> Path:
         _ensure_column(connection, "validation_records", "unload_result_json", "TEXT")
         _ensure_column(connection, "validation_records", "smoke_result_json", "TEXT")
         _ensure_column(connection, "validation_records", "semantic_guard_result_json", "TEXT")
+        _ensure_column(connection, "validation_records", "semantic_precheck_result_json", "TEXT")
+        _ensure_column(connection, "validation_records", "selftest_result_json", "TEXT")
+        _ensure_column(connection, "validation_records", "regression_result_json", "TEXT")
+        _ensure_column(connection, "validation_records", "validation_matrix_json", "TEXT")
+        _ensure_column(connection, "validation_records", "validation_intensity", "TEXT")
 
         # 版本和初始化时间每次都刷新一遍，查库状态时会方便很多。
         # schema_meta 先记录版本和初始化时间，后续做迁移和排错都要用到。

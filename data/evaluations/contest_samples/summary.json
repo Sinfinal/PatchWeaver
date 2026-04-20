@@ -1,0 +1,39 @@
+{
+  "fixture_name": "contest_samples",
+  "total_fixtures": 2,
+  "matched_fixtures": 1,
+  "missing_fixtures": 1,
+  "success_count": 0,
+  "success_rate": 0.0,
+  "average_attempts": 1.0,
+  "failure_distribution": {
+    "patch_apply_failed": 1
+  },
+  "fixtures": [
+    {
+      "fixture_id": "linux-kernel-cve-2024-1086",
+      "cve_id": "CVE-2024-1086",
+      "target_kernel": "6.6.102-5.2.an23.x86_64",
+      "matched": true,
+      "task_id": "TASK-STAGE-II-20260414-185447",
+      "final_status": "failed",
+      "attempts": 1,
+      "latest_failure_type": "patch_apply_failed",
+      "evaluation_summary_path": "D:\\spaces\\ai\\PatchWeaver\\data\\evaluations\\contest_samples\\linux-kernel-cve-2024-1086.json"
+    },
+    {
+      "fixture_id": "linux-kernel-cve-2022-0185",
+      "cve_id": "CVE-2022-0185",
+      "target_kernel": "6.6.102-5.2.an23.x86_64",
+      "matched": false,
+      "task_id": null,
+      "final_status": "missing",
+      "attempts": 0,
+      "latest_failure_type": null,
+      "evaluation_summary_path": null
+    }
+  ],
+  "generated_files": [
+    "D:\\spaces\\ai\\PatchWeaver\\data\\evaluations\\contest_samples\\linux-kernel-cve-2024-1086.json"
+  ]
+}

@@ -34,12 +34,16 @@ class RepairChainResolver:
         if not upstream_refs:
             upstream_from_text = self._extract_commit_from_text(description)
             if upstream_from_text is not None:
+                generated_url = (
+                    "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/"
+                    f"commit/?id={upstream_from_text}"
+                )
                 upstream_refs.append(
                     {
-                        "url": f"https://github.com/torvalds/linux/commit/{upstream_from_text}",
+                        "url": generated_url,
                         "source_name": "upstream",
                         "commit_id": upstream_from_text,
-                        "patch_url": f"https://github.com/torvalds/linux/commit/{upstream_from_text}.patch",
+                        "patch_url": self.router.patch_url_for_commit(generated_url),
                     }
                 )
 
@@ -79,10 +83,21 @@ class RepairChainResolver:
         """读取 NVD CVE JSON。"""
 
         url = f"https://services.nvd.nist.gov/rest/json/cves/2.0?cveId={cve_id}"
-        payload = self._fetch_json(url)
+        try:
+            payload = self._fetch_json(url)
+        except ValueError as exc:
+            return {
+                "_fetch_error": str(exc),
+                "references": [],
+                "descriptions": [],
+            }
         vulnerabilities = payload.get("vulnerabilities") or []
         if not vulnerabilities:
-            raise ValueError(f"NVD 中未找到 {cve_id}。")
+            return {
+                "_fetch_error": f"NVD 中未找到 {cve_id}。",
+                "references": [],
+                "descriptions": [],
+            }
         return vulnerabilities[0].get("cve") or {}
 
     def _fetch_cvelist_record(self, cve_id: str) -> dict[str, Any]:
@@ -191,7 +206,8 @@ class RepairChainResolver:
                 reference_type="cve_record",
                 title=title,
                 summary=self._shorten(
-                    description
+                    nvd_record.get("_fetch_error")
+                    or description
                     or nvd_record.get("descriptions", [{}])[0].get("value")
                     or f"{cve_id} 元数据来自 NVD。",
                     limit=240,
@@ -351,7 +367,7 @@ class RepairChainResolver:
 
         request = Request(url, headers={"User-Agent": "PatchWeaver/0.1"})
         try:
-            with urlopen(request, timeout=20) as response:
+            with urlopen(request, timeout=60) as response:
                 charset = response.headers.get_content_charset() or "utf-8"
                 return response.read().decode(charset, errors="replace")
         except HTTPError as exc:  # pragma: no cover - 远端依赖

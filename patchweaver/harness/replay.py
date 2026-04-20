@@ -18,6 +18,7 @@ class ReplayHarness:
         task_dir: Path,
         attempts: list[AttemptRecord],
         latest_trace: dict[str, object] | None,
+        replay_comparison: dict[str, object] | None = None,
     ) -> dict[str, object]:
         """根据最新 trace 和尝试轮生成回放摘要。"""
 
@@ -45,6 +46,7 @@ class ReplayHarness:
                     replay_files.append(str(candidate))
 
         report_path = task_dir / "reports" / "report.json"
+        evaluation_summary_path = task_dir / "reports" / "evaluation_summary.json"
         return {
             "command": "replay",
             "task_id": task.task_id,
@@ -52,8 +54,10 @@ class ReplayHarness:
             "latest_attempt_status": latest_attempt.status if latest_attempt else None,
             "trace_path": latest_trace["trace_path"] if latest_trace else None,
             "report_path": str(report_path) if report_path.exists() else None,
+            "evaluation_summary_path": str(evaluation_summary_path) if evaluation_summary_path.exists() else None,
             "stage_routes": stage_routes,
             "dispatch_modes": dispatch_modes,
             "replay_files": replay_files,
+            "comparison": replay_comparison or {},
             "status": "ok",
         }

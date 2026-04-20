@@ -27,10 +27,13 @@ class MdWriter:
             lines.extend(["", "## 尝试摘要"])
             for item in report.attempt_digest:
                 lines.append(f"- 第 {item.attempt_no} 轮: {item.status} ({item.failure_type or '无'})")
+        if report.evaluation_summary:
+            lines.extend(["", "## 评测摘要"])
+            for key, value in report.evaluation_summary.items():
+                lines.append(f"- {key}: {value}")
         if report.explanations:
             lines.extend(["", "## 说明"])
             for item in report.explanations:
                 lines.append(f"- {item}")
         target_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         return target_path
-

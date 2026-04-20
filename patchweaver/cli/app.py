@@ -22,12 +22,14 @@ from patchweaver.config.loader import load_build_config, load_logging_config, lo
 from patchweaver.config.resolver import load_effective_configs, resolve_runtime
 from patchweaver.coordinator.task_runner import TaskRunner
 from patchweaver.harness.attempt_engine import AttemptEngine
+from patchweaver.harness.evaluator import Evaluator
 from patchweaver.harness.workspace_guard import WorkspaceGuard
 from patchweaver.models.task import TaskContext
 from patchweaver.storage.artifact_repo import ArtifactRepository
 from patchweaver.storage.attempt_repo import AttemptRepository
 from patchweaver.storage.sqlite import initialize_sqlite_db
 from patchweaver.storage.task_repo import TaskRepository
+from patchweaver.reporter.stats_writer import StatsWriter
 
 class PatchWeaverHelpGroup(TyperGroup):
     """统一渲染更适合人读的帮助页。"""
@@ -242,7 +244,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
     """渲染根命令帮助页。"""
     program_name = command.name or "patchweaver"
     commands = {name: command.get_command(ctx, name) for name in command.list_commands(ctx)}
-    task_commands = ["create", "analyze", "run", "report", "replay"]
+    task_commands = ["create", "analyze", "run", "report", "replay", "evaluate"]
     env_commands = ["init", "doctor", "paths", "init-db", "db", "serve-api", "status", "version"]
     lines = [
         f"{_style_help('PatchWeaver', fg='bright_blue', bold=True)} {_style_help(__version__, fg='bright_yellow', bold=True)}"
@@ -291,6 +293,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
     lines.extend(_wrap_help_entry("patchweaver paths --json", "输出当前生效的路径、运行时和 manifest 目录。", width=30, color="bright_green"))
     lines.extend(_wrap_help_entry("patchweaver serve-api --reload", "启动 FastAPI 接口，供 Web 控制台开发调试。", width=30, color="bright_green"))
     lines.extend(_wrap_help_entry("patchweaver db path", "查看当前配置解析出来的数据库路径。", width=30, color="bright_green"))
+    lines.extend(_wrap_help_entry("patchweaver evaluate --fixture contest_samples", "按固定样例集输出阶段评测汇总。", width=30, color="bright_green"))
     lines.extend(
         [
             "",
@@ -424,6 +427,123 @@ def _resolve_task_runtime(task_id: str, base_runtime: Any) -> tuple[Any, TaskCon
         cli_max_attempts=task.max_attempts,
     )
     return runtime, task
+
+
+def _load_fixture_set(project_root: Path, fixture_name: str) -> tuple[str, list[dict[str, Any]]]:
+    """读取批量评测使用的固定样例集。"""
+
+    filename = fixture_name if fixture_name.endswith(".json") else f"{fixture_name}.json"
+    fixture_path = (project_root / "evaluations" / "fixtures" / filename).resolve()
+    if not fixture_path.exists():
+        raise ValueError(f"找不到固定样例集：{fixture_path}")
+
+    payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, list):
+        raise ValueError(f"固定样例集格式不正确：{fixture_path}")
+    return fixture_path.stem, payload
+
+
+def _find_latest_task_for_fixture(tasks: list[TaskContext], fixture: dict[str, Any]) -> TaskContext | None:
+    """按 CVE 和内核版本寻找最匹配的任务。"""
+
+    cve_id = str(fixture.get("cve_id") or "")
+    target_kernel = str(fixture.get("target_kernel") or "")
+    for task in tasks:
+        if task.cve_id != cve_id:
+            continue
+        if target_kernel and task.target_kernel != target_kernel:
+            continue
+        return task
+    return None
+
+
+def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
+    """执行固定样例评测并输出阶段摘要。"""
+
+    fixture_set_name, fixtures = _load_fixture_set(runtime.project_root, fixture_name)
+    task_repo = TaskRepository(runtime.database_path)
+    attempt_repo = AttemptRepository(runtime.database_path)
+    artifact_repo = ArtifactRepository(runtime.database_path)
+    evaluator = Evaluator()
+    stats_writer = StatsWriter()
+
+    # 比赛期任务规模可控，这里直接读一批最近任务做匹配，方便先把阶段统计链路跑通。
+    tasks = task_repo.list_tasks(limit=500)
+    results: list[dict[str, Any]] = []
+    per_task_paths: list[str] = []
+    output_dir = (runtime.data_dir / "evaluations" / fixture_set_name).resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    for fixture in fixtures:
+        fixture_id = str(fixture.get("fixture_id") or fixture.get("cve_id") or "unknown")
+        matched_task = _find_latest_task_for_fixture(tasks, fixture)
+        if matched_task is None:
+            results.append(
+                {
+                    "fixture_id": fixture_id,
+                    "cve_id": fixture.get("cve_id"),
+                    "target_kernel": fixture.get("target_kernel"),
+                    "matched": False,
+                    "task_id": None,
+                    "final_status": "missing",
+                    "attempts": 0,
+                    "latest_failure_type": None,
+                    "evaluation_summary_path": None,
+                }
+            )
+            continue
+
+        attempts = attempt_repo.list_attempts(matched_task.task_id)
+        artifacts = artifact_repo.list_artifacts(matched_task.task_id)
+        task_summary = evaluator.summarize(attempts=attempts, artifacts=artifacts)
+        task_dir = matched_task.workspace_dir.resolve()
+        replay_comparison = evaluator.replay_comparison(
+            task_id=matched_task.task_id,
+            attempts=attempts,
+            task_dir=task_dir,
+        )
+        per_task_payload = {
+            "fixture_id": fixture_id,
+            "task_id": matched_task.task_id,
+            "cve_id": matched_task.cve_id,
+            "target_kernel": matched_task.target_kernel,
+            "task_status": matched_task.status,
+            "task_summary": task_summary,
+            "replay_comparison": replay_comparison,
+        }
+        per_task_path = output_dir / f"{fixture_id}.json"
+        stats_writer.write_json(per_task_payload, per_task_path)
+        per_task_paths.append(str(per_task_path))
+        results.append(
+            {
+                "fixture_id": fixture_id,
+                "cve_id": matched_task.cve_id,
+                "target_kernel": matched_task.target_kernel,
+                "matched": True,
+                "task_id": matched_task.task_id,
+                "final_status": matched_task.status,
+                "attempts": len(attempts),
+                "latest_failure_type": task_summary.get("latest_failure_type"),
+                "evaluation_summary_path": str(per_task_path),
+            }
+        )
+
+    summary = evaluator.summarize_fixture_set(
+        fixture_name=fixture_set_name,
+        fixtures=fixtures,
+        results=results,
+    )
+    summary["generated_files"] = per_task_paths
+    summary_json_path = stats_writer.write_json(summary, output_dir / "summary.json")
+    summary_md_path = stats_writer.write_markdown(summary, output_dir / "summary.md")
+
+    return {
+        "fixture_name": fixture_set_name,
+        "fixture_count": len(fixtures),
+        "summary": summary,
+        "summary_json": str(summary_json_path),
+        "summary_md": str(summary_md_path),
+    }
 
 
 def _doctor_payload(runtime: Any, build_config: Any, logging_config: Any, skills_config: Any, prompts_config: Any) -> dict[str, Any]:
@@ -1074,6 +1194,37 @@ def replay(
     typer.echo(f"尝试结果: {payload['latest_attempt_status']}")
     typer.echo(f"Trace 路径: {payload['trace_path']}")
     typer.echo(f"报告路径: {payload['report_path']}")
+
+
+@app.command("evaluate")
+def evaluate(
+    fixture: Annotated[str, typer.Option("--fixture", help="指定固定样例集名称或 JSON 文件名。")] = "contest_samples",
+    profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
+    db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """按固定样例集输出阶段评测结果。"""
+
+    runtime = _load_runtime(profile=profile, db_path=db_path)
+    try:
+        payload = _evaluate_fixture_set(runtime, fixture)
+    except Exception as exc:
+        typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        _emit_json(payload)
+        return
+
+    summary = payload["summary"]
+    typer.echo(f"固定样例集: {payload['fixture_name']}")
+    typer.echo(f"样例总数: {payload['fixture_count']}")
+    typer.echo(f"命中样例: {summary['matched_fixtures']}")
+    typer.echo(f"成功数: {summary['success_count']}")
+    typer.echo(f"成功率: {summary['success_rate']:.2%}")
+    typer.echo(f"平均尝试轮次: {summary['average_attempts']}")
+    typer.echo(f"JSON 摘要: {payload['summary_json']}")
+    typer.echo(f"Markdown 摘要: {payload['summary_md']}")
 
 
 @app.command("init-db")
