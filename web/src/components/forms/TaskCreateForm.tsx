@@ -39,9 +39,9 @@ export function TaskCreateForm({ submitting, onSubmit }: TaskCreateFormProps): J
           className="pw-input"
           value={form.target_kernel ?? ""}
           onChange={(event) => setForm((current) => ({ ...current, target_kernel: event.target.value }))}
-          placeholder="默认值已对齐 Anolis OS 23.4 竞赛环境"
+          placeholder="默认值已对齐 Anolis OS 23.4 环境"
         />
-        <div className="pw-field-hint">建议保持默认内核 `6.6.102-5.2.an23.x86_64`，除非你在验证其他目标环境。</div>
+        <div className="pw-field-hint">建议保持默认内核 `6.6.102-5.2.an23.x86_64`，除非你正在验证其他目标环境。</div>
       </div>
       <div className="pw-field">
         <label htmlFor="profile">运行档位</label>

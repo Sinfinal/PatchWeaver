@@ -14,7 +14,7 @@ export function SectionCard({ title, subtitle, actions, className, children }: S
         <div className="pw-section-header">
           <div>
             <h3 className="pw-section-title">{title}</h3>
-            {subtitle ? <p className="pw-inline-note">{subtitle}</p> : null}
+            {subtitle ? <p className="pw-section-subtitle">{subtitle}</p> : null}
           </div>
           {actions}
         </div>

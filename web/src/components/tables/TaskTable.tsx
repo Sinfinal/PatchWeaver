@@ -18,13 +18,13 @@ export function TaskTable({ items }: TaskTableProps): JSX.Element {
     <table className="pw-table pw-table-clickable">
       <thead>
         <tr>
-          <th>Task</th>
+          <th>任务</th>
           <th>CVE</th>
-          <th>Kernel</th>
-          <th>Status</th>
-          <th>Attempt</th>
-          <th>Failure</th>
-          <th>Updated</th>
+          <th>目标内核</th>
+          <th>状态</th>
+          <th>尝试轮</th>
+          <th>最近失败</th>
+          <th>更新时间</th>
         </tr>
       </thead>
       <tbody>

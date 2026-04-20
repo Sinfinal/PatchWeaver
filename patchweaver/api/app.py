@@ -10,7 +10,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from patchweaver import __version__
-from patchweaver.api.routers import doctor, logs, overview, rules, settings, skills, tasks
+from patchweaver.api.routers import doctor, logs, overview, reports, rules, settings, skills, tasks
 from patchweaver.api.schemas import HealthResponse
 from patchweaver.config.loader import discover_project_root
 
@@ -34,6 +34,7 @@ def create_app() -> FastAPI:
     api_prefix = "/api/v1"
     app.include_router(overview.router, prefix=api_prefix)
     app.include_router(tasks.router, prefix=api_prefix)
+    app.include_router(reports.router, prefix=api_prefix)
     app.include_router(doctor.router, prefix=api_prefix)
     app.include_router(rules.router, prefix=api_prefix)
     app.include_router(skills.router, prefix=api_prefix)

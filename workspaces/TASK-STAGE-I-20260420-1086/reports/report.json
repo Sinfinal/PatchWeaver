@@ -1,0 +1,130 @@
+{
+  "task_summary": {
+    "task_id": "TASK-STAGE-I-20260420-1086",
+    "cve_id": "CVE-2024-1086",
+    "target_kernel": "6.6.102-5.2.an23.x86_64"
+  },
+  "attempt_digest": [],
+  "artifact_index": [
+    {
+      "artifact_type": "task_context",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\task_context.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "raw_patch",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\input\\raw_patch.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "normalized_patch",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\normalized\\normalized.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "patch_bundle",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\input\\patch_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "source_evidence",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\input\\source_evidence.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_card",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\semantic_card.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "constraint_report",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\constraint_report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "analysis_bootstrap_manifest",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\bootstrap\\bootstrap_manifest.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "analysis_evidence_bundle",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\context\\evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "analysis_context_bundle",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\context\\context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "retrieval_skill_route",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\route\\retrieval_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "retrieval_prompt_packet",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\prompt\\retrieval_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_card_skill_route",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\route\\semantic_card_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_card_prompt_packet",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\prompt\\semantic_card_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "constraint_skill_route",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\route\\constraint_diagnosis_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "constraint_prompt_packet",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\prompt\\constraint_diagnosis_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "analysis_trace",
+      "artifact_path": "F:\\Work_Space\\PatchWeaver\\workspaces\\TASK-STAGE-I-20260420-1086\\analysis\\trace\\analysis_trace.json",
+      "summary": ""
+    }
+  ],
+  "final_status": "analyzed",
+  "evaluation_summary": {
+    "total_attempts": 0,
+    "built_attempts": 0,
+    "failed_attempts": 0,
+    "success_rate": 0.0,
+    "average_attempt_no": 0.0,
+    "latest_status": "pending",
+    "latest_failure_type": null,
+    "failure_breakdown": {},
+    "artifact_type_counts": {
+      "task_context": 1,
+      "raw_patch": 1,
+      "normalized_patch": 1,
+      "patch_bundle": 1,
+      "source_evidence": 1,
+      "semantic_card": 1,
+      "constraint_report": 1,
+      "analysis_bootstrap_manifest": 1,
+      "analysis_evidence_bundle": 1,
+      "analysis_context_bundle": 1,
+      "retrieval_skill_route": 1,
+      "retrieval_prompt_packet": 1,
+      "semantic_card_skill_route": 1,
+      "semantic_card_prompt_packet": 1,
+      "constraint_skill_route": 1,
+      "constraint_prompt_packet": 1,
+      "analysis_trace": 1
+    }
+  },
+  "explanations": [
+    "当前共执行 0 轮尝试。",
+    "分析、归因和报告阶段按只读路径整理证据，改写与构建阶段走写入独占路径。",
+    "当前成功率为 0%，已归档产物类型 17 类。"
+  ]
+}

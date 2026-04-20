@@ -1,0 +1,12 @@
+{
+  "status": "skipped",
+  "ok": false,
+  "backend": "ssh",
+  "target_source_dir": "/usr/src/kernels/6.6.102-5.2.an23.x86_64",
+  "command": "cd /usr/src/kernels/6.6.102-5.2.an23.x86_64 && git apply --check --verbose /root/patchweaver/_precheck/TASK-STAGE-I-20260420-1086-001-b233bc0f.patch",
+  "checked_patch_path": "/root/patchweaver/_precheck/TASK-STAGE-I-20260420-1086-001-b233bc0f.patch",
+  "exit_code": 1,
+  "summary": "远端 apply 预检查未完成，当前更像环境或工具问题，继续交给构建阶段判定。",
+  "stdout": null,
+  "stderr": "Checking patch net/netfilter/nf_tables_api.c...\nerror: net/netfilter/nf_tables_api.c: No such file or directory"
+}

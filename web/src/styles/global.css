@@ -171,10 +171,22 @@ code {
   margin-bottom: 14px;
 }
 
+.pw-section-header > div {
+  min-width: 0;
+}
+
 .pw-section-title {
   margin: 0;
   font-size: 20px;
   letter-spacing: -0.02em;
+}
+
+.pw-section-subtitle {
+  margin: 6px 0 0;
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.65;
+  max-width: 640px;
 }
 
 .pw-grid {
@@ -226,6 +238,9 @@ code {
 }
 
 .pw-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border-strong);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
@@ -356,6 +371,7 @@ code {
   margin: 12px 0 6px;
   font-size: 30px;
   font-weight: 700;
+  word-break: break-word;
 }
 
 .pw-metric-meta {
@@ -711,6 +727,13 @@ code {
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
+button.pw-list-item {
+  width: 100%;
+  appearance: none;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
 .pw-list-item:hover {
   transform: translateY(-2px);
   border-color: rgba(97, 184, 255, 0.16);
@@ -720,12 +743,43 @@ code {
 .pw-list-item strong {
   display: block;
   margin-bottom: 6px;
+  word-break: break-word;
 }
 
 .pw-inline-note {
   color: var(--text-soft);
   font-size: 13px;
   line-height: 1.65;
+}
+
+.pw-inline-link {
+  color: var(--accent-blue);
+  transition: color 160ms ease;
+}
+
+.pw-inline-link:hover {
+  color: #9ed7ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pw-link-card {
+  display: block;
+}
+
+.pw-report-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.pw-report-failure-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .pw-overview {

@@ -1,0 +1,18 @@
+{
+  "stage_name": "rewrite_recipe",
+  "candidate_skills": [
+    "rewrite_recipe"
+  ],
+  "selected_skill": "rewrite_recipe",
+  "rejected_skills": [],
+  "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=False。",
+  "readonly_subagent_allowed": false,
+  "contract_summary": [
+    "输入: patch_bundle.json, semantic_card.json, constraint_report.json",
+    "输出: rewrite_plan.json, rewritten.patch, transformation_trace.json",
+    "工具: template_engine, smpl_engine, diff_editor",
+    "调度模式: skill_first"
+  ],
+  "fallback_used": false,
+  "route_source": "registry"
+}

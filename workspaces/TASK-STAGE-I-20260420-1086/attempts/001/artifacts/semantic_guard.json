@@ -1,0 +1,7 @@
+{
+  "status": "pending",
+  "ok": false,
+  "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+  "command": null,
+  "log_path": null
+}

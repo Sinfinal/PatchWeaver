@@ -55,21 +55,25 @@ export function SkillsPage(): JSX.Element {
             <div key={item.title} className="pw-mini-card">
               <strong>{item.title}</strong>
               <div className="pw-inline-note">{item.description}</div>
-              {item.meta ? <div className="pw-inline-note" style={{ marginTop: 6 }}>{item.meta}</div> : null}
+              {item.meta ? (
+                <div className="pw-inline-note" style={{ marginTop: 6 }}>
+                  {item.meta}
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
       </SectionCard>
 
-      <SectionCard title="实时 Skill Registry" subtitle="来自 `/skills` 接口，用于核对当前后端识别到的技能注册信息。">
+      <SectionCard title="实时 Skill Registry" subtitle="来自 `/skills` 接口，用于核对后端当前识别到的技能注册信息。">
         {query.isLoading ? <div className="pw-note-banner">正在加载技能注册表...</div> : null}
-        {query.isError ? <div className="pw-note-banner">当前无法获取实时 Skill Registry，先保留静态调度设计说明。</div> : null}
+        {query.isError ? <div className="pw-note-banner">当前无法获取实时 Skill Registry，先保留静态调度说明。</div> : null}
         {query.data ? (
           <div className="pw-grid">
             <div className="pw-grid metrics">
               <MetricCard label="技能条目" value={query.data.entries.length} />
               <MetricCard label="已启用技能" value={query.data.enabled_skills.length} />
-              <MetricCard label="Source Priority" value={query.data.source_priority.join(" > ")} />
+              <MetricCard label="来源优先级" value={query.data.source_priority.join(" > ")} />
             </div>
             <div className="pw-btn-row">
               {query.data.enabled_skills.map((item) => (
@@ -81,10 +85,10 @@ export function SkillsPage(): JSX.Element {
             <table className="pw-table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Stage</th>
-                  <th>Source</th>
-                  <th>Status</th>
+                  <th>名称</th>
+                  <th>阶段</th>
+                  <th>来源</th>
+                  <th>状态</th>
                   <th>Manifest</th>
                 </tr>
               </thead>

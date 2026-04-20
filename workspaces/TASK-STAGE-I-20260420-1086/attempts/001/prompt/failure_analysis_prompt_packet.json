@@ -1,0 +1,29 @@
+{
+  "stage_name": "failure_analysis",
+  "system_prompt_version": "v1",
+  "worker_prompt_version": "v1",
+  "schema_name": "FailureRecord",
+  "budget_snapshot": {
+    "token_cost": 284,
+    "duplicate_hits": 0,
+    "memory_hits": 2
+  },
+  "bootstrap_fragments": [
+    "system/system_contract",
+    "bootstrap/contest_bootstrap"
+  ],
+  "prompt_sections": [
+    "失败归因阶段任务：\n1. 阅读构建日志和结构化失败记录，优先判定环境问题还是补丁内容问题。\n2. 对 `patch_apply_failed`、`compile_failed`、`kpatch_constraint` 给出不同的下一轮建议。\n3. 结论必须能直接指导下一轮收缩范围，而不是只复述错误信息。\n",
+    "输出必须明确失败阶段、失败类型、摘要和关键证据，确保下一轮可据此缩小搜索空间。\n",
+    "阶段: failure_analysis",
+    "选中 Skill: failure_analysis",
+    "Skill 契约摘要: 输入: build.log, failure_record.json；输出: 失败归因摘要, 下一轮优先动作；工具: failure_classifier",
+    "输出结构: FailureRecord",
+    "证据数量: 3",
+    "证据摘要: FA001-02、FA001-03、FA001-01",
+    "记忆摘要: [FailureMemory] patch_apply_failed: error: net/netfilter/nf_tables_api.c: No such file or directory，最近关联 recipe: direct_apply_patch；[FailureMemory] patch_apply_failed: error: net/netfilter/nf_tables_api.c: No such file or directory，最近关联 recipe: minimal_livepatch_wrap",
+    "Bootstrap 数量: 2",
+    "Bootstrap 开销: 55",
+    "上下文备注: 证据片段数: 3；记忆命中数: 2；证据类型: json, log"
+  ]
+}

@@ -45,9 +45,7 @@ export function DoctorPage(): JSX.Element {
         }
       >
         {doctorQuery.isLoading ? <div className="pw-note-banner">正在加载环境诊断报告...</div> : null}
-        {doctorQuery.isError ? (
-          <div className="pw-note-banner">当前无法获取实时诊断结果，但页面结构已经准备好用于联调与验收。</div>
-        ) : null}
+        {doctorQuery.isError ? <div className="pw-note-banner">当前无法获取实时诊断结果，但页面结构已准备好用于联调与验收。</div> : null}
         {report ? (
           <div className="pw-grid metrics">
             <MetricCard label="检查项总数" value={report.summary.total} />
@@ -58,7 +56,7 @@ export function DoctorPage(): JSX.Element {
         ) : null}
       </SectionCard>
 
-      <SectionCard title="运行时路径与默认值" subtitle="这部分最适合用于快速确认“我到底连的是哪套环境”。">
+      <SectionCard title="运行时路径与默认值" subtitle="这一部分最适合用于确认“我到底连的是哪套环境”。">
         {report ? (
           <div className="pw-kv">
             {Object.entries(report.runtime).map(([key, value]) => (
@@ -83,9 +81,9 @@ export function DoctorPage(): JSX.Element {
             <table className="pw-table">
               <thead>
                 <tr>
-                  <th>Label</th>
-                  <th>Status</th>
-                  <th>Detail</th>
+                  <th>检查项</th>
+                  <th>状态</th>
+                  <th>详情</th>
                 </tr>
               </thead>
               <tbody>

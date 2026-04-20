@@ -2,27 +2,31 @@ import { NavLink, useLocation } from "react-router-dom";
 
 const navGroups = [
   {
-    title: "Overview",
-    items: [{ to: "/overview", label: "工程总览" }],
+    title: "总览",
+    items: [{ to: "/overview", label: "控制台总览" }],
   },
   {
-    title: "Tasks",
+    title: "任务",
     items: [
       { to: "/tasks", label: "任务中心" },
       { to: "/tasks/new", label: "创建任务" },
     ],
   },
   {
-    title: "Engineering",
+    title: "报告",
+    items: [{ to: "/reports", label: "报告与评测" }],
+  },
+  {
+    title: "工程",
     items: [
       { to: "/doctor", label: "环境诊断" },
       { to: "/rules", label: "规则与配方" },
-      { to: "/skills", label: "技能注册" },
-      { to: "/logs", label: "日志尾流" },
+      { to: "/skills", label: "技能与上下文" },
+      { to: "/logs", label: "系统日志" },
     ],
   },
   {
-    title: "Settings",
+    title: "配置",
     items: [{ to: "/settings", label: "配置快照" }],
   },
 ];
@@ -46,6 +50,7 @@ export function AppSidebar(): JSX.Element {
       <div className="pw-sidebar-brand">
         <div className="pw-sidebar-monogram">PW</div>
         <h1 className="pw-sidebar-title">PatchWeaver</h1>
+        <p className="pw-sidebar-subtitle">补天控制台</p>
         <div className="pw-sidebar-line" />
       </div>
       {navGroups.map((group) => (

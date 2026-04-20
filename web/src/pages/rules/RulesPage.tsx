@@ -11,11 +11,11 @@ type RulesResponse = {
 };
 
 const directoryFacts = [
-  { label: "risk_rules_dir", value: "rules/risk_rules" },
-  { label: "patch_author_guide_dir", value: "rules/risk_rules/patch_author_guide" },
-  { label: "primitive_rules_dir", value: "rules/primitive_rules" },
-  { label: "livepatch_rule_dir", value: "rules/primitive_rules/livepatch" },
-  { label: "default_recipe_manifest", value: "recipes/manifests/default.yaml" },
+  { label: "风险规则目录", value: "rules/risk_rules" },
+  { label: "补丁作者指南", value: "rules/risk_rules/patch_author_guide" },
+  { label: "原语规则目录", value: "rules/primitive_rules" },
+  { label: "livepatch 规则目录", value: "rules/primitive_rules/livepatch" },
+  { label: "默认 Recipe 清单", value: "recipes/manifests/default.yaml" },
 ];
 
 function formatSummaryLabel(key: string): string {

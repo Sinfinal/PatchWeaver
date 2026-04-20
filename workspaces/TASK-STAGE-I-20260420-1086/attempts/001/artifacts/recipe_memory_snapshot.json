@@ -1,0 +1,40 @@
+[
+  {
+    "entry_id": "RM-34ead8738e",
+    "recipe_name": "direct_apply_patch",
+    "risk_types": [
+      "direct_apply_ready"
+    ],
+    "primitives": [
+      "direct_apply"
+    ],
+    "candidate_id": "TASK-STAGE-I-20260420-1086-candidate-001",
+    "last_task_id": "TASK-STAGE-I-20260420-1086",
+    "last_attempt_id": "TASK-STAGE-I-20260420-1086-A001",
+    "attempts": 1,
+    "successes": 0,
+    "failures": 1,
+    "last_status": "failed",
+    "last_summary": "error: net/netfilter/nf_tables_api.c: No such file or directory",
+    "updated_at": "2026-04-20T08:02:02.598467Z"
+  },
+  {
+    "entry_id": "RM-c19ec5fa08",
+    "recipe_name": "minimal_livepatch_wrap",
+    "risk_types": [
+      "direct_apply_ready"
+    ],
+    "primitives": [
+      "direct_apply"
+    ],
+    "candidate_id": "TASK-STAGE-II-20260414-185447-candidate-002",
+    "last_task_id": "TASK-STAGE-II-20260414-185447",
+    "last_attempt_id": "TASK-STAGE-II-20260414-185447-A001",
+    "attempts": 1,
+    "successes": 0,
+    "failures": 1,
+    "last_status": "failed",
+    "last_summary": "error: net/netfilter/nf_tables_api.c: No such file or directory",
+    "updated_at": "2026-04-14T10:55:04.395226Z"
+  }
+]
