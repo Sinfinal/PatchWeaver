@@ -10,14 +10,15 @@
   --text-dim: #74809a;
   --accent-main: #53d2b2;
   --accent-blue: #61b8ff;
+  --accent-gold: #ffca7a;
   --warn-main: #f3b24f;
   --danger-main: #ff6b6b;
   --success-main: #52d273;
-  --shadow-panel: 0 18px 40px rgba(0, 0, 0, 0.28);
+  --shadow-panel: 0 24px 64px rgba(3, 7, 18, 0.38);
   --radius-lg: 18px;
   --radius-md: 14px;
   --radius-sm: 10px;
-  --sidebar-width: 252px;
+  --sidebar-width: 196px;
   --font-sans: "Manrope", "Noto Sans SC", "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", "Consolas", monospace;
 }

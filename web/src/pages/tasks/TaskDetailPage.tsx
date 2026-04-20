@@ -5,9 +5,17 @@ import { CodePanel } from "../../components/code/CodePanel";
 import { SectionCard } from "../../components/layout/SectionCard";
 import { StatusBadge } from "../../components/status/StatusBadge";
 import { StageTimeline } from "../../components/timeline/StageTimeline";
-import { analyzeTask, fetchArtifactContent, fetchArtifacts, fetchTaskDetail, reportTask, runTask } from "../../services/tasks";
+import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
+import {
+  analyzeTask,
+  fetchArtifactContent,
+  fetchArtifacts,
+  fetchTaskDetail,
+  reportTask,
+  runTask,
+} from "../../services/tasks";
 import { useUiStore } from "../../store/uiStore";
-import { copyText, formatTime } from "../../utils/format";
+import { copyText, formatTime, shortenPath } from "../../utils/format";
 import type { TaskAttempt, TaskDetailResponse } from "../../types/tasks";
 
 type TabKey = "overview" | "input" | "analysis" | "attempts" | "build" | "validate" | "report" | "replay" | "artifacts";
@@ -28,6 +36,7 @@ export function TaskDetailPage(): JSX.Element {
   const params = useParams<{ taskId: string }>();
   const taskId = params.taskId ?? "";
   const queryClient = useQueryClient();
+  const liveQueryOptions = useLiveQueryOptions();
   const selectedAttemptNo = useUiStore((state) => state.selectedAttemptNo);
   const setSelectedAttemptNo = useUiStore((state) => state.setSelectedAttemptNo);
   const [selectedTab, setSelectedTab] = useState<TabKey>("overview");
@@ -37,16 +46,19 @@ export function TaskDetailPage(): JSX.Element {
     queryKey: ["task-detail", taskId],
     queryFn: () => fetchTaskDetail(taskId),
     enabled: taskId.length > 0,
+    ...liveQueryOptions,
   });
   const artifactsQuery = useQuery({
     queryKey: ["task-artifacts", taskId],
     queryFn: () => fetchArtifacts(taskId),
     enabled: taskId.length > 0 && selectedTab === "artifacts",
+    ...liveQueryOptions,
   });
   const contentQuery = useQuery({
     queryKey: ["artifact-content", taskId, selectedPath],
     queryFn: () => fetchArtifactContent(taskId, selectedPath ?? ""),
     enabled: taskId.length > 0 && Boolean(selectedPath),
+    ...liveQueryOptions,
   });
 
   const actionMutation = useMutation({
@@ -86,12 +98,10 @@ export function TaskDetailPage(): JSX.Element {
     );
   }, [detailQuery.data, selectedAttemptNo]);
 
-  const tabFiles = useMemo(() => buildTabFiles(detailQuery.data, selectedTab, currentAttempt, artifactsQuery.data?.items), [
-    artifactsQuery.data?.items,
-    currentAttempt,
-    detailQuery.data,
-    selectedTab,
-  ]);
+  const tabFiles = useMemo(
+    () => buildTabFiles(detailQuery.data, selectedTab, currentAttempt, artifactsQuery.data?.items),
+    [artifactsQuery.data?.items, currentAttempt, detailQuery.data, selectedTab],
+  );
 
   useEffect(() => {
     if (tabFiles.length === 0) {
@@ -104,11 +114,11 @@ export function TaskDetailPage(): JSX.Element {
   }, [selectedPath, tabFiles]);
 
   if (detailQuery.isLoading) {
-    return <div className="pw-empty">任务详情加载中...</div>;
+    return <div className="pw-empty">正在加载任务详情...</div>;
   }
 
   if (detailQuery.isError || !detailQuery.data) {
-    return <div className="pw-empty">任务详情加载失败。</div>;
+    return <div className="pw-empty">当前无法获取任务详情，请确认任务存在且后端接口可用。</div>;
   }
 
   const detail = detailQuery.data;
@@ -120,13 +130,18 @@ export function TaskDetailPage(): JSX.Element {
         subtitle={`${detail.task.cve_id} · ${detail.task.target_kernel}`}
         actions={
           <div className="pw-btn-row">
-            <button className="pw-btn" type="button" onClick={() => actionMutation.mutate("analyze")}>
-              分析
+            <button className="pw-btn" type="button" onClick={() => actionMutation.mutate("analyze")} disabled={actionMutation.isPending}>
+              执行分析
             </button>
-            <button className="pw-btn primary" type="button" onClick={() => actionMutation.mutate("run")}>
-              执行一轮
+            <button
+              className="pw-btn primary"
+              type="button"
+              onClick={() => actionMutation.mutate("run")}
+              disabled={actionMutation.isPending}
+            >
+              运行任务
             </button>
-            <button className="pw-btn" type="button" onClick={() => actionMutation.mutate("report")}>
+            <button className="pw-btn" type="button" onClick={() => actionMutation.mutate("report")} disabled={actionMutation.isPending}>
               生成报告
             </button>
           </div>
@@ -134,7 +149,7 @@ export function TaskDetailPage(): JSX.Element {
       >
         <div className="pw-kv">
           <div className="pw-kv-item">
-            <span className="pw-kv-label">状态</span>
+            <span className="pw-kv-label">任务状态</span>
             <div className="pw-kv-value">
               <StatusBadge value={detail.task.status} />
             </div>
@@ -147,20 +162,28 @@ export function TaskDetailPage(): JSX.Element {
           </div>
           <div className="pw-kv-item">
             <span className="pw-kv-label">工作区</span>
-            <div className="pw-kv-value">{detail.task.workspace_dir}</div>
+            <div className="pw-kv-value">{shortenPath(detail.task.workspace_dir)}</div>
           </div>
           <div className="pw-kv-item">
-            <span className="pw-kv-label">更新时间</span>
+            <span className="pw-kv-label">创建时间</span>
+            <div className="pw-kv-value">{formatTime(detail.task.created_at)}</div>
+          </div>
+          <div className="pw-kv-item">
+            <span className="pw-kv-label">最近更新时间</span>
             <div className="pw-kv-value">{formatTime(detail.task.updated_at)}</div>
+          </div>
+          <div className="pw-kv-item">
+            <span className="pw-kv-label">工作区状态</span>
+            <div className="pw-kv-value">{detail.workspace_exists ? "已生成" : "缺失"}</div>
           </div>
         </div>
       </SectionCard>
 
-      <SectionCard title="阶段时间线" subtitle="按产物落盘情况给出当前任务阶段快照">
+      <SectionCard title="阶段时间线" subtitle="用于判断任务当前停在主链路的哪一段，以及哪些阶段已经生成证据。">
         <StageTimeline items={detail.timeline} />
       </SectionCard>
 
-      <SectionCard title="页面标签" subtitle="同一任务下切换输入、分析、构建和报告视图">
+      <SectionCard title="任务证据面板" subtitle="左侧用于筛选当前关注标签，右侧直接预览实际产物内容。">
         <div className="pw-tabs">
           {tabs.map((item) => (
             <button
@@ -175,10 +198,10 @@ export function TaskDetailPage(): JSX.Element {
         </div>
         <div className="pw-grid detail">
           <div className="pw-grid">
-            <SectionCard title="当前标签内容" subtitle={getTabSubtitle(selectedTab)}>
+            <SectionCard title="内容摘要" subtitle={getTabSubtitle(selectedTab)}>
               {renderTabSummary(detail, selectedTab, currentAttempt, setSelectedAttemptNo, setSelectedPath)}
             </SectionCard>
-            <SectionCard title="可查看文件" subtitle="点击后在右侧代码面板预览">
+            <SectionCard title="候选文件" subtitle="点击文件路径后，右侧代码面板会直接拉取并预览对应内容。">
               {tabFiles.length > 0 ? (
                 <div className="pw-list">
                   {tabFiles.map((path) => (
@@ -190,24 +213,24 @@ export function TaskDetailPage(): JSX.Element {
                       onClick={() => setSelectedPath(path)}
                     >
                       <strong>{path}</strong>
-                      <span className="pw-inline-note">点击后在右侧打开</span>
+                      <span className="pw-inline-note">点击在右侧代码面板预览</span>
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="pw-empty">这个标签下暂时没有文件可展示。</div>
+                <div className="pw-empty">当前标签下还没有匹配到可预览的产物文件。</div>
               )}
             </SectionCard>
           </div>
           <CodePanel
             title="产物预览"
             path={selectedPath ?? undefined}
-            content={contentQuery.data?.content}
-            emptyText="选择一个产物文件后，这里会展示其内容。"
+            content={contentQuery.isLoading ? "正在加载内容..." : contentQuery.data?.content}
+            emptyText="选择左侧候选文件后，这里会展示对应 artifact 的文本内容。"
             actions={
               selectedPath ? (
                 <div className="pw-btn-row">
-                  <button className="pw-btn" type="button" onClick={() => copyText(selectedPath)}>
+                  <button className="pw-btn" type="button" onClick={() => void copyText(selectedPath)}>
                     复制路径
                   </button>
                 </div>
@@ -231,15 +254,52 @@ function renderTabSummary(
     return (
       <div className="pw-list">
         <div className="pw-list-item">
-          <strong>最近失败摘要</strong>
+          <strong>最新失败记录</strong>
           <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 240 }}>
-            {JSON.stringify(detail.latest_failure ?? {}, null, 2) || "暂无失败记录"}
+            {asPrettyJson(detail.latest_failure, "暂无 failure_record。")}
           </pre>
         </div>
         <div className="pw-list-item">
-          <strong>最近验证结果</strong>
+          <strong>最新验证结果</strong>
           <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 240 }}>
-            {JSON.stringify(detail.latest_validation ?? {}, null, 2) || "暂无验证记录"}
+            {asPrettyJson(detail.latest_validation, "暂无 validation_report。")}
+          </pre>
+        </div>
+      </div>
+    );
+  }
+
+  if (tab === "input") {
+    return (
+      <div className="pw-list">
+        <div className="pw-list-item">
+          <strong>Patch Bundle 摘要</strong>
+          <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 220 }}>
+            {asPrettyJson(detail.patch_bundle, "暂无 patch_bundle 内容。")}
+          </pre>
+        </div>
+        <div className="pw-list-item">
+          <strong>建议查看文件</strong>
+          <div className="pw-inline-note">优先关注 `task_context.json`、`input/` 与 `normalized/` 下的归一化输入。</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (tab === "analysis") {
+    return (
+      <div className="pw-list">
+        <div className="pw-list-item">
+          <strong>分析产物路径</strong>
+          <div className="pw-inline-note">{shortenPath(detail.analysis.semantic_card_path)}</div>
+          <div className="pw-inline-note">{shortenPath(detail.analysis.constraint_report_path)}</div>
+          <div className="pw-inline-note">{shortenPath(detail.analysis.context_bundle_path)}</div>
+          <div className="pw-inline-note">{shortenPath(detail.analysis.analysis_trace_path)}</div>
+        </div>
+        <div className="pw-list-item">
+          <strong>最近一次改写计划</strong>
+          <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 220 }}>
+            {asPrettyJson(detail.latest_rewrite_plan, "暂无 rewrite_plan。")}
           </pre>
         </div>
         <div className="pw-list-item">
@@ -270,13 +330,66 @@ function renderTabSummary(
               第 {attempt.attempt_no} 轮 · {attempt.attempt_id}
             </strong>
             <div className="pw-inline-note">
-              状态: {attempt.status} · 失败类型: {attempt.failure_type ?? "无"}
+              状态 {attempt.status} · 失败类型 {attempt.failure_type ?? "无"}
+            </div>
+            <div className="pw-inline-note">
+              开始 {formatTime(attempt.started_at)} · 结束 {formatTime(attempt.finished_at)}
             </div>
           </button>
         ))}
       </div>
     ) : (
-      <div className="pw-empty">当前还没有尝试轮记录。</div>
+      <div className="pw-empty">当前任务还没有任何尝试轮记录。</div>
+    );
+  }
+
+  if (tab === "build") {
+    return (
+      <div className="pw-list">
+        <div className="pw-list-item">
+          <strong>当前轮构建路径</strong>
+          <div className="pw-inline-note">build log: {shortenPath(currentAttempt?.build_log_path)}</div>
+          <div className="pw-inline-note">module: {shortenPath(currentAttempt?.module_path)}</div>
+          <div className="pw-inline-note">rewritten patch: {shortenPath(currentAttempt?.rewritten_patch_path)}</div>
+        </div>
+        <div className="pw-list-item">
+          <strong>失败记录路径</strong>
+          <div className="pw-inline-note">{shortenPath(currentAttempt?.failure_record_path)}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (tab === "validate") {
+    return (
+      <div className="pw-list">
+        <div className="pw-list-item">
+          <strong>最新验证结果</strong>
+          <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 240 }}>
+            {asPrettyJson(detail.latest_validation, "暂无 validation_report。")}
+          </pre>
+        </div>
+        <div className="pw-list-item">
+          <strong>验证产物路径</strong>
+          <div className="pw-inline-note">{shortenPath(currentAttempt?.validation_report_path)}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (tab === "report") {
+    return (
+      <div className="pw-list">
+        <div className="pw-list-item">
+          <strong>报告路径</strong>
+          <div className="pw-inline-note">JSON: {shortenPath(detail.reports.json_path)}</div>
+          <div className="pw-inline-note">Markdown: {shortenPath(detail.reports.md_path)}</div>
+        </div>
+        <div className="pw-list-item">
+          <strong>建议查看文件</strong>
+          <div className="pw-inline-note">优先阅读 `reports/report.json`、`reports/report.md` 与 `reports/context/`。</div>
+        </div>
+      </div>
     );
   }
 
@@ -284,10 +397,21 @@ function renderTabSummary(
     return (
       <div className="pw-list">
         <div className="pw-list-item">
-          <strong>最近回放</strong>
+          <strong>回放摘要</strong>
           <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 240 }}>
-            {JSON.stringify(detail.replay, null, 2)}
+            {asPrettyJson(detail.replay, "暂无 replay 数据。")}
           </pre>
+        </div>
+      </div>
+    );
+  }
+
+  if (tab === "artifacts") {
+    return (
+      <div className="pw-list">
+        <div className="pw-list-item">
+          <strong>全量产物浏览</strong>
+          <div className="pw-inline-note">这个标签会加载任务工作区下的完整 artifact 树，适合做精细排障与答辩回放。</div>
         </div>
       </div>
     );
@@ -296,11 +420,11 @@ function renderTabSummary(
   return (
     <div className="pw-list">
       <div className="pw-list-item">
-        <strong>当前尝试</strong>
+        <strong>当前轮状态</strong>
         <div className="pw-inline-note">
           {currentAttempt
             ? `第 ${currentAttempt.attempt_no} 轮 · ${currentAttempt.status} · ${currentAttempt.failure_type ?? "无失败类型"}`
-            : "当前还没有尝试轮"}
+            : "当前还没有可供查看的尝试轮。"}
         </div>
       </div>
     </div>
@@ -351,15 +475,22 @@ function buildTabFiles(
 
 function getTabSubtitle(tab: TabKey): string {
   const subtitles: Record<TabKey, string> = {
-    overview: "展示当前任务的状态、最新失败和验证结果。",
-    input: "查看任务输入、原始 patch 和规范化 patch。",
-    analysis: "查看 semantic card、constraint report 和分析轨迹。",
-    attempts: "查看每轮尝试和对应的改写结果。",
-    build: "查看 build.log、failure_record 和构建阶段输出。",
-    validate: "查看 validation_report 和 validate.log。",
-    report: "查看 report.json、report.md 及相关上下文。",
-    replay: "查看最近一轮的 trace、attempt_state 和回放文件。",
-    artifacts: "浏览整个工作区的产物树。",
+    overview: "查看任务状态、最新失败与最新验证结果。",
+    input: "查看任务输入、patch bundle 与归一化前后的输入文件。",
+    analysis: "查看 semantic card、constraint report、context bundle 与分析轨迹。",
+    attempts: "查看每一轮 AttemptRecord，并切换到对应改写计划。",
+    build: "查看构建日志、失败记录和当前轮的关键构建产物。",
+    validate: "查看 validation report、load log 与语义校验结果。",
+    report: "查看最终 report.json / report.md 及上下文目录。",
+    replay: "查看最近一轮的 trace、attempt_state 和回放摘要。",
+    artifacts: "浏览整个任务工作区下的所有 artifact 文件。",
   };
   return subtitles[tab];
+}
+
+function asPrettyJson(value: unknown, emptyText: string): string {
+  if (value === null || value === undefined) {
+    return emptyText;
+  }
+  return JSON.stringify(value, null, 2);
 }
