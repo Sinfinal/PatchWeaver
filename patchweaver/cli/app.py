@@ -768,6 +768,13 @@ def _build_release_service(runtime: Any) -> ReleaseService:
     )
 
 
+def _service_python_executable() -> Path:
+    """Return the Python executable path that systemd should use."""
+
+    # Keep the virtualenv entry path instead of resolving to the base interpreter.
+    return Path(sys.executable)
+
+
 def _build_run_logger(runtime: Any) -> RunLogger:
     """创建当前命令使用的运行日志写入器"""
 
@@ -1844,7 +1851,7 @@ def install_api_service_command(
     try:
         install_payload = install_systemd_service(
             service_name=final_service_name,
-            python_executable=Path(sys.executable).resolve(),
+            python_executable=_service_python_executable(),
             project_root=runtime.project_root,
             host=final_host,
             port=final_port,
@@ -1925,7 +1932,7 @@ def serve_api(
         try:
             install_payload = install_systemd_service(
                 service_name=service_name,
-                python_executable=Path(sys.executable).resolve(),
+                python_executable=_service_python_executable(),
                 project_root=runtime.project_root,
                 host=final_host,
                 port=final_port,
