@@ -188,14 +188,14 @@ export function TaskDetailPage(): JSX.Element {
 
       <SectionCard
         title="阶段时间线"
-        subtitle="用于判断任务当前停在主链路的哪一段，以及哪些阶段已经生成证据。"
+        subtitle="展示任务在主链路中的推进位置及各阶段产物状态。"
       >
         <StageTimeline items={detail.timeline} />
       </SectionCard>
 
       <SectionCard
         title="任务证据面板"
-        subtitle="左侧用于切换当前关注标签，右侧直接预览对应产物内容。"
+        subtitle="按阶段查看任务产物，并在右侧预览对应文件内容。"
       >
         <div className="pw-tabs">
           {tabs.map((item) => (
@@ -214,19 +214,18 @@ export function TaskDetailPage(): JSX.Element {
             <SectionCard title="内容摘要" subtitle={getTabSubtitle(selectedTab)}>
               {renderTabSummary(detail, selectedTab, currentAttempt, setSelectedAttemptNo, setSelectedPath)}
             </SectionCard>
-            <SectionCard title="候选文件" subtitle="点击文件路径后，右侧代码面板会直接拉取并预览对应内容。">
+            <SectionCard title="候选文件" subtitle="列出当前标签下的可用文件，选中后在右侧加载内容。">
               {tabFiles.length > 0 ? (
                 <div className="pw-list">
                   {tabFiles.map((path) => (
                     <button
                       key={path}
                       type="button"
-                      className="pw-list-item"
-                      style={{ textAlign: "left" }}
+                      className={`pw-list-item pw-file-item${selectedPath === path ? " is-active" : ""}`}
                       onClick={() => setSelectedPath(path)}
                     >
-                      <strong>{path}</strong>
-                      <span className="pw-inline-note">点击后在右侧代码面板预览</span>
+                      <span className="pw-path-title">{path}</span>
+                      <span className="pw-path-caption">选中后在右侧打开文件内容</span>
                     </button>
                   ))}
                 </div>
@@ -488,15 +487,15 @@ function buildTabFiles(
 
 function getTabSubtitle(tab: TabKey): string {
   const subtitles: Record<TabKey, string> = {
-    overview: "查看任务状态、最新失败与最新验证结果。",
-    input: "查看任务输入、patch bundle 与归一化前后的输入文件。",
-    analysis: "查看 semantic card、constraint report、context bundle 与分析轨迹。",
-    attempts: "查看每一轮 AttemptRecord，并切换到对应改写计划。",
-    build: "查看构建日志、失败记录和当前轮的关键构建产物。",
-    validate: "查看 validation report、load log 与语义校验结果。",
-    report: "查看最终 report.json / report.md 及上下文目录。",
+    overview: "查看任务状态、最近失败记录和最新验证结果。",
+    input: "查看输入文件、Patch Bundle 和归一化产物。",
+    analysis: "查看语义卡、约束报告、上下文包和分析轨迹。",
+    attempts: "查看各轮尝试记录，并切换到对应改写产物。",
+    build: "查看构建日志、失败记录和当前轮构建产物。",
+    validate: "查看验证报告、验证日志和语义检查结果。",
+    report: "查看任务报告、Markdown 输出和报告上下文文件。",
     replay: "查看最近一轮的 trace、attempt_state 和回放摘要。",
-    artifacts: "浏览整个任务工作区下的所有 artifact 文件。",
+    artifacts: "浏览当前任务工作区内的全部产物文件。",
   };
   return subtitles[tab];
 }

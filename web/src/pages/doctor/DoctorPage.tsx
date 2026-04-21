@@ -37,7 +37,7 @@ export function DoctorPage(): JSX.Element {
     <div className="pw-grid">
       <SectionCard
         title="环境诊断"
-        subtitle="对工作区、数据库、默认内核、Python 运行时和构建环境做统一自检。"
+        subtitle="统一检查运行时依赖、工作区路径、数据库和构建环境。"
         actions={
           <button className="pw-btn primary" type="button" onClick={() => doctorMutation.mutate()}>
             重新执行诊断
@@ -56,7 +56,7 @@ export function DoctorPage(): JSX.Element {
         ) : null}
       </SectionCard>
 
-      <SectionCard title="运行时路径与默认值" subtitle="这一部分最适合用于确认“我到底连的是哪套环境”。">
+      <SectionCard title="运行时路径与默认值" subtitle="用于核对当前实例实际加载的路径和默认参数。">
         {report ? (
           <div className="pw-kv">
             {Object.entries(report.runtime).map(([key, value]) => (
@@ -74,37 +74,39 @@ export function DoctorPage(): JSX.Element {
       <div className="pw-grid two pw-doctor-grid">
         <SectionCard
           title="检查项明细"
-          subtitle="适合在联调时快速识别是 warning 还是 hard error。"
+          subtitle="按检查项列出状态和结果，便于定位告警项与阻断项。"
           className="pw-doctor-panel"
         >
           {report ? (
-            <table className="pw-table">
-              <thead>
-                <tr>
-                  <th>检查项</th>
-                  <th>状态</th>
-                  <th>详情</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.checks.map((item) => (
-                  <tr key={`${item.category}-${item.name}`}>
-                    <td>{item.label}</td>
-                    <td>
-                      <StatusBadge value={item.status} />
-                    </td>
-                    <td>{item.detail}</td>
+            <div className="pw-table-shell">
+              <table className="pw-table pw-doctor-table">
+                <thead>
+                  <tr>
+                    <th className="pw-cell-no-wrap">检查项</th>
+                    <th className="pw-cell-no-wrap">状态</th>
+                    <th>详情</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {report.checks.map((item) => (
+                    <tr key={`${item.category}-${item.name}`}>
+                      <td className="pw-cell-no-wrap">{item.label}</td>
+                      <td className="pw-cell-no-wrap">
+                        <StatusBadge value={item.status} />
+                      </td>
+                      <td>{item.detail}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <div className="pw-empty">实时报告返回后，这里会列出每一条 doctor check 的状态与细节。</div>
           )}
         </SectionCard>
         <SectionCard
           title="构建环境快照"
-          subtitle="便于确认远端构建机或本地 build 环境到底返回了什么。"
+          subtitle="展示当前构建端返回的环境信息，便于比对本地与远端配置。"
           className="pw-doctor-panel"
         >
           <CodePanel

@@ -18,8 +18,16 @@ const directoryFacts = [
   { label: "默认 Recipe 清单", value: "recipes/manifests/default.yaml" },
 ];
 
+const sectionLabelMap: Record<string, string> = {
+  risk_rules: "风险规则",
+  patch_author_guide: "补丁作者指南",
+  primitive_rules: "原语规则",
+  smpl_templates: "SmPL 模板",
+  livepatch: "Livepatch 规则",
+};
+
 function formatSummaryLabel(key: string): string {
-  return key.replace(/_/g, " ");
+  return sectionLabelMap[key] ?? key.replace(/_/g, " ");
 }
 
 export function RulesPage(): JSX.Element {
@@ -32,7 +40,7 @@ export function RulesPage(): JSX.Element {
 
   return (
     <div className="pw-grid">
-      <SectionCard title="规则体系" subtitle="围绕 kpatch/livepatch 约束，对 patch 做风险识别、改写约束和 Recipe 路由。">
+      <SectionCard title="规则体系" subtitle="管理风险规则、原语规则和 Recipe，对改写过程提供约束。">
         <div className="pw-highlight-grid">
           {ruleHighlights.map((item) => (
             <div key={item.title} className="pw-mini-card">
@@ -43,7 +51,7 @@ export function RulesPage(): JSX.Element {
         </div>
       </SectionCard>
 
-      <SectionCard title="目录约定" subtitle="这些路径来自当前仓库配置，用于说明规则和配方在工程里的摆放位置。">
+      <SectionCard title="目录约定" subtitle="列出规则与配方在仓库中的固定路径，便于联调和排查。">
         <div className="pw-kv">
           {directoryFacts.map((item) => (
             <div key={item.label} className="pw-kv-item">
@@ -54,7 +62,7 @@ export function RulesPage(): JSX.Element {
         </div>
       </SectionCard>
 
-      <SectionCard title="实时目录扫描" subtitle="来自 `/rules` 接口，用于确认后端当前能看到哪些规则文件。">
+      <SectionCard title="实时目录扫描" subtitle="展示当前后端扫描到的规则目录和文件索引。">
         {query.isLoading ? <div className="pw-note-banner">正在加载规则目录索引...</div> : null}
         {query.isError ? <div className="pw-note-banner">当前无法获取实时规则索引，先保留静态目录说明。</div> : null}
         {query.data ? (
@@ -65,7 +73,7 @@ export function RulesPage(): JSX.Element {
               ))}
             </div>
             {Object.entries(query.data.sections).map(([name, section]) => (
-              <SectionCard key={name} title={name} subtitle={section.path}>
+              <SectionCard key={name} title={sectionLabelMap[name] ?? name} subtitle={section.path}>
                 {section.files.length > 0 ? (
                   <div className="pw-list">
                     {section.files.map((file) => (
