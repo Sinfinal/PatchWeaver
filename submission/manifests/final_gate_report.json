@@ -1,23 +1,23 @@
 {
-  "generated_at": "2026-04-20T12:15:30.533142+00:00",
-  "status": "passed",
+  "generated_at": "2026-04-21T11:45:55.623805+00:00",
+  "status": "failed",
   "summary": {
     "total": 14,
-    "passed": 14,
+    "passed": 13,
     "limited": 0,
-    "failed": 0,
-    "status": "passed"
+    "failed": 1,
+    "status": "failed"
   },
-  "submission_root": "D:\\spaces\\ai\\PatchWeaver\\submission",
+  "submission_root": "submission",
   "evaluation_summaries": [
     {
       "fixture_name": "contest_samples",
       "success_count": 0,
-      "matched_fixtures": 1,
-      "missing_fixtures": 1,
+      "matched_fixtures": 2,
+      "missing_fixtures": 0,
       "success_rate": 0.0,
-      "summary_json_path": "D:\\spaces\\ai\\PatchWeaver\\data\\evaluations\\contest_samples\\summary.json",
-      "summary_md_path": "D:\\spaces\\ai\\PatchWeaver\\data\\evaluations\\contest_samples\\summary.md"
+      "summary_json_path": "data/evaluations/contest_samples/summary.json",
+      "summary_md_path": "data/evaluations/contest_samples/summary.md"
     }
   ],
   "task_closures": [
@@ -31,7 +31,7 @@
       "build_log_path": null,
       "validation_report_path": null,
       "trace_path": null,
-      "workspace_dir": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-SEED-20260420-1086",
+      "workspace_dir": "workspaces/TASK-SEED-20260420-1086",
       "closure_ok": false
     },
     {
@@ -39,12 +39,12 @@
       "task_status": "failed",
       "current_attempt": 1,
       "latest_failure_type": "patch_apply_failed",
-      "report_json_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\reports\\report.json",
-      "report_md_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\reports\\report.md",
-      "build_log_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\logs\\build.log",
-      "validation_report_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\artifacts\\validation_report.json",
-      "trace_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447\\attempts\\001\\trace\\harness_trace.json",
-      "workspace_dir": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-STAGE-II-20260414-185447",
+      "report_json_path": "workspaces/TASK-STAGE-II-20260414-185447/reports/report.json",
+      "report_md_path": "workspaces/TASK-STAGE-II-20260414-185447/reports/report.md",
+      "build_log_path": "workspaces/TASK-STAGE-II-20260414-185447/attempts/001/logs/build.log",
+      "validation_report_path": "workspaces/TASK-STAGE-II-20260414-185447/attempts/001/artifacts/validation_report.json",
+      "trace_path": "workspaces/TASK-STAGE-II-20260414-185447/attempts/001/trace/harness_trace.json",
+      "workspace_dir": "workspaces/TASK-STAGE-II-20260414-185447",
       "closure_ok": true
     },
     {
@@ -52,12 +52,12 @@
       "task_status": "failed",
       "current_attempt": 5,
       "latest_failure_type": "patch_apply_failed",
-      "report_json_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\report.json",
-      "report_md_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\reports\\report.md",
-      "build_log_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\logs\\build.log",
-      "validation_report_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\artifacts\\validation_report.json",
-      "trace_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001\\attempts\\005\\trace\\harness_trace.json",
-      "workspace_dir": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260411-001",
+      "report_json_path": "workspaces/TASK-20260411-001/reports/report.json",
+      "report_md_path": "workspaces/TASK-20260411-001/reports/report.md",
+      "build_log_path": "workspaces/TASK-20260411-001/attempts/005/logs/build.log",
+      "validation_report_path": "workspaces/TASK-20260411-001/attempts/005/artifacts/validation_report.json",
+      "trace_path": "workspaces/TASK-20260411-001/attempts/005/trace/harness_trace.json",
+      "workspace_dir": "workspaces/TASK-20260411-001",
       "closure_ok": true
     },
     {
@@ -65,12 +65,12 @@
       "task_status": "failed",
       "current_attempt": 1,
       "latest_failure_type": "build_env_missing",
-      "report_json_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\reports\\report.json",
-      "report_md_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\reports\\report.md",
-      "build_log_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\attempts\\001\\logs\\build.log",
+      "report_json_path": "workspaces/TASK-20260410-001/reports/report.json",
+      "report_md_path": "workspaces/TASK-20260410-001/reports/report.md",
+      "build_log_path": "workspaces/TASK-20260410-001/attempts/001/logs/build.log",
       "validation_report_path": null,
-      "trace_path": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001\\attempts\\001\\trace\\harness_trace.json",
-      "workspace_dir": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-20260410-001",
+      "trace_path": "workspaces/TASK-20260410-001/attempts/001/trace/harness_trace.json",
+      "workspace_dir": "workspaces/TASK-20260410-001",
       "closure_ok": false
     }
   ],
@@ -111,55 +111,55 @@
       "name": "doctor_snapshot",
       "status": "passed",
       "detail": "doctor 快照已生成。",
-      "evidence": "D:\\spaces\\ai\\PatchWeaver\\data\\manifests\\doctor_report.json"
+      "evidence": "data/manifests/doctor_report.json"
     },
     {
       "name": "database_ready",
       "status": "passed",
       "detail": "SQLite 数据库可用。",
-      "evidence": "D:\\spaces\\ai\\PatchWeaver\\data\\patchweaver.db"
+      "evidence": "data/patchweaver.db"
     },
     {
       "name": "evaluation_summary",
       "status": "passed",
       "detail": "已发现 1 组阶段评测摘要。",
-      "evidence": "D:\\spaces\\ai\\PatchWeaver\\data\\evaluations"
+      "evidence": "data/evaluations"
     },
     {
       "name": "task_report_closure",
       "status": "passed",
       "detail": "至少有一条任务已经打通报告、日志和 trace 闭环。",
-      "evidence": "D:\\spaces\\ai\\PatchWeaver\\workspaces"
+      "evidence": "workspaces"
     },
     {
       "name": "system_log",
       "status": "passed",
       "detail": "系统日志文件已存在。",
-      "evidence": "D:\\spaces\\ai\\PatchWeaver\\data\\logs\\patchweaver.log"
+      "evidence": "data/logs/patchweaver.log"
     },
     {
       "name": "jsonl_log",
       "status": "passed",
       "detail": "JSONL 事件日志已存在。",
-      "evidence": "D:\\spaces\\ai\\PatchWeaver\\data\\logs\\patchweaver.jsonl"
+      "evidence": "data/logs/patchweaver.jsonl"
     },
     {
       "name": "web_console",
       "status": "passed",
       "detail": "Web 控制台源码目录存在。",
-      "evidence": "D:\\spaces\\ai\\PatchWeaver\\web"
+      "evidence": "web"
     },
     {
       "name": "build_backend",
-      "status": "passed",
+      "status": "failed",
       "detail": "构建环境预检通过。",
-      "evidence": "root@10.223.185.3:22"
+      "evidence": "unknown"
     },
     {
       "name": "models_config",
       "status": "passed",
       "detail": "模型配置文件已就位。",
-      "evidence": "D:\\spaces\\ai\\PatchWeaver\\config\\models.yaml"
+      "evidence": "config/models.yaml"
     },
     {
       "name": "model_topology",
@@ -170,26 +170,26 @@
     {
       "name": "bailian_api_key",
       "status": "passed",
-      "detail": "已检测到百炼 API Key 环境变量。",
-      "evidence": "PATCHWEAVER_BAILIAN_API_KEY"
+      "detail": "已检测到百炼 API Key。",
+      "evidence": "sk-8***ecf4"
     },
     {
       "name": "submission_layout",
       "status": "passed",
       "detail": "submission 目录结构已建立。",
-      "evidence": "D:\\spaces\\ai\\PatchWeaver\\submission"
+      "evidence": "submission"
     },
     {
       "name": "final_manifest",
       "status": "passed",
       "detail": "final_manifest 已生成。",
-      "evidence": "D:\\spaces\\ai\\PatchWeaver\\submission\\manifests\\final_manifest.json"
+      "evidence": "submission/manifests/final_manifest.json"
     },
     {
       "name": "model_statement",
       "status": "passed",
       "detail": "模型选型说明已写入 submission/docs。",
-      "evidence": "D:\\spaces\\ai\\PatchWeaver\\submission\\docs\\PatchWeaver-模型选型说明.md"
+      "evidence": "submission/docs/PatchWeaver-模型选型说明.md"
     }
   ]
 }

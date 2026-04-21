@@ -1,4 +1,4 @@
-"""Skill manifest 解析。"""
+"""Skill manifest 解析"""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from patchweaver.models.skill import SkillManifest
 
 
 def load_skill_manifest(manifest_path: Path, *, source_layer: str) -> SkillManifest:
-    """从 YAML 文件读取 skill manifest。"""
+    """从 YAML 文件读取 skill manifest"""
 
     raw = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
     entry = raw.get("entry") or {}
@@ -38,7 +38,7 @@ def load_skill_manifest(manifest_path: Path, *, source_layer: str) -> SkillManif
 
 
 def _to_optional_str(value: Any) -> str | None:
-    """把空值安全地转换为可选字符串。"""
+    """把空值安全地转换为可选字符串"""
 
     if value is None:
         return None

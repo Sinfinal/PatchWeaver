@@ -1,4 +1,4 @@
-"""经验记忆与失败归档模块。"""
+"""经验记忆与失败归档模块"""
 
 from patchweaver.memory.dual_memory import DualMemory
 from patchweaver.memory.failure_memory import FailureMemory

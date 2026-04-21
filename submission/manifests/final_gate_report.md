@@ -1,10 +1,10 @@
 # PatchWeaver Final Gate Report
 
-- 生成时间: 2026-04-20T12:15:30.533142+00:00
-- 总体状态: passed
-- 通过: 14
+- 生成时间: 2026-04-21T11:45:55.623805+00:00
+- 总体状态: failed
+- 通过: 13
 - 带限制通过: 0
-- 未通过: 0
+- 未通过: 1
 
 ## 门禁检查
 - doctor_snapshot: passed / doctor 快照已生成。
@@ -14,10 +14,10 @@
 - system_log: passed / 系统日志文件已存在。
 - jsonl_log: passed / JSONL 事件日志已存在。
 - web_console: passed / Web 控制台源码目录存在。
-- build_backend: passed / 构建环境预检通过。
+- build_backend: failed / 构建环境预检通过。
 - models_config: passed / 模型配置文件已就位。
 - model_topology: passed / 模型拓扑已收敛为单主模型 + 可选辅助模型。
-- bailian_api_key: passed / 已检测到百炼 API Key 环境变量。
+- bailian_api_key: passed / 已检测到百炼 API Key。
 - submission_layout: passed / submission 目录结构已建立。
 - final_manifest: passed / final_manifest 已生成。
 - model_statement: passed / 模型选型说明已写入 submission/docs。

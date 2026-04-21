@@ -1,4 +1,4 @@
-"""最终报告模型。"""
+"""最终报告模型"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from patchweaver.models.harness import ArtifactRef
 
 
 class AttemptDigest(BaseModel):
-    """表示单轮尝试的摘要信息。"""
+    """表示单轮尝试的摘要信息"""
 
     attempt_id: str
     attempt_no: int
@@ -17,7 +17,7 @@ class AttemptDigest(BaseModel):
 
 
 class FinalReport(BaseModel):
-    """表示最终提交或归档的结构化结果。"""
+    """表示最终提交或归档的结构化结果"""
 
     task_summary: dict[str, str] = Field(default_factory=dict)
     attempt_digest: list[AttemptDigest] = Field(default_factory=list)

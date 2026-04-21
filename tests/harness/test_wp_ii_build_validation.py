@@ -379,7 +379,7 @@ def test_report_builder_emits_next_priority_for_already_patched() -> None:
             task_id="TASK-TEST-REPORT-001",
             cve_id="CVE-2099-0009",
             target_kernel="6.6.102-5.2.an23.x86_64",
-            workspace_dir=Path("D:/PatchWeaver/workspaces/TASK-TEST-REPORT-001"),
+            workspace_dir=Path("workspaces") / "TASK-TEST-REPORT-001",
         ),
         attempts=[
             AttemptRecord(

@@ -1,4 +1,4 @@
-# PatchWeaver 第四期与总目标验证报告 v0420
+﻿# PatchWeaver 第四期与总目标验证报告 v0420
 
 ## 1. 验证范围
 
@@ -15,7 +15,7 @@
 验证对象：
 
 - 本地项目目录：`D:\spaces\ai\PatchWeaver`
-- 验证机目录：`/root/patchweaver_validate_20260420_phase4`
+- 验证机目录：`<project_root>`
 - 验证机地址：`10.223.185.3`
 
 ---
@@ -65,9 +65,11 @@
    - 正式交付模型
    - 回退模型
    - 辅助模型及其边界
+   - API Key 的环境变量名、配置文件兜底字段和读取顺序
 3. `doctor`、`models`、`finalize`、`gate` 已能直接展示上述模型口径。
-4. `final_manifest` 已补充文档分类、版本后缀、来源路径、最终存放位置和人工复核标记。
-5. Web 总览页已改为展示主模型、交付模型、模型拓扑和辅助模型摘要。
+4. `models` 命令已支持 `set-api-key`、`set-api-key-env` 和 `clear-api-key`，便于本地联调时维护模型密钥配置。
+5. `final_manifest` 已补充文档分类、版本后缀、来源路径、最终存放位置和人工复核标记。
+6. Web 总览页已改为展示主模型、交付模型、模型拓扑和辅助模型摘要。
 
 ---
 
@@ -77,7 +79,7 @@
 
 已通过脚本将本地项目上传到验证机：
 
-- 上传命令：`python scripts/upload_to_validation.py --password ****** --remote-dir /root/patchweaver_validate_20260420_phase4`
+- 上传命令：`python scripts/upload_to_validation.py --password ****** --remote-dir <project_root>`
 
 上传后，在验证机上补齐了 Python 依赖：
 
@@ -104,6 +106,7 @@
   - 模型拓扑已为 `single_primary_with_optional_helpers`
   - 主模型与正式交付模型均为 `qwen-plus-2025-07-28`
   - 辅助模型为 `qwen-coder-turbo-0919`、`qwen-vl-plus-2025-05-07` 和日志摘要模型
+  - API Key 状态会显示来源、脱敏值和是否来自 `config/models.yaml`
 - `finalize` 已在远端生成 submission 清单与文档包。
 
 ### 3.3 验证机 gate 结果
@@ -276,3 +279,4 @@
 
 1. 放通验证机对 `raw.githubusercontent.com` 等上游来源地址的访问。
 2. 为上传脚本增加“可选携带 `data/` 与 `workspaces/` 运行态”的开关，便于把本地已形成的阶段产物一并同步到验证机。
+

@@ -1,4 +1,4 @@
-"""工作区产物读取服务。"""
+"""工作区产物读取服务"""
 
 from __future__ import annotations
 
@@ -7,18 +7,19 @@ from pathlib import Path
 from typing import Any
 
 from patchweaver.api.deps import ApiContext
+from patchweaver.utils.path_policy import to_project_relative
 
 
 class ArtifactService:
-    """负责把任务工作区中的产物整理成可视化结构。"""
+    """负责把任务工作区中的产物整理成可视化结构"""
 
     def __init__(self, context: ApiContext) -> None:
-        """记录 API 共享上下文。"""
+        """记录 API 共享上下文"""
 
         self.context = context
 
     def list_tree(self, task_id: str) -> dict[str, Any]:
-        """返回任务工作区的目录树和扁平索引。"""
+        """返回任务工作区的目录树和扁平索引"""
 
         task = self._require_task(task_id)
         root = task.workspace_dir.resolve()
@@ -36,14 +37,14 @@ class ArtifactService:
             )
         return {
             "task_id": task_id,
-            "root": str(root),
+            "root": self._path(root),
             "tree": self._build_tree(items),
             "items": items,
             "key_artifacts": self._collect_key_artifacts(root),
         }
 
     def read_content(self, task_id: str, relative_path: str, *, max_chars: int = 24000) -> dict[str, Any]:
-        """读取单个产物文件内容，并做长度保护。"""
+        """读取单个产物文件内容，并做长度保护"""
 
         task = self._require_task(task_id)
         target_path = self._safe_join(task.workspace_dir.resolve(), relative_path)
@@ -68,7 +69,7 @@ class ArtifactService:
         return {
             "task_id": task_id,
             "relative_path": relative_path.replace("\\", "/"),
-            "absolute_path": str(target_path),
+            "project_path": self._path(target_path),
             "content": content,
             "content_type": content_type,
             "truncated": truncated,
@@ -76,7 +77,7 @@ class ArtifactService:
         }
 
     def _require_task(self, task_id: str):
-        """读取任务对象，不存在时直接报错。"""
+        """读取任务对象，不存在时直接报错"""
 
         task = self.context.task_repo.get_task(task_id)
         if task is None:
@@ -84,7 +85,7 @@ class ArtifactService:
         return task
 
     def _safe_join(self, root: Path, relative_path: str) -> Path:
-        """把相对路径安全地展开到工作区内。"""
+        """把相对路径安全地展开到工作区内"""
 
         normalized = relative_path.replace("\\", "/").lstrip("/")
         candidate = (root / normalized).resolve()
@@ -93,7 +94,7 @@ class ArtifactService:
         return candidate
 
     def _build_tree(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """把扁平列表整理成前端更容易渲染的目录树。"""
+        """把扁平列表整理成前端更容易渲染的目录树"""
 
         root: dict[str, Any] = {"children": {}}
         for item in items:
@@ -117,7 +118,7 @@ class ArtifactService:
         return self._serialize_children(root.get("children", {}))
 
     def _serialize_children(self, children: dict[str, Any]) -> list[dict[str, Any]]:
-        """递归把内部树节点转成列表结构。"""
+        """递归把内部树节点转成列表结构"""
 
         result: list[dict[str, Any]] = []
         for name in sorted(children):
@@ -135,7 +136,7 @@ class ArtifactService:
         return result
 
     def _detect_content_type(self, path: Path) -> str:
-        """根据扩展名给前端一个简单的渲染提示。"""
+        """根据扩展名给前端一个简单的渲染提示"""
 
         suffix = path.suffix.lower()
         if suffix == ".json":
@@ -149,7 +150,7 @@ class ArtifactService:
         return "text"
 
     def _collect_key_artifacts(self, root: Path) -> dict[str, str | None]:
-        """提取第四阶段常用的关键产物路径。"""
+        """提取第四阶段常用的关键产物路径"""
 
         report_json = root / "reports" / "report.json"
         report_md = root / "reports" / "report.md"
@@ -158,15 +159,15 @@ class ArtifactService:
         validation_report = latest_attempt_dir / "artifacts" / "validation_report.json" if latest_attempt_dir else None
         trace_path = latest_attempt_dir / "trace" / "harness_trace.json" if latest_attempt_dir else None
         return {
-            "report_json": str(report_json) if report_json.exists() else None,
-            "report_md": str(report_md) if report_md.exists() else None,
-            "build_log": str(build_log) if build_log is not None and build_log.exists() else None,
-            "validation_report": str(validation_report) if validation_report is not None and validation_report.exists() else None,
-            "trace_path": str(trace_path) if trace_path is not None and trace_path.exists() else None,
+            "report_json": self._path(report_json) if report_json.exists() else None,
+            "report_md": self._path(report_md) if report_md.exists() else None,
+            "build_log": self._path(build_log) if build_log is not None and build_log.exists() else None,
+            "validation_report": self._path(validation_report) if validation_report is not None and validation_report.exists() else None,
+            "trace_path": self._path(trace_path) if trace_path is not None and trace_path.exists() else None,
         }
 
     def _latest_attempt_dir(self, root: Path) -> Path | None:
-        """定位任务目录下最近一轮尝试目录。"""
+        """定位任务目录下最近一轮尝试目录"""
 
         attempts_root = root / "attempts"
         if not attempts_root.exists():
@@ -175,3 +176,8 @@ class ArtifactService:
         if not candidates:
             return None
         return sorted(candidates)[-1]
+
+    def _path(self, value: Path | None) -> str | None:
+        """把项目内路径转换成相对源码根目录表达"""
+
+        return to_project_relative(self.context.project_root, value)

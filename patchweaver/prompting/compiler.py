@@ -1,4 +1,4 @@
-"""Prompt 编译器。"""
+"""Prompt 编译器"""
 
 from __future__ import annotations
 
@@ -11,10 +11,10 @@ from patchweaver.prompting.prompt_library import PromptLibrary
 
 
 class PromptCompiler:
-    """把上下文和 bootstrap 片段组合成提示包。"""
+    """把上下文和 bootstrap 片段组合成提示包"""
 
     def __init__(self, project_root: Path) -> None:
-        """初始化模板库。"""
+        """初始化模板库"""
 
         self.library = PromptLibrary(project_root)
 
@@ -27,7 +27,7 @@ class PromptCompiler:
         schema_name: str,
         route: SkillRouteDecision | None = None,
     ) -> PromptPacket:
-        """生成一份最小可用的 PromptPacket。"""
+        """生成一份最小可用的 PromptPacket"""
 
         evidence_summary = "、".join(context_bundle.evidence_ids[:4]) if context_bundle.evidence_ids else "无"
         note_summary = "；".join(context_bundle.notes[:3]) if context_bundle.notes else "无"

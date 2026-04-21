@@ -1,7 +1,25 @@
+export type MachineProfile = {
+  machine_system?: string | null;
+  machine_kernel?: string | null;
+  machine_arch?: string | null;
+  hostname?: string | null;
+  build_target_kernel?: string | null;
+  build_target_kernel_source?: string | null;
+  build_backend?: string | null;
+  builder_cmd?: string | null;
+  builder_path?: string | null;
+  selected_source_dir?: string | null;
+  selected_source_reason?: string | null;
+  config_path?: string | null;
+  vmlinux_path?: string | null;
+  detected_at?: string | null;
+};
+
 export type TaskListItem = {
   task_id: string;
   cve_id: string;
   target_kernel: string;
+  target_kernel_source?: string | null;
   status: string;
   current_attempt: number;
   max_attempts: number;
@@ -22,10 +40,12 @@ export type TaskSummary = {
   task_id: string;
   cve_id: string;
   target_kernel: string;
+  target_kernel_source?: string | null;
   status: string;
   current_attempt: number;
   max_attempts: number;
   workspace_dir: string;
+  machine_profile?: MachineProfile | null;
   created_at: string;
   updated_at: string;
 };
@@ -140,7 +160,7 @@ export type ArtifactTreeResponse = {
 export type ArtifactContentResponse = {
   task_id: string;
   relative_path: string;
-  absolute_path: string;
+  project_path: string;
   content: string;
   content_type: string;
   truncated: boolean;

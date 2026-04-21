@@ -1,4 +1,4 @@
-"""总览页查询服务。"""
+"""总览页查询服务"""
 
 from __future__ import annotations
 
@@ -12,21 +12,24 @@ from patchweaver.api.services.log_service import LogService
 from patchweaver.builder.orchestrator import BuildOrchestrator
 from patchweaver.reporter.release_service import ReleaseService
 from patchweaver.storage.sqlite import connect_sqlite
+from patchweaver.utils.path_policy import to_project_relative
 
 
 class OverviewService:
-    """负责汇总首页需要的状态指标。"""
+    """负责汇总首页需要的状态指标"""
 
     def __init__(self, context: ApiContext) -> None:
-        """保存 API 共享上下文。"""
+        """保存 API 共享上下文"""
 
         self.context = context
         self.log_service = LogService(context)
 
     def get_overview(self) -> dict[str, Any]:
-        """汇总总览页需要的卡片、摘要和事件数据。"""
+        """汇总总览页需要的卡片、摘要和事件数据"""
 
         database_path = self.context.runtime.database_path
+        # 首页不是简单读一张表
+        # 这里把构建环境、交付快照、阶段评测和任务状态一起收拢成一份响应
         build_env = BuildOrchestrator(self.context.build_config).probe_environment()
         release_snapshot = ReleaseService(
             runtime=self.context.runtime,
@@ -84,6 +87,8 @@ class OverviewService:
         finished_tasks = success_tasks + failed_tasks
         success_rate = round((success_tasks / finished_tasks) * 100, 2) if finished_tasks else 0.0
 
+        # metrics 这一层尽量只放首页卡片直接会用到的聚合值
+        # 明细项放到 recent_tasks 和 distribution，避免接口层级越长越乱
         return {
             "metrics": {
                 "total_tasks": total_tasks,
@@ -95,7 +100,7 @@ class OverviewService:
                 "build_ready": bool(build_env.get("builder_ok") and build_env.get("selected_source_ok") and build_env.get("config_ok")),
                 "validation_passed": next((row["total"] for row in validation_distribution if row["status"] == "passed"), 0),
                 "validation_failed": next((row["total"] for row in validation_distribution if row["status"] == "failed"), 0),
-                "latest_evaluation_summary": latest_evaluation["artifact_path"] if latest_evaluation is not None else None,
+                "latest_evaluation_summary": self._path(Path(latest_evaluation["artifact_path"])) if latest_evaluation is not None else None,
                 "delivery_ready": release_snapshot.get("final_gate_status") == "passed",
                 "selected_model": self.context.models_config.delivery_model,
             },
@@ -124,7 +129,7 @@ class OverviewService:
         }
 
     def _load_evaluation_summaries(self) -> list[dict[str, Any]]:
-        """读取阶段评测摘要，供总览页直接展示。"""
+        """读取阶段评测摘要，供总览页直接展示"""
 
         evaluations_dir = self.context.runtime.data_dir / "evaluations"
         if not evaluations_dir.exists():
@@ -138,7 +143,7 @@ class OverviewService:
         summary_items: list[dict[str, Any]] = []
 
         # 第三阶段以后，总览页需要能直接看到固定样例和 holdout 的阶段结果，
-        # 这里统一从 data/evaluations 下收拢，避免前端自己再去猜目录结构。
+        # 这里统一从 data/evaluations 下收拢，避免前端自己再去猜目录结构
         for summary_path in sorted(evaluations_dir.glob("*/summary.json")):
             payload = self._read_json(summary_path)
             if not isinstance(payload, dict):
@@ -155,8 +160,8 @@ class OverviewService:
                     "success_rate": float(payload.get("success_rate", 0.0) or 0.0),
                     "average_attempts": float(payload.get("average_attempts", 0.0) or 0.0),
                     "failure_distribution": payload.get("failure_distribution") or {},
-                    "summary_json_path": str(summary_path),
-                    "summary_md_path": str(summary_path.with_name("summary.md")),
+                    "summary_json_path": self._path(summary_path),
+                    "summary_md_path": self._path(summary_path.with_name("summary.md")),
                     "updated_at": summary_path.stat().st_mtime,
                     "sort_order": preferred_order.get(fixture_name, 99),
                 }
@@ -175,7 +180,7 @@ class OverviewService:
         return summary_items
 
     def _read_json(self, path: Path) -> dict[str, Any] | None:
-        """安全读取 JSON 文件。"""
+        """安全读取 JSON 文件"""
 
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
@@ -184,12 +189,18 @@ class OverviewService:
         return payload if isinstance(payload, dict) else None
 
     def _format_timestamp(self, value: float) -> str:
-        """把文件修改时间转成展示友好的字符串。"""
+        """把文件修改时间转成展示友好的字符串"""
 
         return datetime.fromtimestamp(value).isoformat()
 
     def _count(self, connection, sql: str) -> int:
-        """执行单值计数查询。"""
+        """执行单值计数查询"""
 
         row = connection.execute(sql).fetchone()
         return int(row[0]) if row is not None else 0
+
+    def _path(self, value: Path | None) -> str | None:
+        """把项目内路径转换成相对源码根目录表达"""
+
+        project_root = getattr(self.context, "project_root", self.context.runtime.project_root)
+        return to_project_relative(project_root, value)

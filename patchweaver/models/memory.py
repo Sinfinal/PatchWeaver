@@ -1,4 +1,4 @@
-"""经验记忆模型。"""
+"""经验记忆模型"""
 
 from __future__ import annotations
 
@@ -8,13 +8,13 @@ from pydantic import BaseModel, Field
 
 
 def _utc_now() -> datetime:
-    """返回当前 UTC 时间。"""
+    """返回当前 UTC 时间"""
 
     return datetime.now(timezone.utc)
 
 
 class FailureMemoryEntry(BaseModel):
-    """表示一条失败经验条目。"""
+    """表示一条失败经验条目"""
 
     entry_id: str
     task_id: str
@@ -31,7 +31,7 @@ class FailureMemoryEntry(BaseModel):
 
 
 class RecipeMemoryEntry(BaseModel):
-    """表示一条配方经验条目。"""
+    """表示一条配方经验条目"""
 
     entry_id: str
     recipe_name: str

@@ -52,9 +52,9 @@ def test_release_service_writes_manifest_and_gate(monkeypatch, tmp_path: Path) -
     )
     (evaluations_dir / "summary.md").write_text("# summary\n", encoding="utf-8")
 
-    task_repo = TaskRepository(database_path)
-    attempt_repo = AttemptRepository(database_path)
-    artifact_repo = ArtifactRepository(database_path)
+    task_repo = TaskRepository(database_path, project_root)
+    attempt_repo = AttemptRepository(database_path, project_root)
+    artifact_repo = ArtifactRepository(database_path, project_root)
 
     task_workspace = workspace_root / "TASK-RELEASE-001"
     attempt_dir = task_workspace / "attempts" / "001"
@@ -132,10 +132,10 @@ def test_release_service_writes_manifest_and_gate(monkeypatch, tmp_path: Path) -
     manifest_payload = service.prepare_submission()
     gate_payload = service.run_gate()
 
-    assert Path(manifest_payload["final_manifest_json"]).exists()
-    assert Path(gate_payload["final_gate_json"]).exists()
+    assert (project_root / manifest_payload["final_manifest_json"]).exists()
+    assert (project_root / gate_payload["final_gate_json"]).exists()
     assert gate_payload["status"] == "passed"
     assert any(item["goal"] == "输出结构化报告、日志和产物" for item in gate_payload["goal_check"])
-    manifest_json = json.loads(Path(manifest_payload["final_manifest_json"]).read_text(encoding="utf-8"))
+    manifest_json = json.loads((project_root / manifest_payload["final_manifest_json"]).read_text(encoding="utf-8"))
     assert manifest_json["models"]["topology"] == "single_primary_with_optional_helpers"
     assert any(item["name"] == "PatchWeaver-模型选型说明.md" for item in manifest_json["documents"])

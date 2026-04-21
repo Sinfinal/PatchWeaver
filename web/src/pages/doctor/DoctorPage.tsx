@@ -11,7 +11,11 @@ const runtimeLabelMap: Record<string, string> = {
   workspace_root: "工作区根目录",
   database_path: "数据库路径",
   manifest_dir: "Manifest 目录",
-  default_kernel: "默认内核",
+  configured_default_kernel: "配置默认内核",
+  detected_target_kernel: "探测目标内核",
+  detected_target_kernel_source: "探测来源",
+  machine_kernel: "当前运行机内核",
+  machine_arch: "当前运行机架构",
   max_attempts: "默认最大尝试轮数",
   python_version: "Python 版本",
 };
@@ -37,7 +41,7 @@ export function DoctorPage(): JSX.Element {
     <div className="pw-grid">
       <SectionCard
         title="环境诊断"
-        subtitle="统一检查运行时依赖、工作区路径、数据库和构建环境。"
+        subtitle="统一检查运行时依赖、项目目录、本机构建环境和目标内核绑定。"
         actions={
           <button className="pw-btn primary" type="button" onClick={() => doctorMutation.mutate()}>
             重新执行诊断
@@ -56,7 +60,7 @@ export function DoctorPage(): JSX.Element {
         ) : null}
       </SectionCard>
 
-      <SectionCard title="运行时路径与默认值" subtitle="用于核对当前实例实际加载的路径和默认参数。">
+      <SectionCard title="运行时路径与默认值" subtitle="用于核对当前实例实际加载的路径、探测到的目标内核和默认参数。">
         {report ? (
           <div className="pw-kv">
             {Object.entries(report.runtime).map(([key, value]) => (
@@ -67,7 +71,7 @@ export function DoctorPage(): JSX.Element {
             ))}
           </div>
         ) : (
-          <div className="pw-empty">诊断报告可用后，这里会展示项目根目录、工作区、数据库与默认内核等关键信息。</div>
+          <div className="pw-empty">诊断报告可用后，这里会展示项目根目录、工作区、数据库、探测目标内核和当前运行机信息。</div>
         )}
       </SectionCard>
 
@@ -106,7 +110,7 @@ export function DoctorPage(): JSX.Element {
         </SectionCard>
         <SectionCard
           title="构建环境快照"
-          subtitle="展示当前构建端返回的环境信息，便于比对本地与远端配置。"
+          subtitle="展示当前运行机构建环境快照，便于核对源码树、vmlinux 与构建命令。"
           className="pw-doctor-panel"
         >
           <CodePanel
@@ -116,6 +120,17 @@ export function DoctorPage(): JSX.Element {
           />
         </SectionCard>
       </div>
+
+      <SectionCard
+        title="运行机快照"
+        subtitle="展示任务绑定会参考的机器信息，便于排查“配置默认值”和“实际环境”是否一致。"
+      >
+        <CodePanel
+          title="machine_profile"
+          content={report?.machine_profile ? JSON.stringify(report.machine_profile, null, 2) : undefined}
+          emptyText="暂无 machine_profile 快照。"
+        />
+      </SectionCard>
     </div>
   );
 }

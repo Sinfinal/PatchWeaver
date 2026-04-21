@@ -1,4 +1,4 @@
-"""Skill 接口。"""
+"""Skill 接口"""
 
 from __future__ import annotations
 
@@ -12,6 +12,6 @@ router = APIRouter(tags=["skills"])
 
 @router.get("/skills")
 def get_skills(context: ApiContext = Depends(get_api_context)) -> dict:
-    """返回 Skill 清单。"""
+    """返回 Skill 清单"""
 
     return CatalogService(context).list_skills()

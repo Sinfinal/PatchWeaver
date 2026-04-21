@@ -1,4 +1,4 @@
-"""联合规划骨架。"""
+"""联合规划骨架"""
 
 from __future__ import annotations
 
@@ -10,10 +10,10 @@ from patchweaver.planner.primitive_selector import PrimitiveSelector
 
 
 class JointPlanner:
-    """负责组合候选改写方案，并给出最终选择。"""
+    """负责组合候选改写方案，并给出最终选择"""
 
     def __init__(self) -> None:
-        """初始化原语选择和排序组件。"""
+        """初始化原语选择和排序组件"""
 
         self.primitive_selector = PrimitiveSelector()
         self.candidate_ranker = CandidateRanker()
@@ -26,20 +26,21 @@ class JointPlanner:
         constraint_report: ConstraintReport,
         ranking_hints: dict[str, object] | None = None,
     ) -> RewritePlan:
-        """根据语义卡片、约束结果和经验提示生成本轮规划。"""
+        """根据语义卡片、约束结果和经验提示生成本轮规划"""
 
         primitives = self.primitive_selector.select(constraint_report)
-        target_files = list(dict.fromkeys(semantic_card.touched_functions))
+        target_files = list(dict.fromkeys(semantic_card.touched_files or semantic_card.touched_functions))
+        target_functions = list(dict.fromkeys(semantic_card.touched_functions)) or target_files
         rule_hits = [item.risk_type for item in constraint_report.risk_items] or ["direct_apply_ready"]
         high_risk = max(1, constraint_report.high_risk_count) if constraint_report.risk_items else 0
 
-        # 第一条路径优先尝试编辑半径最小的方案，适合作为主链默认入口。
+        # 第一条路径优先尝试编辑半径最小的方案，适合作为主链默认入口
         candidates = [
             RewriteCandidate(
                 candidate_id=f"{task_id}-candidate-001",
                 recipe_name="direct_apply_patch",
                 primitives=["direct_apply"],
-                target_functions=target_files,
+                target_functions=target_functions,
                 rule_hits=["direct_apply_ready"],
                 expected_risk=0.08 if not constraint_report.risk_items else 0.28,
                 expected_semantic_drift=0.04,
@@ -48,13 +49,13 @@ class JointPlanner:
         ]
 
         if constraint_report.risk_items:
-            # 第二条路径保守一点，把高风险约束交给 wrapper 路线兜住。
+            # 第二条路径保守一点，把高风险约束交给 wrapper 路线兜住
             candidates.append(
                 RewriteCandidate(
                     candidate_id=f"{task_id}-candidate-002",
                     recipe_name="minimal_livepatch_wrap",
                     primitives=primitives,
-                    target_functions=target_files,
+                    target_functions=target_functions,
                     rule_hits=rule_hits,
                     expected_risk=min(0.65, 0.18 + high_risk * 0.11),
                     expected_semantic_drift=0.14,
@@ -62,7 +63,7 @@ class JointPlanner:
                 )
             )
 
-            # 第三条路径在原有 wrapper 基础上再加一层回调或 shadow state，专门留给高风险场景。
+            # 第三条路径在原有 wrapper 基础上再加一层回调或 shadow state，专门留给高风险场景
             guarded_primitives = list(primitives)
             if constraint_report.requires_callback and "callback" not in guarded_primitives:
                 guarded_primitives.append("callback")
@@ -74,7 +75,7 @@ class JointPlanner:
                         candidate_id=f"{task_id}-candidate-003",
                         recipe_name="minimal_livepatch_wrap",
                         primitives=guarded_primitives,
-                        target_functions=target_files,
+                        target_functions=target_functions,
                         rule_hits=rule_hits,
                         expected_risk=min(0.58, 0.16 + high_risk * 0.09),
                         expected_semantic_drift=0.18,

@@ -10,12 +10,17 @@ export function TaskCreateForm({ submitting, onSubmit }: TaskCreateFormProps): J
   const [form, setForm] = useState<CreateTaskPayload>({
     cve_id: "",
     profile: "demo",
-    target_kernel: "6.6.102-5.2.an23.x86_64",
+    target_kernel: "",
   });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    await onSubmit(form);
+    await onSubmit({
+      ...form,
+      cve_id: form.cve_id.trim(),
+      target_kernel: form.target_kernel?.trim() || undefined,
+      note: form.note?.trim() || undefined,
+    });
   }
 
   return (
@@ -39,9 +44,9 @@ export function TaskCreateForm({ submitting, onSubmit }: TaskCreateFormProps): J
           className="pw-input"
           value={form.target_kernel ?? ""}
           onChange={(event) => setForm((current) => ({ ...current, target_kernel: event.target.value }))}
-          placeholder="默认值已对齐 Anolis OS 23.4 环境"
+          placeholder="留空则按当前运行机与构建环境自动探测"
         />
-        <div className="pw-field-hint">建议保持默认内核 `6.6.102-5.2.an23.x86_64`，除非你正在验证其他目标环境。</div>
+        <div className="pw-field-hint">通常建议留空，系统会优先根据当前运行机和可用构建环境自动绑定目标内核；只有明确需要覆盖时再手工填写。</div>
       </div>
       <div className="pw-field">
         <label htmlFor="profile">运行档位</label>

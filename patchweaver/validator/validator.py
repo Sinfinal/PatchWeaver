@@ -1,4 +1,4 @@
-"""验证编排器。"""
+"""验证编排器"""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from patchweaver.validator.smoke_tester import SmokeTester
 
 
 class Validator:
-    """负责组织静态检查、动态验证和语义守卫。"""
+    """负责组织静态检查、动态验证和语义守卫"""
 
     def __init__(
         self,
@@ -34,7 +34,7 @@ class Validator:
         regression_tester: RegressionTester | None = None,
         selftest_runner: SelftestRunner | None = None,
     ) -> None:
-        """绑定验证阶段依赖。"""
+        """绑定验证阶段依赖"""
 
         self.verify_config = verify_config
         self.build_config = build_config
@@ -47,7 +47,7 @@ class Validator:
         self.selftest_runner = selftest_runner or SelftestRunner()
 
     def empty_report(self) -> ValidationReport:
-        """返回一份默认验证报告。"""
+        """返回一份默认验证报告"""
 
         return ValidationReport(notes=["当前轮尚未执行验证。"])
 
@@ -62,7 +62,7 @@ class Validator:
         constraint_report: ConstraintReport | None = None,
         history_attempts: list[AttemptRecord] | None = None,
     ) -> tuple[ValidationReport, dict[str, Path]]:
-        """执行第三期验证链，并返回报告及产物路径。"""
+        """执行第三期验证链，并返回报告及产物路径"""
 
         logs_dir = attempt_dir / "logs"
         artifacts_dir = attempt_dir / "artifacts"
@@ -147,7 +147,7 @@ class Validator:
 
         semantic_guard_enabled = self.verify_config is None or self.verify_config.enable_semantic_guard
         if semantic_guard_enabled:
-            # 守卫放在动态验证结果之后执行，这样它可以区分模块问题和更像语义偏移的问题。
+            # 守卫放在动态验证结果之后执行，这样它可以区分模块问题和更像语义偏移的问题
             semantic_guard_result = self.semantic_guard.run(
                 semantic_precheck=semantic_precheck_result,
                 rewritten_patch_path=rewritten_patch_path,
@@ -303,7 +303,7 @@ class Validator:
         }
 
     def _resolve_risk_level(self, constraint_report: ConstraintReport | None) -> str:
-        """根据约束报告整理风险等级。"""
+        """根据约束报告整理风险等级"""
 
         if constraint_report is None:
             return "low"
@@ -314,7 +314,7 @@ class Validator:
         return "low"
 
     def _resolve_validation_intensity(self, risk_level: str) -> str:
-        """按风险等级返回验证强度。"""
+        """按风险等级返回验证强度"""
 
         return {
             "low": "light",
@@ -332,7 +332,7 @@ class Validator:
         regression_result: ValidationItem,
         semantic_guard_result: ValidationItem,
     ) -> str:
-        """折叠整个验证阶段的总状态。"""
+        """折叠整个验证阶段的总状态"""
 
         items = [load_result, unload_result, smoke_result, selftest_result, regression_result, semantic_guard_result]
         if any(item.status == "failed" for item in items):
@@ -344,12 +344,12 @@ class Validator:
         return "pending"
 
     def _pending_item(self, detail: str) -> ValidationItem:
-        """构造统一的待执行验证项。"""
+        """构造统一的待执行验证项"""
 
         return ValidationItem(status="pending", ok=False, detail=detail)
 
     def _attach_log_path(self, item: ValidationItem, path: Path) -> ValidationItem:
-        """把日志路径补回验证项。"""
+        """把日志路径补回验证项"""
 
         return item.model_copy(update={"log_path": str(path)})
 
@@ -362,7 +362,7 @@ class Validator:
         result: ValidationItem,
         risk_level: str,
     ) -> ValidationMatrixEntry:
-        """把单项验证结果折叠成矩阵条目。"""
+        """把单项验证结果折叠成矩阵条目"""
 
         return ValidationMatrixEntry(
             name=name,
@@ -375,7 +375,7 @@ class Validator:
         )
 
     def _ensure_log_file(self, *, item: ValidationItem, path: Path) -> None:
-        """在验证项未真正执行时，也保留一份占位日志。"""
+        """在验证项未真正执行时，也保留一份占位日志"""
 
         if path.exists():
             return

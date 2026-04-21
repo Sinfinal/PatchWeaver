@@ -1,4 +1,4 @@
-"""任务查询与动作执行服务。"""
+"""任务查询与动作执行服务"""
 
 from __future__ import annotations
 
@@ -8,18 +8,19 @@ from typing import Any
 
 from patchweaver.api.deps import ApiContext
 from patchweaver.config.resolver import resolve_runtime
-from patchweaver.harness.attempt_engine import AttemptEngine
 from patchweaver.harness.workspace_guard import WorkspaceGuard
 from patchweaver.models.task import TaskContext
 from patchweaver.observability.run_logger import RunLogger
+from patchweaver.runtime_inspector import resolve_task_binding
 from patchweaver.storage.sqlite import connect_sqlite
+from patchweaver.utils.path_policy import relativize_payload, to_project_relative
 
 
 class TaskQueryService:
-    """负责任务列表、详情和动作入口。"""
+    """负责任务列表、详情和动作入口"""
 
     def __init__(self, context: ApiContext) -> None:
-        """保存 API 共享上下文。"""
+        """保存 API 共享上下文"""
 
         self.context = context
         self.run_logger = RunLogger(context.project_root, context.logging_config)
@@ -33,8 +34,7 @@ class TaskQueryService:
         failure_type: str | None = None,
         target_kernel: str | None = None,
     ) -> dict[str, Any]:
-        """按筛选条件读取任务列表。"""
-
+        """按筛选条件读取任务列表"""
         conditions: list[str] = []
         parameters: list[Any] = []
         if cve_id:
@@ -59,8 +59,9 @@ class TaskQueryService:
             parameters.append(failure_type)
 
         where_sql = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
         sql = f"""
-        SELECT t.task_id, t.cve_id, t.target_kernel, t.status, t.current_attempt, t.max_attempts,
+        SELECT t.task_id, t.cve_id, t.target_kernel, t.target_kernel_source, t.status, t.current_attempt, t.max_attempts,
                t.workspace_dir, t.created_at, t.updated_at,
                (
                    SELECT fr.failure_type
@@ -96,6 +97,7 @@ class TaskQueryService:
                 "task_id": row["task_id"],
                 "cve_id": row["cve_id"],
                 "target_kernel": row["target_kernel"],
+                "target_kernel_source": row["target_kernel_source"],
                 "status": row["status"],
                 "current_attempt": row["current_attempt"],
                 "max_attempts": row["max_attempts"],
@@ -119,7 +121,7 @@ class TaskQueryService:
         max_attempts: int | None = None,
         note: str | None = None,
     ) -> dict[str, Any]:
-        """创建任务并准备工作区骨架。"""
+        """创建任务并准备工作区骨架"""
 
         runtime = resolve_runtime(
             project_root=self.context.project_root,
@@ -127,28 +129,30 @@ class TaskQueryService:
             cli_max_attempts=max_attempts,
         )
         task_repo = self.context.task_repo
-        attempt_repo = self.context.attempt_repo
         artifact_repo = self.context.artifact_repo
 
         final_task_id = task_repo.next_task_id()
+        target_kernel_value, target_kernel_source, machine_profile = resolve_task_binding(
+            build_config=self.context.build_config,
+            configured_default_kernel=runtime.default_kernel,
+            cli_target_kernel=target_kernel,
+        )
         task = TaskContext(
             task_id=final_task_id,
             cve_id=cve_id,
-            target_kernel=target_kernel or runtime.default_kernel,
+            target_kernel=target_kernel_value,
+            target_kernel_source=target_kernel_source,
             profile_name=runtime.profile_name,
             status="created",
             max_attempts=runtime.max_attempts,
             current_attempt=0,
             workspace_dir=(runtime.workspace_root / final_task_id).resolve(),
+            machine_profile=machine_profile,
         )
 
-        workspace_guard = WorkspaceGuard(runtime.workspace_root)
+        workspace_guard = WorkspaceGuard(runtime.workspace_root, self.context.project_root)
         task_dir = workspace_guard.create_task_workspace(task)
-        workspace_guard.create_attempt_workspace(task_dir, 1)
         task_repo.create_task(task)
-
-        initial_state = AttemptEngine().create_initial_state(task_id=task.task_id, max_attempts=task.max_attempts)
-        attempt_repo.save_attempt_state(initial_state)
         artifact_repo.add_artifact(
             task_id=task.task_id,
             artifact_type="task_context",
@@ -156,14 +160,17 @@ class TaskQueryService:
             metadata={"summary": "任务上下文快照"},
         )
 
-        # Web 表单里的额外字段先单独留痕，后面做多用户和分组时还可以继续扩展。
+        # Web 表单里的额外字段先单独留痕，后面做多用户和分组时还可以继续扩展
+        workspace_guard.ensure_task_input_workspace(task_dir)
         request_path = task_dir / "input" / "task_request.json"
         request_payload = {
             "cve_id": cve_id,
             "target_kernel": task.target_kernel,
+            "target_kernel_source": task.target_kernel_source,
             "profile": profile,
             "max_attempts": task.max_attempts,
             "note": note,
+            "machine_profile": machine_profile.model_dump(mode="json"),
         }
         request_path.write_text(json.dumps(request_payload, ensure_ascii=False, indent=2), encoding="utf-8")
         artifact_repo.add_artifact(
@@ -178,21 +185,26 @@ class TaskQueryService:
             task_id=task.task_id,
             cve_id=task.cve_id,
             profile_name=task.profile_name,
+            target_kernel=task.target_kernel,
+            target_kernel_source=task.target_kernel_source,
         )
 
         return {
             "task": self._task_payload(task),
-            "prepared_attempt_dir": str(task_dir / "attempts" / "001"),
-            "request_path": str(request_path),
+            "next_attempt_dir": self._path(task_dir / "attempts" / "001"),
+            "prepared_attempt_dir": self._path(task_dir / "attempts" / "001"),
+            "request_path": self._path(request_path),
         }
 
     def get_task_detail(self, task_id: str) -> dict[str, Any]:
-        """返回任务详情页需要的聚合数据。"""
+        """返回任务详情页需要的聚合数据"""
 
         task = self.context.task_repo.get_task(task_id)
         if task is None:
             raise ValueError(f"未找到任务：{task_id}")
 
+        # 详情页是一个聚合视图
+        # 这里一次把 attempts、artifacts、最新失败和最新验证都拼出来
         attempts = self.context.attempt_repo.list_attempts(task_id)
         artifacts = self.context.artifact_repo.list_artifacts(task_id)
         latest_attempt = attempts[-1] if attempts else None
@@ -209,7 +221,9 @@ class TaskQueryService:
             latest_trace_path = attempt_dir / "trace" / "harness_trace.json"
             latest_rewrite_plan_path = attempt_dir / "rewrite" / "rewrite_plan.json"
 
-        replay = self.context.build_task_runner().replay_task(task_id) if attempts else {
+        # replay 会顺着 attempts、trace 和报告再做一次归并
+        # 没有尝试记录时直接给空结果，避免详情页首开就走一串无效读取
+        replay = relativize_payload(self.context.build_task_runner().replay_task(task_id), self.context.project_root) if attempts else {
             "command": "replay",
             "task_id": task_id,
             "latest_attempt_id": None,
@@ -225,13 +239,15 @@ class TaskQueryService:
         }
 
         return {
+            # task 是顶部摘要
+            # analysis、attempts、reports、replay 对应页面里的四块主视图
             "task": self._task_payload(task),
             "patch_bundle": self._load_json(task_dir / "input" / "patch_bundle.json"),
             "analysis": {
-                "semantic_card_path": str(task_dir / "analysis" / "semantic_card.json"),
-                "constraint_report_path": str(task_dir / "analysis" / "constraint_report.json"),
-                "context_bundle_path": str(task_dir / "analysis" / "context" / "context_bundle.json"),
-                "analysis_trace_path": str(task_dir / "analysis" / "trace" / "analysis_trace.json"),
+                "semantic_card_path": self._path(task_dir / "analysis" / "semantic_card.json"),
+                "constraint_report_path": self._path(task_dir / "analysis" / "constraint_report.json"),
+                "context_bundle_path": self._path(task_dir / "analysis" / "context" / "context_bundle.json"),
+                "analysis_trace_path": self._path(task_dir / "analysis" / "trace" / "analysis_trace.json"),
             },
             "attempts": [self._attempt_payload(task_dir, item) for item in attempts],
             "latest_failure": self._load_json(latest_failure_path),
@@ -240,17 +256,17 @@ class TaskQueryService:
             "latest_rewrite_plan": self._load_json(latest_rewrite_plan_path),
             "evaluation_summary": self._load_json(task_dir / "reports" / "evaluation_summary.json"),
             "reports": {
-                "json_path": str(task_dir / "reports" / "report.json"),
-                "md_path": str(task_dir / "reports" / "report.md"),
-                "evaluation_summary_path": str(task_dir / "reports" / "evaluation_summary.json"),
+                "json_path": self._path(task_dir / "reports" / "report.json"),
+                "md_path": self._path(task_dir / "reports" / "report.md"),
+                "evaluation_summary_path": self._path(task_dir / "reports" / "evaluation_summary.json"),
             },
             "report_closure": {
-                "report_json_path": str(task_dir / "reports" / "report.json"),
-                "report_md_path": str(task_dir / "reports" / "report.md"),
-                "build_log_path": str(latest_attempt.build_log_path) if latest_attempt and latest_attempt.build_log_path else None,
-                "validation_report_path": str(latest_validation_path) if latest_validation_path is not None else None,
-                "trace_path": str(latest_trace_path) if latest_trace_path is not None else None,
-                "workspace_dir": str(task_dir),
+                "report_json_path": self._path(task_dir / "reports" / "report.json"),
+                "report_md_path": self._path(task_dir / "reports" / "report.md"),
+                "build_log_path": self._path(latest_attempt.build_log_path) if latest_attempt and latest_attempt.build_log_path else None,
+                "validation_report_path": self._path(latest_validation_path) if latest_validation_path is not None else None,
+                "trace_path": self._path(latest_trace_path) if latest_trace_path is not None else None,
+                "workspace_dir": self._path(task_dir),
                 "closure_ok": bool(
                     (task_dir / "reports" / "report.json").exists()
                     and (task_dir / "reports" / "report.md").exists()
@@ -264,11 +280,13 @@ class TaskQueryService:
                 ),
             },
             "replay": replay,
+            # timeline 和 artifact_index 都是给前端直接展示用的
+            # 后端先把阶段完成情况和产物索引算好，页面层就不用再猜
             "timeline": self._build_timeline(task_dir, attempts),
             "artifact_index": [
                 {
                     "artifact_type": artifact.artifact_type,
-                    "artifact_path": str(artifact.artifact_path),
+                    "artifact_path": self._path(artifact.artifact_path),
                     "relative_path": self._relative_to_workspace(task_dir, artifact.artifact_path),
                     "summary": artifact.summary,
                 }
@@ -278,7 +296,7 @@ class TaskQueryService:
         }
 
     def analyze_task(self, task_id: str) -> dict[str, Any]:
-        """触发分析阶段。"""
+        """触发分析阶段"""
 
         task = self._require_task(task_id)
         payload = self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).analyze_task(task_id)
@@ -286,7 +304,7 @@ class TaskQueryService:
         return payload
 
     def run_task(self, task_id: str) -> dict[str, Any]:
-        """执行单轮尝试。"""
+        """执行单轮尝试"""
 
         task = self._require_task(task_id)
         payload = self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).run_task(task_id)
@@ -294,7 +312,7 @@ class TaskQueryService:
         return payload
 
     def report_task(self, task_id: str) -> dict[str, Any]:
-        """生成最终报告。"""
+        """生成最终报告"""
 
         task = self._require_task(task_id)
         payload = self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).build_report(task_id)
@@ -302,7 +320,7 @@ class TaskQueryService:
         return payload
 
     def replay_task(self, task_id: str) -> dict[str, Any]:
-        """读取回放信息。"""
+        """读取回放信息"""
 
         task = self._require_task(task_id)
         payload = self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).replay_task(task_id)
@@ -310,23 +328,25 @@ class TaskQueryService:
         return payload
 
     def _task_payload(self, task: TaskContext) -> dict[str, Any]:
-        """把任务对象转成接口返回结构。"""
+        """把任务对象转成接口返回结构"""
 
         return {
             "task_id": task.task_id,
             "cve_id": task.cve_id,
             "target_kernel": task.target_kernel,
+            "target_kernel_source": task.target_kernel_source,
             "profile_name": task.profile_name,
             "status": task.status,
             "current_attempt": task.current_attempt,
             "max_attempts": task.max_attempts,
-            "workspace_dir": str(task.workspace_dir),
+            "workspace_dir": self._path(task.workspace_dir),
+            "machine_profile": task.machine_profile.model_dump(mode="json") if task.machine_profile is not None else None,
             "created_at": task.created_at.isoformat(),
             "updated_at": task.updated_at.isoformat(),
         }
 
     def _require_task(self, task_id: str) -> TaskContext:
-        """读取任务对象，不存在时直接报错。"""
+        """读取任务对象，不存在时直接报错"""
 
         task = self.context.task_repo.get_task(task_id)
         if task is None:
@@ -334,7 +354,7 @@ class TaskQueryService:
         return task
 
     def _attempt_payload(self, task_dir: Path, attempt) -> dict[str, Any]:
-        """整理单轮尝试的常用路径和状态。"""
+        """整理单轮尝试的常用路径和状态"""
 
         attempt_dir = task_dir / "attempts" / f"{attempt.attempt_no:03d}"
         return {
@@ -342,22 +362,22 @@ class TaskQueryService:
             "attempt_no": attempt.attempt_no,
             "status": attempt.status,
             "failure_type": attempt.failure_type,
-            "build_log_path": str(attempt.build_log_path) if attempt.build_log_path else None,
-            "module_path": str(attempt.module_path) if attempt.module_path else None,
-            "rewritten_patch_path": str(attempt.rewritten_patch_path) if attempt.rewritten_patch_path else None,
+            "build_log_path": self._path(attempt.build_log_path) if attempt.build_log_path else None,
+            "module_path": self._path(attempt.module_path) if attempt.module_path else None,
+            "rewritten_patch_path": self._path(attempt.rewritten_patch_path) if attempt.rewritten_patch_path else None,
             "started_at": attempt.started_at.isoformat(),
             "finished_at": attempt.finished_at.isoformat() if attempt.finished_at else None,
-            "failure_record_path": str(attempt_dir / "logs" / "failure_record.json"),
-            "validation_report_path": str(attempt_dir / "artifacts" / "validation_report.json"),
-            "validation_matrix_path": str(attempt_dir / "artifacts" / "validation_matrix.json"),
-            "semantic_guard_path": str(attempt_dir / "artifacts" / "semantic_guard.json"),
-            "planning_hints_path": str(attempt_dir / "rewrite" / "planning_hints.json"),
-            "harness_trace_path": str(attempt_dir / "trace" / "harness_trace.json"),
-            "rewrite_plan_path": str(attempt_dir / "rewrite" / "rewrite_plan.json"),
+            "failure_record_path": self._path(attempt_dir / "logs" / "failure_record.json"),
+            "validation_report_path": self._path(attempt_dir / "artifacts" / "validation_report.json"),
+            "validation_matrix_path": self._path(attempt_dir / "artifacts" / "validation_matrix.json"),
+            "semantic_guard_path": self._path(attempt_dir / "artifacts" / "semantic_guard.json"),
+            "planning_hints_path": self._path(attempt_dir / "rewrite" / "planning_hints.json"),
+            "harness_trace_path": self._path(attempt_dir / "trace" / "harness_trace.json"),
+            "rewrite_plan_path": self._path(attempt_dir / "rewrite" / "rewrite_plan.json"),
         }
 
     def _load_json(self, path: Path | None) -> dict[str, Any] | None:
-        """安全读取 JSON 文件。"""
+        """安全读取 JSON 文件"""
 
         if path is None or not path.exists():
             return None
@@ -367,7 +387,7 @@ class TaskQueryService:
             return None
 
     def _relative_to_workspace(self, workspace_dir: Path, path: Path) -> str:
-        """把产物绝对路径转成相对工作区路径。"""
+        """把产物绝对路径转成相对工作区路径"""
 
         resolved = Path(path).resolve()
         try:
@@ -376,7 +396,7 @@ class TaskQueryService:
             return str(resolved)
 
     def _build_timeline(self, task_dir: Path, attempts: list[Any]) -> list[dict[str, Any]]:
-        """根据产物落盘情况生成任务详情页的阶段时间线。"""
+        """根据产物落盘情况生成任务详情页的阶段时间线"""
 
         latest_attempt = attempts[-1] if attempts else None
         attempt_dir = task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" if latest_attempt else None
@@ -398,7 +418,12 @@ class TaskQueryService:
                 {
                     "stage": stage_name,
                     "status": "completed" if completed else "pending",
-                    "path": str(marker) if marker else None,
+                    "path": self._path(marker) if marker else None,
                 }
             )
         return timeline
+
+    def _path(self, value: Path | None) -> str | None:
+        """把项目内路径转换成相对源码根目录表达"""
+
+        return to_project_relative(self.context.project_root, value)

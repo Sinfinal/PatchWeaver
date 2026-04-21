@@ -1,4 +1,4 @@
-"""配方记忆。"""
+"""配方记忆"""
 
 from __future__ import annotations
 
@@ -13,10 +13,10 @@ from patchweaver.memory.repository import MemoryRepository
 
 
 class RecipeMemory:
-    """负责配方经验的记录与召回。"""
+    """负责配方经验的记录与召回"""
 
     def __init__(self, repository: MemoryRepository) -> None:
-        """绑定底层仓库。"""
+        """绑定底层仓库"""
 
         self.repository = repository
 
@@ -30,7 +30,7 @@ class RecipeMemory:
         failure_record: FailureRecord | None = None,
         validation_report: ValidationReport | None = None,
     ) -> RecipeMemoryEntry:
-        """记录一次 recipe 使用结果。"""
+        """记录一次 recipe 使用结果"""
 
         entries = self.repository.load_recipe_entries()
         key = (plan.selected_recipe or "unknown", tuple(sorted(plan.rule_hits)), tuple(sorted(plan.selected_primitives)))
@@ -81,7 +81,7 @@ class RecipeMemory:
         return matched
 
     def recall(self, *, risk_types: list[str] | None = None, limit: int = 3) -> list[str]:
-        """按风险类型召回 recipe 经验。"""
+        """按风险类型召回 recipe 经验"""
 
         entries = self.repository.load_recipe_entries()
         wanted = {item for item in risk_types or [] if item}
@@ -101,14 +101,14 @@ class RecipeMemory:
         return [self._format(entry) for entry in ranked[:limit]]
 
     def snapshot(self, *, limit: int = 20) -> list[dict[str, object]]:
-        """返回最近若干条配方经验快照。"""
+        """返回最近若干条配方经验快照"""
 
         entries = self.repository.load_recipe_entries()
         ordered = sorted(entries, key=lambda item: item.updated_at, reverse=True)
         return [entry.model_dump(mode="json") for entry in ordered[:limit]]
 
     def _format(self, entry: RecipeMemoryEntry) -> str:
-        """格式化单条配方经验。"""
+        """格式化单条配方经验"""
 
         success_rate = entry.successes / entry.attempts if entry.attempts else 0.0
         return (
@@ -123,7 +123,7 @@ class RecipeMemory:
         failure_record: FailureRecord | None,
         validation_report: ValidationReport | None,
     ) -> str:
-        """整理最新结果摘要。"""
+        """整理最新结果摘要"""
 
         if validation_report is not None and validation_report.semantic_guard_result.status == "failed":
             return f"验证阶段拦截：{validation_report.semantic_guard_result.detail}"

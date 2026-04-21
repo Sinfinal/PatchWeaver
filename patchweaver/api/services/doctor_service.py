@@ -1,4 +1,4 @@
-"""Web 控制台使用的环境诊断服务。"""
+"""Web 控制台使用的环境诊断服务"""
 
 from __future__ import annotations
 
@@ -10,20 +10,22 @@ from typing import Any
 
 from patchweaver.api.deps import ApiContext
 from patchweaver.builder.orchestrator import BuildOrchestrator
+from patchweaver.runtime_inspector import collect_machine_profile
 from patchweaver.skills.source_policy import resolve_skill_roots
+from patchweaver.utils.path_policy import to_project_relative
 
 
 class DoctorApiService:
-    """负责生成并缓存 Web 端使用的诊断结果。"""
+    """负责生成并缓存 Web 端使用的诊断结果"""
 
     def __init__(self, context: ApiContext) -> None:
-        """保存 API 共享上下文。"""
+        """保存 API 共享上下文"""
 
         self.context = context
         self.cache_path = (context.runtime.data_dir / "traces" / "doctor_latest.json").resolve()
 
     def get_report(self, *, refresh: bool = False) -> dict[str, Any]:
-        """读取最近一次诊断结果，必要时重新生成。"""
+        """读取最近一次诊断结果，必要时重新生成"""
 
         if not refresh and self.cache_path.exists():
             return json.loads(self.cache_path.read_text(encoding="utf-8"))
@@ -32,10 +34,11 @@ class DoctorApiService:
         return payload
 
     def _build_report(self) -> dict[str, Any]:
-        """整理运行时、依赖和构建环境检查结果。"""
+        """整理运行时、依赖和构建环境检查结果"""
 
         runtime = self.context.runtime
         build_env = BuildOrchestrator(self.context.build_config).probe_environment()
+        machine_profile = collect_machine_profile(self.context.build_config, build_env=build_env)
         checks: list[dict[str, Any]] = []
 
         for module_name, label in {
@@ -59,13 +62,13 @@ class DoctorApiService:
             "logging.yaml",
         ]:
             path = runtime.config_dir / filename
-            checks.append(self._check("config_file", filename, f"配置文件 `{filename}`", path.exists(), str(path)))
+            checks.append(self._check("config_file", filename, f"配置文件 `{filename}`", path.exists(), self._path(path)))
 
         checks.extend(
             [
-                self._check("filesystem", "workspace_root", "工作区目录", runtime.workspace_root.exists(), str(runtime.workspace_root)),
-                self._check("filesystem", "database_path", "SQLite 数据库", runtime.database_path.exists(), str(runtime.database_path)),
-                self._check("filesystem", "manifest_dir", "Manifest 目录", runtime.manifest_dir.exists(), str(runtime.manifest_dir)),
+                self._check("filesystem", "workspace_root", "工作区目录", runtime.workspace_root.exists(), self._path(runtime.workspace_root)),
+                self._check("filesystem", "database_path", "SQLite 数据库", runtime.database_path.exists(), self._path(runtime.database_path)),
+                self._check("filesystem", "manifest_dir", "Manifest 目录", runtime.manifest_dir.exists(), self._path(runtime.manifest_dir)),
             ]
         )
 
@@ -76,7 +79,7 @@ class DoctorApiService:
                     source_layer,
                     f"Skill 目录 `{source_layer}`",
                     root.exists(),
-                    str(root),
+                    self._path(root),
                     failed_status="warn",
                 )
             )
@@ -89,7 +92,7 @@ class DoctorApiService:
                     raw_dir,
                     f"Bootstrap 目录 `{raw_dir}`",
                     bootstrap_dir.exists(),
-                    str(bootstrap_dir),
+                    self._path(bootstrap_dir),
                     failed_status="warn",
                 )
             )
@@ -105,21 +108,26 @@ class DoctorApiService:
         return {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "runtime": {
-                "project_root": str(runtime.project_root),
-                "workspace_root": str(runtime.workspace_root),
-                "database_path": str(runtime.database_path),
-                "manifest_dir": str(runtime.manifest_dir),
+                "project_root": self._path(runtime.project_root),
+                "workspace_root": self._path(runtime.workspace_root),
+                "database_path": self._path(runtime.database_path),
+                "manifest_dir": self._path(runtime.manifest_dir),
                 "default_kernel": runtime.default_kernel,
+                "detected_target_kernel": machine_profile.build_target_kernel,
+                "detected_target_kernel_source": machine_profile.build_target_kernel_source,
+                "machine_kernel": machine_profile.machine_kernel,
+                "machine_arch": machine_profile.machine_arch,
                 "max_attempts": runtime.max_attempts,
                 "python_version": platform.python_version(),
             },
+            "machine_profile": machine_profile.model_dump(mode="json"),
             "build_env": build_env,
             "checks": checks,
             "summary": summary,
         }
 
     def _build_backend_checks(self, build_env: dict[str, Any]) -> list[dict[str, Any]]:
-        """把构建环境快照折叠成一组统一检查项。"""
+        """把构建环境快照折叠成一组统一检查项"""
 
         checks = [
             self._check("build_backend", "backend", "构建后端", True, build_env["backend"]),
@@ -136,7 +144,7 @@ class DoctorApiService:
                 "selected_source_dir",
                 "当前运行机源码目录",
                 bool(build_env.get("selected_source_ok")),
-                str(build_env.get("selected_source_dir") or "未找到"),
+                self._path_text(build_env.get("selected_source_dir")) or "未找到",
                 failed_status="error",
             ),
             self._check(
@@ -144,7 +152,7 @@ class DoctorApiService:
                 "config_path",
                 "当前运行机内核配置文件",
                 bool(build_env.get("config_ok")),
-                str(build_env.get("config_path") or "未找到"),
+                self._path_text(build_env.get("config_path")) or "未找到",
                 failed_status="error",
             ),
             self._check(
@@ -152,7 +160,7 @@ class DoctorApiService:
                 "vmlinux_path",
                 "当前运行机 vmlinux 文件",
                 bool(build_env.get("vmlinux_ok")),
-                str(build_env.get("vmlinux_path") or "未找到"),
+                self._path_text(build_env.get("vmlinux_path")) or "未找到",
                 failed_status="error",
             ),
         ]
@@ -168,7 +176,7 @@ class DoctorApiService:
         *,
         failed_status: str = "warn",
     ) -> dict[str, Any]:
-        """构造单条诊断项。"""
+        """构造单条诊断项"""
 
         return {
             "category": category,
@@ -178,3 +186,13 @@ class DoctorApiService:
             "status": "ok" if ok else failed_status,
             "detail": detail,
         }
+
+    def _path(self, value) -> str | None:
+        """把项目内路径转换成相对源码根目录表达"""
+
+        return to_project_relative(self.context.project_root, value)
+
+    def _path_text(self, value: str | None) -> str | None:
+        """兼容字符串形式的路径字段"""
+
+        return to_project_relative(self.context.project_root, value)

@@ -1,4 +1,4 @@
-"""Skill 路由。"""
+"""Skill 路由"""
 
 from __future__ import annotations
 
@@ -12,10 +12,10 @@ from patchweaver.skills.subagent_policy import SubagentPolicy
 
 
 class SkillRouter:
-    """根据阶段选择最合适的 skill。"""
+    """根据阶段选择最合适的 skill"""
 
     def __init__(self, project_root: Path, *, skills_config: SkillsConfig | None = None) -> None:
-        """创建一个面向当前项目的 skill 路由器。"""
+        """创建一个面向当前项目的 skill 路由器"""
 
         self.registry = SkillRegistry(project_root)
         self.skills_config = skills_config or load_skills_config(project_root)
@@ -27,7 +27,7 @@ class SkillRouter:
         )
 
     def route(self, stage_name: str) -> SkillRouteDecision:
-        """为指定阶段生成一份路由决策。"""
+        """为指定阶段生成一份路由决策"""
 
         if self.active_profile is not None and not self.active_profile.enable_skill_router:
             return SkillRouteDecision(
@@ -42,6 +42,8 @@ class SkillRouter:
                 route_source="profile_disabled",
             )
 
+        # 当前实现先按 registry 的阶段命中结果取第一优先级
+        # 后面即使要扩成多指标排序，也可以继续沿用这个决策出口
         manifests = self.registry.find_by_stage(stage_name)
         candidate_names = [manifest.skill_name for manifest in manifests]
         selected_manifest = manifests[0] if manifests else None
@@ -57,6 +59,8 @@ class SkillRouter:
         if self.active_profile is not None:
             contract_summary.append(f"调度模式: {self.active_profile.preferred_dispatch}")
         if selected_manifest is not None and self.subagent_policy.allow(stage_name):
+            # 子代理是否允许不是只看 skill 自身声明
+            # 还要再过一层全局 profile 策略，避免阶段边界被绕开
             contract_summary.append(f"只读子代理并发上限: {self.subagent_policy.max_parallel}")
         return SkillRouteDecision(
             stage_name=stage_name,
@@ -75,19 +79,19 @@ class SkillRouter:
         )
 
     def _fallback_dispatch(self) -> str:
-        """返回当前 skill profile 的回退模式。"""
+        """返回当前 skill profile 的回退模式"""
 
         if self.active_profile is None:
             return "direct_worker"
         return self.active_profile.fallback_dispatch
 
     def _rejected_reason(self, manifest: SkillManifest) -> str:
-        """生成未选中 skill 的简要说明。"""
+        """生成未选中 skill 的简要说明"""
 
         return f"{manifest.skill_name}: 优先级更低或来源层级靠后。"
 
     def _contract_summary(self, manifest: SkillManifest) -> list[str]:
-        """整理选中 skill 的输入输出契约摘要。"""
+        """整理选中 skill 的输入输出契约摘要"""
 
         summary: list[str] = []
         if manifest.input_contract:

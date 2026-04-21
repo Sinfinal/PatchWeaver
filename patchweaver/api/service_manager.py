@@ -1,4 +1,4 @@
-"""PatchWeaver Web/API 常驻服务管理。"""
+"""PatchWeaver Web/API 常驻服务管理"""
 
 from __future__ import annotations
 
@@ -17,13 +17,13 @@ DEFAULT_API_SERVICE_NAME = "patchweaver-web"
 
 
 def systemd_available() -> bool:
-    """判断当前环境是否可用 systemd。"""
+    """判断当前环境是否可用 systemd"""
 
     return platform.system() == "Linux" and shutil.which("systemctl") is not None
 
 
 def health_probe_base_url(host: str, port: int) -> str:
-    """把监听地址转换成适合本机探活的 URL。"""
+    """把监听地址转换成适合本机探活的 URL"""
 
     probe_host = host
     if host in {"0.0.0.0", "::", "[::]"}:
@@ -39,7 +39,7 @@ def render_systemd_unit(
     host: str,
     port: int,
 ) -> str:
-    """生成 systemd unit 内容。"""
+    """生成 systemd unit 内容"""
 
     project_root_text = project_root.as_posix()
     python_text = python_executable.as_posix()
@@ -83,7 +83,7 @@ def install_systemd_service(
     enable: bool,
     start: bool,
 ) -> dict[str, Any]:
-    """在 Linux 上安装并可选启用 PatchWeaver Web/API 服务。"""
+    """在 Linux 上安装并可选启用 PatchWeaver Web/API 服务"""
 
     if platform.system() != "Linux":
         raise RuntimeError("当前环境不是 Linux，无法安装 systemd 服务。")
@@ -127,7 +127,7 @@ def wait_for_api_ready(
     timeout_sec: float = 15.0,
     interval_sec: float = 0.5,
 ) -> dict[str, Any]:
-    """等待 API 服务健康检查通过。"""
+    """等待 API 服务健康检查通过"""
 
     health_url = f"{health_probe_base_url(host, port)}/healthz"
     deadline = time.monotonic() + timeout_sec

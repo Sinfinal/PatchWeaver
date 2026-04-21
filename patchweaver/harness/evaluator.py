@@ -1,4 +1,4 @@
-"""阶段评测汇总。"""
+"""阶段评测汇总"""
 
 from __future__ import annotations
 
@@ -11,10 +11,10 @@ from patchweaver.models.harness import ArtifactRef
 
 
 class Evaluator:
-    """负责输出任务级和夹具级评测摘要。"""
+    """负责输出任务级和夹具级评测摘要"""
 
     def summarize(self, *, attempts: list[AttemptRecord], artifacts: list[ArtifactRef]) -> dict[str, object]:
-        """生成任务级评测摘要。"""
+        """生成任务级评测摘要"""
 
         total_attempts = len(attempts)
         built_attempts = sum(1 for item in attempts if item.status == "built")
@@ -45,7 +45,7 @@ class Evaluator:
         fixtures: list[dict[str, Any]],
         results: list[dict[str, Any]],
     ) -> dict[str, object]:
-        """汇总一组固定样例的阶段结果。"""
+        """汇总一组固定样例的阶段结果"""
 
         matched_results = {
             item["fixture_id"]: item
@@ -103,7 +103,7 @@ class Evaluator:
         attempts: list[AttemptRecord],
         task_dir: Path,
     ) -> dict[str, object]:
-        """整理同一任务多轮尝试的回放对比摘要。"""
+        """整理同一任务多轮尝试的回放对比摘要"""
 
         attempt_items: list[dict[str, object]] = []
         for item in attempts:

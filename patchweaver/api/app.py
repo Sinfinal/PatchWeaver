@@ -1,4 +1,4 @@
-"""PatchWeaver FastAPI 应用入口。"""
+"""PatchWeaver FastAPI 应用入口"""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from patchweaver.config.loader import discover_project_root
 
 
 def create_app() -> FastAPI:
-    """创建 FastAPI 应用实例。"""
+    """创建 FastAPI 应用实例"""
 
     web_dist_dir = _resolve_web_dist_dir()
     app = FastAPI(
@@ -44,13 +44,13 @@ def create_app() -> FastAPI:
 
     @app.get("/healthz", response_model=HealthResponse)
     def healthz() -> HealthResponse:
-        """返回最小健康检查结果。"""
+        """返回最小健康检查结果"""
 
         return HealthResponse(status="ok", version=__version__)
 
     @app.get("/")
     def index() -> RedirectResponse:
-        """默认优先跳转到 Web 控制台；若前端未构建则回退到接口文档。"""
+        """默认优先跳转到 Web 控制台；若前端未构建则回退到接口文档"""
 
         if web_dist_dir.exists():
             return RedirectResponse(url="/console/")
@@ -61,14 +61,14 @@ def create_app() -> FastAPI:
 
 
 def _resolve_web_dist_dir() -> Path:
-    """返回前端构建产物目录。"""
+    """返回前端构建产物目录"""
 
     project_root = discover_project_root()
     return (project_root / "web" / "dist").resolve()
 
 
 def _mount_web_dist(app: FastAPI, dist_dir: Path | None = None) -> None:
-    """如果前端已经构建，则把静态资源挂到 /console。"""
+    """如果前端已经构建，则把静态资源挂到 /console"""
 
     dist_dir = dist_dir or _resolve_web_dist_dir()
     if not dist_dir.exists():

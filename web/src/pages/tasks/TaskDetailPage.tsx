@@ -172,6 +172,18 @@ export function TaskDetailPage(): JSX.Element {
             <div className="pw-kv-value">{shortenPath(detail.task.workspace_dir)}</div>
           </div>
           <div className="pw-kv-item">
+            <span className="pw-kv-label">目标内核来源</span>
+            <div className="pw-kv-value">{detail.task.target_kernel_source ?? "未记录"}</div>
+          </div>
+          <div className="pw-kv-item">
+            <span className="pw-kv-label">当前运行机内核</span>
+            <div className="pw-kv-value">{detail.task.machine_profile?.machine_kernel ?? "未记录"}</div>
+          </div>
+          <div className="pw-kv-item">
+            <span className="pw-kv-label">构建目标内核</span>
+            <div className="pw-kv-value">{detail.task.machine_profile?.build_target_kernel ?? "未记录"}</div>
+          </div>
+          <div className="pw-kv-item">
             <span className="pw-kv-label">创建时间</span>
             <div className="pw-kv-value">{formatTime(detail.task.created_at)}</div>
           </div>
@@ -181,7 +193,7 @@ export function TaskDetailPage(): JSX.Element {
           </div>
           <div className="pw-kv-item">
             <span className="pw-kv-label">工作区状态</span>
-            <div className="pw-kv-value">{detail.workspace_exists ? "已生成" : "缺失"}</div>
+            <div className="pw-kv-value">{detail.workspace_exists ? "任务根目录已生成，阶段目录按需创建" : "缺失"}</div>
           </div>
         </div>
       </SectionCard>

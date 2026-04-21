@@ -1,8 +1,10 @@
-"""Patch 获取服务骨架。"""
+"""Patch 获取服务骨架"""
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any
 
 from patchweaver.models.patch import PatchBundle
 from patchweaver.models.task import TaskContext
@@ -10,17 +12,31 @@ from patchweaver.retriever.repair_chain import RepairChainResolver
 
 
 class RetrieverService:
-    """负责组织 CVE 与补丁来源的检索流程。"""
+    """负责组织 CVE 与补丁来源的检索流程"""
 
     def __init__(self) -> None:
-        """初始化修复链路解析器。"""
+        """初始化修复链路解析器"""
 
         self.repair_chain = RepairChainResolver()
+        self.last_fetch_trace_path: Path | None = None
 
     def fetch_patch_bundle(self, *, task: TaskContext, raw_patch_path: Path) -> PatchBundle:
-        """生成真实来源链驱动的 PatchBundle。"""
+        """生成真实来源链驱动的 PatchBundle"""
 
-        chain = self.repair_chain.resolve(task.cve_id)
+        trace_path = raw_patch_path.parent.parent / "analysis" / "trace" / "source_fetch_trace.json"
+        self.last_fetch_trace_path = None
+
+        try:
+            chain = self.repair_chain.resolve(task.cve_id)
+        except Exception as exc:
+            self._write_fetch_trace(trace_path, self.repair_chain.latest_fetch_trace())
+            if self.last_fetch_trace_path is not None:
+                raise ValueError(
+                    f"{exc} 来源抓取轨迹已写入 {self.last_fetch_trace_path.as_posix()}"
+                ) from exc
+            raise
+
+        self._write_fetch_trace(trace_path, chain.get("fetch_trace"))
         raw_patch_path.parent.mkdir(parents=True, exist_ok=True)
         raw_patch_path.write_text(str(chain["raw_patch_text"]), encoding="utf-8")
         return PatchBundle(
@@ -33,3 +49,13 @@ class RetrieverService:
             raw_patch_path=raw_patch_path,
             source_evidence=list(chain["source_evidence"]),
         )
+
+    def _write_fetch_trace(self, trace_path: Path, payload: Any) -> None:
+        """把来源抓取轨迹固定落盘，便于失败后排障"""
+
+        if not isinstance(payload, dict) or not payload:
+            return
+
+        trace_path.parent.mkdir(parents=True, exist_ok=True)
+        trace_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        self.last_fetch_trace_path = trace_path

@@ -1,4 +1,4 @@
-"""失败记忆。"""
+"""失败记忆"""
 
 from __future__ import annotations
 
@@ -10,10 +10,10 @@ from patchweaver.memory.repository import MemoryRepository
 
 
 class FailureMemory:
-    """负责失败经验的记录与召回。"""
+    """负责失败经验的记录与召回"""
 
     def __init__(self, repository: MemoryRepository) -> None:
-        """绑定底层仓库。"""
+        """绑定底层仓库"""
 
         self.repository = repository
 
@@ -27,7 +27,7 @@ class FailureMemory:
         recipe_name: str | None = None,
         candidate_id: str | None = None,
     ) -> FailureMemoryEntry | None:
-        """写入一次失败经验。"""
+        """写入一次失败经验"""
 
         if failure_record.failure_type in {"none", "", None}:
             return None
@@ -57,7 +57,7 @@ class FailureMemory:
         keywords: list[str] | None = None,
         limit: int = 3,
     ) -> list[str]:
-        """按失败类型或关键字召回经验摘要。"""
+        """按失败类型或关键字召回经验摘要"""
 
         entries = self.repository.load_failure_entries()
         wanted_types = {item for item in failure_types or [] if item}
@@ -79,20 +79,20 @@ class FailureMemory:
         return [self._format(entry) for _, entry in ranked[:limit]]
 
     def snapshot(self, *, limit: int = 20) -> list[dict[str, object]]:
-        """返回最近若干条失败经验快照。"""
+        """返回最近若干条失败经验快照"""
 
         entries = self.repository.load_failure_entries()
         ordered = sorted(entries, key=lambda item: item.created_at, reverse=True)
         return [entry.model_dump(mode="json") for entry in ordered[:limit]]
 
     def _format(self, entry: FailureMemoryEntry) -> str:
-        """格式化单条经验。"""
+        """格式化单条经验"""
 
         recipe = f"，最近关联 recipe: {entry.recipe_name}" if entry.recipe_name else ""
         return f"[FailureMemory] {entry.failure_type}: {entry.summary}{recipe}"
 
     def _keywords(self, record: FailureRecord) -> list[str]:
-        """从失败记录中提取最小关键字。"""
+        """从失败记录中提取最小关键字"""
 
         keywords = {record.failure_type, record.stage_name}
         lowered = " ".join(record.evidence).lower()

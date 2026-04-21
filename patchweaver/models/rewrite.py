@@ -1,4 +1,4 @@
-"""改写规划模型。"""
+"""改写规划模型"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 
 class RewriteCandidate(BaseModel):
-    """表示单个候选改写方案。"""
+    """表示单个候选改写方案"""
 
     candidate_id: str
     recipe_name: str
@@ -26,7 +26,7 @@ class RewriteCandidate(BaseModel):
 
 
 class RewritePlan(BaseModel):
-    """表示当前轮选中的改写规划结果。"""
+    """表示当前轮选中的改写规划结果"""
 
     task_id: str
     plan_id: str
@@ -42,7 +42,7 @@ class RewritePlan(BaseModel):
 
 
 class TransformationStep(BaseModel):
-    """记录单个改写步骤的执行轨迹。"""
+    """记录单个改写步骤的执行轨迹"""
 
     step_id: str
     engine: Literal["template", "smpl", "diff_editor", "apply_precheck"]
@@ -54,7 +54,7 @@ class TransformationStep(BaseModel):
 
 
 class TransformationTrace(BaseModel):
-    """表示一次改写的完整变换轨迹。"""
+    """表示一次改写的完整变换轨迹"""
 
     task_id: str
     plan_id: str
@@ -64,7 +64,7 @@ class TransformationTrace(BaseModel):
 
 
 class ApplyPrecheckReport(BaseModel):
-    """表示构建前 apply 级别预检查结果。"""
+    """表示构建前 apply 级别预检查结果"""
 
     status: Literal["passed", "failed", "skipped"]
     ok: bool = False

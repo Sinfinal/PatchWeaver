@@ -1,4 +1,4 @@
-"""Failover 控制器。"""
+"""Failover 控制器"""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from patchweaver.models.failover import FailoverRecord
 
 
 class FailoverController:
-    """负责构造窄状态回退记录。"""
+    """负责构造窄状态回退记录"""
 
     def trigger(
         self,
@@ -18,7 +18,7 @@ class FailoverController:
         to_profile: str,
         field_changes: dict[str, object],
     ) -> FailoverRecord:
-        """生成一条 failover 记录。"""
+        """生成一条 failover 记录"""
 
         return build_failover_record(
             stage_name=stage_name,

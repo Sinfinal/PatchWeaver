@@ -1,4 +1,4 @@
-"""约束诊断骨架。"""
+"""约束诊断骨架"""
 
 from __future__ import annotations
 
@@ -8,15 +8,15 @@ from patchweaver.analyzer.risk_rule_registry import RiskRuleRegistry
 
 
 class ConstraintDiagnoser:
-    """负责生成热补丁约束报告。"""
+    """负责生成热补丁约束报告"""
 
     def __init__(self) -> None:
-        """初始化风险规则注册表。"""
+        """初始化风险规则注册表"""
 
         self.registry = RiskRuleRegistry()
 
     def diagnose(self, patch_bundle: PatchBundle) -> ConstraintReport:
-        """根据补丁内容返回最小约束报告。"""
+        """根据补丁内容返回最小约束报告"""
 
         risk_items = self.registry.evaluate(patch_bundle)
         return ConstraintReport(

@@ -1,4 +1,4 @@
-"""语义守卫。"""
+"""语义守卫"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from patchweaver.models.validation import ValidationItem
 
 
 class SemanticGuard:
-    """根据静态预检和动态执行结果给出语义守卫结论。"""
+    """根据静态预检和动态执行结果给出语义守卫结论"""
 
     def run(
         self,
@@ -21,7 +21,7 @@ class SemanticGuard:
         smoke_result: ValidationItem,
         regression_result: ValidationItem,
     ) -> ValidationItem:
-        """输出更贴近第三期需求的语义守卫结果。"""
+        """输出更贴近第三期需求的语义守卫结果"""
 
         if semantic_precheck.status == "failed":
             return ValidationItem(status="failed", ok=False, detail=f"语义预检查未通过：{semantic_precheck.detail}")

@@ -1,4 +1,4 @@
-"""日志与事件读取服务。"""
+"""日志与事件读取服务"""
 
 from __future__ import annotations
 
@@ -8,18 +8,19 @@ from typing import Any
 
 from patchweaver.api.deps import ApiContext
 from patchweaver.storage.sqlite import connect_sqlite
+from patchweaver.utils.path_policy import ensure_within_root, resolve_project_path, to_project_relative
 
 
 class LogService:
-    """负责读取系统日志和近期事件。"""
+    """负责读取系统日志和近期事件"""
 
     def __init__(self, context: ApiContext) -> None:
-        """保存 API 共享上下文。"""
+        """保存 API 共享上下文"""
 
         self.context = context
 
     def get_events(self, *, limit: int = 40) -> list[dict[str, Any]]:
-        """从任务、尝试轮和失败记录中拼出一条简化事件流。"""
+        """从任务、尝试轮和失败记录中拼出一条简化事件流"""
 
         database_path = self.context.runtime.database_path
         events: list[dict[str, Any]] = []
@@ -92,24 +93,32 @@ class LogService:
         )[:limit]
 
     def tail_logs(self, *, limit: int = 120) -> dict[str, Any]:
-        """返回系统日志和最近构建日志的尾部内容。"""
+        """返回系统日志和最近构建日志的尾部内容"""
 
-        system_log_path = (self.context.project_root / self.context.logging_config.file_path).resolve()
-        jsonl_log_path = (self.context.project_root / self.context.logging_config.jsonl_path).resolve()
+        system_log_path = ensure_within_root(
+            self.context.project_root,
+            self.context.logging_config.file_path,
+            label="logging.file_path",
+        )
+        jsonl_log_path = ensure_within_root(
+            self.context.project_root,
+            self.context.logging_config.jsonl_path,
+            label="logging.jsonl_path",
+        )
         latest_build_log = self._latest_build_log()
         return {
             "system_log": self._tail_file(system_log_path, limit),
             "jsonl_log": self._tail_file(jsonl_log_path, limit) if self.context.logging_config.enable_jsonl else None,
             "latest_build_log": self._tail_file(latest_build_log, limit) if latest_build_log else None,
             "paths": {
-                "system_log": str(system_log_path),
-                "jsonl_log": str(jsonl_log_path) if self.context.logging_config.enable_jsonl else None,
-                "latest_build_log": str(latest_build_log) if latest_build_log else None,
+                "system_log": self._path(system_log_path),
+                "jsonl_log": self._path(jsonl_log_path) if self.context.logging_config.enable_jsonl else None,
+                "latest_build_log": self._path(latest_build_log) if latest_build_log else None,
             },
         }
 
     def _latest_build_log(self) -> Path | None:
-        """定位最近一条带日志路径的尝试轮。"""
+        """定位最近一条带日志路径的尝试轮"""
 
         with connect_sqlite(self.context.runtime.database_path) as connection:
             row = connection.execute(
@@ -123,17 +132,22 @@ class LogService:
             ).fetchone()
         if row is None or not row["build_log_path"]:
             return None
-        return Path(row["build_log_path"])
+        return resolve_project_path(self.context.project_root, row["build_log_path"])
 
     def _tail_file(self, path: Path, limit: int) -> dict[str, Any]:
-        """读取文本文件尾部，避免一次把大日志全部打到页面。"""
+        """读取文本文件尾部，避免一次把大日志全部打到页面"""
 
         if not path.exists():
-            return {"path": str(path), "exists": False, "lines": []}
+            return {"path": self._path(path), "exists": False, "lines": []}
         with path.open("r", encoding="utf-8", errors="replace") as handle:
             lines = list(deque(handle, maxlen=limit))
         return {
-            "path": str(path),
+            "path": self._path(path),
             "exists": True,
             "lines": [line.rstrip("\n") for line in lines],
         }
+
+    def _path(self, value: Path | None) -> str | None:
+        """把项目内路径转换成相对源码根目录表达"""
+
+        return to_project_relative(self.context.project_root, value)

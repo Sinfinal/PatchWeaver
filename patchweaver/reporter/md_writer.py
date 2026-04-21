@@ -1,4 +1,4 @@
-"""Markdown 报告写入器。"""
+"""Markdown 报告写入器"""
 
 from __future__ import annotations
 
@@ -8,10 +8,10 @@ from patchweaver.models.report import FinalReport
 
 
 class MdWriter:
-    """负责输出简洁的人读报告。"""
+    """负责输出简洁的人读报告"""
 
     def write_report(self, report: FinalReport, target_path: Path) -> Path:
-        """把最终报告写成 Markdown。"""
+        """把最终报告写成 Markdown"""
 
         target_path.parent.mkdir(parents=True, exist_ok=True)
         lines = [

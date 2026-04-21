@@ -1,4 +1,4 @@
-"""FastAPI 依赖装配。"""
+"""FastAPI 依赖装配"""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from patchweaver.storage.task_repo import TaskRepository
 
 @dataclass(slots=True)
 class ApiContext:
-    """收拢 API 运行时会频繁用到的依赖。"""
+    """收拢 API 运行时会频繁用到的依赖"""
 
     project_root: Path
     runtime: object
@@ -43,7 +43,7 @@ class ApiContext:
     doctor_writer: DoctorWriter
 
     def build_task_runner(self, *, profile_name: str | None = None, max_attempts: int | None = None) -> TaskRunner:
-        """按当前配置创建一个任务编排器。"""
+        """按当前配置创建一个任务编排器"""
 
         runtime = resolve_runtime(
             project_root=self.project_root,
@@ -63,7 +63,7 @@ class ApiContext:
 
 @lru_cache(maxsize=1)
 def get_api_context() -> ApiContext:
-    """创建并缓存 API 共享上下文。"""
+    """创建并缓存 API 共享上下文"""
 
     project_root = discover_project_root()
     runtime = resolve_runtime(project_root=project_root)
@@ -84,9 +84,9 @@ def get_api_context() -> ApiContext:
         rules_config=rules_config,
         logging_config=logging_config,
         models_config=models_config,
-        task_repo=TaskRepository(runtime.database_path),
-        attempt_repo=AttemptRepository(runtime.database_path),
-        artifact_repo=ArtifactRepository(runtime.database_path),
+        task_repo=TaskRepository(runtime.database_path, project_root),
+        attempt_repo=AttemptRepository(runtime.database_path, project_root),
+        artifact_repo=ArtifactRepository(runtime.database_path, project_root),
         doctor_service=DoctorService(),
-        doctor_writer=DoctorWriter(),
+        doctor_writer=DoctorWriter(project_root),
     )

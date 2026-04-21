@@ -1,4 +1,4 @@
-"""任务编排相关 service。"""
+"""任务编排相关 service"""
 
 from __future__ import annotations
 
@@ -20,13 +20,15 @@ from patchweaver.models.evidence import EvidenceBundle, EvidenceSpan
 from patchweaver.models.patch import PatchBundle
 from patchweaver.models.semantic import SemanticCard
 from patchweaver.models.task import TaskContext
+from patchweaver.runtime_inspector import render_machine_profile_summary, validate_task_binding
+from patchweaver.utils.path_policy import relativize_payload, to_project_relative
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
 @dataclass(slots=True)
 class TaskRunnerServices:
-    """收拢主流程运行时依赖。"""
+    """收拢主流程运行时依赖"""
 
     runtime: Any
     build_config: Any
@@ -64,10 +66,10 @@ class TaskRunnerServices:
 
 
 class CoordinatorSupport:
-    """为各阶段 service 提供共享依赖和辅助方法。"""
+    """为各阶段 service 提供共享依赖和辅助方法"""
 
     def __init__(self, services: TaskRunnerServices) -> None:
-        """把共享依赖绑定到实例上，方便阶段 service 直接使用。"""
+        """把共享依赖绑定到实例上，方便阶段 service 直接使用"""
 
         self.services = services
         self.runtime = services.runtime
@@ -105,7 +107,7 @@ class CoordinatorSupport:
         self.report_builder = services.report_builder
 
     def build_bootstrap_manifest(self) -> BootstrapManifest:
-        """按当前配置整理 bootstrap 片段。"""
+        """按当前配置整理 bootstrap 片段"""
 
         fragment_roots = [
             self.runtime.project_root / raw_dir for raw_dir in self.prompts_config.bootstrap_fragment_dirs
@@ -121,7 +123,7 @@ class CoordinatorSupport:
         bootstrap_manifest: BootstrapManifest,
         base_dir: Path,
     ) -> dict[str, Any]:
-        """为单个阶段输出 route 和 prompt 产物。"""
+        """为单个阶段输出 route 和 prompt 产物"""
 
         require_write = is_write_stage(stage_name)
         self.policy_guard.ensure_stage_allowed(
@@ -151,12 +153,12 @@ class CoordinatorSupport:
         }
 
     def dispatch_mode_for(self, stage_name: str) -> str:
-        """按当前运行时开关返回阶段调度模式。"""
+        """按当前运行时开关返回阶段调度模式"""
 
         return dispatch_mode(stage_name, enable_read_parallel=self.runtime.enable_read_parallel)
 
     def require_task(self, task_id: str) -> TaskContext:
-        """读取任务，不存在时直接报错。"""
+        """读取任务，不存在时直接报错"""
 
         task = self.task_repo.get_task(task_id)
         if task is None:
@@ -164,12 +166,12 @@ class CoordinatorSupport:
         return task
 
     def load_model(self, path: Path, model_type: type[ModelT]) -> ModelT:
-        """按模型类型读取本地 JSON 文件。"""
+        """按模型类型读取本地 JSON 文件"""
 
         return model_type.model_validate_json(path.read_text(encoding="utf-8"))
 
     def build_evidence_bundle(self, *, source_paths: list[Path | None], bundle_tag: str) -> EvidenceBundle:
-        """根据已有产物生成一份最小证据包。"""
+        """根据已有产物生成一份最小证据包"""
 
         spans: list[EvidenceSpan] = []
         evidence_ids: list[str] = []
@@ -183,7 +185,7 @@ class CoordinatorSupport:
                 EvidenceSpan(
                     evidence_id=evidence_id,
                     source_type=source_path.suffix.lstrip(".") or "text",
-                    source_path=str(source_path),
+                    source_path=to_project_relative(self.runtime.project_root, source_path) or "",
                     excerpt=excerpt,
                     start_line=1,
                     end_line=20,
@@ -193,7 +195,7 @@ class CoordinatorSupport:
         return EvidenceBundle(evidence_ids=evidence_ids, spans=spans, memory_hits=[])
 
     def assemble_context(self, *, stage_name: str, evidence_bundle: EvidenceBundle) -> ContextBundle:
-        """按阶段预算生成上下文包。"""
+        """按阶段预算生成上下文包"""
 
         prompt_profile = self.prompts_config.prompt_profiles.get(self.prompts_config.default_prompt_profile)
         max_evidence = prompt_profile.max_evidence_snippets if prompt_profile is not None else 8
@@ -220,17 +222,20 @@ class CoordinatorSupport:
 
 
 class AnalysisService(CoordinatorSupport):
-    """负责分析阶段的任务编排。"""
+    """负责分析阶段的任务编排"""
 
     def run(self, task_id: str) -> dict[str, Any]:
-        """执行最小分析链路。"""
+        """执行最小分析链路"""
 
         task = self.require_task(task_id)
         task_dir = self.workspace_guard.create_task_workspace(task)
+        self.workspace_guard.ensure_analysis_workspace(task_dir)
 
-        # 分析阶段先把原始 patch 和规范化 patch 固定下来，后续阶段都复用这些输入。
+        # 先把最原始的 patch 输入固定下来
+        # 后面改写、构建、报告都复用这组分析输入
         raw_patch_path = task_dir / "input" / "raw_patch.patch"
         bundle = self.retriever.fetch_patch_bundle(task=task, raw_patch_path=raw_patch_path)
+        source_fetch_trace_path = getattr(self.retriever, "last_fetch_trace_path", None)
         normalized_patch_path = task_dir / "normalized" / "normalized.patch"
         self.patch_normalizer.normalize(raw_patch_path, normalized_patch_path)
         bundle.normalized_patch_path = normalized_patch_path
@@ -243,6 +248,8 @@ class AnalysisService(CoordinatorSupport):
         constraint_report = self.constraint_diagnoser.diagnose(bundle)
         bootstrap_manifest = self.build_bootstrap_manifest()
 
+        # 核心分析结果先落盘
+        # 这样即便后面的 packet 或 trace 出问题，基础产物也已经保住了
         patch_bundle_path = self.json_writer.write_model(bundle, task_dir / "input" / "patch_bundle.json")
         source_evidence_path = task_dir / "input" / "source_evidence.json"
         source_evidence_path.write_text(
@@ -268,6 +275,8 @@ class AnalysisService(CoordinatorSupport):
             task_dir / "analysis" / "context" / "context_bundle.json",
         )
 
+        # 这三个 stage packet 会被回放、调试页和报告复用
+        # 顺序固定成 retrieval -> semantic_card -> constraint_diagnosis
         retrieval_packet = self.materialize_stage_packet(
             stage_name="retrieval",
             schema_name="PatchBundle",
@@ -290,6 +299,8 @@ class AnalysisService(CoordinatorSupport):
             base_dir=task_dir / "analysis",
         )
 
+        # 分析阶段单独记一份 trace
+        # 这里不用真正的 attempt 编号，避免和改写尝试混在一起
         analysis_trace = self.harness.start_trace(
             trace_id=f"{task.task_id}-analysis",
             task_id=task.task_id,
@@ -337,6 +348,13 @@ class AnalysisService(CoordinatorSupport):
             artifact_path=patch_bundle_path,
             summary="分析输入补丁包",
         )
+        if source_fetch_trace_path is not None and source_fetch_trace_path.exists():
+            analysis_trace = self.harness.attach_artifact(
+                analysis_trace,
+                artifact_type="source_fetch_trace",
+                artifact_path=source_fetch_trace_path,
+                summary="来源抓取轨迹",
+            )
         analysis_trace = self.harness.attach_artifact(
             analysis_trace,
             artifact_type="semantic_card",
@@ -351,6 +369,8 @@ class AnalysisService(CoordinatorSupport):
         )
         analysis_trace_path = self.trace_writer.write(analysis_trace, task_dir / "analysis" / "trace" / "analysis_trace.json")
 
+        # 一层存业务对象，一层存 artifact 索引
+        # 后面状态页和报告页会同时用到这两组数据
         self.task_repo.save_patch_bundle(bundle)
         self.task_repo.update_task_status(task.task_id, status="analyzed", current_attempt=0)
 
@@ -359,6 +379,7 @@ class AnalysisService(CoordinatorSupport):
             ("normalized_patch", normalized_patch_path),
             ("patch_bundle", patch_bundle_path),
             ("source_evidence", source_evidence_path),
+            ("source_fetch_trace", source_fetch_trace_path),
             ("semantic_card", semantic_card_path),
             ("constraint_report", constraint_report_path),
             ("analysis_bootstrap_manifest", bootstrap_manifest_path),
@@ -372,26 +393,31 @@ class AnalysisService(CoordinatorSupport):
             ("constraint_prompt_packet", constraint_packet["prompt_path"]),
             ("analysis_trace", analysis_trace_path),
         ]:
+            if artifact_path is None:
+                continue
             self.artifact_repo.add_artifact(task_id=task.task_id, artifact_type=artifact_type, artifact_path=artifact_path)
 
-        return {
+        payload = {
             "command": "analyze",
             "task_id": task.task_id,
-            "patch_bundle_path": str(patch_bundle_path),
-            "source_evidence_path": str(source_evidence_path),
-            "semantic_card_path": str(semantic_card_path),
-            "constraint_report_path": str(constraint_report_path),
-            "bootstrap_manifest_path": str(bootstrap_manifest_path),
-            "analysis_trace_path": str(analysis_trace_path),
+            "patch_bundle_path": to_project_relative(self.runtime.project_root, patch_bundle_path),
+            "source_evidence_path": to_project_relative(self.runtime.project_root, source_evidence_path),
+            "semantic_card_path": to_project_relative(self.runtime.project_root, semantic_card_path),
+            "constraint_report_path": to_project_relative(self.runtime.project_root, constraint_report_path),
+            "bootstrap_manifest_path": to_project_relative(self.runtime.project_root, bootstrap_manifest_path),
+            "analysis_trace_path": to_project_relative(self.runtime.project_root, analysis_trace_path),
             "status": "ok",
         }
+        if source_fetch_trace_path is not None and source_fetch_trace_path.exists():
+            payload["source_fetch_trace_path"] = to_project_relative(self.runtime.project_root, source_fetch_trace_path)
+        return payload
 
 
 class AttemptExecutionService(CoordinatorSupport):
-    """负责单轮尝试的执行与落盘。"""
+    """负责单轮尝试的执行与落盘"""
 
     def _write_failover_record(self, *, attempt_dir: Path, failure_record: FailureRecord) -> Path | None:
-        """在启用窄状态回退时，为下一轮保留一份受控回退建议。"""
+        """在启用窄状态回退时，为下一轮保留一份受控回退建议"""
 
         if not self.runtime.enable_narrow_failover or failure_record.failure_type in {"none", ""}:
             return None
@@ -439,21 +465,39 @@ class AttemptExecutionService(CoordinatorSupport):
         return failover_path
 
     def run(self, task_id: str) -> dict[str, Any]:
-        """执行最小单轮尝试链路。"""
+        """执行最小单轮尝试链路"""
 
         task = self.require_task(task_id)
         task_dir = self.workspace_guard.create_task_workspace(task)
+        # run 是主链入口，分析产物没准备好时先补分析阶段
         if not (task_dir / "analysis" / "semantic_card.json").exists():
             AnalysisService(self.services).run(task_id)
 
-        attempt_no = self.attempt_repo.next_attempt_no(task_id)
-        attempt_dir = self.workspace_guard.create_attempt_workspace(task_dir, attempt_no)
+        binding_ok, binding_message, current_machine_profile = validate_task_binding(task, self.build_config)
+        if not binding_ok:
+            raise RuntimeError(binding_message)
 
         patch_bundle = self.load_model(task_dir / "input" / "patch_bundle.json", PatchBundle)
         semantic_card = self.load_model(task_dir / "analysis" / "semantic_card.json", SemanticCard)
         constraint_report = self.load_model(task_dir / "analysis" / "constraint_report.json", ConstraintReport)
         bootstrap_manifest = self.build_bootstrap_manifest()
+        attempt_no = self.attempt_repo.next_attempt_no(task_id)
+        # 先种一条 running 状态
+        # 后面任何失败都能明确回到这轮 attempt
+        seed_attempt_record = self.builder.start_attempt(task_id=task.task_id, attempt_no=attempt_no).model_copy(
+            update={"status": "running"}
+        )
+        self.attempt_repo.save_attempt(seed_attempt_record)
+        self.task_repo.update_task_status(task.task_id, status="running", current_attempt=attempt_no)
+        attempt_dir = self.workspace_guard.create_attempt_workspace(task_dir, attempt_no)
+        environment_check_path = attempt_dir / "logs" / "environment_check.log"
+        environment_check_path.write_text(
+            "\n".join([binding_message, render_machine_profile_summary(current_machine_profile)]) + "\n",
+            encoding="utf-8",
+        )
 
+        # 改写阶段只吃已经确认过的分析产物
+        # 这样上下文来源稳定，也方便解释本轮为什么这么改
         rewrite_evidence = self.build_evidence_bundle(
             source_paths=[
                 task_dir / "input" / "patch_bundle.json",
@@ -485,6 +529,8 @@ class AttemptExecutionService(CoordinatorSupport):
         )
 
         try:
+            # 第三期后 planner 增加了 ranking_hints 输入
+            # 这里保留兼容分支，避免老测试桩直接断掉
             plan = self.planner.plan(
                 task_id=task.task_id,
                 semantic_card=semantic_card,
@@ -492,7 +538,7 @@ class AttemptExecutionService(CoordinatorSupport):
                 ranking_hints=ranking_hints,
             )
         except TypeError:
-            # 兼容旧测试桩和早期实现，避免第三期新增排序提示后把前两期基线打断。
+            # 兼容旧测试桩和早期实现，避免第三期新增排序提示后把前两期基线打断
             plan = self.planner.plan(
                 task_id=task.task_id,
                 semantic_card=semantic_card,
@@ -514,6 +560,8 @@ class AttemptExecutionService(CoordinatorSupport):
         build_precheck_path: Path | None = None
         build_summary: BuildSummary | None = None
 
+        # apply 预检查失败时，不再进入真正构建
+        # 这类场景通常是补丁贴不上，或者目标源码已经修过了
         if apply_precheck_report.status == "failed":
             precheck_failure_type = apply_precheck_report.failure_type or "patch_apply_failed"
             build_log = "\n".join(
@@ -532,8 +580,7 @@ class AttemptExecutionService(CoordinatorSupport):
                 ]
             ) + "\n"
             build_log_path.write_text(build_log, encoding="utf-8")
-            base_attempt_record = self.builder.start_attempt(task_id=task.task_id, attempt_no=attempt_no)
-            attempt_record = base_attempt_record.model_copy(
+            attempt_record = seed_attempt_record.model_copy(
                 update={
                     "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
                     "status": "failed",
@@ -544,7 +591,7 @@ class AttemptExecutionService(CoordinatorSupport):
                     "finished_at": datetime.now(timezone.utc),
                 }
             )
-            self.attempt_repo.create_attempt(attempt_record)
+            self.attempt_repo.save_attempt(attempt_record)
             self.attempt_repo.save_evidence_spans(task.task_id, attempt_record.attempt_id, rewrite_evidence.spans)
             failure_record = FailureRecord(
                 task_id=task.task_id,
@@ -578,11 +625,12 @@ class AttemptExecutionService(CoordinatorSupport):
                 rewritten_patch_path=rewritten_patch_path,
                 build_log_path=build_log_path,
             )
+            attempt_record = attempt_record.model_copy(update={"started_at": seed_attempt_record.started_at})
             build_precheck_path = self.json_writer.write_model(
                 build_precheck,
                 attempt_dir / "artifacts" / "build_precheck.json",
             )
-            self.attempt_repo.create_attempt(attempt_record)
+            self.attempt_repo.save_attempt(attempt_record)
             self.attempt_repo.save_evidence_spans(task.task_id, attempt_record.attempt_id, rewrite_evidence.spans)
             if attempt_record.status == "failed":
                 failure_record = self.failure_classifier.classify_build_log(
@@ -601,6 +649,8 @@ class AttemptExecutionService(CoordinatorSupport):
                 )
         self.attempt_repo.save_failure_record(failure_record)
         failure_record_path = self.json_writer.write_model(failure_record, attempt_dir / "logs" / "failure_record.json")
+        # builder 理论上应该总能给出 build_summary
+        # 这里补一个兜底，保证后面的验证和报告还能继续读
         if build_summary is None:
             build_summary = BuildSummary(
                 task_id=task.task_id,
@@ -620,6 +670,8 @@ class AttemptExecutionService(CoordinatorSupport):
         )
         failover_record_path = self._write_failover_record(attempt_dir=attempt_dir, failure_record=failure_record)
 
+        # validator 只拿当前轮之前的历史尝试
+        # 避免它在做对比时把自己这一轮还没写稳的状态也算进去
         history_attempts = self.attempt_repo.list_attempts(task_id)[:-1]
         try:
             validation_report, validation_artifacts = self.validator.run(
@@ -659,8 +711,10 @@ class AttemptExecutionService(CoordinatorSupport):
         self.attempt_repo.save_validation_report(attempt_record.attempt_id, validation_report)
 
         def resolve_validation_artifact(name: str, fallback: Path, content: str) -> Path:
-            """解析验证产物路径，缺失时补一个兼容占位文件。"""
+            """解析验证产物路径，缺失时补一个兼容占位文件"""
 
+            # validator 的不同实现返回的产物不完全一样
+            # 这里统一补齐缺失项，保证 attempt 目录结构稳定
             value = validation_artifacts.get(name)
             resolved = Path(str(value)) if value is not None else fallback
             resolved.parent.mkdir(parents=True, exist_ok=True)
@@ -857,6 +911,7 @@ class AttemptExecutionService(CoordinatorSupport):
         trace_artifacts = [
             ("rewrite_plan", rewrite_plan_path, "候选改写规划"),
             ("planning_hints", planning_hints_path, "排序与经验提示"),
+            ("environment_check_log", environment_check_path, "运行前环境一致性检查"),
             ("rewritten_patch", rewritten_patch_path, "单轮改写结果"),
             ("apply_precheck", rewrite_meta["apply_precheck"], "构建前 apply 预检查"),
             ("build_summary", build_summary_path, "构建阶段结构化摘要"),
@@ -892,6 +947,7 @@ class AttemptExecutionService(CoordinatorSupport):
             ("rewrite_reason", rewrite_meta["rewrite_reason"]),
             ("transformation_trace", rewrite_meta["transformation_trace"]),
             ("apply_precheck", rewrite_meta["apply_precheck"]),
+            ("environment_check_log", environment_check_path),
             ("build_log", attempt_record.build_log_path),
             ("build_precheck", build_precheck_path),
             ("build_summary", build_summary_path),
@@ -951,26 +1007,29 @@ class AttemptExecutionService(CoordinatorSupport):
             "attempt_no": attempt_no,
             "status": attempt_record.status,
             "failure_type": attempt_record.failure_type,
-            "build_log_path": str(attempt_record.build_log_path) if attempt_record.build_log_path else None,
-            "trace_path": str(trace_path),
-            "failure_record_path": str(failure_record_path),
-            "failover_record_path": str(failover_record_path) if failover_record_path is not None else None,
+            "build_log_path": to_project_relative(self.runtime.project_root, attempt_record.build_log_path),
+            "trace_path": to_project_relative(self.runtime.project_root, trace_path),
+            "failure_record_path": to_project_relative(self.runtime.project_root, failure_record_path),
+            "failover_record_path": to_project_relative(self.runtime.project_root, failover_record_path),
         }
 
 
 class ReportService(CoordinatorSupport):
-    """负责最终报告阶段的任务编排。"""
+    """负责最终报告阶段的任务编排"""
 
     def run(self, task_id: str) -> dict[str, Any]:
-        """生成最终 JSON 和 Markdown 报告。"""
+        """生成最终 JSON 和 Markdown 报告"""
 
         task = self.require_task(task_id)
         task_dir = self.workspace_guard.create_task_workspace(task)
+        self.workspace_guard.ensure_report_workspace(task_dir)
         attempts = self.attempt_repo.list_attempts(task_id)
         artifacts = self.artifact_repo.list_artifacts(task_id)
         bootstrap_manifest = self.build_bootstrap_manifest()
         evaluation_summary = self.evaluator.summarize(attempts=attempts, artifacts=artifacts)
 
+        # 报告优先引用分析阶段和最新 attempt 的关键产物
+        # 这样报告结论和状态页看到的当前结果是一致的
         report_sources = [
             task_dir / "analysis" / "semantic_card.json",
             task_dir / "analysis" / "constraint_report.json",
@@ -1022,14 +1081,14 @@ class ReportService(CoordinatorSupport):
             explanations=explanations,
         )
 
-        report.key_paths["report_json"] = str(task_dir / "reports" / "report.json")
-        report.key_paths["report_md"] = str(task_dir / "reports" / "report.md")
-        report.replay_summary["evaluation_summary_path"] = str(task_dir / "reports" / "evaluation_summary.json")
+        report.key_paths["report_json"] = to_project_relative(self.runtime.project_root, task_dir / "reports" / "report.json")
+        report.key_paths["report_md"] = to_project_relative(self.runtime.project_root, task_dir / "reports" / "report.md")
+        report.replay_summary["evaluation_summary_path"] = to_project_relative(self.runtime.project_root, task_dir / "reports" / "evaluation_summary.json")
         json_path = self.json_writer.write_model(report, task_dir / "reports" / "report.json")
         md_path = self.md_writer.write_report(report, task_dir / "reports" / "report.md")
         evaluation_summary_path = task_dir / "reports" / "evaluation_summary.json"
         evaluation_summary_path.write_text(
-            json.dumps(evaluation_summary, ensure_ascii=False, indent=2) + "\n",
+            json.dumps(relativize_payload(evaluation_summary, self.runtime.project_root), ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
 
@@ -1048,20 +1107,22 @@ class ReportService(CoordinatorSupport):
         return {
             "command": "report",
             "task_id": task.task_id,
-            "report_json": str(json_path),
-            "report_md": str(md_path),
+            "report_json": to_project_relative(self.runtime.project_root, json_path),
+            "report_md": to_project_relative(self.runtime.project_root, md_path),
             "status": "ok",
         }
 
 
 class ReplayService(CoordinatorSupport):
-    """负责回放阶段的任务编排。"""
+    """负责回放阶段的任务编排"""
 
     def run(self, task_id: str) -> dict[str, Any]:
-        """输出任务最近一轮的回放信息。"""
+        """输出任务最近一轮的回放信息"""
 
         task = self.require_task(task_id)
         task_dir = self.workspace_guard.create_task_workspace(task)
+        # replay 只做读取，不改任务状态
+        # 它依赖 attempts、trace 和报告三层数据拼出最后一轮摘要
         latest_trace = self.attempt_repo.latest_trace_summary(task_id)
         attempts = self.attempt_repo.list_attempts(task_id)
         replay_comparison = self.evaluator.replay_comparison(task_id=task.task_id, attempts=attempts, task_dir=task_dir)

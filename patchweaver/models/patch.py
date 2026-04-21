@@ -1,4 +1,4 @@
-"""补丁输入模型。"""
+"""补丁输入模型"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class SourceEvidence(BaseModel):
-    """表示一条可追溯的补丁来源证据。"""
+    """表示一条可追溯的补丁来源证据"""
 
     source_name: str
     url: str
@@ -21,7 +21,7 @@ class SourceEvidence(BaseModel):
 
 
 class PatchBundle(BaseModel):
-    """表示任务对应的原始补丁和来源信息。"""
+    """表示任务对应的原始补丁和来源信息"""
 
     task_id: str
     cve_id: str

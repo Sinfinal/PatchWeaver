@@ -1,4 +1,4 @@
-"""评测统计写入器。"""
+"""评测统计写入器"""
 
 from __future__ import annotations
 
@@ -7,19 +7,27 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from patchweaver.utils.path_policy import relativize_payload
+
 
 class StatsWriter:
-    """负责把阶段评测结果写成 JSON 和 Markdown。"""
+    """负责把阶段评测结果写成 JSON 和 Markdown"""
+
+    def __init__(self, project_root: Path | None = None) -> None:
+        """保存项目根目录，供路径序列化使用"""
+
+        self.project_root = project_root.resolve() if project_root is not None else None
 
     def write_json(self, payload: dict[str, Any], target_path: Path) -> Path:
-        """写出结构化统计结果。"""
+        """写出结构化统计结果"""
 
         target_path.parent.mkdir(parents=True, exist_ok=True)
-        target_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        normalized = relativize_payload(payload, self.project_root)
+        target_path.write_text(json.dumps(normalized, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         return target_path
 
     def write_markdown(self, payload: dict[str, Any], target_path: Path) -> Path:
-        """写出便于阶段汇报使用的人读摘要。"""
+        """写出便于阶段汇报使用的人读摘要"""
 
         target_path.parent.mkdir(parents=True, exist_ok=True)
         lines = [

@@ -1,4 +1,4 @@
-"""存储层与索引落盘模块。"""
+"""存储层与索引落盘模块"""
 
 from patchweaver.storage.artifact_repo import ArtifactRepository
 from patchweaver.storage.attempt_repo import AttemptRepository

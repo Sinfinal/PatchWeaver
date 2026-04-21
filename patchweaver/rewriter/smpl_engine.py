@@ -1,4 +1,4 @@
-"""SmPL 层执行器。"""
+"""SmPL 层执行器"""
 
 from __future__ import annotations
 
@@ -8,15 +8,15 @@ from patchweaver.models.rewrite import RewritePlan, TransformationStep
 
 
 class SmPLEngine:
-    """负责挂接 Coccinelle/SmPL 规则入口。"""
+    """负责挂接 Coccinelle/SmPL 规则入口"""
 
     def __init__(self, project_root: Path) -> None:
-        """初始化 SmPL 规则目录。"""
+        """初始化 SmPL 规则目录"""
 
         self.smpl_dir = project_root / "recipes" / "smpl"
 
     def apply(self, *, plan: RewritePlan, patch_text: str) -> tuple[str, TransformationStep]:
-        """返回当前阶段的 SmPL 层结果。"""
+        """返回当前阶段的 SmPL 层结果"""
 
         recipe_name = plan.selected_recipe or "direct_apply_patch"
         smpl_path = self.smpl_dir / f"{recipe_name}.cocci"

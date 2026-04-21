@@ -1,4 +1,4 @@
-"""环境诊断模型。"""
+"""环境诊断模型"""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class DoctorCheck(BaseModel):
-    """表示一项环境检查结果。"""
+    """表示一项环境检查结果"""
 
     category: str
     name: str
@@ -17,7 +17,7 @@ class DoctorCheck(BaseModel):
 
 
 class DoctorReport(BaseModel):
-    """表示一次环境诊断的结构化结果。"""
+    """表示一次环境诊断的结构化结果"""
 
     runtime: dict[str, str] = Field(default_factory=dict)
     checks: list[DoctorCheck] = Field(default_factory=list)

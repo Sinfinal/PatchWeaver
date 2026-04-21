@@ -1,4 +1,4 @@
-"""模块级自检执行器。"""
+"""模块级自检执行器"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from patchweaver.models.validation import ValidationItem
 
 
 class SelftestRunner:
-    """负责输出一份标准化的自检基线结果。"""
+    """负责输出一份标准化的自检基线结果"""
 
     def run(
         self,
@@ -17,7 +17,7 @@ class SelftestRunner:
         module_path: Path | None,
         risk_level: str,
     ) -> tuple[ValidationItem, str]:
-        """根据模块产物和风险等级整理自检结果。"""
+        """根据模块产物和风险等级整理自检结果"""
 
         if not build_succeeded:
             item = ValidationItem(status="pending", ok=False, detail="构建未完成，自检基线暂不执行。")
@@ -35,7 +35,7 @@ class SelftestRunner:
         return item, self._build_log(item, risk_level=risk_level, module_path=module_path)
 
     def _build_log(self, item: ValidationItem, *, risk_level: str, module_path: Path | None = None) -> str:
-        """整理自检基线日志文本。"""
+        """整理自检基线日志文本"""
 
         return "\n".join(
             [

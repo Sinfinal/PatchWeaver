@@ -1,4 +1,4 @@
-"""上下文检索器。"""
+"""上下文检索器"""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from patchweaver.models.evidence import EvidenceBundle
 
 
 class ContextRetriever:
-    """负责从已有证据中挑选上下文候选。"""
+    """负责从已有证据中挑选上下文候选"""
 
     STAGE_HINTS = {
         "retrieval": ("patch_bundle", "source_evidence", "raw_patch", "normalized"),
@@ -26,7 +26,7 @@ class ContextRetriever:
         max_evidence: int = 8,
         max_memory_hits: int = 3,
     ) -> EvidenceBundle:
-        """按阶段偏好和预算裁剪证据。"""
+        """按阶段偏好和预算裁剪证据"""
 
         hints = self.STAGE_HINTS.get(stage_name, ())
         ranked = sorted(
@@ -49,7 +49,7 @@ class ContextRetriever:
         )
 
     def _hint_score(self, source_path: str, hints: tuple[str, ...]) -> int:
-        """计算阶段命中权重。"""
+        """计算阶段命中权重"""
 
         lowered = source_path.lower()
         for index, hint in enumerate(hints):

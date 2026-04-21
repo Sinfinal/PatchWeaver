@@ -1,4 +1,4 @@
-"""阶段提示模板库。"""
+"""阶段提示模板库"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from patchweaver.prompting.template_loader import TemplateLoader
 
 
 class PromptLibrary:
-    """负责加载阶段模板和结构契约说明。"""
+    """负责加载阶段模板和结构契约说明"""
 
     DEFAULT_STAGE_TEMPLATES = {
         "retrieval": "你负责检索真实 CVE 来源链，优先 stable backport，其次 upstream，输出必须可追溯。",
@@ -22,20 +22,20 @@ class PromptLibrary:
     }
 
     def __init__(self, project_root: Path, loader: TemplateLoader | None = None) -> None:
-        """绑定项目根目录。"""
+        """绑定项目根目录"""
 
         self.project_root = project_root
         self.loader = loader or TemplateLoader()
 
     def stage_instruction(self, stage_name: str) -> str:
-        """读取阶段模板说明。"""
+        """读取阶段模板说明"""
 
         stage_path = self.project_root / "prompts" / "stages" / f"{stage_name}.md"
         fallback = self.DEFAULT_STAGE_TEMPLATES.get(stage_name, f"{stage_name} 阶段提示模板待补充。")
         return self.loader.load_optional(stage_path, fallback=fallback)
 
     def schema_contract(self, schema_name: str) -> str:
-        """读取结构契约说明。"""
+        """读取结构契约说明"""
 
         schema_key = re.sub(r"(?<!^)(?=[A-Z])", "_", schema_name).lower()
         fallback = f"输出需满足 {schema_name} 对应的结构约束，并保持字段命名稳定。"

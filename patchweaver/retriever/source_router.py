@@ -1,4 +1,4 @@
-"""补丁来源路由。"""
+"""补丁来源路由"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 
 class SourceRoute(BaseModel):
-    """表示一条候选来源。"""
+    """表示一条候选来源"""
 
     name: str
     url: str
@@ -18,10 +18,10 @@ class SourceRoute(BaseModel):
 
 
 class RetrieverSourceRouter:
-    """负责给检索阶段提供来源优先级。"""
+    """负责给检索阶段提供来源优先级"""
 
     def ordered_sources(self, cve_id: str) -> list[SourceRoute]:
-        """返回当前 CVE 默认使用的来源顺序。"""
+        """返回当前 CVE 默认使用的来源顺序"""
 
         return [
             SourceRoute(
@@ -63,14 +63,14 @@ class RetrieverSourceRouter:
         ]
 
     def cvelist_url(self, cve_id: str) -> str:
-        """返回 cvelistV5 中该 CVE 的原始 JSON 地址。"""
+        """返回 cvelistV5 中该 CVE 的原始 JSON 地址"""
 
         year, serial = self._split_cve_id(cve_id)
         bucket = f"{int(serial) // 1000}xxx"
         return f"https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/{year}/{bucket}/{cve_id}.json"
 
     def classify_reference(self, url: str) -> str:
-        """根据 URL 判断来源类型。"""
+        """根据 URL 判断来源类型"""
 
         lowered = url.lower()
         parsed = urlparse(lowered)
@@ -98,7 +98,7 @@ class RetrieverSourceRouter:
         return "reference"
 
     def extract_commit_id(self, url: str) -> str | None:
-        """从来源链接中提取 commit id。"""
+        """从来源链接中提取 commit id"""
 
         parsed = urlparse(url)
         query = parse_qs(parsed.query)
@@ -117,29 +117,45 @@ class RetrieverSourceRouter:
                 return match.group(1).lower()
         return None
 
-    def patch_url_for_commit(self, url: str) -> str | None:
-        """把 commit 链接转换为可直接下载的 patch 链接。"""
+    def patch_urls_for_commit(self, url: str) -> list[str]:
+        """把 commit 链接展开为可依次尝试的 patch 下载地址"""
 
         if url.lower().endswith(".patch"):
-            return url
+            return [url]
 
         commit_id = self.extract_commit_id(url)
         if commit_id is None:
-            return None
+            return []
 
         parsed = urlparse(url)
         source_name = self.classify_reference(url)
+        candidates: list[str] = []
+
         kernel_org_patch = self._kernel_org_patch_url(parsed.path, commit_id=commit_id, source_name=source_name)
         if kernel_org_patch is not None:
-            return kernel_org_patch
+            candidates.append(kernel_org_patch)
         if source_name == "linux-stable":
-            return f"https://github.com/gregkh/linux/commit/{commit_id}.patch"
+            candidates.append(f"https://github.com/gregkh/linux/commit/{commit_id}.patch")
         if source_name == "upstream":
-            return f"https://github.com/torvalds/linux/commit/{commit_id}.patch"
-        return None
+            candidates.append(f"https://github.com/torvalds/linux/commit/{commit_id}.patch")
+
+        ordered: list[str] = []
+        seen: set[str] = set()
+        for candidate in candidates:
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            ordered.append(candidate)
+        return ordered
+
+    def patch_url_for_commit(self, url: str) -> str | None:
+        """返回默认优先使用的 patch 下载地址"""
+
+        candidates = self.patch_urls_for_commit(url)
+        return candidates[0] if candidates else None
 
     def _kernel_org_patch_url(self, path: str, *, commit_id: str, source_name: str) -> str | None:
-        """优先为 git.kernel.org 链接生成 patch 地址。"""
+        """优先为 git.kernel.org 链接生成 patch 地址"""
 
         repo_root = self._kernel_org_repo_root(path, source_name=source_name)
         if repo_root is None:
@@ -147,7 +163,7 @@ class RetrieverSourceRouter:
         return f"https://git.kernel.org{repo_root}/patch/?id={commit_id}"
 
     def _kernel_org_repo_root(self, path: str, *, source_name: str) -> str | None:
-        """从 git.kernel.org 路径中抽出仓库根路径。"""
+        """从 git.kernel.org 路径中抽出仓库根路径"""
 
         match = re.search(r"(/pub/scm/linux/kernel/git/.+?\.git)/(?:commit|patch)/", path)
         if match:
@@ -159,10 +175,9 @@ class RetrieverSourceRouter:
         return None
 
     def _split_cve_id(self, cve_id: str) -> tuple[str, str]:
-        """拆分 CVE 年份和序号。"""
+        """拆分 CVE 年份和序号"""
 
         match = re.fullmatch(r"CVE-(\d{4})-(\d+)", cve_id.upper())
         if match is None:
             raise ValueError(f"无效的 CVE ID：{cve_id}")
         return match.group(1), match.group(2)
-

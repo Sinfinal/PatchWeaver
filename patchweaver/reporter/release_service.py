@@ -1,4 +1,4 @@
-"""第四阶段交付收口与门禁检查。"""
+"""第四阶段交付收口与门禁检查"""
 
 from __future__ import annotations
 
@@ -10,10 +10,11 @@ from shutil import copy2
 from typing import Any
 
 from patchweaver.builder.orchestrator import BuildOrchestrator
+from patchweaver.utils.path_policy import ensure_within_root, relativize_payload, to_project_relative
 
 
 class ReleaseService:
-    """负责整理 submission 目录、final manifest 和最终门禁结果。"""
+    """负责整理 submission 目录、final manifest 和最终门禁结果"""
 
     def __init__(
         self,
@@ -26,7 +27,7 @@ class ReleaseService:
         attempt_repo: Any,
         artifact_repo: Any,
     ) -> None:
-        """把封版阶段会用到的运行依赖绑定到实例上。"""
+        """把封版阶段会用到的运行依赖绑定到实例上"""
 
         self.runtime = runtime
         self.build_config = build_config
@@ -37,7 +38,7 @@ class ReleaseService:
         self.artifact_repo = artifact_repo
 
     def prepare_submission(self) -> dict[str, Any]:
-        """创建 submission 结构，并生成最终清单。"""
+        """创建 submission 结构，并生成最终清单"""
 
         layout = self._ensure_submission_dirs()
         staged_docs = self._stage_submission_docs(layout)
@@ -45,21 +46,26 @@ class ReleaseService:
         manifest_json_path = self._write_json(manifest, layout["manifests"] / "final_manifest.json")
         manifest_md_path = self._write_text(self._render_manifest_markdown(manifest), layout["manifests"] / "final_manifest.md")
         return {
-            "submission_root": str(self._submission_root()),
-            "layout": {name: str(path) for name, path in layout.items()},
-            "final_manifest_json": str(manifest_json_path),
-            "final_manifest_md": str(manifest_md_path),
+            "submission_root": self._path(self._submission_root()),
+            "layout": self._layout_payload(layout),
+            "final_manifest_json": self._path(manifest_json_path),
+            "final_manifest_md": self._path(manifest_md_path),
             "status": "ok",
         }
 
     def run_gate(self) -> dict[str, Any]:
-        """执行第四阶段最终门禁检查。"""
+        """执行第四阶段最终门禁检查"""
 
         layout = self._ensure_submission_dirs()
         manifest_path = layout["manifests"] / "final_manifest.json"
+        api_key_status = self._api_key_status()
+        # gate 依赖 final_manifest
+        # 这里允许先补一次 prepare_submission，少记一条前置命令
         if not manifest_path.exists():
             self.prepare_submission()
 
+        # build_probe 看环境，evaluation_summaries 看阶段样例
+        # task_closures 则看最近任务有没有形成真正的闭环产物
         build_probe = BuildOrchestrator(self.build_config).probe_environment()
         evaluation_summaries = self._evaluation_summaries()
         recent_tasks = self.task_repo.list_tasks(limit=12)
@@ -68,7 +74,7 @@ class ReleaseService:
             self._check(
                 "doctor_snapshot",
                 (self.runtime.manifest_dir / "doctor_report.json").exists(),
-                str((self.runtime.manifest_dir / "doctor_report.json").resolve()),
+                self._path(self.runtime.manifest_dir / "doctor_report.json"),
                 "doctor 快照已生成。"
                 if (self.runtime.manifest_dir / "doctor_report.json").exists()
                 else "还没有 doctor 快照，建议先执行 patchweaver doctor。",
@@ -77,14 +83,14 @@ class ReleaseService:
             self._check(
                 "database_ready",
                 self.runtime.database_path.exists(),
-                str(self.runtime.database_path),
+                self._path(self.runtime.database_path),
                 "SQLite 数据库可用。" if self.runtime.database_path.exists() else "数据库文件尚未建立。",
                 "failed",
             ),
             self._check(
                 "evaluation_summary",
                 bool(evaluation_summaries),
-                str((self.runtime.data_dir / "evaluations").resolve()),
+                self._path(self.runtime.data_dir / "evaluations"),
                 f"已发现 {len(evaluation_summaries)} 组阶段评测摘要。"
                 if evaluation_summaries
                 else "还没有阶段评测摘要，请先执行 evaluate。",
@@ -93,7 +99,7 @@ class ReleaseService:
             self._check(
                 "task_report_closure",
                 any(item["closure_ok"] for item in task_closures),
-                str(self.runtime.workspace_root),
+                self._path(self.runtime.workspace_root),
                 "至少有一条任务已经打通报告、日志和 trace 闭环。"
                 if any(item["closure_ok"] for item in task_closures)
                 else "最近任务里还没有形成完整的报告闭环。",
@@ -102,21 +108,21 @@ class ReleaseService:
             self._check(
                 "system_log",
                 self._system_log_path().exists(),
-                str(self._system_log_path()),
+                self._path(self._system_log_path()),
                 "系统日志文件已存在。" if self._system_log_path().exists() else "系统日志文件尚未生成。",
                 "limited",
             ),
             self._check(
                 "jsonl_log",
                 self._jsonl_log_path().exists(),
-                str(self._jsonl_log_path()),
+                self._path(self._jsonl_log_path()),
                 "JSONL 事件日志已存在。" if self._jsonl_log_path().exists() else "JSONL 事件日志尚未生成。",
                 "limited",
             ),
             self._check(
                 "web_console",
                 ((self.runtime.project_root / "web" / "src").exists()),
-                str((self.runtime.project_root / "web").resolve()),
+                self._path(self.runtime.project_root / "web"),
                 "Web 控制台源码目录存在。",
                 "failed",
             ),
@@ -130,7 +136,7 @@ class ReleaseService:
             self._check(
                 "models_config",
                 (self.runtime.project_root / "config" / "models.yaml").exists(),
-                str((self.runtime.project_root / "config" / "models.yaml").resolve()),
+                self._path(self.runtime.project_root / "config" / "models.yaml"),
                 "模型配置文件已就位。" if (self.runtime.project_root / "config" / "models.yaml").exists() else "缺少 models.yaml。",
                 "failed",
             ),
@@ -146,36 +152,38 @@ class ReleaseService:
             self._check(
                 "bailian_api_key",
                 bool(self._api_key_present()),
-                self.models_config.api_key_env,
-                "已检测到百炼 API Key 环境变量。"
+                api_key_status["api_key_masked"] or self.models_config.api_key_env,
+                "已检测到百炼 API Key。"
                 if self._api_key_present()
-                else "当前环境还没有百炼 API Key，正式演示前需补齐。",
+                else "当前环境还没有百炼 API Key，可通过环境变量或 config/models.yaml 补齐。",
                 "limited",
             ),
             self._check(
                 "submission_layout",
                 all(path.exists() for path in layout.values()),
-                str(self._submission_root()),
+                self._path(self._submission_root()),
                 "submission 目录结构已建立。",
                 "failed",
             ),
             self._check(
                 "final_manifest",
                 manifest_path.exists(),
-                str(manifest_path),
+                self._path(manifest_path),
                 "final_manifest 已生成。" if manifest_path.exists() else "还没有 final_manifest。",
                 "failed",
             ),
             self._check(
                 "model_statement",
                 (layout["docs"] / "PatchWeaver-模型选型说明.md").exists(),
-                str((layout["docs"] / "PatchWeaver-模型选型说明.md").resolve()),
+                self._path(layout["docs"] / "PatchWeaver-模型选型说明.md"),
                 "模型选型说明已写入 submission/docs。"
                 if (layout["docs"] / "PatchWeaver-模型选型说明.md").exists()
                 else "submission/docs 中缺少模型选型说明。",
                 "failed",
             ),
         ]
+        # 所有检查项最终落成一份统一报告
+        # CLI、Web 和 submission 都读这份门禁结论
         summary = self._summarize_checks(checks)
         report = {
             "generated_at": self._now(),
@@ -190,25 +198,25 @@ class ReleaseService:
         report_json_path = self._write_json(report, layout["manifests"] / "final_gate_report.json")
         report_md_path = self._write_text(self._render_gate_markdown(report), layout["manifests"] / "final_gate_report.md")
         return {
-            "submission_root": str(self._submission_root()),
-            "final_gate_json": str(report_json_path),
-            "final_gate_md": str(report_md_path),
+            "submission_root": self._path(self._submission_root()),
+            "final_gate_json": self._path(report_json_path),
+            "final_gate_md": self._path(report_md_path),
             "status": report["status"],
             "summary": summary,
             "goal_check": report["goal_check"],
         }
 
     def snapshot(self) -> dict[str, Any]:
-        """返回控制台展示用的交付快照。"""
+        """返回控制台展示用的交付快照"""
 
         submission_root = self._submission_root()
         final_manifest_path = submission_root / "manifests" / "final_manifest.json"
         final_gate_path = submission_root / "manifests" / "final_gate_report.json"
         final_gate = self._read_json(final_gate_path)
         return {
-            "submission_root": str(submission_root),
-            "final_manifest_path": str(final_manifest_path) if final_manifest_path.exists() else None,
-            "final_gate_path": str(final_gate_path) if final_gate_path.exists() else None,
+            "submission_root": self._path(submission_root),
+            "final_manifest_path": self._path(final_manifest_path) if final_manifest_path.exists() else None,
+            "final_gate_path": self._path(final_gate_path) if final_gate_path.exists() else None,
             "final_gate_status": final_gate.get("status") if isinstance(final_gate, dict) else None,
             "evaluation_count": len(self._evaluation_summaries()),
             "selected_models": {
@@ -218,11 +226,12 @@ class ReleaseService:
                 "delivery_model": self.models_config.delivery_model,
                 "fallback_model": self.models_config.fallback_model,
                 "helper_models": self.models_config.helper_models,
+                "api_key_source": self._api_key_source(),
             },
         }
 
     def _build_final_manifest(self, layout: dict[str, Path], staged_docs: list[dict[str, Any]]) -> dict[str, Any]:
-        """整理当前版本的最终提交清单。"""
+        """整理当前版本的最终提交清单"""
 
         evaluation_summaries = self._evaluation_summaries()
         recent_tasks = self.task_repo.list_tasks(limit=12)
@@ -241,6 +250,8 @@ class ReleaseService:
                 "topology": self.models_config.topology,
                 "base_url": self.models_config.base_url,
                 "api_key_env": self.models_config.api_key_env,
+                "api_key_source": self._api_key_source(),
+                "api_key_masked": self._masked_api_key(),
                 "default_model": self.models_config.default_model,
                 "development_model": self.models_config.development_model,
                 "delivery_model": self.models_config.delivery_model,
@@ -249,7 +260,7 @@ class ReleaseService:
                 "helper_notes": self.models_config.helper_notes,
                 "execution_boundaries": self.models_config.execution_boundaries,
             },
-            "submission_layout": {name: str(path) for name, path in layout.items()},
+            "submission_layout": self._layout_payload(layout),
             "documents": staged_docs,
             "evaluations": evaluation_summaries,
             "task_closures": task_closures,
@@ -257,7 +268,7 @@ class ReleaseService:
         }
 
     def _render_manifest_markdown(self, manifest: dict[str, Any]) -> str:
-        """输出给人工查看的 manifest 摘要。"""
+        """输出给人工查看的 manifest 摘要"""
 
         lines = [
             "# PatchWeaver Final Manifest",
@@ -267,6 +278,7 @@ class ReleaseService:
             f"- 模型拓扑: {manifest['models']['topology']}",
             f"- 主模型: {manifest['models']['default_model']}",
             f"- 正式交付模型: {manifest['models']['delivery_model']}",
+            f"- API Key 来源: {self._api_key_source_label(str(manifest['models']['api_key_source']))}",
             "",
             "## Submission 目录",
         ]
@@ -309,7 +321,7 @@ class ReleaseService:
         return "\n".join(lines) + "\n"
 
     def _render_gate_markdown(self, report: dict[str, Any]) -> str:
-        """输出门禁检查的人读结果。"""
+        """输出门禁检查的人读结果"""
 
         lines = [
             "# PatchWeaver Final Gate Report",
@@ -331,7 +343,7 @@ class ReleaseService:
         return "\n".join(lines) + "\n"
 
     def _goal_check(self, task_closures: list[dict[str, Any]], evaluation_summaries: list[dict[str, Any]]) -> list[dict[str, str]]:
-        """按总设计文档的总目标给出当前实现状态。"""
+        """按总设计文档的总目标给出当前实现状态"""
 
         has_task = bool(task_closures)
         has_closed_task = any(item["closure_ok"] for item in task_closures)
@@ -371,19 +383,19 @@ class ReleaseService:
         return goal_items
 
     def _known_limits(self, task_closures: list[dict[str, Any]]) -> list[str]:
-        """汇总当前阶段仍需说明的限制点。"""
+        """汇总当前阶段仍需说明的限制点"""
 
         limits: list[str] = []
         if not any(item["closure_ok"] for item in task_closures):
             limits.append("当前还没有完整闭环样例，正式展示前需至少固定一条成功样例。")
         if not self._api_key_present():
-            limits.append("百炼 API Key 仍依赖环境变量注入，仓库内不保存密钥。")
+            limits.append("百炼 API Key 尚未配置，可通过环境变量或 config/models.yaml 补齐。")
         if not self._jsonl_log_path().exists():
             limits.append("JSONL 事件日志需要至少执行一次主链命令后才会自然生成。")
         return limits
 
     def _stage_submission_docs(self, layout: dict[str, Path]) -> list[dict[str, Any]]:
-        """把项目文档复制到 submission/docs，并补齐交付说明。"""
+        """把项目文档复制到 submission/docs，并补齐交付说明"""
 
         staged_items: list[dict[str, Any]] = []
         docs_root = layout["docs"]
@@ -399,8 +411,8 @@ class ReleaseService:
                     "version_suffix": self._extract_version_suffix(source_path.name),
                     "category": self._document_category(relative_name),
                     "completed": True,
-                    "source_ref": str(source_path.resolve()),
-                    "final_path": str(target_path.resolve()),
+                    "source_ref": self._path(source_path),
+                    "final_path": self._path(target_path),
                     "manually_reviewed": False,
                 }
             )
@@ -419,7 +431,7 @@ class ReleaseService:
                     "category": self._document_category(filename),
                     "completed": True,
                     "source_ref": "release_service.generated",
-                    "final_path": str(target_path.resolve()),
+                    "final_path": self._path(target_path),
                     "manually_reviewed": False,
                 }
             )
@@ -428,7 +440,7 @@ class ReleaseService:
         return staged_items
 
     def _task_closure(self, task: Any) -> dict[str, Any]:
-        """抽取单个任务的报告、日志和 trace 闭环情况。"""
+        """抽取单个任务的报告、日志和 trace 闭环情况"""
 
         task_dir = task.workspace_dir.resolve()
         attempts = self.attempt_repo.list_attempts(task.task_id)
@@ -454,17 +466,17 @@ class ReleaseService:
             "task_status": task.status,
             "current_attempt": task.current_attempt,
             "latest_failure_type": latest_attempt.failure_type if latest_attempt else None,
-            "report_json_path": str(report_json_path) if report_json_path.exists() else None,
-            "report_md_path": str(report_md_path) if report_md_path.exists() else None,
-            "build_log_path": str(build_log_path) if build_log_path and Path(build_log_path).exists() else None,
-            "validation_report_path": str(validation_report_path) if validation_report_path and validation_report_path.exists() else None,
-            "trace_path": str(trace_path) if trace_path and trace_path.exists() else None,
-            "workspace_dir": str(task_dir),
+            "report_json_path": self._path(report_json_path) if report_json_path.exists() else None,
+            "report_md_path": self._path(report_md_path) if report_md_path.exists() else None,
+            "build_log_path": self._path(build_log_path) if build_log_path and Path(build_log_path).exists() else None,
+            "validation_report_path": self._path(validation_report_path) if validation_report_path and validation_report_path.exists() else None,
+            "trace_path": self._path(trace_path) if trace_path and trace_path.exists() else None,
+            "workspace_dir": self._path(task_dir),
             "closure_ok": closure_ok,
         }
 
     def _collect_document_sources(self) -> list[tuple[Path, str]]:
-        """收集需要进入 submission/docs 的文档源文件。"""
+        """收集需要进入 submission/docs 的文档源文件"""
 
         items: list[tuple[Path, str]] = []
         readme_path = self.runtime.project_root / "README.md"
@@ -479,7 +491,7 @@ class ReleaseService:
         return items
 
     def _document_category(self, relative_name: str) -> str:
-        """按文件名和目录位置推断文档分类。"""
+        """按文件名和目录位置推断文档分类"""
 
         normalized_name = relative_name.replace("\\", "/")
         lower_name = normalized_name.lower()
@@ -496,7 +508,7 @@ class ReleaseService:
         return "document"
 
     def _extract_version_suffix(self, filename: str) -> str:
-        """从文件名中提取版本后缀。"""
+        """从文件名中提取版本后缀"""
 
         match = re.search(r"(_v\d+)", filename)
         if match:
@@ -504,13 +516,15 @@ class ReleaseService:
         return "unversioned"
 
     def _render_model_statement(self) -> str:
-        """生成正式材料里的模型选型说明。"""
+        """生成正式材料里的模型选型说明"""
 
         lines = [
             "# PatchWeaver 模型选型说明",
             "",
             f"- 模型供应方: {self.models_config.provider}",
             f"- 接口模式: {self.models_config.endpoint_mode}",
+            f"- API Key 环境变量: {self.models_config.api_key_env}",
+            f"- API Key 来源: {self._api_key_source_label(self._api_key_source())}",
             f"- 模型拓扑: {self.models_config.topology}",
             f"- 主模型: {self.models_config.default_model}",
             f"- 开发口径: {self.models_config.development_model}",
@@ -529,7 +543,7 @@ class ReleaseService:
         return "\n".join(lines) + "\n"
 
     def _render_bailian_delivery_note(self) -> str:
-        """生成百炼应用落地分层说明。"""
+        """生成百炼应用落地分层说明"""
 
         lines = [
             "# PatchWeaver 百炼应用落地说明",
@@ -547,7 +561,7 @@ class ReleaseService:
         return "\n".join(lines) + "\n"
 
     def _evaluation_summaries(self) -> list[dict[str, Any]]:
-        """读取阶段评测摘要，供交付和门禁复用。"""
+        """读取阶段评测摘要，供交付和门禁复用"""
 
         items: list[dict[str, Any]] = []
         evaluations_root = self.runtime.data_dir / "evaluations"
@@ -565,14 +579,14 @@ class ReleaseService:
                     "matched_fixtures": int(payload.get("matched_fixtures", 0) or 0),
                     "missing_fixtures": int(payload.get("missing_fixtures", 0) or 0),
                     "success_rate": float(payload.get("success_rate", 0.0) or 0.0),
-                    "summary_json_path": str(path.resolve()),
-                    "summary_md_path": str(path.with_name("summary.md").resolve()),
+                    "summary_json_path": self._path(path),
+                    "summary_md_path": self._path(path.with_name("summary.md")),
                 }
             )
         return items
 
     def _check(self, name: str, ok: bool, evidence: str, detail: str, failed_status: str) -> dict[str, str]:
-        """统一组织一条门禁检查结果。"""
+        """统一组织一条门禁检查结果"""
 
         status = "passed" if ok else failed_status
         return {
@@ -583,7 +597,7 @@ class ReleaseService:
         }
 
     def _summarize_checks(self, checks: list[dict[str, str]]) -> dict[str, Any]:
-        """汇总门禁检查结果。"""
+        """汇总门禁检查结果"""
 
         passed = sum(1 for item in checks if item["status"] == "passed")
         limited = sum(1 for item in checks if item["status"] == "limited")
@@ -598,7 +612,7 @@ class ReleaseService:
         }
 
     def _ensure_submission_dirs(self) -> dict[str, Path]:
-        """按第四阶段约定建立 submission 目录结构。"""
+        """按第四阶段约定建立 submission 目录结构"""
 
         root = self._submission_root()
         layout = {
@@ -613,49 +627,47 @@ class ReleaseService:
         return layout
 
     def _submission_root(self) -> Path:
-        """返回 submission 根目录。"""
+        """返回 submission 根目录"""
 
         return (self.runtime.project_root / "submission").resolve()
 
     def _system_log_path(self) -> Path:
-        """返回文本日志路径。"""
+        """返回文本日志路径"""
 
         return self._resolve_path(self.logging_config.file_path)
 
     def _jsonl_log_path(self) -> Path:
-        """返回 JSONL 日志路径。"""
+        """返回 JSONL 日志路径"""
 
         return self._resolve_path(self.logging_config.jsonl_path)
 
     def _api_key_present(self) -> bool:
-        """判断当前环境里是否已经注入模型密钥。"""
+        """判断当前环境里是否已经解析到模型密钥"""
 
-        import os
-
-        return bool(os.getenv(self.models_config.api_key_env))
+        return self._resolve_api_key() is not None
 
     def _resolve_path(self, raw_path: str) -> Path:
-        """把配置路径展开成绝对路径。"""
+        """把配置路径展开成绝对路径"""
 
-        candidate = Path(raw_path)
-        return candidate if candidate.is_absolute() else (self.runtime.project_root / candidate).resolve()
+        return ensure_within_root(self.runtime.project_root, raw_path, label="project_path")
 
     def _write_json(self, payload: dict[str, Any], target_path: Path) -> Path:
-        """写出 JSON 文件。"""
+        """写出 JSON 文件"""
 
         target_path.parent.mkdir(parents=True, exist_ok=True)
-        target_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        normalized = relativize_payload(payload, self.runtime.project_root)
+        target_path.write_text(json.dumps(normalized, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         return target_path
 
     def _write_text(self, content: str, target_path: Path) -> Path:
-        """写出文本文件。"""
+        """写出文本文件"""
 
         target_path.parent.mkdir(parents=True, exist_ok=True)
         target_path.write_text(content, encoding="utf-8")
         return target_path
 
     def _read_json(self, path: Path) -> dict[str, Any] | None:
-        """安全读取 JSON 文件。"""
+        """安全读取 JSON 文件"""
 
         if not path.exists():
             return None
@@ -666,6 +678,90 @@ class ReleaseService:
         return payload if isinstance(payload, dict) else None
 
     def _now(self) -> str:
-        """统一生成当前时间戳。"""
+        """统一生成当前时间戳"""
 
         return datetime.now(timezone.utc).isoformat()
+
+    def _path(self, value: Path | str | None) -> str | None:
+        """把项目内路径转换成相对源码根目录表达"""
+
+        return to_project_relative(self.runtime.project_root, value)
+
+    def _layout_payload(self, layout: dict[str, Path]) -> dict[str, str | None]:
+        """把 submission 布局转换成相对源码根目录表达"""
+
+        return {name: self._path(path) for name, path in layout.items()}
+
+    def _api_key_source_label(self, source: str) -> str:
+        """把 API Key 来源转换成人读文案"""
+
+        labels = {
+            "env": "环境变量",
+            "config": "配置文件",
+            "missing": "未配置",
+        }
+        return labels.get(source, source)
+
+    def _resolve_api_key(self) -> str | None:
+        """兼容配置对象和简化测试对象的 API Key 解析"""
+
+        resolver = getattr(self.models_config, "resolve_api_key", None)
+        if callable(resolver):
+            return resolver()
+
+        import os
+
+        env_name = getattr(self.models_config, "api_key_env", "PATCHWEAVER_BAILIAN_API_KEY")
+        env_value = os.getenv(env_name, "").strip()
+        if env_value:
+            return env_value
+
+        config_value = str(getattr(self.models_config, "api_key", "") or "").strip()
+        return config_value or None
+
+    def _api_key_source(self) -> str:
+        """兼容配置对象和简化测试对象的 API Key 来源判断"""
+
+        resolver = getattr(self.models_config, "resolve_api_key_source", None)
+        if callable(resolver):
+            return str(resolver())
+
+        import os
+
+        env_name = getattr(self.models_config, "api_key_env", "PATCHWEAVER_BAILIAN_API_KEY")
+        if os.getenv(env_name, "").strip():
+            return "env"
+        if str(getattr(self.models_config, "api_key", "") or "").strip():
+            return "config"
+        return "missing"
+
+    def _masked_api_key(self) -> str | None:
+        """兼容配置对象和简化测试对象的 API Key 脱敏显示"""
+
+        masker = getattr(self.models_config, "masked_api_key", None)
+        if callable(masker):
+            return masker()
+
+        value = self._resolve_api_key()
+        if value is None:
+            return None
+        if len(value) <= 8:
+            if len(value) <= 2:
+                return "*" * len(value)
+            return f"{value[:1]}{'*' * (len(value) - 2)}{value[-1:]}"
+        return f"{value[:4]}***{value[-4:]}"
+
+    def _api_key_status(self) -> dict[str, str | bool | None]:
+        """输出统一的 API Key 状态摘要"""
+
+        status_builder = getattr(self.models_config, "api_key_status", None)
+        if callable(status_builder):
+            return status_builder()
+
+        return {
+            "api_key_env": getattr(self.models_config, "api_key_env", "PATCHWEAVER_BAILIAN_API_KEY"),
+            "api_key_ready": self._resolve_api_key() is not None,
+            "api_key_source": self._api_key_source(),
+            "api_key_masked": self._masked_api_key(),
+            "api_key_in_config": bool(str(getattr(self.models_config, "api_key", "") or "").strip()),
+        }

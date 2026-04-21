@@ -1,4 +1,4 @@
-"""PatchWeaver 命令行入口。"""
+"""PatchWeaver 命令行入口"""
 
 from __future__ import annotations
 
@@ -29,38 +29,68 @@ from patchweaver.config.loader import (
     load_logging_config,
     load_models_config,
     load_prompts_config,
+    save_models_api_settings,
     load_skills_config,
     load_system_config,
     load_verify_config,
 )
 from patchweaver.config.resolver import load_effective_configs, resolve_runtime
 from patchweaver.coordinator.task_runner import TaskRunner
-from patchweaver.harness.attempt_engine import AttemptEngine
 from patchweaver.harness.evaluator import Evaluator
 from patchweaver.harness.workspace_guard import WorkspaceGuard
 from patchweaver.models.task import TaskContext
 from patchweaver.observability.run_logger import RunLogger
 from patchweaver.reporter.release_service import ReleaseService
 from patchweaver.reporter.stats_writer import StatsWriter
+from patchweaver.runtime_inspector import collect_machine_profile, resolve_task_binding
 from patchweaver.storage.artifact_repo import ArtifactRepository
 from patchweaver.storage.attempt_repo import AttemptRepository
 from patchweaver.storage.sqlite import initialize_sqlite_db
 from patchweaver.storage.task_repo import TaskRepository
+from patchweaver.utils.path_policy import relativize_payload, to_project_relative
+
+_RAW_TYPER_ECHO = typer.echo
+_RAW_TYPER_SECHO = typer.secho
+
+
+def _sanitize_cli_text(value: Any) -> Any:
+    """统一收掉命令行展示里的中文句号"""
+
+    if isinstance(value, str):
+        return value.replace("。", "")
+    return value
+
+
+def _cli_echo(message: Any = None, *args: Any, **kwargs: Any) -> None:
+    """统一处理人读输出"""
+
+    _RAW_TYPER_ECHO(_sanitize_cli_text(message), *args, **kwargs)
+
+
+def _cli_secho(message: Any = None, *args: Any, **kwargs: Any) -> None:
+    """统一处理带样式的人读输出"""
+
+    _RAW_TYPER_SECHO(_sanitize_cli_text(message), *args, **kwargs)
+
+
+typer.echo = _cli_echo
+typer.secho = _cli_secho
+
 
 class PatchWeaverHelpGroup(TyperGroup):
-    """统一渲染更适合人读的帮助页。"""
+    """统一渲染更适合人读的帮助页"""
 
     def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
-        """输出统一风格的帮助页。"""
-        # 统一接管帮助页渲染，避免根命令和子命令出现两套风格。
+        """输出统一风格的帮助页"""
+        # 统一接管帮助页渲染，避免根命令和子命令出现两套风格
         formatter.write(_render_help_page(ctx, self))
 
 
 class PatchWeaverHelpCommand(TyperCommand):
-    """统一渲染单命令帮助页。"""
+    """统一渲染单命令帮助页"""
 
     def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
-        """输出单命令帮助页。"""
+        """输出单命令帮助页"""
         formatter.write(_render_command_help(ctx, self))
 
 
@@ -70,19 +100,25 @@ app = typer.Typer(
     no_args_is_help=True,
     help="PatchWeaver 命令行工具。",
 )
+models_app = typer.Typer(
+    name="models",
+    cls=PatchWeaverHelpGroup,
+    help="查看模型配置并维护 API Key",
+)
 db_app = typer.Typer(
     name="db",
     cls=PatchWeaverHelpGroup,
     no_args_is_help=True,
     help="SQLite 相关命令。",
 )
+app.add_typer(models_app, name="models")
 app.add_typer(db_app, name="db")
 
 
 def _load_runtime(profile: str | None = None, db_path: str | None = None, max_attempts: int | None = None):
-    """解析当前命令实际生效的运行时配置。"""
+    """解析当前命令实际生效的运行时配置"""
     try:
-        # 启动阶段统一走这里解析运行参数，命令层不用重复处理配置优先级。
+        # 启动阶段统一走这里解析运行参数，命令层不用重复处理配置优先级
         return resolve_runtime(
             profile_name=profile,
             cli_database_path=db_path,
@@ -94,36 +130,83 @@ def _load_runtime(profile: str | None = None, db_path: str | None = None, max_at
 
 
 def _placeholder(command_name: str) -> None:
-    """输出占位命令的统一提示。"""
+    """输出占位命令的统一提示"""
     typer.echo(f"[待实现] `{command_name}` 命令骨架已就绪，当前版本暂未实现具体逻辑。")
 
 
 def _resolve_project_path(project_root: Path, raw_path: str) -> Path:
-    """把配置路径转换为项目内可用的绝对路径。"""
-    # 配置里允许写相对路径，统一按项目根目录展开。
+    """把配置路径转换为项目内可用的绝对路径"""
+    # 配置里允许写相对路径，统一按项目根目录展开
     candidate = Path(raw_path)
     return candidate if candidate.is_absolute() else (project_root / candidate)
 
 
 def _should_use_color(*, plain: bool = False, no_color: bool = False) -> bool:
-    """判断当前输出是否启用颜色。"""
-    # 带 --plain / --no-color 或外部显式关闭颜色时，直接走纯文本输出。
+    """判断当前输出是否启用颜色"""
+    # 带 --plain / --no-color 或外部显式关闭颜色时，直接走纯文本输出
     if plain or no_color or os.getenv("NO_COLOR") == "1":
         return False
     return sys.stdout.isatty()
 
 
 def _emit_json(payload: dict[str, Any]) -> None:
-    """输出结构化 JSON。"""
-    typer.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+    """输出结构化 JSON"""
+    _RAW_TYPER_ECHO(json.dumps(payload, ensure_ascii=False, indent=2))
 
 
 def _write_json_snapshot(path: Path, payload: dict[str, Any]) -> Path:
-    """把结构化结果额外落成一份 JSON 快照。"""
+    """把结构化结果额外落成一份 JSON 快照"""
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return path
+
+
+def _project_path(project_root: Path, value: Path | str | None) -> str | None:
+    """把路径统一转换成相对源码根目录的展示格式"""
+
+    return to_project_relative(project_root, value)
+
+
+def _project_payload(project_root: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    """把命令输出中的项目内路径统一收敛为相对路径"""
+
+    normalized = relativize_payload(payload, project_root)
+    if not isinstance(normalized, dict):
+        raise TypeError("CLI 输出必须是字典。")
+    return normalized
+
+
+def _api_key_source_label(source: str) -> str:
+    """把 API Key 来源转换成人更容易读的文案"""
+
+    labels = {
+        "env": "环境变量",
+        "config": "配置文件",
+        "missing": "未配置",
+    }
+    return labels.get(source, source)
+
+
+def _models_payload(models_config: Any) -> dict[str, Any]:
+    """整理模型配置输出，并隐藏敏感字段"""
+
+    payload = {
+        "command": "models",
+        "provider": models_config.provider,
+        "endpoint_mode": models_config.endpoint_mode,
+        "base_url": models_config.base_url,
+        "topology": models_config.topology,
+        "default_model": models_config.default_model,
+        "development_model": models_config.development_model,
+        "delivery_model": models_config.delivery_model,
+        "fallback_model": models_config.fallback_model,
+        "helper_models": models_config.helper_models,
+        "helper_notes": models_config.helper_notes,
+        "execution_boundaries": models_config.execution_boundaries,
+    }
+    payload.update(models_config.api_key_status())
+    return payload
 
 
 def _check_item(
@@ -135,8 +218,8 @@ def _check_item(
     detail: str,
     failed_status: str = "warn",
 ) -> dict[str, Any]:
-    """构造单条检查结果。"""
-    # doctor 里的检查项统一走这一层，保证文本输出和 JSON 输出使用同一份状态语义。
+    """构造单条检查结果"""
+    # doctor 里的检查项统一走这一层，保证文本输出和 JSON 输出使用同一份状态语义
     status = "ok" if ok else failed_status
     return {
         "category": category,
@@ -149,9 +232,9 @@ def _check_item(
 
 
 def _project_skill_dirs(project_root: Path, skills_config: Any) -> dict[str, Path]:
-    """计算项目级 skill 的目录位置。"""
+    """计算项目级 skill 的目录位置"""
     project_root_dir = _resolve_project_path(project_root, skills_config.skill_dirs.project)
-    # 首版只为已启用 skill 建项目级目录，避免一开始铺太多空目录。
+    # 首版只为已启用 skill 建项目级目录，避免一开始铺太多空目录
     return {
         skill_name: (project_root_dir / skill_name).resolve()
         for skill_name in skills_config.enabled_skills
@@ -159,9 +242,9 @@ def _project_skill_dirs(project_root: Path, skills_config: Any) -> dict[str, Pat
 
 
 def _manifest_template_specs(project_root: Path, runtime: Any, skills_config: Any) -> dict[Path, str]:
-    """生成初始化阶段需要写入的模板内容。"""
+    """生成初始化阶段需要写入的模板内容"""
     allowed_tags = skills_config.allowed_skill_tags or ["contest", "core"]
-    # 这些模板属于最小 onboard 产物，先把结构和字段约定冻结下来。
+    # 这些模板属于最小 onboard 产物，先把结构和字段约定冻结下来
     specs: dict[Path, str] = {
         runtime.manifest_dir / "bootstrap_manifest.template.json": json.dumps(
             {
@@ -190,7 +273,7 @@ def _manifest_template_specs(project_root: Path, runtime: Any, skills_config: An
     }
 
     for skill_name, skill_dir in _project_skill_dirs(project_root, skills_config).items():
-        # skill manifest 先给出最小骨架，后面逐步替换成真实入口和约束。
+        # skill manifest 先给出最小骨架，后面逐步替换成真实入口和约束
         specs[skill_dir / "manifest.yaml"] = "\n".join(
             [
                 f"name: {skill_name}",
@@ -211,9 +294,9 @@ def _manifest_template_specs(project_root: Path, runtime: Any, skills_config: An
 
 
 def _ensure_template_file(path: Path, content: str) -> bool:
-    """在目标文件不存在时写入模板。"""
+    """在目标文件不存在时写入模板"""
     path.parent.mkdir(parents=True, exist_ok=True)
-    # 已存在的模板不覆盖，避免 init 把手工修改过的内容冲掉。
+    # 已存在的模板不覆盖，避免 init 把手工修改过的内容冲掉
     if path.exists():
         return False
     path.write_text(content, encoding="utf-8")
@@ -221,51 +304,53 @@ def _ensure_template_file(path: Path, content: str) -> bool:
 
 
 def _command_help(command: click.Command) -> str:
-    """读取命令的短帮助说明。"""
-    return command.get_short_help_str(limit=80) or "暂无说明。"
+    """读取命令的短帮助说明"""
+    return _sanitize_cli_text(command.get_short_help_str(limit=80) or "暂无说明")
 
 
 def _help_width() -> int:
-    """根据终端宽度计算帮助页的展示宽度。"""
+    """根据终端宽度计算帮助页的展示宽度"""
     return max(76, min(get_terminal_size((96, 30)).columns, 100))
 
 
 def _style_help(text: str, *, fg: str | None = None, bold: bool = False, dim: bool = False) -> str:
-    """为帮助页文本附加简单样式。"""
+    """为帮助页文本附加简单样式"""
     if not _should_use_color():
         return text
     return click.style(text, fg=fg, bold=bold, dim=dim)
 
 
 def _help_rule(char: str = "=") -> str:
-    """生成帮助页使用的分隔线。"""
+    """生成帮助页使用的分隔线"""
     return char * _help_width()
 
 
 def _help_section(title: str) -> str:
-    """渲染帮助页的小节标题。"""
+    """渲染帮助页的小节标题"""
     return _style_help(title, fg="bright_blue", bold=True)
 
 
 def _help_item(name: str, description: str, *, indent: int = 2, width: int = 16, color: str = "bright_blue") -> str:
-    """生成单行帮助项。"""
+    """生成单行帮助项"""
     padded = name.ljust(width)
     return f"{' ' * indent}{_style_help(padded, fg=color, bold=True)} {description}"
 
 
 def _wrap_help_entry(name: str, description: str, *, width: int = 22, color: str = "bright_blue") -> list[str]:
-    """生成可换行的帮助项。"""
-    # 长描述按终端宽度折行，避免帮助页在窄终端里挤成一团。
+    """生成可换行的帮助项"""
+    # 长描述按终端宽度折行，避免帮助页在窄终端里挤成一团
     total_width = _help_width()
     content_width = max(30, total_width - width - 3)
-    wrapped = wrap(description, width=content_width) or [description]
-    lines = [f"  {_style_help(name.ljust(width), fg=color, bold=True)} {wrapped[0]}"]
+    clean_name = _sanitize_cli_text(name)
+    clean_description = _sanitize_cli_text(description)
+    wrapped = wrap(clean_description, width=content_width) or [clean_description]
+    lines = [f"  {_style_help(clean_name.ljust(width), fg=color, bold=True)} {wrapped[0]}"]
     lines.extend(f"  {' ' * width} {line}" for line in wrapped[1:])
     return lines
 
 
 def _command_path(ctx: click.Context, command: click.Command | None = None) -> str:
-    """按项目 CLI 规范拼出命令路径。"""
+    """按项目 CLI 规范拼出命令路径"""
     parts: list[str] = []
     cursor: click.Context | None = ctx
     while cursor is not None:
@@ -283,7 +368,7 @@ def _command_path(ctx: click.Context, command: click.Command | None = None) -> s
 
 
 def _command_heading(command_path: str) -> str:
-    """把命令路径转换成页头标题。"""
+    """把命令路径转换成页头标题"""
     parts = command_path.split()
     if parts:
         parts[0] = "PatchWeaver"
@@ -291,14 +376,14 @@ def _command_heading(command_path: str) -> str:
 
 
 def _normalize_help_description(text: str) -> str:
-    """把 Click 默认帮助语句调整成项目内统一文案。"""
+    """把 Click 默认帮助语句调整成项目内统一文案"""
     normalized = text.replace("Show this message and exit.", "显示帮助页。")
     normalized = normalized.replace("[default:", "[默认:")
-    return normalized
+    return _sanitize_cli_text(normalized)
 
 
 def _command_option_entries(ctx: click.Context, command: click.Command) -> list[tuple[str, str]]:
-    """提取命令帮助页里可展示的参数说明。"""
+    """提取命令帮助页里可展示的参数说明"""
     entries: list[tuple[str, str]] = []
     for param in command.get_params(ctx):
         help_record = param.get_help_record(ctx)
@@ -310,8 +395,14 @@ def _command_option_entries(ctx: click.Context, command: click.Command) -> list[
 
 
 def _command_examples(command_path: str) -> list[tuple[str, str]]:
-    """返回常用命令示例。"""
+    """返回常用命令示例"""
     examples: dict[str, list[tuple[str, str]]] = {
+        "patchweaver models": [
+            (f"{command_path} --json", "查看当前模型配置、API Key 来源和脱敏状态"),
+            ("patchweaver models set-api-key --value sk-xxxx", "把 API Key 写入 config/models.yaml"),
+            ("patchweaver models set-api-key-env --name PATCHWEAVER_BAILIAN_API_KEY", "修改优先读取的环境变量名"),
+            ("patchweaver models clear-api-key", "清空 config/models.yaml 里的明文 API Key"),
+        ],
         "patchweaver serve-api": [
             (f"{command_path} --foreground", "以前台方式启动后端接口，便于本地联调。"),
             (f"{command_path} --host 0.0.0.0 --port 18084", "指定监听地址和端口。"),
@@ -354,7 +445,7 @@ def _command_examples(command_path: str) -> list[tuple[str, str]]:
 
 
 def _render_root_help(ctx: click.Context, command: click.Command) -> str:
-    """渲染根命令帮助页。"""
+    """渲染根命令帮助页"""
     program_name = command.name or "patchweaver"
     commands = {name: command.get_command(ctx, name) for name in command.list_commands(ctx)}
     task_commands = ["create", "analyze", "run", "report", "replay", "evaluate"]
@@ -372,9 +463,11 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
         "status",
         "version",
     ]
+    # 根帮助页按“环境准备”和“任务链路”分组展示
+    # 这样第一次接触项目的人更容易按顺序找到命令
     lines = [
         f"{_style_help('PatchWeaver', fg='bright_blue', bold=True)} {_style_help(__version__, fg='bright_yellow', bold=True)}"
-        " — 从上游 CVE 修复补丁到 livepatch 构建尝试的最小工程壳。",
+        " — 面向内核 CVE 热补丁生成、构建与验证的工程化平台",
         "",
         f"{_style_help('Usage:', fg='bright_blue', bold=True)} {program_name} [global options] <command> [command options]",
         "",
@@ -384,7 +477,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
     lines.extend(_wrap_help_entry("--help", "显示帮助页。", color="bright_yellow"))
     lines.extend(_wrap_help_entry("--install-completion", "为当前 shell 安装命令补全。", color="bright_yellow"))
     lines.extend(_wrap_help_entry("--show-completion", "输出补全脚本，便于自行集成。", color="bright_yellow"))
-    lines.extend(_wrap_help_entry("--no-color", "关闭 ANSI 颜色。doctor 命令也支持该输出模式。", color="bright_green"))
+    lines.extend(_wrap_help_entry("--no-color", "关闭 ANSI 颜色，doctor 命令也支持该输出模式", color="bright_green"))
     lines.extend(_wrap_help_entry("--json", "部分命令支持结构化输出，适合脚本和测试。", color="bright_green"))
     lines.extend(_wrap_help_entry("--plain", "部分命令支持纯文本输出，适合日志采集或远程终端。", color="bright_green"))
 
@@ -392,15 +485,17 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
         [
             "",
             _help_section("Commands:"),
-            "  Hint: 带 * 的命令包含子命令。可运行 <command> --help 查看详情。",
+            "  Hint: 带 * 的命令包含子命令，可运行 <command> --help 查看详情",
         ]
     )
 
+    # 先列运行环境和交付相关命令，再列任务命令
+    # 实际演示时顺序也基本是按这个走
     for name in env_commands:
         child = commands.get(name)
         if child is None:
             continue
-        label = f"{name} *" if name == "db" else name
+        label = f"{name} *" if name in {"db", "models"} else name
         lines.extend(_wrap_help_entry(label, _command_help(child)))
 
     for name in task_commands:
@@ -416,7 +511,8 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
         ("patchweaver install-api-service", "在 Linux 验证机上安装并启动 Web/API 的 systemd 服务。"),
         ("patchweaver db path", "查看当前配置解析出来的数据库路径。"),
         ("patchweaver evaluate --fixture contest_samples", "按固定样例集输出阶段评测汇总。"),
-        ("patchweaver models --json", "查看当前模型分工和百炼环境变量状态。"),
+        ("patchweaver models --json", "查看当前模型分工和 API Key 来源。"),
+        ("patchweaver models set-api-key --value sk-xxxx", "把 API Key 写入 config/models.yaml。"),
         ("patchweaver finalize", "生成 submission 目录和 final_manifest。"),
         ("patchweaver gate", "执行第四阶段最终门禁检查。"),
     ]
@@ -432,17 +528,11 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
     )
     for name, description in root_examples:
         lines.extend(_wrap_help_entry(name, description, width=example_width, color="bright_green"))
-    lines.extend(
-        [
-            "",
-            f"{_style_help('Docs:', fg='bright_blue', bold=True)} docs/PatchWeaver-总方案与创新设计总文档.md",
-        ]
-    )
-    return "\n".join(lines)
+    return _sanitize_cli_text("\n".join(lines))
 
 
 def _render_db_help(command: click.Command) -> str:
-    """渲染 db 子命令帮助页。"""
+    """渲染 db 子命令帮助页"""
     ctx = click.Context(command)
     command_path = _command_path(ctx, command)
     lines = [
@@ -484,20 +574,59 @@ def _render_db_help(command: click.Command) -> str:
     )
     for name, description in db_examples:
         lines.extend(_wrap_help_entry(name, description, width=example_width, color="bright_green"))
+    return _sanitize_cli_text("\n".join(lines))
+
+
+def _render_models_help(command: click.Command) -> str:
+    """渲染 models 子命令帮助页"""
+
+    ctx = click.Context(command)
+    command_path = _command_path(ctx, command)
+    lines = [
+        f"{_style_help('PatchWeaver / models', fg='bright_blue', bold=True)}"
+        " — 模型配置与 API Key 管理命令",
+        "",
+        f"{_style_help('Usage:', fg='bright_blue', bold=True)} {command_path} [options]",
+        f"       {command_path} <subcommand> [options]",
+        "",
+        _help_section("Options:"),
+    ]
+
+    lines.extend(_wrap_help_entry("--help", "显示帮助页", color="bright_yellow"))
+    lines.extend(_wrap_help_entry("--json", "直接输出当前模型配置和 API Key 状态", color="bright_green"))
+
     lines.extend(
         [
             "",
-            f"{_style_help('Docs:', fg='bright_blue', bold=True)} docs/PatchWeaver-总方案与创新设计总文档.md",
+            _help_section("Commands:"),
         ]
     )
-    return "\n".join(lines)
+    for name in command.list_commands(ctx):
+        child = command.get_command(ctx, name)
+        if child is not None:
+            lines.extend(_wrap_help_entry(name, _command_help(child)))
+
+    model_examples = _command_examples(command_path)
+    lines.extend(
+        [
+            "",
+            _help_section("Examples:"),
+        ]
+    )
+    example_width = min(
+        max((len(name) for name, _ in model_examples), default=30) + 2,
+        52,
+    )
+    for name, description in model_examples:
+        lines.extend(_wrap_help_entry(name, description, width=example_width, color="bright_green"))
+    return _sanitize_cli_text("\n".join(lines))
 
 
 def _render_command_help(ctx: click.Context, command: click.Command) -> str:
-    """渲染单命令帮助页。"""
+    """渲染单命令帮助页"""
     command_path = _command_path(ctx, command)
     short_help = _command_help(command)
-    help_text = (command.help or "").strip()
+    help_text = _sanitize_cli_text((command.help or "").strip())
     lines = [
         _style_help(_command_heading(command_path), fg="bright_blue", bold=True),
         "",
@@ -521,6 +650,8 @@ def _render_command_help(ctx: click.Context, command: click.Command) -> str:
 
     option_entries = _command_option_entries(ctx, command)
     if option_entries:
+        # 选项表宽度按当前命令真实参数自适应
+        # 避免短命令和长命令都被固定列宽拖得很散
         lines.extend(
             [
                 "",
@@ -536,6 +667,7 @@ def _render_command_help(ctx: click.Context, command: click.Command) -> str:
 
     examples = _command_examples(command_path)
     if examples:
+        # 示例只放最常用的几条，保持帮助页在终端里一屏内可读
         lines.extend(
             [
                 "",
@@ -548,25 +680,20 @@ def _render_command_help(ctx: click.Context, command: click.Command) -> str:
         )
         for name, description in examples:
             lines.extend(_wrap_help_entry(name, description, width=example_width, color="bright_green"))
-
-    lines.extend(
-        [
-            "",
-            f"{_style_help('Docs:', fg='bright_blue', bold=True)} docs/PatchWeaver-总方案与创新设计总文档.md",
-        ]
-    )
-    return "\n".join(lines)
+    return _sanitize_cli_text("\n".join(lines))
 
 
 def _render_help_page(ctx: click.Context, command: click.Command) -> str:
-    """根据命令类型选择帮助页模板。"""
+    """根据命令类型选择帮助页模板"""
     if command.name == "db":
         return _render_db_help(command)
+    if command.name == "models":
+        return _render_models_help(command)
     return _render_root_help(ctx, command)
 
 
 def _print_status(label: str, ok: bool, detail: str, *, use_color: bool = True) -> None:
-    """输出一条环境检查结果。"""
+    """输出一条环境检查结果"""
     prefix = "[正常]" if ok else "[提示]"
     color = typer.colors.GREEN if ok else typer.colors.YELLOW
     message = f"{prefix} {label}: {detail}"
@@ -577,13 +704,13 @@ def _print_status(label: str, ok: bool, detail: str, *, use_color: bool = True) 
 
 
 def _runtime_payload(runtime: Any) -> dict[str, Any]:
-    """整理运行时信息，供文本和 JSON 复用。"""
+    """整理运行时信息，供文本和 JSON 复用"""
     return {
-        "project_root": str(runtime.project_root),
-        "config_dir": str(runtime.config_dir),
-        "workspace_root": str(runtime.workspace_root),
-        "database_path": str(runtime.database_path),
-        "manifest_dir": str(runtime.manifest_dir),
+        "project_root": _project_path(runtime.project_root, runtime.project_root),
+        "config_dir": _project_path(runtime.project_root, runtime.config_dir),
+        "workspace_root": _project_path(runtime.project_root, runtime.workspace_root),
+        "database_path": _project_path(runtime.project_root, runtime.database_path),
+        "manifest_dir": _project_path(runtime.project_root, runtime.manifest_dir),
         "default_kernel": runtime.default_kernel,
         "max_attempts": runtime.max_attempts,
         "parallel_read_limit": runtime.parallel_read_limit,
@@ -595,25 +722,27 @@ def _runtime_payload(runtime: Any) -> dict[str, Any]:
     }
 
 
-def _task_payload(task: TaskContext) -> dict[str, Any]:
-    """把任务对象整理成统一输出结构。"""
+def _task_payload(task: TaskContext, project_root: Path | None = None) -> dict[str, Any]:
+    """把任务对象整理成统一输出结构"""
 
     return {
         "task_id": task.task_id,
         "cve_id": task.cve_id,
         "target_kernel": task.target_kernel,
+        "target_kernel_source": task.target_kernel_source,
         "profile_name": task.profile_name,
         "status": task.status,
         "current_attempt": task.current_attempt,
         "max_attempts": task.max_attempts,
-        "workspace_dir": str(task.workspace_dir),
+        "workspace_dir": _project_path(project_root, task.workspace_dir),
+        "machine_profile": task.machine_profile.model_dump(mode="json") if task.machine_profile is not None else None,
         "created_at": task.created_at.isoformat(),
         "updated_at": task.updated_at.isoformat(),
     }
 
 
 def _build_task_runner(runtime: Any) -> TaskRunner:
-    """按当前运行时配置创建任务编排器。"""
+    """按当前运行时配置创建任务编排器"""
 
     configs = load_effective_configs(project_root=runtime.project_root, profile_name=runtime.profile_name)
     return TaskRunner(
@@ -626,29 +755,29 @@ def _build_task_runner(runtime: Any) -> TaskRunner:
 
 
 def _build_release_service(runtime: Any) -> ReleaseService:
-    """按当前运行时配置创建第四阶段交付服务。"""
+    """按当前运行时配置创建第四阶段交付服务"""
 
     return ReleaseService(
         runtime=runtime,
         build_config=load_build_config(runtime.project_root),
         logging_config=load_logging_config(runtime.project_root),
         models_config=load_models_config(runtime.project_root),
-        task_repo=TaskRepository(runtime.database_path),
-        attempt_repo=AttemptRepository(runtime.database_path),
-        artifact_repo=ArtifactRepository(runtime.database_path),
+        task_repo=TaskRepository(runtime.database_path, runtime.project_root),
+        attempt_repo=AttemptRepository(runtime.database_path, runtime.project_root),
+        artifact_repo=ArtifactRepository(runtime.database_path, runtime.project_root),
     )
 
 
 def _build_run_logger(runtime: Any) -> RunLogger:
-    """创建当前命令使用的运行日志写入器。"""
+    """创建当前命令使用的运行日志写入器"""
 
     return RunLogger(runtime.project_root, load_logging_config(runtime.project_root))
 
 
 def _resolve_task_runtime(task_id: str, base_runtime: Any) -> tuple[Any, TaskContext]:
-    """按任务自身绑定的运行档位解析实际运行时。"""
+    """按任务自身绑定的运行档位解析实际运行时"""
 
-    task = TaskRepository(base_runtime.database_path).get_task(task_id)
+    task = TaskRepository(base_runtime.database_path, base_runtime.project_root).get_task(task_id)
     if task is None:
         raise ValueError(f"未找到任务：{task_id}")
 
@@ -662,7 +791,7 @@ def _resolve_task_runtime(task_id: str, base_runtime: Any) -> tuple[Any, TaskCon
 
 
 def _load_fixture_set(project_root: Path, fixture_name: str) -> tuple[str, list[dict[str, Any]]]:
-    """读取批量评测使用的固定样例集。"""
+    """读取批量评测使用的固定样例集"""
 
     filename = fixture_name if fixture_name.endswith(".json") else f"{fixture_name}.json"
     fixture_path = (project_root / "evaluations" / "fixtures" / filename).resolve()
@@ -676,7 +805,7 @@ def _load_fixture_set(project_root: Path, fixture_name: str) -> tuple[str, list[
 
 
 def _find_latest_task_for_fixture(tasks: list[TaskContext], fixture: dict[str, Any]) -> TaskContext | None:
-    """按 CVE 和内核版本寻找最匹配的任务。"""
+    """按 CVE 和内核版本寻找最匹配的任务"""
 
     cve_id = str(fixture.get("cve_id") or "")
     target_kernel = str(fixture.get("target_kernel") or "")
@@ -690,16 +819,16 @@ def _find_latest_task_for_fixture(tasks: list[TaskContext], fixture: dict[str, A
 
 
 def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
-    """执行固定样例评测并输出阶段摘要。"""
+    """执行固定样例评测并输出阶段摘要"""
 
     fixture_set_name, fixtures = _load_fixture_set(runtime.project_root, fixture_name)
-    task_repo = TaskRepository(runtime.database_path)
-    attempt_repo = AttemptRepository(runtime.database_path)
-    artifact_repo = ArtifactRepository(runtime.database_path)
+    task_repo = TaskRepository(runtime.database_path, runtime.project_root)
+    attempt_repo = AttemptRepository(runtime.database_path, runtime.project_root)
+    artifact_repo = ArtifactRepository(runtime.database_path, runtime.project_root)
     evaluator = Evaluator()
-    stats_writer = StatsWriter()
+    stats_writer = StatsWriter(runtime.project_root)
 
-    # 比赛期任务规模可控，这里直接读一批最近任务做匹配，方便先把阶段统计链路跑通。
+    # 比赛期任务规模可控，这里直接读一批最近任务做匹配，方便先把阶段统计链路跑通
     tasks = task_repo.list_tasks(limit=500)
     results: list[dict[str, Any]] = []
     per_task_paths: list[str] = []
@@ -746,7 +875,7 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
         }
         per_task_path = output_dir / f"{fixture_id}.json"
         stats_writer.write_json(per_task_payload, per_task_path)
-        per_task_paths.append(str(per_task_path))
+        per_task_paths.append(_project_path(runtime.project_root, per_task_path) or "")
         results.append(
             {
                 "fixture_id": fixture_id,
@@ -758,7 +887,7 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
                 "final_status": matched_task.status,
                 "attempts": len(attempts),
                 "latest_failure_type": task_summary.get("latest_failure_type"),
-                "evaluation_summary_path": str(per_task_path),
+                "evaluation_summary_path": _project_path(runtime.project_root, per_task_path),
             }
         )
 
@@ -775,8 +904,8 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
         "fixture_name": fixture_set_name,
         "fixture_count": len(fixtures),
         "summary": summary,
-        "summary_json": str(summary_json_path),
-        "summary_md": str(summary_md_path),
+        "summary_json": _project_path(runtime.project_root, summary_json_path),
+        "summary_md": _project_path(runtime.project_root, summary_md_path),
     }
 
 
@@ -788,23 +917,25 @@ def _doctor_payload(
     prompts_config: Any,
     models_config: Any,
 ) -> dict[str, Any]:
-    """组装 doctor 命令的完整检查结果。"""
+    """组装 doctor 命令的完整检查结果"""
     checks: list[dict[str, Any]] = []
 
-    # 先把几块固定上下文整理出来，后面的检查项都直接引用这份快照。
+    # 先把几块固定上下文整理出来，后面的检查项都直接引用这份快照
     skill_roots = {
-        "project": str(_resolve_project_path(runtime.project_root, skills_config.skill_dirs.project).resolve()),
-        "shared": str(_resolve_project_path(runtime.project_root, skills_config.skill_dirs.shared).resolve()),
-        "builtin": str(_resolve_project_path(runtime.project_root, skills_config.skill_dirs.builtin).resolve()),
+        "project": _project_path(runtime.project_root, _resolve_project_path(runtime.project_root, skills_config.skill_dirs.project).resolve()),
+        "shared": _project_path(runtime.project_root, _resolve_project_path(runtime.project_root, skills_config.skill_dirs.shared).resolve()),
+        "builtin": _project_path(runtime.project_root, _resolve_project_path(runtime.project_root, skills_config.skill_dirs.builtin).resolve()),
     }
     bootstrap_dirs = [
-        str(_resolve_project_path(runtime.project_root, raw_dir).resolve())
+        _project_path(runtime.project_root, _resolve_project_path(runtime.project_root, raw_dir).resolve())
         for raw_dir in prompts_config.bootstrap_fragment_dirs
     ]
     build_env = BuildOrchestrator(build_config).probe_environment()
     build_env["default_kernel"] = runtime.default_kernel
+    machine_profile = collect_machine_profile(build_config, build_env=build_env).model_dump(mode="json")
+    api_key_status = models_config.api_key_status()
 
-    # Python 依赖放在最前面查，CLI 自己起不来的问题会最先暴露。
+    # Python 依赖放在最前面查，CLI 自己起不来的问题会最先暴露
     required_modules = {
         "typer": "命令行框架",
         "pydantic": "配置与模型校验",
@@ -832,7 +963,7 @@ def _doctor_payload(
     ]
     for filename in config_files:
         config_path = runtime.config_dir / filename
-        checks.append(_check_item(category="config_file", name=filename, label=f"配置文件 `{filename}`", ok=config_path.exists(), detail=str(config_path)))
+        checks.append(_check_item(category="config_file", name=filename, label=f"配置文件 `{filename}`", ok=config_path.exists(), detail=_project_path(runtime.project_root, config_path)))
 
     submission_root = (runtime.project_root / "submission").resolve()
     checks.extend(
@@ -863,22 +994,25 @@ def _doctor_payload(
             ),
             _check_item(
                 category="models",
-                name="api_key_env",
-                label="百炼 API Key 环境变量",
-                ok=bool(os.getenv(models_config.api_key_env)),
-                detail=models_config.api_key_env,
+                name="api_key",
+                label="百炼 API Key",
+                ok=bool(api_key_status["api_key_ready"]),
+                detail=(
+                    f"{_api_key_source_label(str(api_key_status['api_key_source']))}"
+                    f" / {api_key_status['api_key_masked'] or models_config.api_key_env}"
+                ),
             ),
             _check_item(
                 category="delivery",
                 name="submission_root",
                 label="submission 根目录",
                 ok=submission_root.exists(),
-                detail=str(submission_root),
+                detail=_project_path(runtime.project_root, submission_root),
             ),
         ]
     )
 
-    # 构建环境单独列出来，后面如果 doctor 报黄，基本一眼就能看出是环境问题还是代码问题。
+    # 构建环境单独列出来，后面如果 doctor 报黄，基本一眼就能看出是环境问题还是代码问题
     checks.append(
         _check_item(
             category="build_backend",
@@ -935,12 +1069,12 @@ def _doctor_payload(
                 name=source_name,
                 label=f"Skill 根目录 `{source_name}`",
                 ok=skill_root.exists(),
-                detail=str(skill_root),
+                detail=_project_path(runtime.project_root, skill_root),
             )
         )
 
     if skills_config.require_manifest:
-        # 要求 manifest 时，项目级 skill 必须至少具备可检查的最小入口描述。
+        # 要求 manifest 时，项目级 skill 必须至少具备可检查的最小入口描述
         for skill_name, skill_dir in _project_skill_dirs(runtime.project_root, skills_config).items():
             manifest_path = skill_dir / "manifest.yaml"
             checks.append(
@@ -949,11 +1083,11 @@ def _doctor_payload(
                     name=skill_name,
                     label=f"Skill Manifest `{skill_name}`",
                     ok=manifest_path.exists(),
-                    detail=str(manifest_path),
+                    detail=_project_path(runtime.project_root, manifest_path),
                 )
             )
 
-    # bootstrap 目录和 contracts 目录分开检查，方便排查 prompt 体系是不是缺文件。
+    # bootstrap 目录和 contracts 目录分开检查，方便排查 prompt 体系是不是缺文件
     for bootstrap_dir in bootstrap_dirs:
         bootstrap_path = Path(bootstrap_dir)
         checks.append(
@@ -962,7 +1096,7 @@ def _doctor_payload(
                 name=bootstrap_path.name,
                 label=f"Bootstrap 目录 `{bootstrap_path.name}`",
                 ok=bootstrap_path.exists(),
-                detail=str(bootstrap_path),
+                detail=_project_path(runtime.project_root, bootstrap_path),
             )
         )
 
@@ -973,7 +1107,7 @@ def _doctor_payload(
             name="contracts",
             label="Prompt Contracts 目录",
             ok=prompt_contract_dir.exists(),
-            detail=str(prompt_contract_dir),
+            detail=_project_path(runtime.project_root, prompt_contract_dir),
         )
     )
 
@@ -983,12 +1117,12 @@ def _doctor_payload(
             name="manifest_dir",
             label="Manifest 目录",
             ok=runtime.manifest_dir.exists(),
-            detail=str(runtime.manifest_dir),
+            detail=_project_path(runtime.project_root, runtime.manifest_dir),
         )
     )
 
     for template_path in _manifest_template_specs(runtime.project_root, runtime, skills_config):
-        # doctor 只检查运行期 manifest 目录下的模板文件，项目 skill manifest 走上面的专项检查。
+        # doctor 只检查运行期 manifest 目录下的模板文件，项目 skill manifest 走上面的专项检查
         if template_path.parent != runtime.manifest_dir:
             continue
         checks.append(
@@ -997,23 +1131,23 @@ def _doctor_payload(
                 name=template_path.name,
                 label=f"Manifest 模板 `{template_path.name}`",
                 ok=template_path.exists(),
-                detail=str(template_path),
+                detail=_project_path(runtime.project_root, template_path),
             )
         )
 
-    # 最后一段再看文件系统状态，这里基本能判断当前环境能不能继续跑任务。
+    # 最后一段再看文件系统状态，这里基本能判断当前环境能不能继续跑任务
     log_path = _resolve_project_path(runtime.project_root, logging_config.file_path)
     jsonl_path = _resolve_project_path(runtime.project_root, logging_config.jsonl_path)
     checks.extend(
         [
-            _check_item(category="filesystem", name="log_dir", label="日志目录", ok=log_path.parent.exists(), detail=str(log_path.parent)),
-            _check_item(category="filesystem", name="jsonl_dir", label="JSONL 目录", ok=jsonl_path.parent.exists(), detail=str(jsonl_path.parent)),
-            _check_item(category="filesystem", name="workspace_root", label="工作区目录", ok=runtime.workspace_root.exists(), detail=str(runtime.workspace_root)),
-            _check_item(category="filesystem", name="sqlite_file", label="SQLite 文件", ok=runtime.database_path.exists(), detail=str(runtime.database_path)),
+            _check_item(category="filesystem", name="log_dir", label="日志目录", ok=log_path.parent.exists(), detail=_project_path(runtime.project_root, log_path.parent)),
+            _check_item(category="filesystem", name="jsonl_dir", label="JSONL 目录", ok=jsonl_path.parent.exists(), detail=_project_path(runtime.project_root, jsonl_path.parent)),
+            _check_item(category="filesystem", name="workspace_root", label="工作区目录", ok=runtime.workspace_root.exists(), detail=_project_path(runtime.project_root, runtime.workspace_root)),
+            _check_item(category="filesystem", name="sqlite_file", label="SQLite 文件", ok=runtime.database_path.exists(), detail=_project_path(runtime.project_root, runtime.database_path)),
         ]
     )
 
-    # 汇总值直接从检查项回算，避免文本输出和 JSON 输出统计不一致。
+    # 汇总值直接从检查项回算，避免文本输出和 JSON 输出统计不一致
     summary = {
         "total": len(checks),
         "ok": sum(1 for item in checks if item["status"] == "ok"),
@@ -1025,9 +1159,15 @@ def _doctor_payload(
         "command": "doctor",
         "runtime": {
             **_runtime_payload(runtime),
+            "configured_default_kernel": runtime.default_kernel,
+            "detected_target_kernel": machine_profile.get("build_target_kernel"),
+            "detected_target_kernel_source": machine_profile.get("build_target_kernel_source"),
+            "machine_kernel": machine_profile.get("machine_kernel"),
+            "machine_arch": machine_profile.get("machine_arch"),
             "python_version": platform.python_version(),
             "skill_source_priority": skills_config.skill_source_priority,
         },
+        "machine_profile": machine_profile,
         "skill_roots": skill_roots,
         "bootstrap_dirs": bootstrap_dirs,
         "build_env": build_env,
@@ -1039,7 +1179,7 @@ def _doctor_payload(
 def version(
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """显示当前版本。"""
+    """显示当前版本"""
 
     if json_output:
         _emit_json({"name": "PatchWeaver", "version": __version__})
@@ -1055,13 +1195,13 @@ def paths(
     max_attempts: Annotated[int | None, typer.Option("--max-attempts", help="覆盖最大尝试次数。")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """打印当前生效的运行路径和关键配置。"""
+    """打印当前生效的运行路径和关键配置"""
 
     runtime = _load_runtime(profile=profile, db_path=db_path, max_attempts=max_attempts)
     payload = _runtime_payload(runtime)
 
     if json_output:
-        _emit_json({"command": "paths", **payload})
+        _emit_json(_project_payload(runtime.project_root, {"command": "paths", **payload}))
         return
 
     typer.echo(f"项目根目录: {payload['project_root']}")
@@ -1085,14 +1225,14 @@ def init_command(
     with_db: Annotated[bool, typer.Option("--with-db", help="同时初始化 SQLite 数据库。")] = False,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """初始化最小运行目录。"""
+    """初始化最小运行目录"""
 
     runtime = _load_runtime(profile=profile, db_path=db_path, max_attempts=max_attempts)
     run_logger = _build_run_logger(runtime)
     logging_config = load_logging_config(runtime.project_root)
     skills_config = load_skills_config(runtime.project_root)
     prompts_config = load_prompts_config(runtime.project_root)
-    # 把启动期会立即用到的目录一次建齐，避免后续命令各自补目录。
+    # 把启动期会立即用到的目录一次建齐，避免后续命令各自补目录
     paths_to_create = [
         runtime.data_dir,
         runtime.data_dir / "cache",
@@ -1114,7 +1254,7 @@ def init_command(
         _resolve_project_path(runtime.project_root, raw_dir).resolve()
         for raw_dir in skills_config.skill_dirs.model_dump().values()
     )
-    # 项目级 skill 目录按 enabled_skills 展开，和当前启用集合保持一致。
+    # 项目级 skill 目录按 enabled_skills 展开，和当前启用集合保持一致
     paths_to_create.extend(_project_skill_dirs(runtime.project_root, skills_config).values())
 
     created: list[Path] = []
@@ -1122,12 +1262,12 @@ def init_command(
         path.mkdir(parents=True, exist_ok=True)
         created.append(path.resolve())
 
-    created_paths = [str(path) for path in sorted(set(created))]
+    created_paths = [_project_path(runtime.project_root, path) or "" for path in sorted(set(created))]
     created_manifest_templates: list[str] = []
-    # 模板和目录分开处理，方便区分“目录已存在”和“首次生成模板”的初始化结果。
+    # 模板和目录分开处理，方便区分“目录已存在”和“首次生成模板”的初始化结果
     for template_path, content in _manifest_template_specs(runtime.project_root, runtime, skills_config).items():
         if _ensure_template_file(template_path, content):
-            created_manifest_templates.append(str(template_path.resolve()))
+            created_manifest_templates.append(_project_path(runtime.project_root, template_path.resolve()) or "")
 
     final_path: Path | None = None
     if with_db:
@@ -1142,19 +1282,22 @@ def init_command(
 
     if json_output:
         _emit_json(
-            {
-                "command": "init",
-                "created_paths": created_paths,
-                "manifest_templates": created_manifest_templates,
-                "database_initialized": with_db,
-                "database_path": str(final_path or runtime.database_path),
-                "next_steps": [
-                    "patchweaver doctor",
-                    "patchweaver paths --json",
-                    "补充 prompts/bootstrap 和 skills/project 下的实际模板与 manifest。",
-                ],
-                "status": "ok",
-            }
+            _project_payload(
+                runtime.project_root,
+                {
+                    "command": "init",
+                    "created_paths": created_paths,
+                    "manifest_templates": created_manifest_templates,
+                    "database_initialized": with_db,
+                    "database_path": _project_path(runtime.project_root, final_path or runtime.database_path),
+                    "next_steps": [
+                        "patchweaver doctor",
+                        "patchweaver paths --json",
+                        "补充 prompts/bootstrap 和 skills/project 下的实际模板与 manifest。",
+                    ],
+                    "status": "ok",
+                },
+            )
         )
         return
 
@@ -1168,7 +1311,7 @@ def init_command(
             typer.echo(f"  - {path}")
 
     if with_db:
-        typer.echo(f"已初始化 SQLite 数据库：{final_path}")
+        typer.echo(f"已初始化 SQLite 数据库：{_project_path(runtime.project_root, final_path)}")
 
     typer.echo("下一步建议：")
     typer.echo("  1. patchweaver doctor")
@@ -1182,7 +1325,7 @@ def doctor(
     plain: Annotated[bool, typer.Option("--plain", help="强制使用纯文本输出。")] = False,
     no_color: Annotated[bool, typer.Option("--no-color", help="关闭 ANSI 颜色。")] = False,
 ) -> None:
-    """执行本地环境自检。"""
+    """执行本地环境自检"""
 
     runtime = _load_runtime()
     build_config = load_build_config(runtime.project_root)
@@ -1190,10 +1333,10 @@ def doctor(
     skills_config = load_skills_config(runtime.project_root)
     prompts_config = load_prompts_config(runtime.project_root)
     models_config = load_models_config(runtime.project_root)
-    payload = _doctor_payload(runtime, build_config, logging_config, skills_config, prompts_config, models_config)
+    payload = _project_payload(runtime.project_root, _doctor_payload(runtime, build_config, logging_config, skills_config, prompts_config, models_config))
     report_path = _write_json_snapshot(runtime.manifest_dir / "doctor_report.json", payload)
 
-    # JSON 模式优先给脚本消费，不混入任何说明性文本。
+    # JSON 模式优先给脚本消费，不混入任何说明性文本
     if json_output:
         _emit_json(payload)
         return
@@ -1206,42 +1349,35 @@ def doctor(
     typer.echo(f"项目根目录: {payload['runtime']['project_root']}")
     typer.echo(f"数据库路径: {payload['runtime']['database_path']}")
     typer.echo(f"Manifest 目录: {payload['runtime']['manifest_dir']}")
+    typer.echo(f"配置默认内核: {payload['runtime']['configured_default_kernel']}")
+    typer.echo(f"探测目标内核: {payload['runtime']['detected_target_kernel'] or '未探测到'}")
+    typer.echo(f"目标内核探测来源: {payload['runtime']['detected_target_kernel_source'] or '未探测到'}")
+    typer.echo(f"当前机器内核: {payload['runtime']['machine_kernel'] or '未探测到'}")
     typer.echo(f"Python 版本: {payload['runtime']['python_version']}")
 
     for item in payload["checks"]:
         _print_status(item["label"], item["ok"], item["detail"], use_color=use_color)
 
-    # 最后一行保留汇总，便于快速判断当前环境是“可继续开发”还是“先补环境”。
+    # 最后一行保留汇总，便于快速判断当前环境是“可继续开发”还是“先补环境”
     typer.echo(
         f"汇总: 正常 {payload['summary']['ok']} / 提示 {payload['summary']['warn']} / 错误 {payload['summary']['error']}"
     )
-    typer.echo(f"诊断快照: {report_path}")
+    typer.echo(f"诊断快照: {_project_path(runtime.project_root, report_path)}")
 
 
-@app.command("models", cls=PatchWeaverHelpCommand)
+@models_app.callback(invoke_without_command=True)
 def models(
+    ctx: typer.Context,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """查看当前模型配置和环境变量状态。"""
+    """查看当前模型配置和 API Key 状态"""
+
+    if ctx.invoked_subcommand is not None:
+        return
 
     runtime = _load_runtime()
     models_config = load_models_config(runtime.project_root)
-    payload = {
-        "command": "models",
-        "provider": models_config.provider,
-        "endpoint_mode": models_config.endpoint_mode,
-        "base_url": models_config.base_url,
-        "api_key_env": models_config.api_key_env,
-        "api_key_ready": bool(os.getenv(models_config.api_key_env)),
-        "topology": models_config.topology,
-        "default_model": models_config.default_model,
-        "development_model": models_config.development_model,
-        "delivery_model": models_config.delivery_model,
-        "fallback_model": models_config.fallback_model,
-        "helper_models": models_config.helper_models,
-        "helper_notes": models_config.helper_notes,
-        "execution_boundaries": models_config.execution_boundaries,
-    }
+    payload = _models_payload(models_config)
     if json_output:
         _emit_json(payload)
         return
@@ -1250,7 +1386,10 @@ def models(
     typer.echo(f"调用模式: {payload['endpoint_mode']}")
     typer.echo(f"接口地址: {payload['base_url']}")
     typer.echo(f"API Key 环境变量: {payload['api_key_env']}")
+    typer.echo(f"API Key 来源: {_api_key_source_label(str(payload['api_key_source']))}")
     typer.echo(f"API Key 就绪: {payload['api_key_ready']}")
+    typer.echo(f"API Key 脱敏值: {payload['api_key_masked'] or '未配置'}")
+    typer.echo(f"配置文件已写入 Key: {payload['api_key_in_config']}")
     typer.echo(f"模型拓扑: {payload['topology']}")
     typer.echo(f"主模型: {payload['default_model']}")
     typer.echo(f"开发口径: {payload['development_model']}")
@@ -1265,6 +1404,56 @@ def models(
         typer.echo(f"  - {line}")
 
 
+@models_app.command("set-api-key", cls=PatchWeaverHelpCommand)
+def models_set_api_key(
+    value: Annotated[str, typer.Option("--value", help="写入 config/models.yaml 的 API Key。")] = ...,
+) -> None:
+    """写入配置文件中的百炼 API Key"""
+
+    runtime = _load_runtime()
+    normalized_value = value.strip()
+    if not normalized_value:
+        typer.secho("错误: API Key 不能为空", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
+    path = save_models_api_settings(runtime.project_root, api_key=normalized_value)
+    models_config = load_models_config(runtime.project_root)
+    status = models_config.api_key_status()
+    typer.echo(f"已更新: {_project_path(runtime.project_root, path)}")
+    typer.echo(f"当前来源: {_api_key_source_label(str(status['api_key_source']))}")
+    typer.echo(f"当前脱敏值: {status['api_key_masked'] or '未配置'}")
+    typer.echo("说明: 当前 shell 的环境变量不会被命令直接改写，运行时仍会优先读取环境变量")
+
+
+@models_app.command("set-api-key-env", cls=PatchWeaverHelpCommand)
+def models_set_api_key_env(
+    name: Annotated[str, typer.Option("--name", help="写入 models.yaml 的环境变量名。")] = ...,
+) -> None:
+    """修改优先读取的 API Key 环境变量名"""
+
+    runtime = _load_runtime()
+    env_name = name.strip()
+    if not env_name:
+        typer.secho("错误: 环境变量名不能为空", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
+    path = save_models_api_settings(runtime.project_root, api_key_env=env_name)
+    typer.echo(f"已更新: {_project_path(runtime.project_root, path)}")
+    typer.echo(f"新的环境变量名: {env_name}")
+    typer.echo("说明: 运行时会先读取这个环境变量，没有命中时才回退到 config/models.yaml 中的 api_key")
+
+
+@models_app.command("clear-api-key", cls=PatchWeaverHelpCommand)
+def models_clear_api_key() -> None:
+    """清空配置文件中的明文 API Key"""
+
+    runtime = _load_runtime()
+    path = save_models_api_settings(runtime.project_root, api_key="")
+    typer.echo(f"已更新: {_project_path(runtime.project_root, path)}")
+    typer.echo("config/models.yaml 中的 api_key 已清空")
+    typer.echo("说明: 如果仍需调用模型，请继续使用环境变量或重新写入新的 api_key")
+
+
 @app.command("create", cls=PatchWeaverHelpCommand)
 def create(
     cve: Annotated[str, typer.Option("--cve", help="指定要处理的 CVE ID。")] = ...,
@@ -1274,37 +1463,40 @@ def create(
     task_id: Annotated[str | None, typer.Option("--task-id", help="手工指定任务编号。")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """创建任务并初始化工作区骨架。"""
+    """创建任务并初始化工作区骨架"""
 
     runtime = _load_runtime(profile=profile, max_attempts=max_attempts)
     run_logger = _build_run_logger(runtime)
-    task_repo = TaskRepository(runtime.database_path)
-    attempt_repo = AttemptRepository(runtime.database_path)
-    artifact_repo = ArtifactRepository(runtime.database_path)
+    build_config = load_build_config(runtime.project_root)
+    task_repo = TaskRepository(runtime.database_path, runtime.project_root)
+    artifact_repo = ArtifactRepository(runtime.database_path, runtime.project_root)
 
     final_task_id = task_id or task_repo.next_task_id()
     if task_repo.task_exists(final_task_id):
         typer.secho(f"错误: 任务已存在：{final_task_id}", err=True, fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
+    target_kernel, target_kernel_source, machine_profile = resolve_task_binding(
+        build_config=build_config,
+        configured_default_kernel=runtime.default_kernel,
+        cli_target_kernel=kernel,
+    )
     task = TaskContext(
         task_id=final_task_id,
         cve_id=cve,
-        target_kernel=kernel or runtime.default_kernel,
+        target_kernel=target_kernel,
+        target_kernel_source=target_kernel_source,
         profile_name=runtime.profile_name,
         status="created",
         max_attempts=runtime.max_attempts,
         current_attempt=0,
         workspace_dir=(runtime.workspace_root / final_task_id).resolve(),
+        machine_profile=machine_profile,
     )
 
-    workspace_guard = WorkspaceGuard(runtime.workspace_root)
+    workspace_guard = WorkspaceGuard(runtime.workspace_root, runtime.project_root)
     task_dir = workspace_guard.create_task_workspace(task)
-    workspace_guard.create_attempt_workspace(task_dir, 1)
     task_repo.create_task(task)
-
-    initial_state = AttemptEngine().create_initial_state(task_id=task.task_id, max_attempts=task.max_attempts)
-    attempt_repo.save_attempt_state(initial_state)
     artifact_repo.add_artifact(
         task_id=task.task_id,
         artifact_type="task_context",
@@ -1314,17 +1506,21 @@ def create(
 
     payload = {
         "command": "create",
-        "task": _task_payload(task),
-        "prepared_attempt_dir": str(task_dir / "attempts" / "001"),
+        "task": _task_payload(task, runtime.project_root),
+        "next_attempt_dir": _project_path(runtime.project_root, task_dir / "attempts" / "001"),
+        "prepared_attempt_dir": _project_path(runtime.project_root, task_dir / "attempts" / "001"),
         "status": "ok",
     }
+    payload = _project_payload(runtime.project_root, payload)
     run_logger.info(
         "cli.create",
         "创建任务并初始化工作区。",
         task_id=task.task_id,
         cve_id=task.cve_id,
         target_kernel=task.target_kernel,
+        target_kernel_source=task.target_kernel_source,
         profile_name=task.profile_name,
+        machine_profile=machine_profile.model_dump(mode="json"),
     )
     if json_output:
         _emit_json(payload)
@@ -1333,8 +1529,10 @@ def create(
     typer.echo(f"已创建任务: {task.task_id}")
     typer.echo(f"CVE 编号: {task.cve_id}")
     typer.echo(f"目标内核: {task.target_kernel}")
-    typer.echo(f"工作区目录: {task.workspace_dir}")
-    typer.echo(f"首轮尝试目录: {task_dir / 'attempts' / '001'}")
+    typer.echo(f"目标内核来源: {task.target_kernel_source or 'unknown'}")
+    typer.echo(f"工作区目录: {payload['task']['workspace_dir']}")
+    typer.echo(f"首轮尝试目录: {payload['next_attempt_dir']}")
+    typer.echo("说明: 尝试目录会在首次执行 `patchweaver run` 时创建。")
 
 
 @app.command("run", cls=PatchWeaverHelpCommand)
@@ -1342,14 +1540,16 @@ def run(
     task: Annotated[str, typer.Option("--task", help="指定任务编号。")] = ...,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """执行最小单轮尝试。"""
+    """执行最小单轮尝试"""
 
     runtime = _load_runtime()
+    # 任务创建后可能带着自己的 profile 和 max_attempts
+    # 这里重新按任务快照解析一次，避免命令入口和任务真实配置不一致
     runtime, _ = _resolve_task_runtime(task, runtime)
     run_logger = _build_run_logger(runtime)
     runner = _build_task_runner(runtime)
     try:
-        payload = runner.run_task(task)
+        payload = _project_payload(runtime.project_root, runner.run_task(task))
     except Exception as exc:
         run_logger.error("cli.run", "单轮执行失败。", task_id=task, error=str(exc))
         typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
@@ -1381,30 +1581,32 @@ def status(
     limit: Annotated[int, typer.Option("--limit", help="限制返回的任务条数。")] = 10,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """查看任务状态。"""
+    """查看任务状态"""
 
     runtime = _load_runtime()
-    task_repo = TaskRepository(runtime.database_path)
+    task_repo = TaskRepository(runtime.database_path, runtime.project_root)
 
     if task:
         task_context = task_repo.get_task(task)
         if task_context is None:
             typer.secho(f"错误: 未找到任务：{task}", err=True, fg=typer.colors.RED)
             raise typer.Exit(code=1)
-        payload = {"command": "status", "task": _task_payload(task_context)}
+        payload = _project_payload(runtime.project_root, {"command": "status", "task": _task_payload(task_context, runtime.project_root)})
         if json_output:
             _emit_json(payload)
             return
         typer.echo(f"任务编号: {task_context.task_id}")
         typer.echo(f"CVE 编号: {task_context.cve_id}")
         typer.echo(f"目标内核: {task_context.target_kernel}")
+        if task_context.target_kernel_source:
+            typer.echo(f"目标内核来源: {task_context.target_kernel_source}")
         typer.echo(f"当前状态: {task_context.status}")
         typer.echo(f"当前尝试轮: {task_context.current_attempt}/{task_context.max_attempts}")
-        typer.echo(f"工作区目录: {task_context.workspace_dir}")
+        typer.echo(f"工作区目录: {payload['task']['workspace_dir']}")
         return
 
     tasks = task_repo.list_tasks(limit=limit)
-    payload = {"command": "status", "tasks": [_task_payload(item) for item in tasks]}
+    payload = _project_payload(runtime.project_root, {"command": "status", "tasks": [_task_payload(item, runtime.project_root) for item in tasks]})
     if json_output:
         _emit_json(payload)
         return
@@ -1414,8 +1616,8 @@ def status(
         return
 
     typer.echo("最近任务：")
-    for item in tasks:
-        typer.echo(f"  - {item.task_id} | {item.cve_id} | {item.status} | {item.workspace_dir}")
+    for item in payload["tasks"]:
+        typer.echo(f"  - {item['task_id']} | {item['cve_id']} | {item['status']} | {item['workspace_dir']}")
 
 
 @app.command("analyze", cls=PatchWeaverHelpCommand)
@@ -1423,14 +1625,16 @@ def analyze(
     task: Annotated[str, typer.Option("--task", help="指定任务编号。")] = ...,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """执行最小分析链路。"""
+    """执行最小分析链路"""
 
     runtime = _load_runtime()
+    # analyze 也按任务侧 runtime 执行
+    # 这样 create、analyze、run 看到的是同一套路径和档位
     runtime, _ = _resolve_task_runtime(task, runtime)
     run_logger = _build_run_logger(runtime)
     runner = _build_task_runner(runtime)
     try:
-        payload = runner.analyze_task(task)
+        payload = _project_payload(runtime.project_root, runner.analyze_task(task))
     except Exception as exc:
         run_logger.error("cli.analyze", "分析阶段执行失败。", task_id=task, error=str(exc))
         typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
@@ -1443,6 +1647,8 @@ def analyze(
 
     typer.echo(f"任务编号: {payload['task_id']}")
     typer.echo(f"PatchBundle: {payload['patch_bundle_path']}")
+    if payload.get("source_fetch_trace_path"):
+        typer.echo(f"SourceFetchTrace: {payload['source_fetch_trace_path']}")
     typer.echo(f"SemanticCard: {payload['semantic_card_path']}")
     typer.echo(f"ConstraintReport: {payload['constraint_report_path']}")
     typer.echo(f"Bootstrap Manifest: {payload['bootstrap_manifest_path']}")
@@ -1453,14 +1659,16 @@ def report(
     task: Annotated[str, typer.Option("--task", help="指定任务编号。")] = ...,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """生成任务报告。"""
+    """生成任务报告"""
 
     runtime = _load_runtime()
+    # 报告阶段主要是读取任务产物
+    # 这里仍然对齐任务自己的配置，避免 report/replay 指到别的目录
     runtime, _ = _resolve_task_runtime(task, runtime)
     run_logger = _build_run_logger(runtime)
     runner = _build_task_runner(runtime)
     try:
-        payload = runner.build_report(task)
+        payload = _project_payload(runtime.project_root, runner.build_report(task))
     except Exception as exc:
         run_logger.error("cli.report", "报告生成失败。", task_id=task, error=str(exc))
         typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
@@ -1481,14 +1689,16 @@ def replay(
     task: Annotated[str, typer.Option("--task", help="指定任务编号。")] = ...,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """查看最近一轮回放信息。"""
+    """查看最近一轮回放信息"""
 
     runtime = _load_runtime()
+    # 回放只读历史产物
+    # 但路径基准仍然以任务快照为准，避免跨 profile 时读错目录
     runtime, _ = _resolve_task_runtime(task, runtime)
     run_logger = _build_run_logger(runtime)
     runner = _build_task_runner(runtime)
     try:
-        payload = runner.replay_task(task)
+        payload = _project_payload(runtime.project_root, runner.replay_task(task))
     except Exception as exc:
         run_logger.error("cli.replay", "回放信息读取失败。", task_id=task, error=str(exc))
         typer.secho(f"错误: {exc}", err=True, fg=typer.colors.RED)
@@ -1513,7 +1723,7 @@ def evaluate(
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """按固定样例集输出阶段评测结果。"""
+    """按固定样例集输出阶段评测结果"""
 
     runtime = _load_runtime(profile=profile, db_path=db_path)
     run_logger = _build_run_logger(runtime)
@@ -1552,15 +1762,16 @@ def init_db(
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """按当前生效配置初始化 SQLite 数据库。"""
+    """按当前生效配置初始化 SQLite 数据库"""
 
     runtime = _load_runtime(profile=profile, db_path=db_path)
     final_path = initialize_sqlite_db(runtime.database_path)
-    _build_run_logger(runtime).info("cli.init_db", "初始化 SQLite 数据库。", database_path=str(final_path))
+    final_path_text = _project_path(runtime.project_root, final_path)
+    _build_run_logger(runtime).info("cli.init_db", "初始化 SQLite 数据库。", database_path=final_path_text)
     if json_output:
-        _emit_json({"command": "init-db", "database_path": str(final_path), "status": "ok"})
+        _emit_json({"command": "init-db", "database_path": final_path_text, "status": "ok"})
         return
-    typer.echo(f"已初始化 SQLite 数据库：{final_path}")
+    typer.echo(f"已初始化 SQLite 数据库：{final_path_text}")
 
 
 @app.command("finalize", cls=PatchWeaverHelpCommand)
@@ -1569,11 +1780,11 @@ def finalize(
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """生成 submission 目录和 final manifest。"""
+    """生成 submission 目录和 final manifest"""
 
     runtime = _load_runtime(profile=profile, db_path=db_path)
     run_logger = _build_run_logger(runtime)
-    payload = _build_release_service(runtime).prepare_submission()
+    payload = _project_payload(runtime.project_root, _build_release_service(runtime).prepare_submission())
     run_logger.info("cli.finalize", "生成 submission 目录和 final manifest。", manifest=payload["final_manifest_json"])
     if json_output:
         _emit_json(payload)
@@ -1590,11 +1801,11 @@ def gate(
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """执行第四阶段最终门禁检查。"""
+    """执行第四阶段最终门禁检查"""
 
     runtime = _load_runtime(profile=profile, db_path=db_path)
     run_logger = _build_run_logger(runtime)
-    payload = _build_release_service(runtime).run_gate()
+    payload = _project_payload(runtime.project_root, _build_release_service(runtime).run_gate())
     run_logger.info("cli.gate", "执行最终门禁检查。", status=payload["status"], gate_report=payload["final_gate_json"])
     if json_output:
         _emit_json(payload)
@@ -1616,7 +1827,7 @@ def install_api_service_command(
     timeout_sec: Annotated[int, typer.Option("--timeout-sec", help="等待健康检查通过的秒数。")] = 15,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """在 Linux 验证机上安装并启动 Web/API 的 systemd 服务。"""
+    """在 Linux 验证机上安装并启动 Web/API 的 systemd 服务"""
 
     runtime = _load_runtime()
     run_logger = _build_run_logger(runtime)
@@ -1647,7 +1858,7 @@ def install_api_service_command(
 
     payload = {
         "command": "install-api-service",
-        "project_root": str(runtime.project_root),
+        "project_root": _project_path(runtime.project_root, runtime.project_root),
         "service_name": final_service_name,
         "host": final_host,
         "port": final_port,
@@ -1655,9 +1866,10 @@ def install_api_service_command(
         "start": start,
         "healthz": install_payload["healthz"],
         "console": install_payload["console"],
-        "unit_path": install_payload["unit_path"],
+        "unit_path": _project_path(runtime.project_root, install_payload["unit_path"]),
         "ready": ready_payload["ready"] if ready_payload else False,
     }
+    payload = _project_payload(runtime.project_root, payload)
     snapshot_path = _write_json_snapshot(runtime.manifest_dir / "api_service_install.json", payload)
     run_logger.info(
         "cli.install_api_service",
@@ -1678,7 +1890,7 @@ def install_api_service_command(
     typer.echo(f"unit 文件: {payload['unit_path']}")
     typer.echo(f"healthz: {payload['healthz']}")
     typer.echo(f"console: {payload['console']}")
-    typer.echo(f"快照: {snapshot_path}")
+    typer.echo(f"快照: {_project_path(runtime.project_root, snapshot_path)}")
 
 
 @app.command("serve-api", cls=PatchWeaverHelpCommand)
@@ -1689,9 +1901,9 @@ def serve_api(
     foreground: Annotated[bool, typer.Option("--foreground", help="以前台方式启动并占用当前终端。")] = False,
     timeout_sec: Annotated[int, typer.Option("--timeout-sec", help="后台模式等待健康检查通过的秒数。")] = 15,
 ) -> None:
-    """启动 Web 控制台后端接口。"""
+    """启动 Web 控制台后端接口"""
 
-    # API 服务默认直接复用当前仓库里的 patchweaver.api.app，不再单独维护第二套启动脚本。
+    # API 服务默认直接复用当前仓库里的 patchweaver.api.app，不再单独维护第二套启动脚本
     import uvicorn
 
     runtime = _load_runtime()
@@ -1700,7 +1912,7 @@ def serve_api(
     final_port = port or system_config.api_port
     run_logger = _build_run_logger(runtime)
 
-    # Linux 验证机默认走后台服务模式，便于执行命令后立即回到 shell。
+    # Linux 验证机默认走后台服务模式，便于执行命令后立即回到 shell
     background_mode = (
         not foreground
         and not reload
@@ -1723,7 +1935,7 @@ def serve_api(
             ready_payload = wait_for_api_ready(host=final_host, port=final_port, timeout_sec=float(timeout_sec))
         except Exception as exc:
             typer.secho(
-                f"错误: 后台启动 API 服务失败: {exc}。如需临时前台调试，可改用 `patchweaver serve-api --foreground`。",
+                f"错误: 后台启动 API 服务失败: {exc}；如需临时前台调试，可改用 `patchweaver serve-api --foreground`",
                 err=True,
                 fg=typer.colors.RED,
             )
@@ -1761,14 +1973,14 @@ def db_init(
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """初始化 SQLite 数据库。"""
+    """初始化 SQLite 数据库"""
 
     runtime = _load_runtime(profile=profile, db_path=db_path)
     final_path = initialize_sqlite_db(runtime.database_path)
     if json_output:
-        _emit_json({"command": "db init", "database_path": str(final_path), "status": "ok"})
+        _emit_json({"command": "db init", "database_path": _project_path(runtime.project_root, final_path), "status": "ok"})
         return
-    typer.echo(f"已初始化 SQLite 数据库：{final_path}")
+    typer.echo(f"已初始化 SQLite 数据库：{_project_path(runtime.project_root, final_path)}")
 
 
 @db_app.command("path", cls=PatchWeaverHelpCommand)
@@ -1777,13 +1989,13 @@ def db_path(
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """打印当前生效的 SQLite 路径。"""
+    """打印当前生效的 SQLite 路径"""
 
     runtime = _load_runtime(profile=profile, db_path=db_path)
     if json_output:
-        _emit_json({"command": "db path", "database_path": str(runtime.database_path)})
+        _emit_json({"command": "db path", "database_path": _project_path(runtime.project_root, runtime.database_path)})
         return
-    typer.echo(runtime.database_path)
+    typer.echo(_project_path(runtime.project_root, runtime.database_path))
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""产物索引读写。"""
+"""产物索引读写"""
 
 from __future__ import annotations
 
@@ -8,18 +8,20 @@ from typing import Any
 
 from patchweaver.models.harness import ArtifactRef
 from patchweaver.storage.sqlite import connect_sqlite, initialize_sqlite_db
+from patchweaver.utils.path_policy import resolve_project_path, to_project_relative
 
 
 class ArtifactRepository:
-    """负责报告、日志和构建产物的索引。"""
+    """负责报告、日志和构建产物的索引"""
 
-    def __init__(self, database_path: Path) -> None:
-        """保存数据库路径并确保基础表存在。"""
+    def __init__(self, database_path: Path, project_root: Path | None = None) -> None:
+        """保存数据库路径并确保基础表存在"""
 
         self.database_path = initialize_sqlite_db(database_path)
+        self.project_root = project_root.resolve() if project_root is not None else None
 
     def _task_row_id(self, task_id: str) -> int:
-        """读取任务在数据库中的内部主键。"""
+        """读取任务在数据库中的内部主键"""
 
         with connect_sqlite(self.database_path) as connection:
             row = connection.execute("SELECT id FROM tasks WHERE task_id = ?", (task_id,)).fetchone()
@@ -28,7 +30,7 @@ class ArtifactRepository:
         return int(row["id"])
 
     def _attempt_row_id(self, attempt_id: str | None) -> int | None:
-        """读取尝试轮在数据库中的内部主键。"""
+        """读取尝试轮在数据库中的内部主键"""
 
         if attempt_id is None:
             return None
@@ -48,7 +50,7 @@ class ArtifactRepository:
         attempt_id: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> Path:
-        """登记一条产物索引。"""
+        """登记一条产物索引"""
 
         with connect_sqlite(self.database_path) as connection:
             connection.execute(
@@ -60,7 +62,7 @@ class ArtifactRepository:
                     self._task_row_id(task_id),
                     self._attempt_row_id(attempt_id),
                     artifact_type,
-                    str(artifact_path),
+                    to_project_relative(self.project_root, artifact_path),
                     json.dumps(metadata or {}, ensure_ascii=False),
                 ),
             )
@@ -68,7 +70,7 @@ class ArtifactRepository:
         return artifact_path
 
     def list_artifacts(self, task_id: str) -> list[ArtifactRef]:
-        """读取任务的产物索引。"""
+        """读取任务的产物索引"""
 
         with connect_sqlite(self.database_path) as connection:
             rows = connection.execute(
@@ -85,10 +87,13 @@ class ArtifactRepository:
         artifacts: list[ArtifactRef] = []
         for row in rows:
             metadata = json.loads(row["metadata_json"] or "{}")
+            artifact_path = resolve_project_path(self.project_root, row["artifact_path"])
+            if artifact_path is None:
+                continue
             artifacts.append(
                 ArtifactRef(
                     artifact_type=row["artifact_type"],
-                    artifact_path=Path(row["artifact_path"]),
+                    artifact_path=artifact_path,
                     summary=str(metadata.get("summary", "")),
                 )
             )

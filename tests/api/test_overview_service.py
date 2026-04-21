@@ -23,7 +23,7 @@ def _project_root() -> Path:
 
 
 def _case_dir(case_name: str) -> Path:
-    base_dir = _project_root() / ".pytest_tmp"
+    base_dir = _project_root() / "data" / "cache" / "pytest-tmp"
     base_dir.mkdir(parents=True, exist_ok=True)
     root = base_dir / f"{case_name}-{uuid4().hex[:8]}"
     root.mkdir(parents=True, exist_ok=True)
@@ -213,10 +213,10 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
     assert payload["metrics"]["failed_tasks"] == 1
     assert payload["metrics"]["success_tasks"] == 1
     assert payload["metrics"]["validation_passed"] == 1
-    assert payload["metrics"]["latest_evaluation_summary"] == str(challenge_summary_path)
+    assert payload["metrics"]["latest_evaluation_summary"] == "data/evaluations/challenge_dev/summary.json"
     assert payload["metrics"]["selected_model"] == "qwen-plus-2025-07-28"
     assert [item["fixture_name"] for item in payload["evaluation_summaries"]] == ["challenge_dev", "holdout"]
-    assert payload["evaluation_summaries"][0]["summary_json_path"] == str(challenge_summary_path)
+    assert payload["evaluation_summaries"][0]["summary_json_path"] == "data/evaluations/challenge_dev/summary.json"
     assert payload["failure_distribution"][0]["failure_type"] == "missing_fentry"
     assert payload["release"]["selected_models"]["topology"] == "single_primary_with_optional_helpers"
     assert payload["release"]["selected_models"]["helper_models"]["code_assistant"] == "qwen-coder-turbo-0919"

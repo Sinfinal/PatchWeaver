@@ -1,4 +1,4 @@
-"""尝试轮模型。"""
+"""尝试轮模型"""
 
 from __future__ import annotations
 
@@ -10,13 +10,13 @@ from pydantic import BaseModel, Field
 
 
 def _utc_now() -> datetime:
-    """返回当前 UTC 时间。"""
+    """返回当前 UTC 时间"""
 
     return datetime.now(timezone.utc)
 
 
 class AttemptState(BaseModel):
-    """表示主状态机当前轮的运行状态。"""
+    """表示主状态机当前轮的运行状态"""
 
     task_id: str
     attempt_no: int
@@ -27,7 +27,7 @@ class AttemptState(BaseModel):
 
 
 class AttemptRecord(BaseModel):
-    """表示单轮构建尝试的结果。"""
+    """表示单轮构建尝试的结果"""
 
     task_id: str
     attempt_no: int
@@ -43,7 +43,7 @@ class AttemptRecord(BaseModel):
 
 
 class FailureRecord(BaseModel):
-    """表示一次结构化失败归因结果。"""
+    """表示一次结构化失败归因结果"""
 
     task_id: str
     attempt_id: str
@@ -55,7 +55,7 @@ class FailureRecord(BaseModel):
 
 
 class BuildPrecheck(BaseModel):
-    """表示构建前 apply 级预检查结果。"""
+    """表示构建前 apply 级预检查结果"""
 
     task_id: str
     attempt_id: str
@@ -72,7 +72,7 @@ class BuildPrecheck(BaseModel):
 
 
 class BuildSummary(BaseModel):
-    """表示一次构建执行的摘要结果。"""
+    """表示一次构建执行的摘要结果"""
 
     task_id: str
     attempt_id: str

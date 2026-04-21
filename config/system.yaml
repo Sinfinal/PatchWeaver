@@ -1,6 +1,7 @@
 # 全局基础配置
 
 # 工作区根目录
+# 相对路径默认按源码根目录展开，例如 <project_root> -> <project_root>/workspaces
 workspace_root: workspaces
 
 # SQLite 数据库路径

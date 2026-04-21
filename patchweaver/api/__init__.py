@@ -1,2 +1,2 @@
-"""PatchWeaver Web API 包。"""
+"""PatchWeaver Web API 包"""
 

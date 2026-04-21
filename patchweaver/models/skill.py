@@ -1,4 +1,4 @@
-"""Skill 相关模型。"""
+"""Skill 相关模型"""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class SkillManifest(BaseModel):
-    """表示一个 skill 的注册清单和执行契约。"""
+    """表示一个 skill 的注册清单和执行契约"""
 
     skill_name: str
     source_layer: str
@@ -29,7 +29,7 @@ class SkillManifest(BaseModel):
 
 
 class SkillRouteDecision(BaseModel):
-    """表示某一阶段的 skill 选择结果。"""
+    """表示某一阶段的 skill 选择结果"""
 
     stage_name: str
     candidate_skills: list[str] = Field(default_factory=list)

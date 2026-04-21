@@ -1,4 +1,4 @@
-"""模块加载测试器。"""
+"""模块加载测试器"""
 
 from __future__ import annotations
 
@@ -10,15 +10,15 @@ from patchweaver.models.validation import ValidationItem
 
 
 class LoadTester:
-    """负责执行模块加载和卸载测试。"""
+    """负责执行模块加载和卸载测试"""
 
     def __init__(self, build_config: Any | None = None) -> None:
-        """保存构建配置，便于复用运行时约束。"""
+        """保存构建配置，便于复用运行时约束"""
 
         self.build_config = build_config
 
     def load(self, *, module_path: Path | None) -> tuple[ValidationItem, str]:
-        """执行最小模块加载测试。"""
+        """执行最小模块加载测试"""
 
         if self.build_config is None:
             return ValidationItem(status="pending", ok=False, detail="缺少构建配置，无法执行加载测试。"), ""
@@ -32,7 +32,7 @@ class LoadTester:
         )
 
     def unload(self, *, module_path: Path | None) -> tuple[ValidationItem, str]:
-        """执行最小模块卸载测试。"""
+        """执行最小模块卸载测试"""
 
         if self.build_config is None:
             return ValidationItem(status="pending", ok=False, detail="缺少构建配置，无法执行卸载测试。"), ""
@@ -47,7 +47,7 @@ class LoadTester:
         )
 
     def _run_local_module_command(self, *, command: list[str], detail_on_success: str) -> tuple[ValidationItem, str]:
-        """在本地执行模块相关命令。"""
+        """在本地执行模块相关命令"""
 
         try:
             result = subprocess.run(
@@ -67,14 +67,14 @@ class LoadTester:
         return ValidationItem(status="failed", ok=False, detail="模块操作命令执行失败。", command=" ".join(command)), log_text
 
     def _module_name(self, *, module_path: Path | None) -> str | None:
-        """从模块路径中推导模块名。"""
+        """从模块路径中推导模块名"""
 
         if module_path is not None:
             return module_path.stem
         return None
 
     def _compose_log(self, *, command: str, stdout_text: str, stderr_text: str, exit_code: int) -> str:
-        """整理统一的模块测试日志。"""
+        """整理统一的模块测试日志"""
 
         return "\n".join(
             [

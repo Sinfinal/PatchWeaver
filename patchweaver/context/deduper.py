@@ -1,4 +1,4 @@
-"""上下文去重工具。"""
+"""上下文去重工具"""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from patchweaver.models.evidence import EvidenceSpan
 
 
 def dedupe_spans(spans: list[EvidenceSpan]) -> tuple[list[EvidenceSpan], int]:
-    """按来源和行号对证据片段去重。"""
+    """按来源和行号对证据片段去重"""
 
     seen: set[tuple[str, str, int | None, int | None]] = set()
     result: list[EvidenceSpan] = []

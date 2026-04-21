@@ -1,4 +1,4 @@
-"""把当前项目快照上传到验证机。"""
+"""把当前项目快照上传到验证机"""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ EXCLUDED_SUFFIXES = {
 
 @dataclass(slots=True)
 class UploadConfig:
-    """保存一次上传任务的配置。"""
+    """保存一次上传任务的配置"""
 
     project_root: Path
     host: str
@@ -64,18 +64,20 @@ class UploadConfig:
 
 
 class ValidationUploader:
-    """负责打包本地代码并同步到验证机。"""
+    """负责打包本地代码并同步到验证机"""
 
     def __init__(self, config: UploadConfig) -> None:
-        """保存上传配置。"""
+        """保存上传配置"""
 
         self.config = config
 
     def run(self) -> None:
-        """执行打包、上传和验证机目录展开。"""
+        """执行打包、上传和验证机目录展开"""
 
         step_total = 6
         if self.config.build_frontend:
+            # 先在本地把前端静态资源固化出来
+            # 这样验证机只负责部署和运行，不把 Node 构建链路带过去
             self._build_frontend()
             print(f"[1/{step_total}] 前端构建完成 -> {self._web_dist_dir()}")
         else:
@@ -113,7 +115,7 @@ class ValidationUploader:
             client.close()
 
     def _build_frontend(self) -> None:
-        """先在本地构建前端，确保 dist 会随项目一起上传。"""
+        """先在本地构建前端，确保 dist 会随项目一起上传"""
 
         web_dir = self.config.project_root / "web"
         if not (web_dir / "package.json").exists():
@@ -146,17 +148,17 @@ class ValidationUploader:
             raise RuntimeError(f"前端构建完成后仍未找到 dist 目录：{dist_dir}")
 
     def _web_dist_dir(self) -> Path:
-        """返回本地前端构建产物目录。"""
+        """返回本地前端构建产物目录"""
 
         return (self.config.project_root / "web" / "dist").resolve()
 
     def _remote_venv_dir(self) -> PurePosixPath:
-        """返回验证机上的虚拟环境目录。"""
+        """返回验证机上的虚拟环境目录"""
 
         return self.config.remote_dir / self.config.remote_venv_name
 
     def _build_archive(self) -> tuple[Path, int]:
-        """在临时目录中生成一份可上传的压缩包。"""
+        """在临时目录中生成一份可上传的压缩包"""
 
         temp_dir = Path(tempfile.mkdtemp(prefix="patchweaver-upload-"))
         archive_path = temp_dir / f"patchweaver_validate_{time.strftime('%Y%m%d_%H%M%S')}.tar.gz"
@@ -164,7 +166,7 @@ class ValidationUploader:
         file_count = 0
 
         with tarfile.open(archive_path, mode="w:gz", compresslevel=6) as tar:
-            # 目录也一起收进去，验证机解压后目录结构会更完整。
+            # 目录也一起收进去，验证机解压后目录结构会更完整
             for path in sorted(self.config.project_root.rglob("*")):
                 relative_path = path.relative_to(self.config.project_root)
                 if self._should_skip(relative_path):
@@ -179,7 +181,7 @@ class ValidationUploader:
         return archive_path, file_count
 
     def _should_skip(self, relative_path: Path) -> bool:
-        """判断某个相对路径是否需要排除。"""
+        """判断某个相对路径是否需要排除"""
 
         if not relative_path.parts:
             return False
@@ -202,7 +204,7 @@ class ValidationUploader:
         return False
 
     def _connect(self) -> paramiko.SSHClient:
-        """建立到验证机的连接。"""
+        """建立到验证机的连接"""
 
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -216,7 +218,7 @@ class ValidationUploader:
         return client
 
     def _upload_archive(self, client: paramiko.SSHClient, *, archive_path: Path, remote_archive: PurePosixPath) -> None:
-        """通过 SFTP 上传压缩包。"""
+        """通过 SFTP 上传压缩包"""
 
         sftp = client.open_sftp()
         try:
@@ -225,12 +227,14 @@ class ValidationUploader:
             sftp.close()
 
     def _extract_archive(self, client: paramiko.SSHClient, *, remote_archive: PurePosixPath) -> None:
-        """在验证机上清理并展开上传包。"""
+        """在验证机上清理并展开上传包"""
 
         remote_dir = self.config.remote_dir
         commands: list[str] = []
 
         if self.config.clean_remote_dir:
+            # 这里直接清目标目录，避免旧版本残留文件混进这次部署
+            # 尤其是前端 dist 和旧脚本最容易因为缓存目录造成假问题
             commands.append(f"rm -rf {shlex.quote(remote_dir.as_posix())}")
 
         commands.extend(
@@ -261,24 +265,34 @@ class ValidationUploader:
                     f"stderr:\n{stderr_text}"
                 )
             if "find " in command:
+                # 上传完成后顺手打印一小段文件预览
+                # 出问题时能第一时间确认源码和 dist 是否真的到了验证机
                 print("      验证机文件预览:")
                 if stdout_text.strip():
                     for line in stdout_text.strip().splitlines():
                         print(f"      {line}")
 
     def _install_remote_runtime(self, client: paramiko.SSHClient) -> None:
-        """在验证机上安装 Python 运行时依赖，并初始化最小环境。"""
+        """在验证机上安装 Python 运行时依赖，并初始化最小环境"""
 
         remote_dir = self.config.remote_dir.as_posix()
         remote_venv = self._remote_venv_dir().as_posix()
         remote_python = shlex.quote(self.config.remote_python)
         api_port = self.config.remote_smoke_port
+        remote_cli_wrapper = PurePosixPath("/usr/local/bin/patchweaver").as_posix()
+        remote_cli_compat_wrapper = PurePosixPath("/usr/bin/patchweaver").as_posix()
+        remote_cli_compat_backup = PurePosixPath("/usr/bin/patchweaver.patchweaver.bak").as_posix()
+        remote_cli_conda_wrapper = PurePosixPath("/root/miniconda3/bin/patchweaver").as_posix()
+        remote_cli_launcher = (self.config.remote_dir / "scripts" / "run_validation_cli.sh").as_posix()
+        remote_api_launcher = (self.config.remote_dir / "scripts" / "run_validation_api.sh").as_posix()
 
         install_script = textwrap.dedent(
             f"""
             set -e
             cd {shlex.quote(remote_dir)}
 
+            # 优先复用验证机上已经装好依赖的解释器
+            # 这样可以避开现场再联网装包，部署会稳很多
             PYTHON_BIN=""
             for candidate in {remote_python} /usr/bin/python3 python3 python; do
               if [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; then
@@ -298,6 +312,24 @@ class ValidationUploader:
             "$PYTHON_BIN" -m venv --system-site-packages {shlex.quote(remote_venv)}
             SITE_PACKAGES=$({shlex.quote(remote_venv)}/bin/python -c "import site; candidates = [item for item in site.getsitepackages() if item.endswith('site-packages')]; print(candidates[0] if candidates else (_ for _ in ()).throw(SystemExit('未找到 site-packages 目录')))") 
             printf '%s\n' {shlex.quote(remote_dir)} > "$SITE_PACKAGES/patchweaver_validate_current.pth"
+            write_cli_wrapper() {{
+              target="$1"
+              tmp_file="$target.tmp.$$"
+              printf '%s\n' \
+                '#!/usr/bin/env bash' \
+                'set -e' \
+                'exec "{remote_cli_launcher}" "$@"' \
+                > "$tmp_file"
+              chmod +x "$tmp_file"
+              mv -f "$tmp_file" "$target"
+            }}
+            printf '%s\n' \
+              '#!/usr/bin/env bash' \
+              'set -e' \
+              'ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"' \
+              'exec "$ROOT_DIR/.venv/bin/python" -m patchweaver "$@"' \
+              > {shlex.quote(remote_cli_launcher)}
+            chmod +x {shlex.quote(remote_cli_launcher)}
             printf '%s\n' \
               '#!/usr/bin/env bash' \
               'set -e' \
@@ -305,9 +337,23 @@ class ValidationUploader:
               'export PATCHWEAVER_API_HOST="${{PATCHWEAVER_API_HOST:-0.0.0.0}}"' \
               'export PATCHWEAVER_API_PORT="${{PATCHWEAVER_API_PORT:-{api_port}}}"' \
               'exec "$ROOT_DIR/.venv/bin/python" -m patchweaver.api' \
-              > {shlex.quote((self.config.remote_dir / 'scripts' / 'run_validation_api.sh').as_posix())}
-            chmod +x {shlex.quote((self.config.remote_dir / 'scripts' / 'run_validation_api.sh').as_posix())}
+              > {shlex.quote(remote_api_launcher)}
+            chmod +x {shlex.quote(remote_api_launcher)}
 
+            # 统一改写几个常见入口
+            # 目标是部署完成后，直接敲 patchweaver 就能命中新版本
+            if [ -f {shlex.quote(remote_cli_compat_wrapper)} ] && [ ! -f {shlex.quote(remote_cli_compat_backup)} ]; then
+              cp {shlex.quote(remote_cli_compat_wrapper)} {shlex.quote(remote_cli_compat_backup)}
+            fi
+
+            write_cli_wrapper {shlex.quote(remote_cli_wrapper)}
+            write_cli_wrapper {shlex.quote(remote_cli_compat_wrapper)}
+            if [ -d /root/miniconda3/bin ]; then
+              write_cli_wrapper {shlex.quote(remote_cli_conda_wrapper)}
+            fi
+
+            # 初始化数据库并直接把 API 服务装成 systemd
+            # 这样验证机侧既能跑 CLI，也能直接起 Web 控制台
             {shlex.quote(remote_venv)}/bin/python -m patchweaver init-db
             {shlex.quote(remote_venv)}/bin/python -m patchweaver install-api-service --service-name patchweaver-web --host 0.0.0.0 --port {api_port}
             {shlex.quote(remote_venv)}/bin/python -c "from pathlib import Path; from patchweaver.api.app import app; required_routes = {{'/', '/healthz', '/api/v1/overview', '/api/v1/tasks', '/api/v1/reports/tasks/{{task_id}}', '/api/v1/evaluations/groups'}}; route_paths = {{getattr(route, 'path', '') for route in app.routes}}; missing = sorted(required_routes - route_paths); dist_dir = Path('web/dist'); missing and (_ for _ in ()).throw(SystemExit(f'缺少接口路由: {{missing}}')); (not dist_dir.exists()) and (_ for _ in ()).throw(SystemExit(f'未找到前端构建产物: {{dist_dir.resolve()}}')); print('validation install ok'); print(f'dist: {{dist_dir.resolve()}}'); print('launcher: scripts/run_validation_api.sh')"
@@ -327,7 +373,7 @@ class ValidationUploader:
                 print(f"      {line}")
 
     def _run_remote_smoke_check(self, client: paramiko.SSHClient) -> None:
-        """验证已安装的验证机 API 服务，并检查健康检查和控制台页面。"""
+        """验证已安装的验证机 API 服务，并检查健康检查和控制台页面"""
 
         remote_dir = self.config.remote_dir.as_posix()
         port = self.config.remote_smoke_port
@@ -342,11 +388,13 @@ class ValidationUploader:
             import json
             import urllib.request
 
+            # 先打 healthz，确认后端和依赖链路是通的
             health = urllib.request.urlopen("http://127.0.0.1:{port}/healthz", timeout=5)
             health_payload = json.loads(health.read().decode("utf-8"))
             if health_payload.get("status") != "ok":
                 raise SystemExit(f"healthz 返回异常: {{health_payload}}")
 
+            # 再抓控制台首页，避免只验证 API 没验证静态资源
             console = urllib.request.urlopen("http://127.0.0.1:{port}/console/", timeout=5)
             html = console.read().decode("utf-8", "ignore")
             if "PatchWeaver" not in html and "<!doctype html" not in html.lower():
@@ -377,7 +425,7 @@ class ValidationUploader:
         *,
         timeout: int,
     ) -> tuple[str, str, int]:
-        """通过 bash -lc 执行一段验证机脚本。"""
+        """通过 bash -lc 执行一段验证机脚本"""
 
         command = f"bash -lc {shlex.quote(script)}"
         return self._run_remote_command(client, command, timeout=timeout)
@@ -389,7 +437,7 @@ class ValidationUploader:
         *,
         timeout: int = 300,
     ) -> tuple[str, str, int]:
-        """执行一条验证机命令并返回输出。"""
+        """执行一条验证机命令并返回输出"""
 
         stdin, stdout, stderr = client.exec_command(command, timeout=timeout)
         stdout_text = stdout.read().decode("utf-8", "ignore")
@@ -399,17 +447,19 @@ class ValidationUploader:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """构建命令行参数。"""
+    """构建命令行参数"""
 
     env_host = os.getenv("PATCHWEAVER_VALIDATION_HOST", "10.223.185.3")
     env_port = int(os.getenv("PATCHWEAVER_VALIDATION_PORT", "22"))
     env_user = os.getenv("PATCHWEAVER_VALIDATION_USER", "root")
     env_remote_dir = os.getenv(
         "PATCHWEAVER_VALIDATION_TARGET_DIR",
-        os.getenv("PATCHWEAVER_VALIDATION_REMOTE_DIR", "/root/patchweaver_validate_current"),
+        os.getenv("PATCHWEAVER_VALIDATION_REMOTE_DIR", "/root/patchweaver"),
     )
 
-    parser = argparse.ArgumentParser(description="把当前 PatchWeaver 代码上传到验证机。")
+    # 默认值尽量都允许从环境变量进来
+    # 这样手工执行和 CI/批处理调用能共用一套脚本
+    parser = argparse.ArgumentParser(description="把当前 PatchWeaver 代码上传到验证机")
     parser.add_argument("--host", default=env_host, help="验证机地址。")
     parser.add_argument("--port", type=int, default=env_port, help="验证机连接端口。")
     parser.add_argument("--user", default=env_user, help="验证机登录用户。")
@@ -480,13 +530,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def discover_project_root() -> Path:
-    """根据脚本位置回推项目根目录。"""
+    """根据脚本位置回推项目根目录"""
 
     return Path(__file__).resolve().parents[1]
 
 
 def resolve_password(cli_password: str | None, *, username: str, host: str) -> str:
-    """优先读取参数或环境变量，缺失时回退到交互输入。"""
+    """优先读取参数或环境变量，缺失时回退到交互输入"""
 
     if cli_password:
         return cli_password
@@ -494,7 +544,7 @@ def resolve_password(cli_password: str | None, *, username: str, host: str) -> s
 
 
 def main() -> int:
-    """脚本入口。"""
+    """脚本入口"""
 
     parser = build_parser()
     args = parser.parse_args()
@@ -516,6 +566,8 @@ def main() -> int:
         remote_smoke_port=args.remote_smoke_port,
     )
 
+    # main 保持很薄，只做参数解析和对象装配
+    # 真正的部署流程集中放在 ValidationUploader 里，后面改造更好控
     uploader = ValidationUploader(config)
     uploader.run()
     return 0

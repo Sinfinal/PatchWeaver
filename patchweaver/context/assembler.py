@@ -1,4 +1,4 @@
-"""上下文装配。"""
+"""上下文装配"""
 
 from __future__ import annotations
 
@@ -8,16 +8,16 @@ from patchweaver.models.evidence import EvidenceBundle
 
 
 class ContextAssembler:
-    """把证据集合整理成阶段可用的上下文包。"""
+    """把证据集合整理成阶段可用的上下文包"""
 
     def __init__(self, *, enable_dedup: bool = True, track_token_cost: bool = True) -> None:
-        """记录上下文装配阶段的行为开关。"""
+        """记录上下文装配阶段的行为开关"""
 
         self.enable_dedup = enable_dedup
         self.track_token_cost = track_token_cost
 
     def assemble(self, evidence_bundle: EvidenceBundle) -> ContextBundle:
-        """生成一份最小可用的 ContextBundle。"""
+        """生成一份最小可用的 ContextBundle"""
 
         if self.enable_dedup:
             spans, duplicate_hits = dedupe_spans(evidence_bundle.spans)

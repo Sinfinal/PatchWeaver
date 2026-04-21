@@ -1,4 +1,4 @@
-"""Harness 与主状态机相关模块。"""
+"""Harness 与主状态机相关模块"""
 
 from patchweaver.harness.attempt_engine import AttemptEngine
 from patchweaver.harness.evaluator import Evaluator

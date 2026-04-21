@@ -1,3 +1,5 @@
+import type { MachineProfile } from "./tasks";
+
 export type DoctorCheck = {
   category: string;
   name: string;
@@ -14,10 +16,16 @@ export type DoctorReport = {
     workspace_root: string;
     database_path: string;
     manifest_dir: string;
-    default_kernel: string;
+    configured_default_kernel: string;
+    detected_target_kernel?: string | null;
+    detected_target_kernel_source?: string | null;
+    machine_kernel?: string | null;
+    machine_arch?: string | null;
     max_attempts: number;
     python_version: string;
+    skill_source_priority?: string[];
   };
+  machine_profile?: MachineProfile | null;
   build_env: Record<string, unknown>;
   checks: DoctorCheck[];
   summary: {

@@ -1,8 +1,7 @@
-"""规则、配方、Skill 和 Prompt 目录查询服务。"""
+"""规则、配方、Skill 和 Prompt 目录查询服务"""
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
@@ -10,18 +9,19 @@ from patchweaver.api.deps import ApiContext
 from patchweaver.reporter.release_service import ReleaseService
 from patchweaver.skills.manifest_loader import load_skill_manifest
 from patchweaver.skills.source_policy import resolve_skill_roots
+from patchweaver.utils.path_policy import to_project_relative
 
 
 class CatalogService:
-    """负责汇总工程侧静态资产目录。"""
+    """负责汇总工程侧静态资产目录"""
 
     def __init__(self, context: ApiContext) -> None:
-        """保存 API 共享上下文。"""
+        """保存 API 共享上下文"""
 
         self.context = context
 
     def list_rules(self) -> dict[str, Any]:
-        """返回规则库与配方目录摘要。"""
+        """返回规则库与配方目录摘要"""
 
         rules_config = self.context.rules_config
         project_root = self.context.project_root
@@ -41,7 +41,7 @@ class CatalogService:
         }
 
     def list_skills(self) -> dict[str, Any]:
-        """扫描 Skill 清单。"""
+        """扫描 Skill 清单"""
 
         entries: list[dict[str, Any]] = []
         for source_layer, root in resolve_skill_roots(self.context.project_root):
@@ -67,7 +67,7 @@ class CatalogService:
         }
 
     def list_prompts(self) -> dict[str, Any]:
-        """返回 Prompt 目录与配置摘要。"""
+        """返回 Prompt 目录与配置摘要"""
 
         prompt_root = self.context.project_root / "prompts"
         sections = {
@@ -84,7 +84,7 @@ class CatalogService:
         }
 
     def list_settings(self) -> dict[str, Any]:
-        """输出几类主要配置，便于控制台查看。"""
+        """输出几类主要配置，便于控制台查看"""
 
         release_snapshot = ReleaseService(
             runtime=self.context.runtime,
@@ -103,15 +103,12 @@ class CatalogService:
             "skills": self.context.skills_config.model_dump(),
             "rules": self.context.rules_config.model_dump(),
             "logging": self.context.logging_config.model_dump(),
-            "models": {
-                **self.context.models_config.model_dump(),
-                "api_key_ready": bool(os.getenv(self.context.models_config.api_key_env)),
-            },
+            "models": self.context.models_config.safe_model_payload(),
             "delivery": release_snapshot,
         }
 
     def _scan_dir(self, path: Path) -> dict[str, Any]:
-        """递归扫描目录中的文件。"""
+        """递归扫描目录中的文件"""
 
         files: list[dict[str, Any]] = []
         if path.exists():
@@ -126,7 +123,7 @@ class CatalogService:
                     }
                 )
         return {
-            "path": str(path),
+            "path": to_project_relative(self.context.project_root, path),
             "exists": path.exists(),
             "files": files,
         }

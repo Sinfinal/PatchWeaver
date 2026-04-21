@@ -1,4 +1,4 @@
-"""核心数据对象定义。"""
+"""核心数据对象定义"""
 
 from patchweaver.models.attempt import AttemptRecord, AttemptState, FailureRecord
 from patchweaver.models.constraint import ConstraintReport, RiskItem

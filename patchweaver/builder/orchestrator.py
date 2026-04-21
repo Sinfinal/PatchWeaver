@@ -1,4 +1,4 @@
-"""构建编排与本机构建执行。"""
+"""构建编排与本机构建执行"""
 
 from __future__ import annotations
 
@@ -15,15 +15,15 @@ from patchweaver.models.task import TaskContext
 
 
 class BuildOrchestrator:
-    """负责组织单轮本机构建。"""
+    """负责组织单轮本机构建"""
 
     def __init__(self, build_config: Any) -> None:
-        """保存构建配置，供预检和执行阶段复用。"""
+        """保存构建配置，供预检和执行阶段复用"""
 
         self.build_config = build_config
 
     def start_attempt(self, *, task_id: str, attempt_no: int) -> AttemptRecord:
-        """生成一条新的 AttemptRecord。"""
+        """生成一条新的 AttemptRecord"""
 
         return AttemptRecord(
             task_id=task_id,
@@ -33,7 +33,7 @@ class BuildOrchestrator:
         )
 
     def probe_environment(self) -> dict[str, Any]:
-        """检查当前运行机上的构建环境是否齐备。"""
+        """检查当前运行机上的构建环境是否齐备"""
 
         return self._probe_local_environment()
 
@@ -45,10 +45,12 @@ class BuildOrchestrator:
         rewritten_patch_path: Path,
         source_dir: Path | None = None,
     ) -> BuildPrecheck:
-        """对改写补丁执行 apply 级预检查。"""
+        """对改写补丁执行 apply 级预检查"""
 
         selected_source_dir = source_dir
         if selected_source_dir is None:
+            # 预检查和正式构建要落在同一套源码树上
+            # 这里先做一次兜底选择，避免调用方遗漏 source_dir 时两边目录不一致
             selected_source_dir, _ = self._select_local_source_dir()
 
         if selected_source_dir is None:
@@ -63,6 +65,8 @@ class BuildOrchestrator:
 
         git_path = which("git")
         if git_path is None:
+            # apply 级预检查直接复用 git apply --check
+            # 没有 git 时不继续做假校验，统一走结构化失败结果
             return self._precheck_not_run(
                 task_id=task_id,
                 attempt_id=attempt_id,
@@ -91,6 +95,8 @@ class BuildOrchestrator:
         if not ok:
             failure_type = self._classify_apply_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
             if failure_type == "patch_apply_failed":
+                # 这里再补一次 reverse check
+                # 目的是把“补丁打不上”与“目标内核其实已经修过”区分开
                 reverse_result = subprocess.run(
                     [git_path, "apply", "--reverse", "--check", "--verbose", str(rewritten_patch_path.resolve())],
                     cwd=selected_source_dir,
@@ -131,7 +137,7 @@ class BuildOrchestrator:
         rewritten_patch_path: Path,
         build_log_path: Path,
     ) -> tuple[AttemptRecord, str, BuildPrecheck, BuildSummary]:
-        """执行一轮本机构建尝试。"""
+        """执行一轮本机构建尝试"""
 
         return self._execute_local_build(
             task=task,
@@ -142,7 +148,7 @@ class BuildOrchestrator:
         )
 
     def _probe_local_environment(self) -> dict[str, Any]:
-        """检查本机构建环境。"""
+        """检查本机构建环境"""
 
         builder_path = which(self.build_config.kpatch_build_cmd)
         selected_source_dir, selected_source_reason = self._select_local_source_dir()
@@ -179,12 +185,14 @@ class BuildOrchestrator:
         rewritten_patch_path: Path,
         build_log_path: Path,
     ) -> tuple[AttemptRecord, str, BuildPrecheck, BuildSummary]:
-        """执行本机构建。"""
+        """执行本机构建"""
 
         record = self.start_attempt(task_id=task.task_id, attempt_no=attempt_no)
         build_log_path.parent.mkdir(parents=True, exist_ok=True)
         probe = self._probe_local_environment()
 
+        # 无论构建是否真正执行，日志头部都先把关键环境写清楚
+        # 这样 report 和人工排障都能直接看到失败卡在环境还是补丁本身
         lines = [
             "构建后端: local",
             f"构建命令: {probe['builder_path'] or self.build_config.kpatch_build_cmd}",
@@ -195,6 +203,8 @@ class BuildOrchestrator:
 
         failure_type = self._probe_failure_type(probe)
         if failure_type is not None:
+            # 环境预检不过时，不再往下执行 build
+            # 这里直接生成 precheck/build summary，保证后续报表字段完整
             message = self._failure_message(failure_type)
             lines.append(message)
             precheck = self._precheck_not_run(
@@ -248,6 +258,8 @@ class BuildOrchestrator:
         if not precheck.ok:
             failure_type = precheck.failure_type or "patch_apply_failed"
             summary_text = "apply 级预检查未通过，已跳过本机构建。"
+            # apply 级预检查没过时，不继续碰 kpatch-build
+            # 这样失败原因会更集中，不会被后续一串派生报错淹没
             lines.append(summary_text)
             summary = BuildSummary(
                 task_id=task.task_id,
@@ -284,6 +296,7 @@ class BuildOrchestrator:
         output_dir.mkdir(parents=True, exist_ok=True)
         builder_cmd = probe["builder_path"] or self.build_config.kpatch_build_cmd
         selected_source_dir = Path(str(probe["selected_source_dir"]))
+        # 输出目录固定在 attempt 目录下，方便 report/replay 直接定位本轮产物
         command = [
             builder_cmd,
             "-s",
@@ -308,6 +321,8 @@ class BuildOrchestrator:
         stderr_text = ""
 
         try:
+            # 这里保持一次性执行，不做流式输出
+            # 一方面简化最小 MVP，另一方面方便把 stdout/stderr 成块写进构建日志
             result = subprocess.run(
                 command,
                 cwd=str(selected_source_dir),
@@ -344,11 +359,15 @@ class BuildOrchestrator:
         if exit_code == 0:
             module_path = self._find_local_module(output_dir)
             if module_path is None:
+                # 有些异常场景下 kpatch-build 会返回 0，但没有真正产出模块
+                # 这里继续按失败处理，避免把空结果误记成成功
                 lines.append("本机构建命令返回成功，但输出目录中没有找到 .ko 文件。")
                 exit_code = 2
                 failure_type = "compile_failed"
         else:
             failure_type = failure_type or self._classify_command_failure(stdout_text=stdout_text, stderr_text=stderr_text)
+            # kpatch 的详细日志通常在用户目录下
+            # 命令本身报错不够直观时，再把最近的 build.log 一并捞进来
             local_kpatch_log = self._read_local_kpatch_log()
             if local_kpatch_log:
                 lines.extend(["", "[local kpatch log]", local_kpatch_log])
@@ -399,7 +418,7 @@ class BuildOrchestrator:
         summary: str,
         source_dir: str | None = None,
     ) -> BuildPrecheck:
-        """为未实际执行的预检查生成结构化结果。"""
+        """为未实际执行的预检查生成结构化结果"""
 
         return BuildPrecheck(
             task_id=task_id,
@@ -413,7 +432,7 @@ class BuildOrchestrator:
         )
 
     def _format_precheck_lines(self, precheck: BuildPrecheck) -> list[str]:
-        """把预检查结果展开成构建日志片段。"""
+        """把预检查结果展开成构建日志片段"""
 
         lines = [
             "",
@@ -431,7 +450,7 @@ class BuildOrchestrator:
         return lines
 
     def _select_local_source_dir(self) -> tuple[Path | None, str | None]:
-        """挑选本地可用的源码目录。"""
+        """挑选本地可用的源码目录"""
 
         kernel_src_dir = Path(self.build_config.kernel_src_dir)
         if self._local_kernel_tree_ok(kernel_src_dir):
@@ -444,12 +463,12 @@ class BuildOrchestrator:
         return None, None
 
     def _local_kernel_tree_ok(self, path: Path) -> bool:
-        """判断本地目录能否作为内核源码树使用。"""
+        """判断本地目录能否作为内核源码树使用"""
 
         return path.is_dir() and (path / "Makefile").exists()
 
     def _probe_failure_type(self, probe: dict[str, Any]) -> str | None:
-        """把预检结果映射成统一失败类型。"""
+        """把预检结果映射成统一失败类型"""
 
         if not probe.get("builder_ok"):
             return "build_env_missing"
@@ -462,7 +481,7 @@ class BuildOrchestrator:
         return None
 
     def _failure_message(self, failure_type: str) -> str:
-        """生成更容易看懂的失败提示。"""
+        """生成更容易看懂的失败提示"""
 
         messages = {
             "build_env_missing": f"未找到构建命令：{self.build_config.kpatch_build_cmd}",
@@ -480,7 +499,7 @@ class BuildOrchestrator:
         stderr_text: str,
         failure_type: str | None = None,
     ) -> str:
-        """为 apply 级预检查生成摘要。"""
+        """为 apply 级预检查生成摘要"""
 
         if failure_type == "target_already_patched":
             return "目标源码已包含该补丁，apply 预检查判定无需重复应用。"
@@ -492,7 +511,7 @@ class BuildOrchestrator:
         return "apply 级预检查未通过。"
 
     def _classify_apply_precheck_failure(self, *, stdout_text: str, stderr_text: str) -> str:
-        """根据 apply 级预检查输出归类失败原因。"""
+        """根据 apply 级预检查输出归类失败原因"""
 
         combined = f"{stdout_text}\n{stderr_text}".lower()
         if "git: command not found" in combined or "not recognized as an internal or external command" in combined:
@@ -508,7 +527,7 @@ class BuildOrchestrator:
         return "patch_apply_failed"
 
     def _classify_command_failure(self, *, stdout_text: str, stderr_text: str) -> str:
-        """根据构建命令的直接输出给出一层快速归因。"""
+        """根据构建命令的直接输出给出一层快速归因"""
 
         combined = f"{stdout_text}\n{stderr_text}".lower()
         if "failed to apply" in combined or "can't find file to patch" in combined or "patch failed" in combined:
@@ -526,13 +545,13 @@ class BuildOrchestrator:
         return "compile_failed"
 
     def _find_local_module(self, output_dir: Path) -> Path | None:
-        """在输出目录中查找构建生成的模块。"""
+        """在输出目录中查找构建生成的模块"""
 
         candidates = sorted(output_dir.rglob("*.ko"))
         return candidates[0] if candidates else None
 
     def _read_local_kpatch_log(self) -> str | None:
-        """读取当前运行机上最近的 kpatch 调试日志。"""
+        """读取当前运行机上最近的 kpatch 调试日志"""
 
         log_path = Path.home() / ".kpatch" / "build.log"
         if not log_path.exists():
@@ -543,13 +562,13 @@ class BuildOrchestrator:
             return None
 
     def _tail_text(self, path: Path, *, line_count: int) -> str:
-        """读取文本文件最后若干行。"""
+        """读取文本文件最后若干行"""
 
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
         return "\n".join(lines[-line_count:]).strip()
 
     def _normalize_process_output(self, value: str | bytes | None) -> str:
-        """把 subprocess 的异常输出统一整理成字符串。"""
+        """把 subprocess 的异常输出统一整理成字符串"""
 
         if value is None:
             return ""
@@ -558,7 +577,7 @@ class BuildOrchestrator:
         return value
 
     def _module_name(self, task_id: str, attempt_no: int) -> str:
-        """生成模块名。"""
+        """生成模块名"""
 
         normalized = task_id.lower().replace("_", "-")
         return f"patchweaver-{normalized}-{attempt_no:03d}"

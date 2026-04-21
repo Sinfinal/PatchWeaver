@@ -19,7 +19,7 @@ def _project_root() -> Path:
 
 
 def _case_dir(case_name: str) -> Path:
-    base_dir = _project_root() / ".pytest_tmp"
+    base_dir = _project_root() / "data" / "cache" / "pytest-tmp"
     base_dir.mkdir(parents=True, exist_ok=True)
     root = base_dir / f"{case_name}-{uuid4().hex[:8]}"
     root.mkdir(parents=True, exist_ok=True)
@@ -98,7 +98,7 @@ def test_replay_harness_collects_stage_routes_dispatch_modes_and_files() -> None
         },
     }
 
-    summary = ReplayHarness().build_summary(
+    summary = ReplayHarness(tmp_path).build_summary(
         task=task,
         task_dir=task_dir,
         attempts=attempts,
@@ -110,8 +110,8 @@ def test_replay_harness_collects_stage_routes_dispatch_modes_and_files() -> None
     assert summary["stage_routes"]["rewrite_recipe"]["selected_skill"] == "rewrite_recipe"
     assert summary["dispatch_modes"]["failure_analysis"] == "read-parallel"
     assert len(summary["replay_files"]) == 5
-    assert summary["report_path"] == str(task_dir / "reports" / "report.json")
-    assert summary["closure_paths"]["task_dir"] == str(task_dir)
+    assert summary["report_path"] == f"{task.task_id}/reports/report.json"
+    assert summary["closure_paths"]["task_dir"] == task.task_id
     assert summary["comparison"]["attempt_count"] == 1
 
 

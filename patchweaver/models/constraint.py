@@ -1,4 +1,4 @@
-"""热补丁约束模型。"""
+"""热补丁约束模型"""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class RiskItem(BaseModel):
-    """表示一项热补丁风险。"""
+    """表示一项热补丁风险"""
 
     risk_type: str
     severity: str
@@ -16,7 +16,7 @@ class RiskItem(BaseModel):
 
 
 class ConstraintReport(BaseModel):
-    """表示补丁的热补丁约束分析结果。"""
+    """表示补丁的热补丁约束分析结果"""
 
     task_id: str
     risk_items: list[RiskItem] = Field(default_factory=list)

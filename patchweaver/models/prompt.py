@@ -1,4 +1,4 @@
-"""提示包模型。"""
+"""提示包模型"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class PromptPacket(BaseModel):
-    """表示某个阶段最终送入模型的提示包。"""
+    """表示某个阶段最终送入模型的提示包"""
 
     stage_name: str
     system_prompt_version: str

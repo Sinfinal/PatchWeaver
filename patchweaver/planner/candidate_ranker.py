@@ -1,4 +1,4 @@
-"""候选排序器。"""
+"""候选排序器"""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from patchweaver.models.rewrite import RewriteCandidate
 
 
 class CandidateRanker:
-    """负责结合风险、代价和经验提示对候选排序。"""
+    """负责结合风险、代价和经验提示对候选排序"""
 
     def rank(
         self,
@@ -14,7 +14,7 @@ class CandidateRanker:
         *,
         ranking_hints: dict[str, object] | None = None,
     ) -> list[RewriteCandidate]:
-        """返回按综合得分降序排好的候选列表。"""
+        """返回按综合得分降序排好的候选列表"""
 
         recipe_stats = (ranking_hints or {}).get("recipe_stats") or {}
         failure_pressure = (ranking_hints or {}).get("failure_pressure") or {}
@@ -24,7 +24,7 @@ class CandidateRanker:
             recipe_stat = recipe_stats.get(candidate.recipe_name) or {}
             history_success_rate = float(recipe_stat.get("success_rate", 0.0))
 
-            # 高频风险命中越多，说明这条路径更可能再次踩坑，排序时要适当降权。
+            # 高频风险命中越多，说明这条路径更可能再次踩坑，排序时要适当降权
             pressure = 0.0
             for rule_hit in candidate.rule_hits:
                 pressure += float(failure_pressure.get(rule_hit, 0))

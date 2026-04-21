@@ -1,4 +1,4 @@
-"""Harness 运行模型。"""
+"""Harness 运行模型"""
 
 from __future__ import annotations
 
@@ -12,13 +12,13 @@ from patchweaver.models.skill import SkillRouteDecision
 
 
 def _utc_now() -> datetime:
-    """返回当前 UTC 时间。"""
+    """返回当前 UTC 时间"""
 
     return datetime.now(timezone.utc)
 
 
 class StateTransition(BaseModel):
-    """表示一次状态迁移记录。"""
+    """表示一次状态迁移记录"""
 
     from_stage: str
     to_stage: str
@@ -26,7 +26,7 @@ class StateTransition(BaseModel):
 
 
 class ToolCallRecord(BaseModel):
-    """表示一次工具调用记录。"""
+    """表示一次工具调用记录"""
 
     tool_name: str
     action: str
@@ -35,7 +35,7 @@ class ToolCallRecord(BaseModel):
 
 
 class SubagentRecord(BaseModel):
-    """表示一条受限子代理调用记录。"""
+    """表示一条受限子代理调用记录"""
 
     name: str
     task_scope: str
@@ -44,7 +44,7 @@ class SubagentRecord(BaseModel):
 
 
 class ArtifactRef(BaseModel):
-    """表示一份归档产物的索引信息。"""
+    """表示一份归档产物的索引信息"""
 
     artifact_type: str
     artifact_path: Path
@@ -52,7 +52,7 @@ class ArtifactRef(BaseModel):
 
 
 class HarnessTrace(BaseModel):
-    """表示单轮执行的状态迁移和工具轨迹。"""
+    """表示单轮执行的状态迁移和工具轨迹"""
 
     trace_id: str
     task_id: str

@@ -1,4 +1,4 @@
-"""改写执行骨架。"""
+"""改写执行骨架"""
 
 from __future__ import annotations
 
@@ -10,17 +10,19 @@ from patchweaver.models.rewrite import RewritePlan, TransformationStep, Transfor
 from patchweaver.rewriter.diff_editor import DiffEditor
 from patchweaver.rewriter.smpl_engine import SmPLEngine
 from patchweaver.rewriter.template_engine import TemplateEngine
+from patchweaver.utils.path_policy import relativize_payload, to_project_relative
 
 
 class RewriteExecutor:
-    """负责把 RewritePlan 落地为补丁文件。"""
+    """负责把 RewritePlan 落地为补丁文件"""
 
     def __init__(self, project_root: Path) -> None:
-        """初始化改写分层执行器。"""
+        """初始化改写分层执行器"""
 
         self.template_engine = TemplateEngine(project_root)
         self.smpl_engine = SmPLEngine(project_root)
         self.diff_editor = DiffEditor()
+        self.project_root = project_root.resolve()
 
     def execute(
         self,
@@ -32,7 +34,7 @@ class RewriteExecutor:
         task_id: str,
         attempt_no: int,
     ) -> dict[str, object]:
-        """输出 rewritten.patch 及其配套元数据。"""
+        """输出 rewritten.patch 及其配套元数据"""
 
         source_patch_path = patch_bundle.normalized_patch_path or patch_bundle.raw_patch_path
         if source_patch_path is None:
@@ -90,17 +92,23 @@ class RewriteExecutor:
             "target_files": plan.target_files,
             "rule_hits": plan.rule_hits,
             "selection_reason": plan.selection_reason,
-            "source_patch_path": str(source_patch_path),
+            "source_patch_path": to_project_relative(self.project_root, source_patch_path),
             "source_commit": patch_bundle.stable_commit or patch_bundle.upstream_commit,
             "apply_precheck_status": apply_precheck_report.status,
             "notes": plan.notes,
         }
         rewrite_reason_path.write_text(
-            json.dumps(rewrite_reason_payload, ensure_ascii=False, indent=2) + "\n",
+            json.dumps(relativize_payload(rewrite_reason_payload, self.project_root), ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
-        transformation_trace_path.write_text(trace.model_dump_json(indent=2), encoding="utf-8")
-        apply_precheck_path.write_text(apply_precheck_report.model_dump_json(indent=2), encoding="utf-8")
+        transformation_trace_path.write_text(
+            json.dumps(relativize_payload(trace, self.project_root), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        apply_precheck_path.write_text(
+            json.dumps(relativize_payload(apply_precheck_report, self.project_root), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
         return {
             "rewritten_patch": rewritten_patch_path,
             "rewrite_reason": rewrite_reason_path,

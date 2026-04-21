@@ -1,4 +1,4 @@
-"""上下文装配模型。"""
+"""上下文装配模型"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from patchweaver.models.evidence import EvidenceSpan
 
 
 class ContextBundle(BaseModel):
-    """表示阶段执行前装配好的上下文包。"""
+    """表示阶段执行前装配好的上下文包"""
 
     evidence_ids: list[str] = Field(default_factory=list)
     token_cost: int = 0
@@ -20,7 +20,7 @@ class ContextBundle(BaseModel):
 
 
 class BootstrapManifest(BaseModel):
-    """表示当前轮真正注入的 bootstrap 片段清单。"""
+    """表示当前轮真正注入的 bootstrap 片段清单"""
 
     fragment_ids: list[str] = Field(default_factory=list)
     fragment_paths: list[str] = Field(default_factory=list)

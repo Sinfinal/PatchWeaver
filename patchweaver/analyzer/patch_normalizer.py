@@ -1,4 +1,4 @@
-"""Patch 规范化骨架。"""
+"""Patch 规范化骨架"""
 
 from __future__ import annotations
 
@@ -7,10 +7,10 @@ import re
 
 
 class PatchNormalizer:
-    """负责管理原始补丁到规范化补丁的转换入口。"""
+    """负责管理原始补丁到规范化补丁的转换入口"""
 
     def normalize(self, raw_patch_path: Path, normalized_patch_path: Path) -> Path:
-        """返回规范化补丁路径。"""
+        """返回规范化补丁路径"""
 
         raw_text = raw_patch_path.read_text(encoding="utf-8")
         normalized_text = self.normalize_text(raw_text)
@@ -19,7 +19,7 @@ class PatchNormalizer:
         return normalized_patch_path
 
     def normalize_text(self, patch_text: str) -> str:
-        """统一换行和 diff 路径头。"""
+        """统一换行和 diff 路径头"""
 
         text = patch_text.replace("\r\n", "\n").replace("\r", "\n")
         text = re.sub(
@@ -37,7 +37,7 @@ class PatchNormalizer:
         return text
 
     def extract_affected_files(self, patch_text: str) -> list[str]:
-        """提取 patch 中涉及的文件路径。"""
+        """提取 patch 中涉及的文件路径"""
 
         files: list[str] = []
         seen: set[str] = set()

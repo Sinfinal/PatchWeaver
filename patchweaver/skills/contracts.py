@@ -1,4 +1,4 @@
-"""Skill 契约定义。"""
+"""Skill 契约定义"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class SkillExecutionRequest(BaseModel):
-    """表示 skill 执行请求。"""
+    """表示 skill 执行请求"""
 
     stage_name: str
     task_id: str
@@ -16,7 +16,7 @@ class SkillExecutionRequest(BaseModel):
 
 
 class SkillExecutionResult(BaseModel):
-    """表示 skill 执行结果。"""
+    """表示 skill 执行结果"""
 
     ok: bool
     summary: str = ""
@@ -24,8 +24,8 @@ class SkillExecutionResult(BaseModel):
 
 
 class SkillExecutor(Protocol):
-    """约定 skill 执行器的最小接口。"""
+    """约定 skill 执行器的最小接口"""
 
     def execute(self, request: SkillExecutionRequest) -> SkillExecutionResult:
-        """执行单个 skill 请求。"""
+        """执行单个 skill 请求"""
 

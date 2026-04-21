@@ -1,4 +1,4 @@
-"""Failover 策略。"""
+"""Failover 策略"""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ def build_failover_record(
     field_changes: dict[str, object],
     result: str,
 ) -> FailoverRecord:
-    """生成一条窄状态 failover 记录。"""
+    """生成一条窄状态 failover 记录"""
 
     return FailoverRecord(
         stage_name=stage_name,

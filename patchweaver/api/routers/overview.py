@@ -1,4 +1,4 @@
-"""总览相关接口。"""
+"""总览相关接口"""
 
 from __future__ import annotations
 
@@ -13,13 +13,13 @@ router = APIRouter(tags=["overview"])
 
 @router.get("/overview")
 def get_overview(context: ApiContext = Depends(get_api_context)) -> dict:
-    """返回总览页所需数据。"""
+    """返回总览页所需数据"""
 
     return OverviewService(context).get_overview()
 
 
 @router.get("/events")
 def get_events(limit: int = 40, context: ApiContext = Depends(get_api_context)) -> dict:
-    """返回近期事件流。"""
+    """返回近期事件流"""
 
     return {"items": LogService(context).get_events(limit=limit)}

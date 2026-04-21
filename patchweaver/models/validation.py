@@ -1,4 +1,4 @@
-"""验证结果模型。"""
+"""验证结果模型"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class ValidationItem(BaseModel):
-    """表示一项验证动作的结果。"""
+    """表示一项验证动作的结果"""
 
     status: Literal["pending", "passed", "failed", "skipped"] = "pending"
     ok: bool = False
@@ -18,7 +18,7 @@ class ValidationItem(BaseModel):
 
 
 class ValidationMatrixEntry(BaseModel):
-    """表示验证矩阵中的单项记录。"""
+    """表示验证矩阵中的单项记录"""
 
     name: str
     category: Literal["static", "dynamic", "guard", "regression"] = "static"
@@ -30,7 +30,7 @@ class ValidationMatrixEntry(BaseModel):
 
 
 class ValidationReport(BaseModel):
-    """表示加载、卸载和语义校验的综合结果。"""
+    """表示加载、卸载和语义校验的综合结果"""
 
     semantic_precheck_result: ValidationItem = Field(default_factory=ValidationItem)
     load_result: ValidationItem = Field(default_factory=ValidationItem)

@@ -1,4 +1,4 @@
-"""构建失败归因骨架。"""
+"""构建失败归因骨架"""
 
 from __future__ import annotations
 
@@ -6,10 +6,10 @@ from patchweaver.models.attempt import FailureRecord
 
 
 class FailureClassifier:
-    """负责把构建失败整理为结构化归因。"""
+    """负责把构建失败整理为结构化归因"""
 
     def classify(self, *, task_id: str, attempt_id: str, stage_name: str, summary: str) -> FailureRecord:
-        """生成一条最小失败记录。"""
+        """生成一条最小失败记录"""
 
         return FailureRecord(
             task_id=task_id,
@@ -20,11 +20,13 @@ class FailureClassifier:
         )
 
     def classify_build_log(self, *, task_id: str, attempt_id: str, build_log: str) -> FailureRecord:
-        """根据构建日志给出简单归因。"""
+        """根据构建日志给出简单归因"""
 
         failure_type = "compile_failed"
         lowered_log = build_log.lower()
 
+        # 先按我们自己生成的中文摘要做一层归类
+        # 这样即使底层命令行输出差异比较大，也能先稳住大类判断
         if "未找到构建命令" in build_log or "kpatch-build 未找到" in build_log:
             failure_type = "build_env_missing"
         elif "找不到可用的内核源码目录" in build_log:
@@ -68,6 +70,8 @@ class FailureClassifier:
 
         evidence = lines[:3]
         if failure_type == "patch_apply_failed":
+            # apply 类失败通常上下文很多
+            # 这里只保留最像“根因提示”的几行，方便前端和报告直接展示
             evidence = [
                 line
                 for line in lines

@@ -1,4 +1,4 @@
-"""模板层执行器。"""
+"""模板层执行器"""
 
 from __future__ import annotations
 
@@ -10,10 +10,10 @@ from patchweaver.models.rewrite import TransformationStep
 
 
 class TemplateEngine:
-    """负责按 recipe 模板渲染 patch 文本。"""
+    """负责按 recipe 模板渲染 patch 文本"""
 
     def __init__(self, project_root: Path) -> None:
-        """初始化模板目录。"""
+        """初始化模板目录"""
 
         self.templates_dir = project_root / "recipes" / "templates"
         self.environment = Environment(loader=FileSystemLoader(str(self.templates_dir)), autoescape=False)
@@ -25,7 +25,7 @@ class TemplateEngine:
         patch_text: str,
         target_files: list[str],
     ) -> tuple[str, TransformationStep]:
-        """按选中的 recipe 生成模板层结果。"""
+        """按选中的 recipe 生成模板层结果"""
 
         template_name = f"{recipe_name}.patch.j2" if recipe_name else ""
         template_path = self.templates_dir / template_name

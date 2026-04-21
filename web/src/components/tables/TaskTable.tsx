@@ -32,7 +32,10 @@ export function TaskTable({ items }: TaskTableProps): JSX.Element {
           <tr key={item.task_id} onClick={() => navigate(`/tasks/${item.task_id}`)}>
             <td>{item.task_id}</td>
             <td>{item.cve_id}</td>
-            <td>{item.target_kernel}</td>
+            <td>
+              <div>{item.target_kernel}</div>
+              <div className="pw-inline-note">{item.target_kernel_source ? `来源 ${item.target_kernel_source}` : "来源未记录"}</div>
+            </td>
             <td>
               <StatusBadge value={item.status} />
             </td>

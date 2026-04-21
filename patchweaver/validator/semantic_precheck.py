@@ -1,4 +1,4 @@
-"""语义预检查器。"""
+"""语义预检查器"""
 
 from __future__ import annotations
 
@@ -8,10 +8,10 @@ from patchweaver.models.validation import ValidationItem
 
 
 class SemanticPrecheck:
-    """负责执行轻量静态语义预检查。"""
+    """负责执行轻量静态语义预检查"""
 
     def run(self, *, rewritten_patch_path: Path) -> ValidationItem:
-        """检查改写补丁是否至少满足最基本的可读与非占位要求。"""
+        """检查改写补丁是否至少满足最基本的可读与非占位要求"""
 
         if not rewritten_patch_path.exists():
             return ValidationItem(status="failed", ok=False, detail="改写补丁文件不存在，无法执行语义预检查。")

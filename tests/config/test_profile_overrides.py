@@ -48,3 +48,11 @@ def test_profile_controls_read_parallel_dispatch_mode() -> None:
     assert dispatch_mode("retrieval", enable_read_parallel=default_runtime.enable_read_parallel) == "read-serial"
     assert dispatch_mode("retrieval", enable_read_parallel=full_runtime.enable_read_parallel) == "read-parallel"
     assert dispatch_mode("build", enable_read_parallel=full_runtime.enable_read_parallel) == "write-exclusive"
+
+
+def test_workspace_root_is_resolved_under_project_root() -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+
+    runtime = resolve_runtime(project_root=repo_root)
+
+    assert runtime.workspace_root == (repo_root / "workspaces").resolve()

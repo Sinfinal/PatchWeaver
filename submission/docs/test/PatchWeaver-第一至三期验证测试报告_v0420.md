@@ -1,4 +1,4 @@
-# PatchWeaver 第一期至第三期验证测试报告
+﻿# PatchWeaver 第一期至第三期验证测试报告
 
 ## 1. 报告说明
 
@@ -11,7 +11,7 @@
 
 本次验证使用的是独立验证副本，不直接覆盖验证机原有目录。
 
-- 验证目录：`/root/patchweaver_validate_20260420`
+- 验证目录：`<project_root>`
 - 验证内核：`6.6.102-5.2.an23.x86_64`
 - Python：`3.11.6`
 - `kpatch-build`：`/usr/bin/kpatch-build`
@@ -20,9 +20,9 @@
 
 ### 2.1 验证副本准备
 
-本次没有直接在验证机已有 `/root/patchweaver` 目录上操作，而是将当前本地项目打包后同步到：
+本次没有直接在验证机已有 `<project_root>` 目录上操作，而是将当前本地项目打包后同步到：
 
-- `/root/patchweaver_validate_20260420`
+- `<project_root>`
 
 这样做的目的有两个：
 
@@ -52,7 +52,7 @@
 - `kernel_src_dir` 改为 `/usr/src/kernels/6.6.102-5.2.an23.x86_64`
 - `kernel_devel_dir` 改为 `/usr/src/kernels/6.6.102-5.2.an23.x86_64`
 - `vmlinux_path` 改为 `/usr/lib/debug/usr/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux`
-- `remote_workspace_root` 改为 `/root/patchweaver_validate_20260420/_remote_build`
+- `remote_workspace_root` 改为 `<project_root>/_remote_build`
 
 说明：
 
@@ -87,7 +87,7 @@
 登录验证机后，先执行：
 
 ```bash
-cd /root/patchweaver_validate_20260420
+cd <project_root>
 . .venv/bin/activate
 export LANG=C.UTF-8
 export LC_ALL=C.UTF-8
@@ -135,7 +135,7 @@ python -m patchweaver --help
 2. `init --with-db` 成功创建 `data/`、`prompts/`、`skills/`、`workspaces/` 等最小运行目录。
 3. `paths --json` 能正确解析项目根目录、配置目录、工作区目录、数据库路径和默认内核版本。
 4. SQLite 初始化成功，数据库文件位于：
-   `/root/patchweaver_validate_20260420/data/patchweaver.db`
+   `<project_root>/data/patchweaver.db`
 5. 修正构建配置后，`doctor --json` 检查项为：
    `total=43, ok=43, warn=0, error=0`
 
@@ -167,10 +167,10 @@ python -m patchweaver db path --json
 人工检查重点如下：
 
 1. `init --with-db --json` 中应看到 `database_initialized: true`。
-2. `paths --json` 中的 `project_root` 应为 `/root/patchweaver_validate_20260420`。
+2. `paths --json` 中的 `project_root` 应为 `<project_root>`。
 3. `doctor --json` 中的 `summary` 应为 `ok=43, error=0`。
 4. 数据库文件应存在于：
-   `/root/patchweaver_validate_20260420/data/patchweaver.db`
+   `<project_root>/data/patchweaver.db`
 
 ## 4. 第二期验证结果
 
@@ -387,8 +387,8 @@ python -m patchweaver replay --task TASK-VERIFY-20260420-0185 --json
 4. 若要核对本次失败根因，可直接查看：
 
 ```bash
-cat /root/patchweaver_validate_20260420/workspaces/TASK-VERIFY-20260420-1086/attempts/001/logs/build.log
-cat /root/patchweaver_validate_20260420/workspaces/TASK-VERIFY-20260420-0185/attempts/001/logs/build.log
+cat <project_root>/workspaces/TASK-VERIFY-20260420-1086/attempts/001/logs/build.log
+cat <project_root>/workspaces/TASK-VERIFY-20260420-0185/attempts/001/logs/build.log
 ```
 
 用于确认源码树缺失的检查命令如下：
@@ -456,8 +456,8 @@ test -f /usr/src/kernels/6.6.102-5.2.an23.x86_64/net/netfilter/nf_tables_api.c &
 
 已生成阶段统计文件：
 
-- `/root/patchweaver_validate_20260420/data/evaluations/contest_samples/summary.json`
-- `/root/patchweaver_validate_20260420/data/evaluations/contest_samples/summary.md`
+- `<project_root>/data/evaluations/contest_samples/summary.json`
+- `<project_root>/data/evaluations/contest_samples/summary.md`
 
 ### 5.5 `WP-III-05` Web 控制台首版
 
@@ -529,8 +529,8 @@ python -m patchweaver evaluate --fixture contest_samples --json
 第二组，检查三期增强产物：
 
 ```bash
-find /root/patchweaver_validate_20260420/workspaces/TASK-VERIFY-20260420-1086/attempts/001 -maxdepth 3 -type f | sort
-find /root/patchweaver_validate_20260420/workspaces/TASK-VERIFY-20260420-0185/attempts/001 -maxdepth 3 -type f | sort
+find <project_root>/workspaces/TASK-VERIFY-20260420-1086/attempts/001 -maxdepth 3 -type f | sort
+find <project_root>/workspaces/TASK-VERIFY-20260420-0185/attempts/001 -maxdepth 3 -type f | sort
 ```
 
 人工重点核对下面这些文件：
@@ -597,7 +597,8 @@ curl -I -s http://127.0.0.1:18084/console/ | head -n 5
 
 为避免人工复核时和本次验证结果产生偏差，需要注意下面 4 点：
 
-1. 本报告默认使用的是 `/root/patchweaver_validate_20260420` 这份验证副本，而不是验证机上历史目录 `/root/patchweaver`。
+1. 本报告默认使用的是 `<project_root>` 这份验证副本，而不是验证机上历史目录 `<project_root>`。
 2. 复核前必须先激活 `.venv`，否则 `python -m patchweaver`、`fastapi`、`typer` 等依赖可能找不到。
 3. 复核前必须设置 `PATCHWEAVER_REMOTE_PASSWORD`，否则 `doctor` 和 `run` 中的 `ssh` 构建后端会直接报缺少密码环境变量。
 4. 若验证机后续补齐了完整内核源码树，则二期和三期的构建结果可能和本报告不同；这时应保留本报告作为“当前环境基线”，再单独补一版复测报告。
+

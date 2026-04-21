@@ -1,4 +1,4 @@
-"""任务相关接口。"""
+"""任务相关接口"""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def list_tasks(
     target_kernel: str | None = None,
     context: ApiContext = Depends(get_api_context),
 ) -> dict:
-    """按条件读取任务列表。"""
+    """按条件读取任务列表"""
 
     return TaskQueryService(context).list_tasks(
         limit=limit,
@@ -34,7 +34,7 @@ def list_tasks(
 
 @router.post("/tasks")
 def create_task(request: CreateTaskRequest, context: ApiContext = Depends(get_api_context)) -> dict:
-    """创建任务并初始化工作区。"""
+    """创建任务并初始化工作区"""
 
     try:
         return TaskQueryService(context).create_task(
@@ -50,7 +50,7 @@ def create_task(request: CreateTaskRequest, context: ApiContext = Depends(get_ap
 
 @router.get("/tasks/{task_id}")
 def get_task_detail(task_id: str, context: ApiContext = Depends(get_api_context)) -> dict:
-    """读取任务详情。"""
+    """读取任务详情"""
 
     try:
         return TaskQueryService(context).get_task_detail(task_id)
@@ -60,7 +60,7 @@ def get_task_detail(task_id: str, context: ApiContext = Depends(get_api_context)
 
 @router.post("/tasks/{task_id}/analyze", response_model=TaskActionResponse)
 def analyze_task(task_id: str, context: ApiContext = Depends(get_api_context)) -> TaskActionResponse:
-    """执行分析阶段。"""
+    """执行分析阶段"""
 
     try:
         result = TaskQueryService(context).analyze_task(task_id)
@@ -71,7 +71,7 @@ def analyze_task(task_id: str, context: ApiContext = Depends(get_api_context)) -
 
 @router.post("/tasks/{task_id}/run", response_model=TaskActionResponse)
 def run_task(task_id: str, context: ApiContext = Depends(get_api_context)) -> TaskActionResponse:
-    """执行单轮尝试。"""
+    """执行单轮尝试"""
 
     try:
         result = TaskQueryService(context).run_task(task_id)
@@ -82,7 +82,7 @@ def run_task(task_id: str, context: ApiContext = Depends(get_api_context)) -> Ta
 
 @router.post("/tasks/{task_id}/report", response_model=TaskActionResponse)
 def report_task(task_id: str, context: ApiContext = Depends(get_api_context)) -> TaskActionResponse:
-    """生成报告。"""
+    """生成报告"""
 
     try:
         result = TaskQueryService(context).report_task(task_id)
@@ -93,7 +93,7 @@ def report_task(task_id: str, context: ApiContext = Depends(get_api_context)) ->
 
 @router.get("/tasks/{task_id}/replay")
 def replay_task(task_id: str, context: ApiContext = Depends(get_api_context)) -> dict:
-    """返回任务最近一轮回放信息。"""
+    """返回任务最近一轮回放信息"""
 
     try:
         return TaskQueryService(context).replay_task(task_id)
@@ -103,7 +103,7 @@ def replay_task(task_id: str, context: ApiContext = Depends(get_api_context)) ->
 
 @router.get("/tasks/{task_id}/artifacts")
 def list_artifacts(task_id: str, context: ApiContext = Depends(get_api_context)) -> dict:
-    """返回任务工作区的产物树。"""
+    """返回任务工作区的产物树"""
 
     try:
         return ArtifactService(context).list_tree(task_id)
@@ -117,7 +117,7 @@ def get_artifact_content(
     path: str = Query(..., description="工作区内的相对路径"),
     context: ApiContext = Depends(get_api_context),
 ) -> ArtifactContentResponse:
-    """读取任务产物内容。"""
+    """读取任务产物内容"""
 
     try:
         payload = ArtifactService(context).read_content(task_id, path)

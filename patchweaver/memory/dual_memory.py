@@ -1,4 +1,4 @@
-"""双记忆门面。"""
+"""双记忆门面"""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from patchweaver.memory.repository import MemoryRepository
 
 
 class DualMemory:
-    """统一管理 Failure Memory 与 Recipe Memory。"""
+    """统一管理 Failure Memory 与 Recipe Memory"""
 
     KNOWN_RISK_TYPES = {
         "patch_apply_failed",
@@ -30,7 +30,7 @@ class DualMemory:
     }
 
     def __init__(self, root_dir: Path) -> None:
-        """初始化双记忆仓库。"""
+        """初始化双记忆仓库"""
 
         repository = MemoryRepository(root_dir)
         self.failure_memory = FailureMemory(repository)
@@ -46,7 +46,7 @@ class DualMemory:
         failure_record: FailureRecord,
         validation_report: ValidationReport | None = None,
     ) -> dict[str, object]:
-        """记录单轮执行结果并返回双记忆快照。"""
+        """记录单轮执行结果并返回双记忆快照"""
 
         self.failure_memory.record(
             task_id=task.task_id,
@@ -70,7 +70,7 @@ class DualMemory:
         }
 
     def recall(self, *, stage_name: str, evidence_bundle: EvidenceBundle, limit: int = 3) -> list[str]:
-        """按阶段召回经验摘要。"""
+        """按阶段召回经验摘要"""
 
         keywords = self._keywords(evidence_bundle)
         risk_types = [item for item in keywords if item in self.KNOWN_RISK_TYPES]
@@ -88,7 +88,7 @@ class DualMemory:
         return []
 
     def build_ranking_hints(self, *, risk_types: list[str]) -> dict[str, object]:
-        """为候选排序整理一份轻量经验提示。"""
+        """为候选排序整理一份轻量经验提示"""
 
         normalized_risks = [item for item in dict.fromkeys(risk_types) if item]
         recipe_entries = self.repository.load_recipe_entries()
@@ -128,7 +128,7 @@ class DualMemory:
         }
 
     def _keywords(self, evidence_bundle: EvidenceBundle) -> list[str]:
-        """从证据中提取最小关键字集合。"""
+        """从证据中提取最小关键字集合"""
 
         combined = " ".join([span.excerpt for span in evidence_bundle.spans] + evidence_bundle.memory_hits).lower()
         tokens = set(re.findall(r"[a-z_][a-z0-9_:-]{2,}", combined))

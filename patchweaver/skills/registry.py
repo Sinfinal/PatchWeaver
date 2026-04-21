@@ -1,4 +1,4 @@
-"""Skill 注册中心。"""
+"""Skill 注册中心"""
 
 from __future__ import annotations
 
@@ -13,16 +13,16 @@ from patchweaver.skills.visibility_resolver import VisibilityResolver
 
 
 class SkillRegistry:
-    """负责扫描并缓存可用 skill manifest。"""
+    """负责扫描并缓存可用 skill manifest"""
 
     def __init__(self, project_root: Path) -> None:
-        """记录项目根目录。"""
+        """记录项目根目录"""
 
         self.project_root = project_root
         self.visibility_resolver = VisibilityResolver()
 
     def discover(self) -> list[SkillManifest]:
-        """扫描当前项目可见的 skill manifest。"""
+        """扫描当前项目可见的 skill manifest"""
 
         skills_config = load_skills_config(self.project_root)
         enabled_skills = set(skills_config.enabled_skills)
@@ -33,10 +33,10 @@ class SkillRegistry:
         for source_layer, root in resolve_skill_roots(self.project_root):
             if not root.exists():
                 continue
-            # 这里按来源优先级顺序扫描，同名 skill 的覆盖关系就落在遍历顺序上了。
+            # 这里按来源优先级顺序扫描，同名 skill 的覆盖关系就落在遍历顺序上了
             for manifest_path in sorted(root.glob("*/manifest.yaml")):
                 manifest = load_skill_manifest(manifest_path, source_layer=source_layer)
-                # manifest 自身开关和 config 总开关都要过，避免测试目录里的半成品混进主链。
+                # manifest 自身开关和 config 总开关都要过，避免测试目录里的半成品混进主链
                 if not manifest.enabled:
                     continue
                 if enabled_skills and manifest.skill_name not in enabled_skills:
@@ -53,6 +53,6 @@ class SkillRegistry:
         )
 
     def find_by_stage(self, stage_name: str) -> list[SkillManifest]:
-        """读取某一阶段可见的 skill 列表。"""
+        """读取某一阶段可见的 skill 列表"""
 
         return [manifest for manifest in self.discover() if manifest.stage_name == stage_name]

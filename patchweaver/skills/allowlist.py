@@ -1,4 +1,4 @@
-"""Skill allowlist 规则。"""
+"""Skill allowlist 规则"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from patchweaver.models.skill import SkillManifest
 
 
 def is_skill_allowed(project_root: Path, manifest: SkillManifest) -> bool:
-    """判断 skill 是否满足当前 allowlist 规则。"""
+    """判断 skill 是否满足当前 allowlist 规则"""
 
     skills_config = load_skills_config(project_root)
     if not skills_config.enforce_allowlist:

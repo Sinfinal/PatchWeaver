@@ -1,4 +1,4 @@
-"""回归测试器。"""
+"""回归测试器"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from patchweaver.models.validation import ValidationItem
 
 
 class RegressionTester:
-    """负责根据历史尝试整理一份轻量回归结论。"""
+    """负责根据历史尝试整理一份轻量回归结论"""
 
     def run(
         self,
@@ -18,7 +18,7 @@ class RegressionTester:
         history_attempts: list[AttemptRecord],
         semantic_guard_passed: bool,
     ) -> tuple[ValidationItem, dict[str, object], str]:
-        """比较当前轮与历史记录，输出回归摘要。"""
+        """比较当前轮与历史记录，输出回归摘要"""
 
         if not history_attempts:
             item = ValidationItem(status="skipped", ok=False, detail="当前没有历史尝试，暂不生成回归对比。")
@@ -56,7 +56,7 @@ class RegressionTester:
         return item, summary, self._build_log(item, summary)
 
     def _build_log(self, item: ValidationItem, summary: dict[str, object]) -> str:
-        """整理回归说明日志。"""
+        """整理回归说明日志"""
 
         lines = [
             f"status: {item.status}",
