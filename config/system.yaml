@@ -28,3 +28,15 @@ manifest_dir: data/manifests
 report_formats:
   - json
   - md
+
+# Web/API 默认监听地址
+api_host: 0.0.0.0
+
+# Web/API 默认监听端口
+api_port: 18084
+
+# 验证机上的 systemd 服务名
+api_service_name: patchweaver-web
+
+# 初始化或部署完成后，默认安装并启用 API 自启动服务
+auto_install_api_service: true

@@ -370,8 +370,8 @@ class RepairChainResolver:
             with urlopen(request, timeout=60) as response:
                 charset = response.headers.get_content_charset() or "utf-8"
                 return response.read().decode(charset, errors="replace")
-        except HTTPError as exc:  # pragma: no cover - 远端依赖
+        except HTTPError as exc:  # pragma: no cover - 网络来源依赖
             raise ValueError(f"请求来源失败：{url} ({exc.code})") from exc
-        except URLError as exc:  # pragma: no cover - 远端依赖
+        except URLError as exc:  # pragma: no cover - 网络来源依赖
             raise ValueError(f"请求来源失败：{url} ({exc.reason})") from exc
 
