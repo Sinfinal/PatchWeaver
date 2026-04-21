@@ -14,8 +14,16 @@ from patchweaver.storage.attempt_repo import AttemptRepository
 from patchweaver.storage.task_repo import TaskRepository
 
 
+def _project_root() -> Path:
+    current = Path(__file__).resolve().parent
+    for candidate in (current, *current.parents):
+        if (candidate / "pyproject.toml").exists():
+            return candidate
+    raise RuntimeError(f"Unable to locate project root from {__file__}")
+
+
 def _case_dir(case_name: str) -> Path:
-    base_dir = Path("E:/Desk/patchweaver_pytest_cases")
+    base_dir = _project_root() / ".pytest_tmp"
     base_dir.mkdir(parents=True, exist_ok=True)
     root = base_dir / f"{case_name}-{uuid4().hex[:8]}"
     root.mkdir(parents=True, exist_ok=True)
