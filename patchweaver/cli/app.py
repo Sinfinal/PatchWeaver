@@ -14,12 +14,13 @@ from typing import Annotated, Any
 
 import click
 import typer
-from typer.core import TyperGroup
+from typer.core import TyperCommand, TyperGroup
 
 from patchweaver import __version__
 from patchweaver.api.service_manager import (
     DEFAULT_API_SERVICE_NAME,
     install_systemd_service,
+    systemd_available,
     wait_for_api_ready,
 )
 from patchweaver.builder.orchestrator import BuildOrchestrator
@@ -53,6 +54,14 @@ class PatchWeaverHelpGroup(TyperGroup):
         """输出统一风格的帮助页。"""
         # 统一接管帮助页渲染，避免根命令和子命令出现两套风格。
         formatter.write(_render_help_page(ctx, self))
+
+
+class PatchWeaverHelpCommand(TyperCommand):
+    """统一渲染单命令帮助页。"""
+
+    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """输出单命令帮助页。"""
+        formatter.write(_render_command_help(ctx, self))
 
 
 app = typer.Typer(
@@ -255,6 +264,95 @@ def _wrap_help_entry(name: str, description: str, *, width: int = 22, color: str
     return lines
 
 
+def _command_path(ctx: click.Context, command: click.Command | None = None) -> str:
+    """按项目 CLI 规范拼出命令路径。"""
+    parts: list[str] = []
+    cursor: click.Context | None = ctx
+    while cursor is not None:
+        name = cursor.command.name
+        if name:
+            parts.append(name)
+        cursor = cursor.parent
+
+    normalized = list(reversed(parts))
+    if command is not None and (not normalized or normalized[-1] != command.name):
+        normalized.append(command.name or "")
+    if not normalized or normalized[0] != "patchweaver":
+        normalized.insert(0, "patchweaver")
+    return " ".join(part for part in normalized if part)
+
+
+def _command_heading(command_path: str) -> str:
+    """把命令路径转换成页头标题。"""
+    parts = command_path.split()
+    if parts:
+        parts[0] = "PatchWeaver"
+    return " / ".join(parts)
+
+
+def _normalize_help_description(text: str) -> str:
+    """把 Click 默认帮助语句调整成项目内统一文案。"""
+    normalized = text.replace("Show this message and exit.", "显示帮助页。")
+    normalized = normalized.replace("[default:", "[默认:")
+    return normalized
+
+
+def _command_option_entries(ctx: click.Context, command: click.Command) -> list[tuple[str, str]]:
+    """提取命令帮助页里可展示的参数说明。"""
+    entries: list[tuple[str, str]] = []
+    for param in command.get_params(ctx):
+        help_record = param.get_help_record(ctx)
+        if help_record is None:
+            continue
+        name, description = help_record
+        entries.append((name, _normalize_help_description(description)))
+    return entries
+
+
+def _command_examples(command_path: str) -> list[tuple[str, str]]:
+    """返回常用命令示例。"""
+    examples: dict[str, list[tuple[str, str]]] = {
+        "patchweaver serve-api": [
+            (f"{command_path} --foreground", "以前台方式启动后端接口，便于本地联调。"),
+            (f"{command_path} --host 0.0.0.0 --port 18084", "指定监听地址和端口。"),
+        ],
+        "patchweaver init": [
+            (f"{command_path} --with-db", "初始化最小运行目录，并同时建立 SQLite 数据库。"),
+        ],
+        "patchweaver doctor": [
+            (f"{command_path} --json", "输出结构化环境检查结果。"),
+        ],
+        "patchweaver paths": [
+            (f"{command_path} --json", "输出当前生效的运行路径和关键配置。"),
+        ],
+        "patchweaver create": [
+            (f"{command_path} --cve CVE-2024-1086", "创建任务并初始化工作区。"),
+        ],
+        "patchweaver run": [
+            (f"{command_path} --task-id task-001", "执行最小单轮尝试。"),
+        ],
+        "patchweaver evaluate": [
+            (f"{command_path} --fixture contest_samples", "按固定样例集输出阶段评测汇总。"),
+        ],
+        "patchweaver finalize": [
+            (f"{command_path}", "生成 submission 目录和 final manifest。"),
+        ],
+        "patchweaver gate": [
+            (f"{command_path}", "执行第四阶段最终门禁检查。"),
+        ],
+        "patchweaver install-api-service": [
+            (f"{command_path} --host 0.0.0.0 --port 18084", "在 Linux 验证机上安装并启动 API 服务。"),
+        ],
+        "patchweaver db init": [
+            (f"{command_path}", "初始化 SQLite 数据库并写入基础 schema。"),
+        ],
+        "patchweaver db path": [
+            (f"{command_path} --json", "输出当前生效的数据库路径。"),
+        ],
+    }
+    return examples.get(command_path, [])
+
+
 def _render_root_help(ctx: click.Context, command: click.Command) -> str:
     """渲染根命令帮助页。"""
     program_name = command.name or "patchweaver"
@@ -278,9 +376,9 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
         f"{_style_help('PatchWeaver', fg='bright_blue', bold=True)} {_style_help(__version__, fg='bright_yellow', bold=True)}"
         " — 从上游 CVE 修复补丁到 livepatch 构建尝试的最小工程壳。",
         "",
-        f"{_style_help('Usage:', fg='bright_blue', bold=True)} {program_name} [options] [command]",
+        f"{_style_help('Usage:', fg='bright_blue', bold=True)} {program_name} [global options] <command> [command options]",
         "",
-        _help_section("Options:"),
+        _help_section("Global Options:"),
     ]
 
     lines.extend(_wrap_help_entry("--help", "显示帮助页。", color="bright_yellow"))
@@ -310,22 +408,30 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
         if child is not None:
             lines.extend(_wrap_help_entry(name, _command_help(child)))
 
+    root_examples = [
+        ("patchweaver doctor --json", "输出结构化环境检查结果。"),
+        ("patchweaver init --with-db", "初始化最小工程目录，并同时建立 SQLite 数据库。"),
+        ("patchweaver paths --json", "输出当前生效的路径、运行时和 manifest 目录。"),
+        ("patchweaver serve-api --reload", "启动 FastAPI 接口，供 Web 控制台开发调试。"),
+        ("patchweaver install-api-service", "在 Linux 验证机上安装并启动 Web/API 的 systemd 服务。"),
+        ("patchweaver db path", "查看当前配置解析出来的数据库路径。"),
+        ("patchweaver evaluate --fixture contest_samples", "按固定样例集输出阶段评测汇总。"),
+        ("patchweaver models --json", "查看当前模型分工和百炼环境变量状态。"),
+        ("patchweaver finalize", "生成 submission 目录和 final_manifest。"),
+        ("patchweaver gate", "执行第四阶段最终门禁检查。"),
+    ]
     lines.extend(
         [
             "",
             _help_section("Examples:"),
         ]
     )
-    lines.extend(_wrap_help_entry("patchweaver doctor --json", "输出结构化环境检查结果。", width=30, color="bright_green"))
-    lines.extend(_wrap_help_entry("patchweaver init --with-db", "初始化最小工程目录，并同时建立 SQLite 数据库。", width=30, color="bright_green"))
-    lines.extend(_wrap_help_entry("patchweaver paths --json", "输出当前生效的路径、运行时和 manifest 目录。", width=30, color="bright_green"))
-    lines.extend(_wrap_help_entry("patchweaver serve-api --reload", "启动 FastAPI 接口，供 Web 控制台开发调试。", width=30, color="bright_green"))
-    lines.extend(_wrap_help_entry("patchweaver install-api-service", "在 Linux 验证机上安装并启动 Web/API 的 systemd 服务。", width=30, color="bright_green"))
-    lines.extend(_wrap_help_entry("patchweaver db path", "查看当前配置解析出来的数据库路径。", width=30, color="bright_green"))
-    lines.extend(_wrap_help_entry("patchweaver evaluate --fixture contest_samples", "按固定样例集输出阶段评测汇总。", width=30, color="bright_green"))
-    lines.extend(_wrap_help_entry("patchweaver models --json", "查看当前模型分工和百炼环境变量状态。", width=30, color="bright_green"))
-    lines.extend(_wrap_help_entry("patchweaver finalize", "生成 submission 目录和 final_manifest。", width=30, color="bright_green"))
-    lines.extend(_wrap_help_entry("patchweaver gate", "执行第四阶段最终门禁检查。", width=30, color="bright_green"))
+    example_width = min(
+        max((len(name) for name, _ in root_examples), default=30) + 2,
+        46,
+    )
+    for name, description in root_examples:
+        lines.extend(_wrap_help_entry(name, description, width=example_width, color="bright_green"))
     lines.extend(
         [
             "",
@@ -338,11 +444,12 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
 def _render_db_help(command: click.Command) -> str:
     """渲染 db 子命令帮助页。"""
     ctx = click.Context(command)
+    command_path = _command_path(ctx, command)
     lines = [
         f"{_style_help('PatchWeaver / db', fg='bright_blue', bold=True)}"
         " — SQLite 与状态索引相关命令。",
         "",
-        f"{_style_help('Usage:', fg='bright_blue', bold=True)} patchweaver db [options] [command]",
+        f"{_style_help('Usage:', fg='bright_blue', bold=True)} {command_path} <subcommand> [options]",
         "",
         _help_section("Options:"),
     ]
@@ -361,14 +468,87 @@ def _render_db_help(command: click.Command) -> str:
         if child is not None:
             lines.extend(_wrap_help_entry(name, _command_help(child)))
 
+    db_examples = [
+        ("patchweaver db init", "初始化 SQLite 数据库并写入基础 schema。"),
+        ("patchweaver db path --json", "输出当前生效的数据库路径，便于外部脚本读取。"),
+    ]
     lines.extend(
         [
             "",
             _help_section("Examples:"),
         ]
     )
-    lines.extend(_wrap_help_entry("patchweaver db init", "初始化 SQLite 数据库并写入基础 schema。", width=30, color="bright_green"))
-    lines.extend(_wrap_help_entry("patchweaver db path --json", "输出当前生效的数据库路径，便于外部脚本读取。", width=30, color="bright_green"))
+    example_width = min(
+        max((len(name) for name, _ in db_examples), default=30) + 2,
+        36,
+    )
+    for name, description in db_examples:
+        lines.extend(_wrap_help_entry(name, description, width=example_width, color="bright_green"))
+    lines.extend(
+        [
+            "",
+            f"{_style_help('Docs:', fg='bright_blue', bold=True)} docs/PatchWeaver-总方案与创新设计总文档.md",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _render_command_help(ctx: click.Context, command: click.Command) -> str:
+    """渲染单命令帮助页。"""
+    command_path = _command_path(ctx, command)
+    short_help = _command_help(command)
+    help_text = (command.help or "").strip()
+    lines = [
+        _style_help(_command_heading(command_path), fg="bright_blue", bold=True),
+        "",
+        f"{_style_help('Usage:', fg='bright_blue', bold=True)} {command_path} [options]",
+    ]
+
+    if help_text:
+        lines.extend(
+            [
+                "",
+                help_text,
+            ]
+        )
+    elif short_help:
+        lines.extend(
+            [
+                "",
+                short_help,
+            ]
+        )
+
+    option_entries = _command_option_entries(ctx, command)
+    if option_entries:
+        lines.extend(
+            [
+                "",
+                _help_section("Options:"),
+            ]
+        )
+        width = min(
+            max((len(name) for name, _ in option_entries), default=18) + 2,
+            30,
+        )
+        for name, description in option_entries:
+            lines.extend(_wrap_help_entry(name, description, width=width, color="bright_yellow"))
+
+    examples = _command_examples(command_path)
+    if examples:
+        lines.extend(
+            [
+                "",
+                _help_section("Examples:"),
+            ]
+        )
+        example_width = min(
+            max((len(name) for name, _ in examples), default=30) + 2,
+            52,
+        )
+        for name, description in examples:
+            lines.extend(_wrap_help_entry(name, description, width=example_width, color="bright_green"))
+
     lines.extend(
         [
             "",
@@ -855,7 +1035,7 @@ def _doctor_payload(
         "summary": summary,
     }
 
-@app.command("version")
+@app.command("version", cls=PatchWeaverHelpCommand)
 def version(
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
@@ -868,7 +1048,7 @@ def version(
     typer.echo(f"PatchWeaver {__version__}")
 
 
-@app.command("paths")
+@app.command("paths", cls=PatchWeaverHelpCommand)
 def paths(
     profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
@@ -897,7 +1077,7 @@ def paths(
     typer.echo(f"窄状态 Failover: {payload['enable_narrow_failover']}")
 
 
-@app.command("init")
+@app.command("init", cls=PatchWeaverHelpCommand)
 def init_command(
     profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
@@ -996,7 +1176,7 @@ def init_command(
     typer.echo("  3. 补充 prompts/bootstrap 和 skills/project 下的实际模板与 manifest。")
 
 
-@app.command("doctor")
+@app.command("doctor", cls=PatchWeaverHelpCommand)
 def doctor(
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
     plain: Annotated[bool, typer.Option("--plain", help="强制使用纯文本输出。")] = False,
@@ -1038,7 +1218,7 @@ def doctor(
     typer.echo(f"诊断快照: {report_path}")
 
 
-@app.command("models")
+@app.command("models", cls=PatchWeaverHelpCommand)
 def models(
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
@@ -1085,7 +1265,7 @@ def models(
         typer.echo(f"  - {line}")
 
 
-@app.command("create")
+@app.command("create", cls=PatchWeaverHelpCommand)
 def create(
     cve: Annotated[str, typer.Option("--cve", help="指定要处理的 CVE ID。")] = ...,
     kernel: Annotated[str | None, typer.Option("--kernel", help="覆盖目标内核版本。")] = None,
@@ -1157,7 +1337,7 @@ def create(
     typer.echo(f"首轮尝试目录: {task_dir / 'attempts' / '001'}")
 
 
-@app.command("run")
+@app.command("run", cls=PatchWeaverHelpCommand)
 def run(
     task: Annotated[str, typer.Option("--task", help="指定任务编号。")] = ...,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
@@ -1195,7 +1375,7 @@ def run(
     typer.echo(f"Trace 路径: {payload['trace_path']}")
 
 
-@app.command("status")
+@app.command("status", cls=PatchWeaverHelpCommand)
 def status(
     task: Annotated[str | None, typer.Option("--task", help="指定任务编号。")] = None,
     limit: Annotated[int, typer.Option("--limit", help="限制返回的任务条数。")] = 10,
@@ -1238,7 +1418,7 @@ def status(
         typer.echo(f"  - {item.task_id} | {item.cve_id} | {item.status} | {item.workspace_dir}")
 
 
-@app.command("analyze")
+@app.command("analyze", cls=PatchWeaverHelpCommand)
 def analyze(
     task: Annotated[str, typer.Option("--task", help="指定任务编号。")] = ...,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
@@ -1268,7 +1448,7 @@ def analyze(
     typer.echo(f"Bootstrap Manifest: {payload['bootstrap_manifest_path']}")
 
 
-@app.command("report")
+@app.command("report", cls=PatchWeaverHelpCommand)
 def report(
     task: Annotated[str, typer.Option("--task", help="指定任务编号。")] = ...,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
@@ -1296,7 +1476,7 @@ def report(
     typer.echo(f"Markdown 报告: {payload['report_md']}")
 
 
-@app.command("replay")
+@app.command("replay", cls=PatchWeaverHelpCommand)
 def replay(
     task: Annotated[str, typer.Option("--task", help="指定任务编号。")] = ...,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
@@ -1326,7 +1506,7 @@ def replay(
     typer.echo(f"报告路径: {payload['report_path']}")
 
 
-@app.command("evaluate")
+@app.command("evaluate", cls=PatchWeaverHelpCommand)
 def evaluate(
     fixture: Annotated[str, typer.Option("--fixture", help="指定固定样例集名称或 JSON 文件名。")] = "contest_samples",
     profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
@@ -1366,7 +1546,7 @@ def evaluate(
     typer.echo(f"Markdown 摘要: {payload['summary_md']}")
 
 
-@app.command("init-db")
+@app.command("init-db", cls=PatchWeaverHelpCommand)
 def init_db(
     profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
@@ -1383,7 +1563,7 @@ def init_db(
     typer.echo(f"已初始化 SQLite 数据库：{final_path}")
 
 
-@app.command("finalize")
+@app.command("finalize", cls=PatchWeaverHelpCommand)
 def finalize(
     profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
@@ -1404,7 +1584,7 @@ def finalize(
     typer.echo(f"final_manifest.md: {payload['final_manifest_md']}")
 
 
-@app.command("gate")
+@app.command("gate", cls=PatchWeaverHelpCommand)
 def gate(
     profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
@@ -1426,7 +1606,7 @@ def gate(
     typer.echo(f"通过: {payload['summary']['passed']} / 带限制通过: {payload['summary']['limited']} / 未通过: {payload['summary']['failed']}")
 
 
-@app.command("install-api-service")
+@app.command("install-api-service", cls=PatchWeaverHelpCommand)
 def install_api_service_command(
     service_name: Annotated[str | None, typer.Option("--service-name", help="systemd 服务名。")] = None,
     host: Annotated[str | None, typer.Option("--host", help="API 服务监听地址。")] = None,
@@ -1501,11 +1681,13 @@ def install_api_service_command(
     typer.echo(f"快照: {snapshot_path}")
 
 
-@app.command("serve-api")
+@app.command("serve-api", cls=PatchWeaverHelpCommand)
 def serve_api(
     host: Annotated[str | None, typer.Option("--host", help="指定 API 监听地址。")] = None,
     port: Annotated[int | None, typer.Option("--port", help="指定 API 监听端口。")] = None,
     reload: Annotated[bool, typer.Option("--reload", help="开发阶段开启自动重载。")] = False,
+    foreground: Annotated[bool, typer.Option("--foreground", help="以前台方式启动并占用当前终端。")] = False,
+    timeout_sec: Annotated[int, typer.Option("--timeout-sec", help="后台模式等待健康检查通过的秒数。")] = 15,
 ) -> None:
     """启动 Web 控制台后端接口。"""
 
@@ -1516,12 +1698,64 @@ def serve_api(
     system_config = load_system_config(runtime.project_root)
     final_host = host or system_config.api_host
     final_port = port or system_config.api_port
-    _build_run_logger(runtime).info("cli.serve_api", "启动 Web 控制台后端接口。", host=final_host, port=final_port, reload=reload)
+    run_logger = _build_run_logger(runtime)
+
+    # Linux 验证机默认走后台服务模式，便于执行命令后立即回到 shell。
+    background_mode = (
+        not foreground
+        and not reload
+        and system_config.auto_install_api_service
+        and systemd_available()
+    )
+
+    if background_mode:
+        service_name = system_config.api_service_name or DEFAULT_API_SERVICE_NAME
+        try:
+            install_payload = install_systemd_service(
+                service_name=service_name,
+                python_executable=Path(sys.executable).resolve(),
+                project_root=runtime.project_root,
+                host=final_host,
+                port=final_port,
+                enable=True,
+                start=True,
+            )
+            ready_payload = wait_for_api_ready(host=final_host, port=final_port, timeout_sec=float(timeout_sec))
+        except Exception as exc:
+            typer.secho(
+                f"错误: 后台启动 API 服务失败: {exc}。如需临时前台调试，可改用 `patchweaver serve-api --foreground`。",
+                err=True,
+                fg=typer.colors.RED,
+            )
+            raise typer.Exit(code=1) from exc
+
+        run_logger.info(
+            "cli.serve_api_background",
+            "已在后台重启 Web 控制台后端接口。",
+            service_name=service_name,
+            host=final_host,
+            port=final_port,
+            ready=ready_payload["ready"],
+        )
+        typer.echo(f"已在后台重启 PatchWeaver API: http://{final_host}:{final_port}")
+        typer.echo(f"systemd 服务: {service_name}")
+        typer.echo(f"healthz: {install_payload['healthz']}")
+        typer.echo(f"console: {install_payload['console']}")
+        return
+
+    run_logger.info(
+        "cli.serve_api",
+        "以前台方式启动 Web 控制台后端接口。",
+        host=final_host,
+        port=final_port,
+        reload=reload,
+        foreground=True,
+    )
     typer.echo(f"启动 PatchWeaver API: http://{final_host}:{final_port}")
     uvicorn.run("patchweaver.api.app:app", host=final_host, port=final_port, reload=reload)
 
 
-@db_app.command("init")
+@db_app.command("init", cls=PatchWeaverHelpCommand)
 def db_init(
     profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
@@ -1537,7 +1771,7 @@ def db_init(
     typer.echo(f"已初始化 SQLite 数据库：{final_path}")
 
 
-@db_app.command("path")
+@db_app.command("path", cls=PatchWeaverHelpCommand)
 def db_path(
     profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,

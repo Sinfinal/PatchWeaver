@@ -16,6 +16,12 @@ from typing import Any
 DEFAULT_API_SERVICE_NAME = "patchweaver-web"
 
 
+def systemd_available() -> bool:
+    """判断当前环境是否可用 systemd。"""
+
+    return platform.system() == "Linux" and shutil.which("systemctl") is not None
+
+
 def health_probe_base_url(host: str, port: int) -> str:
     """把监听地址转换成适合本机探活的 URL。"""
 

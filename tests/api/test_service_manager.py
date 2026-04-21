@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from patchweaver.api import service_manager
 from patchweaver.api.service_manager import health_probe_base_url, render_systemd_unit
 
 
@@ -27,3 +28,12 @@ def test_render_systemd_unit_contains_runtime_settings():
     assert "WorkingDirectory=/root/patchweaver" in unit_text
     assert "ExecStart=/bin/bash -lc " in unit_text
     assert "exec /root/patchweaver/.venv/bin/python -m patchweaver.api" in unit_text
+
+
+def test_systemd_available_returns_true_only_on_linux_with_systemctl(monkeypatch):
+    monkeypatch.setattr(service_manager.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(service_manager.shutil, "which", lambda name: "/bin/systemctl" if name == "systemctl" else None)
+    assert service_manager.systemd_available() is True
+
+    monkeypatch.setattr(service_manager.platform, "system", lambda: "Windows")
+    assert service_manager.systemd_available() is False
