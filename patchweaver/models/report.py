@@ -29,6 +29,7 @@ class FinalReport(BaseModel):
     analysis_summary: dict[str, object] = Field(default_factory=dict)
     build_summary: dict[str, object] = Field(default_factory=dict)
     validation_summary: dict[str, object] = Field(default_factory=dict)
+    closure_summary: dict[str, object] = Field(default_factory=dict)
     replay_summary: dict[str, object] = Field(default_factory=dict)
     key_paths: dict[str, str | None] = Field(default_factory=dict)
     known_limits: list[str] = Field(default_factory=list)

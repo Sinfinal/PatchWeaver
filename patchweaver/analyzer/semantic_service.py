@@ -6,8 +6,12 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
+from patchweaver.analyzer.semantic_enricher import SemanticCardEnricher
+from patchweaver.models.context import ContextBundle
 from patchweaver.models.patch import PatchBundle
-from patchweaver.models.semantic import SemanticCard
+from patchweaver.models.prompt import PromptPacket
+from patchweaver.models.semantic import SemanticCard, SemanticCardEnrichmentTrace
+from patchweaver.models.skill import SkillRouteDecision
 from patchweaver.models.task import TaskContext
 
 _CONTROL_KEYWORDS = ("if", "while", "for", "switch")
@@ -65,6 +69,11 @@ class HunkSemantic:
 class SemanticAnalyzer:
     """负责从 patch hunk 中提取最小可用语义卡片"""
 
+    def __init__(self, enricher: SemanticCardEnricher | None = None) -> None:
+        """保存可选的模型补全器"""
+
+        self.enricher = enricher
+
     def analyze(self, task: TaskContext, patch_bundle: PatchBundle) -> SemanticCard:
         """根据任务与补丁输入生成可直接消费的语义卡片"""
 
@@ -74,13 +83,17 @@ class SemanticAnalyzer:
                 bug_class="cve_fix",
                 root_cause=self._fallback_root_cause(task, patch_bundle),
                 touched_files=self._ordered_unique(patch_bundle.affected_files),
-                touched_functions=patch_bundle.affected_files,
+                # 保底分支只回填文件范围，避免把文件路径误写成函数名
+                touched_functions=[],
             )
 
         hunk_semantics = [self._analyze_hunk(hunk) for hunk in self._parse_hunks(patch_text)]
+        # 语义层的函数作用域与文件作用域必须分离。
+        # 如果当前 patch hunk 无法稳定解析出函数名，保持 touched_functions 为空，
+        # 不再把文件路径回填到函数字段里，避免下游把两层作用域混用。
         touched_functions = self._ordered_unique(
             item.function_name for item in hunk_semantics if item.function_name
-        ) or list(patch_bundle.affected_files)
+        )
         must_keep_conditions = self._collect_conditions(hunk_semantics)
         must_keep_side_effects = self._ordered_unique(
             side_effect for item in hunk_semantics for side_effect in item.side_effects
@@ -97,6 +110,44 @@ class SemanticAnalyzer:
             critical_calls=critical_calls,
             touched_files=self._ordered_unique(patch_bundle.affected_files),
             touched_functions=touched_functions,
+        )
+
+    def maybe_enrich(
+        self,
+        *,
+        task: TaskContext,
+        patch_bundle: PatchBundle,
+        draft_card: SemanticCard,
+        prompt_packet: PromptPacket,
+        context_bundle: ContextBundle,
+        route: SkillRouteDecision | None,
+        prompt_packet_path: Path | None = None,
+        source_evidence_path: Path | None = None,
+    ) -> tuple[SemanticCard, SemanticCardEnrichmentTrace]:
+        """按当前配置决定是否执行模型补全"""
+
+        if self.enricher is None:
+            return draft_card, SemanticCardEnrichmentTrace(
+                status="skipped",
+                applied=False,
+                reason="未启用语义卡片模型补全。",
+                selected_skill=route.selected_skill if route is not None else None,
+                prompt_packet_path=str(prompt_packet_path) if prompt_packet_path is not None else None,
+                source_evidence_path=str(source_evidence_path) if source_evidence_path is not None else None,
+                draft_card=draft_card.model_dump(mode="json"),
+            )
+
+        patch_text = self._load_patch_text(task, patch_bundle)
+        return self.enricher.enrich(
+            task=task,
+            patch_bundle=patch_bundle,
+            draft_card=draft_card,
+            prompt_packet=prompt_packet,
+            context_bundle=context_bundle,
+            route=route,
+            patch_text=patch_text,
+            prompt_packet_path=prompt_packet_path,
+            source_evidence_path=source_evidence_path,
         )
 
     def _load_patch_text(self, task: TaskContext, patch_bundle: PatchBundle) -> str:
@@ -456,13 +507,13 @@ class SemanticAnalyzer:
         if text.startswith("return "):
             returned = text[len("return ") :].strip()
             calls = self._extract_calls(returned)
-            action = f"返回 {calls[0]}(...)" if calls else f"返回 `{returned}`"
+            action = f"返回 {calls[0]}(...)" if calls else f"返回 {self._normalize_display_text(returned)}"
         elif text.startswith("goto "):
-            action = f"跳转到 `{text[len('goto ') :].strip()}`"
+            action = f"跳转到 {self._normalize_display_text(text[len('goto ') :].strip())}"
         else:
             assignment = re.match(r"^([A-Za-z_][\w>\-\.\[\]]*)\s*([+\-*/%&|^]?=)", text)
             if assignment is not None:
-                action = f"更新 `{assignment.group(1)}`"
+                action = f"更新 {self._normalize_display_text(assignment.group(1))}"
             else:
                 calls = self._extract_calls(text)
                 if not calls:
@@ -470,8 +521,8 @@ class SemanticAnalyzer:
                 action = f"调用 {calls[0]}(...)"
 
         if expression is not None:
-            return f"{prefix}条件 `{expression}` 命中时{action}"
-        return f"{prefix}{action}"
+            return self._normalize_display_text(f"{prefix}条件 {expression} 命中时{action}")
+        return self._normalize_display_text(f"{prefix}{action}")
 
     def _extract_calls(self, text: str) -> list[str]:
         """从单行文本中提取函数调用名"""
@@ -501,9 +552,18 @@ class SemanticAnalyzer:
         for value in values:
             if not value:
                 continue
-            normalized = str(value).strip()
+            normalized = self._normalize_display_text(str(value))
             if not normalized or normalized in seen:
                 continue
             seen.add(normalized)
             result.append(normalized)
         return result
+
+    def _normalize_display_text(self, text: str) -> str:
+        """清理语义摘要里的 Markdown 标记和转义残留"""
+
+        normalized = text.replace("\\`", "`")
+        normalized = re.sub(r"`([^`]*)`", r"\1", normalized)
+        normalized = normalized.replace("`", "")
+        normalized = re.sub(r"\s+", " ", normalized).strip()
+        return normalized

@@ -98,7 +98,7 @@ export function ReportsPage(): JSX.Element {
           {groups.length > 0 ? (
             <div className="pw-list">
               {groups.map((group) => (
-                <Link key={group.group_id} className="pw-list-item pw-link-card" to={`/reports/fixtures/${group.group_id}`}>
+                <Link key={group.fixture_group} className="pw-list-item pw-link-card" to={`/reports/fixtures/${group.fixture_group}`}>
                   <strong>{group.display_name}</strong>
                   <div className="pw-inline-note">
                     成功 {group.success_count}/{group.matched_fixtures}，成功率 {formatPercent(group.success_rate)}

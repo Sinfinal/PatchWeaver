@@ -5,6 +5,9 @@ profiles:
     # 调试档位，优先快速跑通流程
     max_attempts: 2
 
+    # 开发联调档位
+    verification_profile: dev
+
     # 是否检查语义一致性
     enable_semantic_guard: false
 
@@ -24,6 +27,9 @@ profiles:
     # 演示档位，兼顾速度和效果
     max_attempts: 3
 
+    # 常规展示和联调验收档位
+    verification_profile: standard
+
     # 是否检查语义一致性
     enable_semantic_guard: true
 
@@ -42,6 +48,9 @@ profiles:
   full:
     # 正式档位，优先成功率
     max_attempts: 5
+
+    # 封版与阶段验收档位
+    verification_profile: strict
 
     # 是否检查语义一致性
     enable_semantic_guard: true

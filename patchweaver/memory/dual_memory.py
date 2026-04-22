@@ -20,13 +20,20 @@ class DualMemory:
 
     KNOWN_RISK_TYPES = {
         "patch_apply_failed",
+        "no_fentry_target",
+        "init_code_change",
+        "static_local_change",
+        "global_data_change",
+        "struct_layout_change",
+        "header_abi_change",
+        "unsupported_section_change",
+        "inline_side_effect",
+        "unknown_patchability",
+        "kpatch_constraint",
+        # 兼容旧口径，避免已有记忆和历史样例失联
         "missing_fentry",
         "init_section",
-        "global_data_change",
-        "header_abi_change",
-        "unknown_patchability",
         "direct_apply_ready",
-        "kpatch_constraint",
     }
 
     def __init__(self, root_dir: Path) -> None:

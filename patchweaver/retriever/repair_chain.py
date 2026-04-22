@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import socket
 import time
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -18,13 +20,16 @@ from patchweaver.retriever.source_router import RetrieverSourceRouter
 class RepairChainResolver:
     """负责生成最小修复链路信息"""
 
-    def __init__(self) -> None:
+    def __init__(self, *, cache_dir: Path | None = None) -> None:
         """初始化来源路由器"""
 
         self.router = RetrieverSourceRouter()
         self.request_timeout_sec = 20
         self.max_request_retries = 3
         self.retry_backoff_sec = 1.0
+        self.cache_dir = cache_dir.resolve() if cache_dir is not None else None
+        self.cache_ttl_sec = 6 * 3600
+        self.stale_cache_ttl_sec = 30 * 24 * 3600
         self._fetch_trace: dict[str, Any] = {}
 
     def latest_fetch_trace(self) -> dict[str, Any] | None:
@@ -68,13 +73,13 @@ class RepairChainResolver:
                         }
                     )
 
-            # 当前优先级是 stable 优先，缺失时再回退 upstream
-            # 这样更接近真实目标内核的修复链
-            selected_ref = stable_refs[0] if stable_refs else (upstream_refs[0] if upstream_refs else None)
-            if selected_ref is None or not (selected_ref.get("patch_urls") or selected_ref.get("patch_url")):
+            # 来源选择仍然保持 stable 优先
+            # 但单个 stable 引用抓取失败时，继续尝试后续 stable 或 upstream 候选
+            candidate_refs = self._ordered_patch_candidates(stable_refs=stable_refs, upstream_refs=upstream_refs)
+            if not candidate_refs:
                 raise ValueError(f"{cve_id} 未找到可下载的 stable/upstream patch 来源。")
 
-            patch_text = self._fetch_patch_text(selected_ref)
+            selected_ref, patch_text, attempted_refs = self._fetch_patch_from_reference_candidates(candidate_refs)
             commit_message = self._patch_subject(patch_text) or title or f"{cve_id} kernel patch"
             selected_commit = str(selected_ref["commit_id"])
             stable_commit = str(stable_refs[0]["commit_id"]) if stable_refs else None
@@ -101,6 +106,7 @@ class RepairChainResolver:
                 stable_commit=stable_commit,
                 upstream_commit=upstream_commit,
                 affected_files=affected_files,
+                attempted_refs=attempted_refs,
             )
             return {
                 "upstream_commit": upstream_commit,
@@ -231,6 +237,32 @@ class RepairChainResolver:
             normalized_item["patch_url"] = patch_urls[0]
             selected.append(normalized_item)
         return selected
+
+    def _ordered_patch_candidates(
+        self,
+        *,
+        stable_refs: list[dict[str, str | None]],
+        upstream_refs: list[dict[str, str | None]],
+    ) -> list[dict[str, str | None]]:
+        """按 stable 优先、upstream 回退整理候选 patch 引用"""
+
+        ordered: list[dict[str, str | None]] = []
+        seen: set[tuple[str | None, str | None]] = set()
+        for item in [*stable_refs, *upstream_refs]:
+            key = (item.get("source_name"), item.get("commit_id"))
+            if key in seen:
+                continue
+            patch_urls = [str(value) for value in item.get("patch_urls") or [] if value]
+            if not patch_urls and item.get("patch_url"):
+                patch_urls = [str(item["patch_url"])]
+            if not patch_urls:
+                continue
+            seen.add(key)
+            normalized_item = dict(item)
+            normalized_item["patch_urls"] = patch_urls
+            normalized_item["patch_url"] = patch_urls[0]
+            ordered.append(normalized_item)
+        return ordered
 
     def _build_source_evidence(
         self,
@@ -406,6 +438,33 @@ class RepairChainResolver:
             return normalized
         return normalized[: limit - 1].rstrip() + "…"
 
+    def _fetch_patch_from_reference_candidates(
+        self,
+        candidate_refs: list[dict[str, str | None]],
+    ) -> tuple[dict[str, str | None], str, list[dict[str, object]]]:
+        """按引用顺序抓取 patch 文本，必要时从 stable 降级到 upstream"""
+
+        errors: list[str] = []
+        attempted_refs: list[dict[str, object]] = []
+
+        for item in candidate_refs:
+            attempted_refs.append(
+                {
+                    "source_name": item.get("source_name"),
+                    "commit_id": item.get("commit_id"),
+                    "patch_url_candidates": list(item.get("patch_urls") or []),
+                }
+            )
+            try:
+                patch_text = self._fetch_patch_text(item)
+                return item, patch_text, attempted_refs
+            except ValueError as exc:
+                errors.append(
+                    f"{item.get('source_name')}:{item.get('commit_id')} -> {exc}"
+                )
+
+        raise ValueError("补丁下载失败，已尝试全部引用来源: " + " | ".join(errors))
+
     def _fetch_patch_text(self, selected_ref: dict[str, str | None]) -> str:
         """按来源优先级依次尝试下载 patch 文本"""
 
@@ -442,13 +501,29 @@ class RepairChainResolver:
     def _fetch_text(self, url: str, *, source_name: str, stage: str) -> str:
         """下载文本内容"""
 
+        fresh_cache = self._read_cache(url, max_age_sec=self.cache_ttl_sec)
+        if fresh_cache is not None:
+            cached_content, cache_age_sec = fresh_cache
+            self._record_fetch_event(
+                source_name=source_name,
+                stage=stage,
+                url=url,
+                attempt_no=0,
+                outcome="cache_hit",
+                elapsed_ms=0,
+                cache_age_sec=cache_age_sec,
+            )
+            return cached_content
+
         request = Request(url, headers={"User-Agent": "PatchWeaver/0.1"})
+        last_message: str | None = None
         for attempt_no in range(1, self.max_request_retries + 1):
             started_at = time.monotonic()
             try:
                 with urlopen(request, timeout=self.request_timeout_sec) as response:
                     charset = response.headers.get_content_charset() or "utf-8"
                     content = response.read().decode(charset, errors="replace")
+                self._write_cache(url, source_name=source_name, stage=stage, content=content)
                 self._record_fetch_event(
                     source_name=source_name,
                     stage=stage,
@@ -459,8 +534,10 @@ class RepairChainResolver:
                 )
                 return content
             except HTTPError as exc:  # pragma: no cover - 网络来源依赖
-                retry_allowed = exc.code in {429, 500, 502, 503, 504} and attempt_no < self.max_request_retries
+                transient_http = exc.code in {429, 500, 502, 503, 504}
+                retry_allowed = transient_http and attempt_no < self.max_request_retries
                 message = f"请求来源失败：{url} ({exc.code})"
+                last_message = message
                 self._record_fetch_event(
                     source_name=source_name,
                     stage=stage,
@@ -471,11 +548,14 @@ class RepairChainResolver:
                     error=message,
                     retry_allowed=retry_allowed,
                 )
-                if not retry_allowed:
+                if not transient_http:
                     raise ValueError(message) from exc
+                if not retry_allowed:
+                    break
             except (URLError, TimeoutError, socket.timeout, OSError) as exc:  # pragma: no cover - 网络来源依赖
                 retry_allowed = attempt_no < self.max_request_retries
                 message = f"请求来源失败：{url} ({self._reason_text(exc)})"
+                last_message = message
                 self._record_fetch_event(
                     source_name=source_name,
                     stage=stage,
@@ -487,13 +567,29 @@ class RepairChainResolver:
                     retry_allowed=retry_allowed,
                 )
                 if not retry_allowed:
-                    raise ValueError(message) from exc
+                    break
 
             # 单个来源先做有限次重试
             # 连续超时还不通时，再交给上层切到镜像或下一来源
             time.sleep(self.retry_backoff_sec * attempt_no)
 
-        raise ValueError(f"请求来源失败：{url} (超过最大重试次数)")
+        stale_cache = self._read_cache(url, max_age_sec=self.stale_cache_ttl_sec)
+        if stale_cache is not None:
+            cached_content, cache_age_sec = stale_cache
+            self._record_fetch_event(
+                source_name=source_name,
+                stage=stage,
+                url=url,
+                attempt_no=self.max_request_retries,
+                outcome="stale_cache_fallback",
+                elapsed_ms=0,
+                error=last_message,
+                retry_allowed=False,
+                cache_age_sec=cache_age_sec,
+            )
+            return cached_content
+
+        raise ValueError(last_message or f"请求来源失败：{url} (超过最大重试次数)")
 
     def _start_fetch_trace(self, cve_id: str) -> None:
         """初始化一次来源抓取轨迹"""
@@ -503,11 +599,15 @@ class RepairChainResolver:
             "status": "running",
             "request_timeout_sec": self.request_timeout_sec,
             "max_request_retries": self.max_request_retries,
+            "cache_enabled": self.cache_dir is not None,
+            "cache_dir": str(self.cache_dir) if self.cache_dir is not None else None,
             "events": [],
             "summary": {
                 "request_count": 0,
                 "success_count": 0,
                 "failure_count": 0,
+                "cache_hit_count": 0,
+                "stale_cache_hit_count": 0,
             },
             "selected_patch_source": None,
         }
@@ -523,6 +623,7 @@ class RepairChainResolver:
         elapsed_ms: int,
         error: str | None = None,
         retry_allowed: bool | None = None,
+        cache_age_sec: int | None = None,
     ) -> None:
         """记录一次来源请求尝试"""
 
@@ -539,6 +640,7 @@ class RepairChainResolver:
                 "elapsed_ms": elapsed_ms,
                 "error": error,
                 "retry_allowed": retry_allowed,
+                "cache_age_sec": cache_age_sec,
             }
         )
 
@@ -546,6 +648,10 @@ class RepairChainResolver:
         summary["request_count"] = int(summary.get("request_count", 0)) + 1
         if outcome == "success":
             summary["success_count"] = int(summary.get("success_count", 0)) + 1
+        elif outcome == "cache_hit":
+            summary["cache_hit_count"] = int(summary.get("cache_hit_count", 0)) + 1
+        elif outcome == "stale_cache_fallback":
+            summary["stale_cache_hit_count"] = int(summary.get("stale_cache_hit_count", 0)) + 1
         else:
             summary["failure_count"] = int(summary.get("failure_count", 0)) + 1
 
@@ -556,6 +662,7 @@ class RepairChainResolver:
         stable_commit: str | None,
         upstream_commit: str | None,
         affected_files: list[str],
+        attempted_refs: list[dict[str, object]],
     ) -> None:
         """补齐来源抓取轨迹中的最终摘要"""
 
@@ -573,6 +680,9 @@ class RepairChainResolver:
         }
         summary = self._fetch_trace.setdefault("summary", {})
         summary["affected_file_count"] = len(affected_files)
+        summary["candidate_ref_count"] = len(attempted_refs)
+        summary["candidate_source_names"] = [str(item.get("source_name") or "") for item in attempted_refs]
+        self._fetch_trace["patch_candidate_chain"] = attempted_refs
 
     def _mark_trace_failed(self, error: str) -> None:
         """在最终失败时补齐来源抓取轨迹状态"""
@@ -594,3 +704,61 @@ class RepairChainResolver:
             reason = exc.reason
             return str(reason)
         return str(exc)
+
+    def _cache_base_path(self, url: str) -> Path | None:
+        """按 URL 生成缓存文件基名"""
+
+        if self.cache_dir is None:
+            return None
+        digest = hashlib.sha256(url.encode("utf-8")).hexdigest()
+        return self.cache_dir / digest
+
+    def _read_cache(self, url: str, *, max_age_sec: int) -> tuple[str, int] | None:
+        """读取本地缓存内容"""
+
+        base_path = self._cache_base_path(url)
+        if base_path is None:
+            return None
+
+        meta_path = base_path.with_suffix(".json")
+        content_path = base_path.with_suffix(".txt")
+        if not meta_path.exists() or not content_path.exists():
+            return None
+
+        try:
+            metadata = json.loads(meta_path.read_text(encoding="utf-8"))
+            stored_at = int(metadata.get("stored_at") or 0)
+            if stored_at <= 0:
+                return None
+            cache_age_sec = max(0, int(time.time()) - stored_at)
+            if cache_age_sec > max_age_sec:
+                return None
+            return content_path.read_text(encoding="utf-8"), cache_age_sec
+        except (OSError, ValueError, TypeError):
+            return None
+
+    def _write_cache(self, url: str, *, source_name: str, stage: str, content: str) -> None:
+        """把成功抓到的文本写入本地缓存"""
+
+        base_path = self._cache_base_path(url)
+        if base_path is None:
+            return
+
+        meta_path = base_path.with_suffix(".json")
+        content_path = base_path.with_suffix(".txt")
+        content_path.parent.mkdir(parents=True, exist_ok=True)
+        content_path.write_text(content, encoding="utf-8")
+        meta_path.write_text(
+            json.dumps(
+                {
+                    "url": url,
+                    "source_name": source_name,
+                    "stage": stage,
+                    "stored_at": int(time.time()),
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )

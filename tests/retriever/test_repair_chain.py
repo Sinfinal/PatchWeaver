@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-from types import SimpleNamespace
 from pathlib import Path
+from types import SimpleNamespace
 
 from patchweaver.models.task import TaskContext
 from patchweaver.retriever.repair_chain import RepairChainResolver
@@ -64,6 +64,62 @@ def test_fetch_text_retries_after_timeout(monkeypatch) -> None:
     assert trace["summary"]["failure_count"] == 2
 
 
+def test_fetch_text_uses_fresh_cache_before_network(monkeypatch, tmp_path: Path) -> None:
+    resolver = RepairChainResolver(cache_dir=tmp_path / "cache")
+    resolver._start_fetch_trace("CVE-TEST-0002")
+    resolver._write_cache(
+        "https://example.com/from-cache.patch",
+        source_name="demo",
+        stage="patch",
+        content="cached-body",
+    )
+
+    def fail_urlopen(request, timeout: int):  # noqa: ANN001
+        raise AssertionError("fresh cache 命中后不应该再发网络请求")
+
+    monkeypatch.setattr("patchweaver.retriever.repair_chain.urlopen", fail_urlopen)
+
+    payload = resolver._fetch_text("https://example.com/from-cache.patch", source_name="demo", stage="patch")
+
+    assert payload == "cached-body"
+    trace = resolver.latest_fetch_trace()
+    assert trace is not None
+    assert trace["summary"]["cache_hit_count"] == 1
+    assert trace["events"][-1]["outcome"] == "cache_hit"
+
+
+def test_fetch_text_uses_stale_cache_after_network_failure(monkeypatch, tmp_path: Path) -> None:
+    resolver = RepairChainResolver(cache_dir=tmp_path / "cache")
+    resolver.cache_ttl_sec = 0
+    resolver.stale_cache_ttl_sec = 3600
+    resolver._start_fetch_trace("CVE-TEST-0003")
+    resolver._write_cache(
+        "https://example.com/stale.patch",
+        source_name="demo",
+        stage="patch",
+        content="stale-body",
+    )
+    cache_meta_path = next((tmp_path / "cache").glob("*.json"))
+    cache_meta = json.loads(cache_meta_path.read_text(encoding="utf-8"))
+    cache_meta["stored_at"] = cache_meta["stored_at"] - 60
+    cache_meta_path.write_text(json.dumps(cache_meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    def fake_urlopen(request, timeout: int):  # noqa: ANN001
+        raise TimeoutError("The read operation timed out")
+
+    monkeypatch.setattr("patchweaver.retriever.repair_chain.urlopen", fake_urlopen)
+    monkeypatch.setattr("patchweaver.retriever.repair_chain.time.sleep", lambda seconds: None)
+
+    payload = resolver._fetch_text("https://example.com/stale.patch", source_name="demo", stage="patch")
+
+    assert payload == "stale-body"
+    trace = resolver.latest_fetch_trace()
+    assert trace is not None
+    assert trace["summary"]["failure_count"] == 3
+    assert trace["summary"]["stale_cache_hit_count"] == 1
+    assert trace["events"][-1]["outcome"] == "stale_cache_fallback"
+
+
 def test_fetch_patch_text_falls_back_to_next_candidate(monkeypatch) -> None:
     resolver = RepairChainResolver()
 
@@ -86,6 +142,36 @@ def test_fetch_patch_text_falls_back_to_next_candidate(monkeypatch) -> None:
 
     assert payload == "patch-body"
     assert selected_ref["selected_patch_url"] == "https://github.com/gregkh/linux/commit/1234567.patch"
+
+
+def test_fetch_patch_reference_falls_back_from_stable_to_upstream(monkeypatch) -> None:
+    resolver = RepairChainResolver()
+
+    def fake_fetch_patch_text(selected_ref: dict[str, str | None]) -> str:
+        if selected_ref["source_name"] == "linux-stable":
+            raise ValueError("stable 来源不可用")
+        selected_ref["selected_patch_url"] = "https://github.com/torvalds/linux/commit/abcdef1.patch"
+        return "patch-body"
+
+    monkeypatch.setattr(resolver, "_fetch_patch_text", fake_fetch_patch_text)
+    selected_ref, payload, attempted_refs = resolver._fetch_patch_from_reference_candidates(
+        [
+            {
+                "source_name": "linux-stable",
+                "commit_id": "1234567",
+                "patch_urls": ["https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/patch/?id=1234567"],
+            },
+            {
+                "source_name": "upstream",
+                "commit_id": "abcdef1",
+                "patch_urls": ["https://github.com/torvalds/linux/commit/abcdef1.patch"],
+            },
+        ]
+    )
+
+    assert payload == "patch-body"
+    assert selected_ref["source_name"] == "upstream"
+    assert [item["source_name"] for item in attempted_refs] == ["linux-stable", "upstream"]
 
 
 def test_retriever_service_writes_source_fetch_trace(monkeypatch, tmp_path: Path) -> None:
@@ -112,7 +198,13 @@ def test_retriever_service_writes_source_fetch_trace(monkeypatch, tmp_path: Path
                 "cve_id": cve_id,
                 "status": "passed",
                 "events": [],
-                "summary": {"request_count": 1, "success_count": 1, "failure_count": 0},
+                "summary": {
+                    "request_count": 1,
+                    "success_count": 1,
+                    "failure_count": 0,
+                    "cache_hit_count": 0,
+                    "stale_cache_hit_count": 0,
+                },
             },
         },
     )

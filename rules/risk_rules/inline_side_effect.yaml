@@ -1,0 +1,13 @@
+id: inline_side_effect
+description: patch 触及 inline 路径或内联副作用，可能放大 livepatch 语义漂移风险
+severity: medium
+detection:
+  kind: regex_any
+  patterns:
+    - "\\bstatic\\s+inline\\b"
+    - "__always_inline"
+    - "\\binline\\b"
+primitive:
+  - wrapper
+forbidden_actions:
+  - silent_inline_side_effect_change

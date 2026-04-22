@@ -157,11 +157,8 @@ class BuildOrchestrator:
 
         builder_path = which(self.build_config.kpatch_build_cmd)
         selected_source_dir, selected_source_reason = self._select_local_source_dir()
-        config_path = None
-        config_ok = False
-        if selected_source_dir is not None:
-            config_path = selected_source_dir / ".config"
-            config_ok = config_path.exists()
+        config_path = self._config_path_for_source(selected_source_dir)
+        config_ok = config_path.exists() if config_path is not None else False
 
         return {
             "backend": "local",
@@ -169,13 +166,23 @@ class BuildOrchestrator:
             "builder_path": builder_path,
             "builder_ok": builder_path is not None,
             "running_kernel": platform.release(),
+            "clean_kernel_src_dir": self.build_config.clean_kernel_src_dir,
+            "clean_kernel_src_ok": self._local_kernel_tree_ok(Path(self.build_config.clean_kernel_src_dir))
+            if self.build_config.clean_kernel_src_dir
+            else False,
             "kernel_src_dir": self.build_config.kernel_src_dir,
             "kernel_src_ok": self._local_kernel_tree_ok(Path(self.build_config.kernel_src_dir)),
             "kernel_devel_dir": self.build_config.kernel_devel_dir,
             "kernel_devel_ok": self._local_kernel_tree_ok(Path(self.build_config.kernel_devel_dir)),
+            "patched_kernel_src_dir": self.build_config.patched_kernel_src_dir,
+            "patched_kernel_src_ok": self._local_kernel_tree_ok(Path(self.build_config.patched_kernel_src_dir))
+            if self.build_config.patched_kernel_src_dir
+            else False,
+            "source_candidates": self._source_candidate_snapshot(),
             "selected_source_dir": str(selected_source_dir) if selected_source_dir else None,
             "selected_source_ok": selected_source_dir is not None,
             "selected_source_reason": selected_source_reason,
+            "selected_source_expected_state": self._source_slot_expected_state(selected_source_reason),
             "config_path": str(config_path) if config_path else None,
             "config_ok": config_ok,
             "vmlinux_path": self.build_config.vmlinux_path,
@@ -203,9 +210,17 @@ class BuildOrchestrator:
             "构建后端: local",
             f"构建命令: {probe['builder_path'] or self.build_config.kpatch_build_cmd}",
             f"源码目录: {probe['selected_source_dir'] or '未找到'}",
+            f"源码槽位: {probe.get('selected_source_reason') or 'unknown'}",
+            f"源码期望状态: {probe.get('selected_source_expected_state') or 'unknown'}",
             f"配置文件: {probe['config_path'] or '未找到'}",
             f"vmlinux: {self.build_config.vmlinux_path}",
         ]
+        if probe.get("source_candidates"):
+            candidate_digest = " | ".join(
+                f"{item['slot']}={item['path']} ({'ok' if item['ok'] else 'missing'}, {item['expected_state']})"
+                for item in probe["source_candidates"]
+            )
+            lines.append(f"源码候选: {candidate_digest}")
 
         failure_type = self._probe_failure_type(probe)
         if failure_type is not None:
@@ -255,13 +270,42 @@ class BuildOrchestrator:
                 summary,
             )
 
+        selected_source_dir = Path(str(probe["selected_source_dir"]))
         precheck = self.precheck_patch(
             task_id=task.task_id,
             attempt_id=record.attempt_id,
             rewritten_patch_path=rewritten_patch_path,
-            source_dir=Path(str(probe["selected_source_dir"])),
+            source_dir=selected_source_dir,
         )
         lines.extend(self._format_precheck_lines(precheck))
+
+        if (
+            not precheck.ok
+            and precheck.failure_type == "target_already_patched"
+            and getattr(self.build_config, "auto_switch_source_tree", False)
+        ):
+            fallback_source_dir, fallback_source_reason = self._select_local_source_dir(exclude={selected_source_dir})
+            if fallback_source_dir is not None:
+                lines.extend(
+                    [
+                        "",
+                        f"当前源码树已命中 target_already_patched，准备切换到备用源码树: {fallback_source_dir}",
+                        f"备用源码槽位: {fallback_source_reason}",
+                    ]
+                )
+                probe = self._override_selected_source(
+                    probe=probe,
+                    source_dir=fallback_source_dir,
+                    source_reason=fallback_source_reason,
+                )
+                selected_source_dir = fallback_source_dir
+                precheck = self.precheck_patch(
+                    task_id=task.task_id,
+                    attempt_id=record.attempt_id,
+                    rewritten_patch_path=rewritten_patch_path,
+                    source_dir=selected_source_dir,
+                )
+                lines.extend(self._format_precheck_lines(precheck))
 
         if not precheck.ok:
             failure_type = precheck.failure_type or "patch_apply_failed"
@@ -313,7 +357,6 @@ class BuildOrchestrator:
         output_dir = build_log_path.parent.parent / "output"
         output_dir.mkdir(parents=True, exist_ok=True)
         builder_cmd = probe["builder_path"] or self.build_config.kpatch_build_cmd
-        selected_source_dir = Path(str(probe["selected_source_dir"]))
         # 输出目录固定在 attempt 目录下，方便 report/replay 直接定位本轮产物
         command = [
             builder_cmd,
@@ -461,6 +504,7 @@ class BuildOrchestrator:
             "[apply precheck]",
             precheck.summary,
             f"源码目录: {precheck.source_dir or '未找到'}",
+            f"源码期望状态: {self._guess_source_expected_state(precheck.source_dir) or 'unknown'}",
             f"补丁路径: {precheck.patch_path}",
         ]
         if precheck.command:
@@ -475,18 +519,108 @@ class BuildOrchestrator:
             lines.append(f"目标态结论: {precheck.target_state}")
         return lines
 
-    def _select_local_source_dir(self) -> tuple[Path | None, str | None]:
+    def _select_local_source_dir(self, *, exclude: set[Path] | None = None) -> tuple[Path | None, str | None]:
         """挑选本地可用的源码目录"""
 
-        kernel_src_dir = Path(self.build_config.kernel_src_dir)
-        if self._local_kernel_tree_ok(kernel_src_dir):
-            return kernel_src_dir, "kernel_src_dir"
-
-        kernel_devel_dir = Path(self.build_config.kernel_devel_dir)
-        if self._local_kernel_tree_ok(kernel_devel_dir):
-            return kernel_devel_dir, "kernel_devel_dir_fallback"
+        excluded = {item.resolve() for item in (exclude or set())}
+        for slot_name, path in self._iter_source_candidates():
+            try:
+                resolved = path.resolve()
+            except OSError:
+                resolved = path
+            if resolved in excluded:
+                continue
+            if self._local_kernel_tree_ok(path):
+                return path, slot_name
 
         return None, None
+
+    def _iter_source_candidates(self) -> Iterable[tuple[str, Path]]:
+        """按配置顺序展开候选源码树"""
+
+        seen: set[Path] = set()
+        for slot_name in self.build_config.build_source_priority:
+            raw_path = str(getattr(self.build_config, slot_name, "") or "").strip()
+            if not raw_path:
+                continue
+            path = Path(raw_path)
+            try:
+                resolved = path.resolve()
+            except OSError:
+                resolved = path
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            yield slot_name, path
+
+    def _source_candidate_snapshot(self) -> list[dict[str, object]]:
+        """输出当前可见源码树列表，供 doctor 和日志复用"""
+
+        snapshot: list[dict[str, object]] = []
+        for slot_name, path in self._iter_source_candidates():
+            snapshot.append(
+                {
+                    "slot": slot_name,
+                    "path": str(path),
+                    "ok": self._local_kernel_tree_ok(path),
+                    "expected_state": self._source_slot_expected_state(slot_name),
+                }
+            )
+        return snapshot
+
+    def _source_slot_expected_state(self, slot_name: str | None) -> str | None:
+        """根据源码槽位返回预期状态"""
+
+        if slot_name is None:
+            return None
+        mapping = {
+            "clean_kernel_src_dir": "unpatched",
+            "kernel_src_dir": "unknown",
+            "kernel_devel_dir": "unknown",
+            "patched_kernel_src_dir": "patched",
+        }
+        return mapping.get(slot_name, "unknown")
+
+    def _config_path_for_source(self, source_dir: Path | None) -> Path | None:
+        """返回当前源码树对应的 .config 路径"""
+
+        if source_dir is None:
+            return None
+        return source_dir / ".config"
+
+    def _override_selected_source(
+        self,
+        *,
+        probe: dict[str, Any],
+        source_dir: Path,
+        source_reason: str | None,
+    ) -> dict[str, Any]:
+        """把选中的源码树切到新的候选项"""
+
+        updated = dict(probe)
+        config_path = self._config_path_for_source(source_dir)
+        updated["selected_source_dir"] = str(source_dir)
+        updated["selected_source_ok"] = True
+        updated["selected_source_reason"] = source_reason
+        updated["selected_source_expected_state"] = self._source_slot_expected_state(source_reason)
+        updated["config_path"] = str(config_path) if config_path else None
+        updated["config_ok"] = config_path.exists() if config_path is not None else False
+        return updated
+
+    def _guess_source_expected_state(self, source_dir: str | None) -> str | None:
+        """根据路径反推当前源码树在配置里的角色"""
+
+        if source_dir is None:
+            return None
+        candidate_path = Path(source_dir)
+        for slot_name, path in self._iter_source_candidates():
+            try:
+                if path.resolve() == candidate_path.resolve():
+                    return self._source_slot_expected_state(slot_name)
+            except OSError:
+                if str(path) == str(candidate_path):
+                    return self._source_slot_expected_state(slot_name)
+        return "unknown"
 
     def _local_kernel_tree_ok(self, path: Path) -> bool:
         """判断本地目录能否作为内核源码树使用"""
@@ -511,7 +645,7 @@ class BuildOrchestrator:
 
         messages = {
             "build_env_missing": f"未找到构建命令：{self.build_config.kpatch_build_cmd}",
-            "kernel_src_missing": "找不到可用的内核源码目录，kernel_src_dir 和 kernel_devel_dir 都未通过校验。",
+            "kernel_src_missing": "找不到可用的内核源码目录，已检查 clean_kernel_src_dir、kernel_src_dir、kernel_devel_dir 和 patched_kernel_src_dir。",
             "kernel_config_missing": "源码目录中没有找到 .config，暂时无法继续构建。",
             "vmlinux_missing": "找不到可用的 vmlinux 文件，无法继续构建。",
             "target_already_patched": "目标源码已包含该补丁，无需重复应用，请更换未修复内核或切换样例。",

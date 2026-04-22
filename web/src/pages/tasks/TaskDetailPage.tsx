@@ -176,8 +176,32 @@ export function TaskDetailPage(): JSX.Element {
             <div className="pw-kv-value">{detail.task.target_kernel_source ?? "未记录"}</div>
           </div>
           <div className="pw-kv-item">
+            <span className="pw-kv-label">运行档位</span>
+            <div className="pw-kv-value">{detail.task.profile_name ?? "未记录"}</div>
+          </div>
+          <div className="pw-kv-item">
+            <span className="pw-kv-label">构建执行态</span>
+            <div className="pw-kv-value">{detail.task.latest_build_exec_status ?? "未记录"}</div>
+          </div>
+          <div className="pw-kv-item">
+            <span className="pw-kv-label">目标态结论</span>
+            <div className="pw-kv-value">{detail.task.latest_target_state ?? "未命中"}</div>
+          </div>
+          <div className="pw-kv-item">
+            <span className="pw-kv-label">固定样例分组</span>
+            <div className="pw-kv-value">{detail.task.fixture_group ?? "未绑定"}</div>
+          </div>
+          <div className="pw-kv-item">
+            <span className="pw-kv-label">固定样例编号</span>
+            <div className="pw-kv-value">{detail.task.fixture_id ?? "未绑定"}</div>
+          </div>
+          <div className="pw-kv-item">
             <span className="pw-kv-label">当前运行机内核</span>
             <div className="pw-kv-value">{detail.task.machine_profile?.machine_kernel ?? "未记录"}</div>
+          </div>
+          <div className="pw-kv-item">
+            <span className="pw-kv-label">最近失败类型</span>
+            <div className="pw-kv-value">{detail.task.latest_failure_type ?? "无"}</div>
           </div>
           <div className="pw-kv-item">
             <span className="pw-kv-label">构建目标内核</span>

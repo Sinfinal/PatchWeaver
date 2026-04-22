@@ -40,7 +40,9 @@ class RewriteExecutor:
         if source_patch_path is None:
             raise ValueError("PatchBundle 缺少可用的原始 patch 路径。")
 
+        rewrite_dir.mkdir(parents=True, exist_ok=True)
         source_patch_text = source_patch_path.read_text(encoding="utf-8")
+        dispatch_step = self._route_dispatch_step(plan)
         template_patch, template_step = self.template_engine.render(
             recipe_name=plan.selected_recipe,
             patch_text=source_patch_text,
@@ -65,6 +67,7 @@ class RewriteExecutor:
             source_patch_path=source_patch_path,
             rewritten_patch_path=rewritten_patch_path,
             steps=[
+                dispatch_step,
                 template_step,
                 smpl_step,
                 diff_step,
@@ -79,22 +82,27 @@ class RewriteExecutor:
             ],
         )
 
-        rewrite_dir.mkdir(parents=True, exist_ok=True)
         rewrite_reason_path = rewrite_dir / "rewrite_reason.json"
         transformation_trace_path = rewrite_dir / "transformation_trace.json"
         apply_precheck_path = rewrite_dir / "apply_precheck.json"
+        kernel_adapter_plan_path = self._write_kernel_adapter_plan(plan=plan, rewrite_dir=rewrite_dir)
 
         rewrite_reason_payload = {
             "task_id": task_id,
             "plan_id": plan.plan_id,
             "selected_recipe": plan.selected_recipe,
+            "selected_route_family": plan.selected_route_family,
+            "selected_execution_mode": plan.selected_execution_mode,
             "selected_primitives": plan.selected_primitives,
             "target_files": plan.target_files,
             "rule_hits": plan.rule_hits,
+            "requires_kernel_scaffold": plan.requires_kernel_scaffold,
+            "scaffold_notes": plan.scaffold_notes,
             "selection_reason": plan.selection_reason,
             "source_patch_path": to_project_relative(self.project_root, source_patch_path),
             "source_commit": patch_bundle.stable_commit or patch_bundle.upstream_commit,
             "apply_precheck_status": apply_precheck_report.status,
+            "kernel_adapter_plan_path": to_project_relative(self.project_root, kernel_adapter_plan_path),
             "notes": plan.notes,
         }
         rewrite_reason_path.write_text(
@@ -115,4 +123,46 @@ class RewriteExecutor:
             "transformation_trace": transformation_trace_path,
             "apply_precheck": apply_precheck_path,
             "apply_precheck_report": apply_precheck_report,
+            "kernel_adapter_plan": kernel_adapter_plan_path,
         }
+
+    def _route_dispatch_step(self, plan: RewritePlan) -> TransformationStep:
+        """把候选路线转成一条显式执行轨迹"""
+
+        summary = (
+            f"当前轮选择 {plan.selected_route_family or 'wrapper'} 路线，"
+            f"执行模式为 {plan.selected_execution_mode or 'template_wrap'}"
+        )
+        if plan.requires_kernel_scaffold and plan.scaffold_notes:
+            summary = summary + "，后续还需要内核侧辅助处理: " + "；".join(plan.scaffold_notes)
+
+        return TransformationStep(
+            step_id="dispatch-001",
+            engine="route_dispatch",
+            action=plan.selected_execution_mode or "dispatch",
+            recipe_name=plan.selected_recipe,
+            primitive=plan.selected_primitives[0] if plan.selected_primitives else None,
+            target_files=plan.target_files,
+            summary=summary,
+        )
+
+    def _write_kernel_adapter_plan(self, *, plan: RewritePlan, rewrite_dir: Path) -> Path | None:
+        """对需要内核侧辅助逻辑的路线补一份说明文件"""
+
+        if not plan.requires_kernel_scaffold:
+            return None
+
+        path = rewrite_dir / "kernel_adapter_plan.json"
+        payload = {
+            "plan_id": plan.plan_id,
+            "selected_recipe": plan.selected_recipe,
+            "selected_route_family": plan.selected_route_family,
+            "selected_execution_mode": plan.selected_execution_mode,
+            "selected_primitives": plan.selected_primitives,
+            "notes": plan.scaffold_notes,
+        }
+        path.write_text(
+            json.dumps(relativize_payload(payload, self.project_root), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        return path

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import tempfile
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -20,7 +21,7 @@ def _project_root() -> Path:
 
 
 def _case_dir(case_name: str) -> Path:
-    base_dir = _project_root() / ".pytest_tmp"
+    base_dir = Path(tempfile.gettempdir()) / "patchweaver-pytest"
     base_dir.mkdir(parents=True, exist_ok=True)
     root = base_dir / f"{case_name}-{uuid4().hex[:8]}"
     root.mkdir(parents=True, exist_ok=True)
@@ -80,6 +81,7 @@ def test_validator_generates_phase3_validation_artifacts() -> None:
     module_path.write_text("fake ko\n", encoding="utf-8")
 
     verify_config = SimpleNamespace(
+        verification_profile="strict",
         enable_semantic_guard=True,
         enable_load_test=True,
         enable_unload_test=True,
@@ -114,14 +116,19 @@ def test_validator_generates_phase3_validation_artifacts() -> None:
     )
     constraint_report = ConstraintReport(
         task_id=task.task_id,
+        target_files=["kernel/demo.c"],
+        target_functions=["demo_fentry_target"],
         risk_items=[
             RiskItem(
-                risk_type="missing_fentry",
+                risk_type="no_fentry_target",
                 severity="high",
-                required_primitives=["wrapper"],
+                required_primitives=["wrapper", "callback"],
             )
         ],
+        dominant_risk_types=["no_fentry_target"],
+        suggested_primitives=["wrapper", "callback"],
         high_risk_count=1,
+        requires_callback=True,
     )
 
     validator = Validator(
@@ -158,3 +165,95 @@ def test_validator_generates_phase3_validation_artifacts() -> None:
     assert artifacts["validation_matrix"].exists()
     assert artifacts["semantic_guard"].exists()
     assert artifacts["regression_summary"].exists()
+
+
+def test_validator_strict_profile_forces_guard_and_regression(tmp_path: Path) -> None:
+    attempt_dir = tmp_path / "attempt"
+    rewritten_patch = attempt_dir / "rewrite" / "rewritten.patch"
+    rewritten_patch.parent.mkdir(parents=True, exist_ok=True)
+    rewritten_patch.write_text(
+        "\n".join(
+            [
+                "diff --git a/kernel/demo.c b/kernel/demo.c",
+                "--- a/kernel/demo.c",
+                "+++ b/kernel/demo.c",
+                "@@ -1 +1 @@",
+                "-old_value();",
+                "+new_value();",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    module_path = attempt_dir / "artifacts" / "demo_patch.ko"
+    module_path.parent.mkdir(parents=True, exist_ok=True)
+    module_path.write_text("fake ko\n", encoding="utf-8")
+
+    verify_config = SimpleNamespace(
+        verification_profile="strict",
+        enable_semantic_guard=False,
+        enable_load_test=True,
+        enable_unload_test=True,
+        enable_smoke_test=True,
+        enable_regression=False,
+        smoke_test_script="scripts/validate_smoke.sh",
+    )
+    task = TaskContext(
+        task_id="TASK-VAL-002",
+        cve_id="CVE-2099-0998",
+        target_kernel="6.6.102-5.2.an23.x86_64",
+        workspace_dir=tmp_path / "workspace",
+    )
+    attempt = AttemptRecord(
+        task_id=task.task_id,
+        attempt_no=1,
+        attempt_id=f"{task.task_id}-A001",
+        status="built",
+        module_path=module_path,
+        rewritten_patch_path=rewritten_patch,
+    )
+    build_summary = BuildSummary(
+        task_id=task.task_id,
+        attempt_id=attempt.attempt_id,
+        backend="local",
+        builder_cmd="kpatch-build",
+        status="built",
+        summary="unit test build summary",
+        rewritten_patch_path=rewritten_patch,
+        module_path=module_path,
+    )
+
+    validator = Validator(
+        verify_config=verify_config,
+        build_config=SimpleNamespace(build_backend="local"),
+        project_root=tmp_path / "project",
+        load_tester=_LoadTesterStub(),
+        smoke_tester=_SmokeTesterStub(),
+        regression_tester=_RegressionTesterStub(),
+        selftest_runner=_SelftestRunnerStub(),
+    )
+
+    report, _ = validator.run(
+        task=task,
+        attempt=attempt,
+        attempt_dir=attempt_dir,
+        rewritten_patch_path=rewritten_patch,
+        build_summary=build_summary,
+        constraint_report=ConstraintReport(
+            task_id=task.task_id,
+            high_risk_count=1,
+        ),
+        history_attempts=[
+            AttemptRecord(
+                task_id=task.task_id,
+                attempt_no=0,
+                attempt_id=f"{task.task_id}-A000",
+                status="failed",
+                failure_type="compile_failed",
+            )
+        ],
+    )
+
+    assert any("验证档位: strict" == note for note in report.notes)
+    assert report.semantic_guard_result.status == "passed"
+    assert report.regression_result.status == "passed"

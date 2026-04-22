@@ -245,11 +245,10 @@ class AnalysisService(CoordinatorSupport):
             )
 
         semantic_card = self.semantic_analyzer.analyze(task, bundle)
-        constraint_report = self.constraint_diagnoser.diagnose(bundle)
         bootstrap_manifest = self.build_bootstrap_manifest()
 
-        # 核心分析结果先落盘
-        # 这样即便后面的 packet 或 trace 出问题，基础产物也已经保住了
+        # 先把 patch bundle、来源证据和确定性语义草稿固定下来
+        # 模型补全和约束诊断都会复用这批输入
         patch_bundle_path = self.json_writer.write_model(bundle, task_dir / "input" / "patch_bundle.json")
         source_evidence_path = task_dir / "input" / "source_evidence.json"
         source_evidence_path.write_text(
@@ -257,13 +256,82 @@ class AnalysisService(CoordinatorSupport):
             encoding="utf-8",
         )
         semantic_card_path = self.json_writer.write_model(semantic_card, task_dir / "analysis" / "semantic_card.json")
-        constraint_report_path = self.json_writer.write_model(constraint_report, task_dir / "analysis" / "constraint_report.json")
         bootstrap_manifest_path = self.json_writer.write_model(
             bootstrap_manifest,
             task_dir / "analysis" / "bootstrap" / "bootstrap_manifest.json",
         )
 
-        analysis_sources = [patch_bundle_path, semantic_card_path, constraint_report_path]
+        retrieval_stage_sources = [patch_bundle_path, source_evidence_path, normalized_patch_path, raw_patch_path]
+        retrieval_evidence_bundle = self.build_evidence_bundle(
+            source_paths=retrieval_stage_sources,
+            bundle_tag="ANL-RTV",
+        )
+        retrieval_context_bundle = self.assemble_context(
+            stage_name="retrieval",
+            evidence_bundle=retrieval_evidence_bundle,
+        )
+
+        # semantic_card 阶段的补全不能依赖旧的 constraint_report
+        # 语义阶段上下文只吃真实输入，语义草稿单独通过 draft_card 传给模型补全器
+        semantic_stage_sources = [patch_bundle_path, source_evidence_path, normalized_patch_path, raw_patch_path]
+        semantic_evidence_bundle = self.build_evidence_bundle(
+            source_paths=semantic_stage_sources,
+            bundle_tag="ANL-SEM",
+        )
+        semantic_context_bundle = self.assemble_context(
+            stage_name="semantic_card",
+            evidence_bundle=semantic_evidence_bundle,
+        )
+
+        # 这三个 stage packet 会被回放、调试页和报告复用
+        # 顺序固定成 retrieval -> semantic_card -> constraint_diagnosis
+        retrieval_packet = self.materialize_stage_packet(
+            stage_name="retrieval",
+            schema_name="PatchBundle",
+            context_bundle=retrieval_context_bundle,
+            bootstrap_manifest=bootstrap_manifest,
+            base_dir=task_dir / "analysis",
+        )
+        semantic_packet = self.materialize_stage_packet(
+            stage_name="semantic_card",
+            schema_name="SemanticCard",
+            context_bundle=semantic_context_bundle,
+            bootstrap_manifest=bootstrap_manifest,
+            base_dir=task_dir / "analysis",
+        )
+        semantic_card, semantic_enrichment_trace = self.semantic_analyzer.maybe_enrich(
+            task=task,
+            patch_bundle=bundle,
+            draft_card=semantic_card,
+            prompt_packet=semantic_packet["prompt_packet"],
+            context_bundle=semantic_context_bundle,
+            route=semantic_packet["route"],
+            prompt_packet_path=semantic_packet["prompt_path"],
+            source_evidence_path=source_evidence_path,
+        )
+        semantic_card_path = self.json_writer.write_model(
+            semantic_card,
+            task_dir / "analysis" / "semantic_card.json",
+        )
+        semantic_enrichment_path = self.json_writer.write_model(
+            semantic_enrichment_trace,
+            task_dir / "analysis" / "trace" / "semantic_card_enrichment.json",
+        )
+
+        # 语义补全一旦产生增量，约束诊断必须在同一轮重新计算
+        # 下游使用的 constraint report、context bundle 和 prompt packet 都以最终语义卡片为准
+        semantic_card_source = "enriched" if semantic_enrichment_trace.applied else "deterministic"
+        constraint_report = self.constraint_diagnoser.diagnose(
+            bundle,
+            semantic_card=semantic_card,
+            semantic_card_source=semantic_card_source,
+            semantic_card_enriched=semantic_enrichment_trace.applied,
+        )
+        constraint_report_path = self.json_writer.write_model(
+            constraint_report,
+            task_dir / "analysis" / "constraint_report.json",
+        )
+        analysis_sources = [patch_bundle_path, source_evidence_path, normalized_patch_path, semantic_card_path]
         evidence_bundle = self.build_evidence_bundle(source_paths=analysis_sources, bundle_tag="ANL")
         context_bundle = self.assemble_context(stage_name="constraint_diagnosis", evidence_bundle=evidence_bundle)
         evidence_bundle_path = self.json_writer.write_model(
@@ -273,23 +341,6 @@ class AnalysisService(CoordinatorSupport):
         context_bundle_path = self.json_writer.write_model(
             context_bundle,
             task_dir / "analysis" / "context" / "context_bundle.json",
-        )
-
-        # 这三个 stage packet 会被回放、调试页和报告复用
-        # 顺序固定成 retrieval -> semantic_card -> constraint_diagnosis
-        retrieval_packet = self.materialize_stage_packet(
-            stage_name="retrieval",
-            schema_name="PatchBundle",
-            context_bundle=context_bundle,
-            bootstrap_manifest=bootstrap_manifest,
-            base_dir=task_dir / "analysis",
-        )
-        semantic_packet = self.materialize_stage_packet(
-            stage_name="semantic_card",
-            schema_name="SemanticCard",
-            context_bundle=context_bundle,
-            bootstrap_manifest=bootstrap_manifest,
-            base_dir=task_dir / "analysis",
         )
         constraint_packet = self.materialize_stage_packet(
             stage_name="constraint_diagnosis",
@@ -363,6 +414,12 @@ class AnalysisService(CoordinatorSupport):
         )
         analysis_trace = self.harness.attach_artifact(
             analysis_trace,
+            artifact_type="semantic_card_enrichment",
+            artifact_path=semantic_enrichment_path,
+            summary="语义卡片模型补全过程留痕",
+        )
+        analysis_trace = self.harness.attach_artifact(
+            analysis_trace,
             artifact_type="constraint_report",
             artifact_path=constraint_report_path,
             summary="约束诊断结果",
@@ -381,6 +438,7 @@ class AnalysisService(CoordinatorSupport):
             ("source_evidence", source_evidence_path),
             ("source_fetch_trace", source_fetch_trace_path),
             ("semantic_card", semantic_card_path),
+            ("semantic_card_enrichment", semantic_enrichment_path),
             ("constraint_report", constraint_report_path),
             ("analysis_bootstrap_manifest", bootstrap_manifest_path),
             ("analysis_evidence_bundle", evidence_bundle_path),
@@ -403,6 +461,7 @@ class AnalysisService(CoordinatorSupport):
             "patch_bundle_path": to_project_relative(self.runtime.project_root, patch_bundle_path),
             "source_evidence_path": to_project_relative(self.runtime.project_root, source_evidence_path),
             "semantic_card_path": to_project_relative(self.runtime.project_root, semantic_card_path),
+            "semantic_card_enrichment_path": to_project_relative(self.runtime.project_root, semantic_enrichment_path),
             "constraint_report_path": to_project_relative(self.runtime.project_root, constraint_report_path),
             "bootstrap_manifest_path": to_project_relative(self.runtime.project_root, bootstrap_manifest_path),
             "analysis_trace_path": to_project_relative(self.runtime.project_root, analysis_trace_path),
@@ -560,9 +619,13 @@ class AttemptExecutionService(CoordinatorSupport):
         build_precheck_path: Path | None = None
         build_summary: BuildSummary | None = None
 
-        # apply 预检查失败时，不再进入真正构建
-        # 这类场景通常是补丁贴不上，或者目标源码已经修过了
-        if apply_precheck_report.status == "failed":
+        # apply 预检查失败时，大多数情况都直接停在这里
+        # 但 target_already_patched 还需要给 builder 一次源码树切换机会
+        allow_builder_retry = (
+            apply_precheck_report.failure_type == "target_already_patched"
+            and getattr(self.build_config, "auto_switch_source_tree", False)
+        )
+        if apply_precheck_report.status == "failed" and not allow_builder_retry:
             precheck_failure_type = apply_precheck_report.failure_type or "patch_apply_failed"
             build_log = "\n".join(
                 [

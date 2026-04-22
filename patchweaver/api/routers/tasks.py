@@ -19,6 +19,12 @@ def list_tasks(
     status: str | None = None,
     failure_type: str | None = None,
     target_kernel: str | None = None,
+    build_exec_status: str | None = None,
+    target_state: str | None = None,
+    fixture_group: str | None = None,
+    created_at_from: str | None = None,
+    created_at_to: str | None = None,
+    current_attempt: int | None = Query(default=None, ge=0),
     context: ApiContext = Depends(get_api_context),
 ) -> dict:
     """按条件读取任务列表"""
@@ -29,6 +35,12 @@ def list_tasks(
         status=status,
         failure_type=failure_type,
         target_kernel=target_kernel,
+        build_exec_status=build_exec_status,
+        target_state=target_state,
+        fixture_group=fixture_group,
+        created_at_from=created_at_from,
+        created_at_to=created_at_to,
+        current_attempt=current_attempt,
     )
 
 

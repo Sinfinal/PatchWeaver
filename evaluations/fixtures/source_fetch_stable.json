@@ -1,0 +1,70 @@
+[
+  {
+    "fixture_id": "stable-cve-2024-26607",
+    "cve_id": "CVE-2024-26607",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "source_fetch",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_selected_source": "linux-stable",
+    "expected_artifacts": [
+      "source_fetch_trace.json",
+      "patch_bundle.json"
+    ],
+    "expected_outcome": "来源抓取应直接命中 linux-stable patch"
+  },
+  {
+    "fixture_id": "stable-cve-2024-26622",
+    "cve_id": "CVE-2024-26622",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "source_fetch",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_selected_source": "linux-stable",
+    "expected_artifacts": [
+      "source_fetch_trace.json",
+      "patch_bundle.json"
+    ],
+    "expected_outcome": "来源抓取应直接命中 linux-stable patch"
+  },
+  {
+    "fixture_id": "stable-cve-2024-26643",
+    "cve_id": "CVE-2024-26643",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "source_fetch",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_selected_source": "linux-stable",
+    "expected_artifacts": [
+      "source_fetch_trace.json",
+      "patch_bundle.json"
+    ],
+    "expected_outcome": "来源抓取应直接命中 linux-stable patch"
+  },
+  {
+    "fixture_id": "stable-cve-2024-26726",
+    "cve_id": "CVE-2024-26726",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "source_fetch",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_selected_source": "linux-stable",
+    "expected_artifacts": [
+      "source_fetch_trace.json",
+      "patch_bundle.json"
+    ],
+    "expected_outcome": "来源抓取应直接命中 linux-stable patch"
+  }
+]

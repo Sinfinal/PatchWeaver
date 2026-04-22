@@ -1,5 +1,5 @@
 id: header_abi_change
-description: patch 触及头文件，可能引入 ABI 或结构布局变化。
+description: patch 触及头文件，可能引入 ABI 或结构布局变化
 severity: high
 detection:
   kind: path_regex
@@ -7,5 +7,6 @@ detection:
     - "\\.h$"
 primitive:
   - wrapper
+  - shadow_variable
 forbidden_actions:
   - silent_header_layout_change

@@ -37,7 +37,7 @@ export function ReportFixtureDetailPage(): JSX.Element {
         subtitle={`${payload.display_name} · 单样例详情与回放摘要`}
         actions={
           <div className="pw-btn-row">
-            <Link className="pw-btn" to={`/reports/fixtures/${payload.group_id}`}>
+            <Link className="pw-btn" to={`/reports/fixtures/${payload.fixture_group}`}>
               返回分组页
             </Link>
             {payload.detail.task_id ? (

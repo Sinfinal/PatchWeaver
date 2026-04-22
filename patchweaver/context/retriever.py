@@ -9,9 +9,9 @@ class ContextRetriever:
     """负责从已有证据中挑选上下文候选"""
 
     STAGE_HINTS = {
-        "retrieval": ("patch_bundle", "source_evidence", "raw_patch", "normalized"),
-        "semantic_card": ("semantic_card", "patch_bundle", "normalized", "source_evidence"),
-        "constraint_diagnosis": ("constraint_report", "patch_bundle", "normalized", "semantic_card"),
+        "retrieval": ("patch_bundle", "source_evidence", "normalized", "raw_patch"),
+        "semantic_card": ("patch_bundle", "normalized", "source_evidence", "raw_patch"),
+        "constraint_diagnosis": ("semantic_card", "patch_bundle", "normalized", "source_evidence"),
         "rewrite_recipe": ("rewrite_plan", "constraint_report", "semantic_card", "patch_bundle"),
         "failure_analysis": ("failure_record", "build", "apply_precheck", "rewrite_plan"),
         "validation": ("validation_report", "semantic_precheck", "failure_record", "build_summary"),

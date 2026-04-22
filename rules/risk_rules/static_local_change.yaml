@@ -1,0 +1,12 @@
+id: static_local_change
+description: patch 在函数体内引入或改动静态局部状态，可能影响 livepatch 状态迁移
+severity: high
+detection:
+  kind: regex_any
+  patterns:
+    - "^\\+\\s*static\\s+(?!inline)(?!const\\s+struct)[A-Za-z_][\\w\\s\\*]*\\s+[A-Za-z_]\\w*\\s*(=|;)"
+primitive:
+  - wrapper
+  - shadow_variable
+forbidden_actions:
+  - raw_static_local_rewrite

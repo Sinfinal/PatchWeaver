@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from patchweaver.analyzer.constraint_service import ConstraintDiagnoser
+from patchweaver.analyzer.semantic_enricher import SemanticCardEnricher
 from patchweaver.analyzer.patch_normalizer import PatchNormalizer
 from patchweaver.analyzer.semantic_service import SemanticAnalyzer
 from patchweaver.builder.failure_classifier import FailureClassifier
@@ -54,6 +55,7 @@ class TaskRunner:
         verify_config: Any,
         prompts_config: Any,
         skills_config: Any | None = None,
+        models_config: Any | None = None,
     ) -> None:
         """绑定运行时配置，并装配各阶段 service"""
 
@@ -68,9 +70,14 @@ class TaskRunner:
             attempt_repo=AttemptRepository(runtime.database_path, runtime.project_root),
             artifact_repo=ArtifactRepository(runtime.database_path, runtime.project_root),
             workspace_guard=WorkspaceGuard(runtime.workspace_root, runtime.project_root),
-            retriever=RetrieverService(),
+            retriever=RetrieverService(cache_dir=runtime.data_dir / "cache" / "source_fetch"),
             patch_normalizer=PatchNormalizer(),
-            semantic_analyzer=SemanticAnalyzer(),
+            semantic_analyzer=SemanticAnalyzer(
+                enricher=SemanticCardEnricher(
+                    models_config=models_config,
+                    project_root=runtime.project_root,
+                ),
+            ),
             constraint_diagnoser=ConstraintDiagnoser(),
             context_retriever=ContextRetriever(),
             context_budgeter=ContextBudgeter(),

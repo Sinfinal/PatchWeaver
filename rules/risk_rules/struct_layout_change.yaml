@@ -1,0 +1,13 @@
+id: struct_layout_change
+description: patch 改动结构体定义或字段布局，可能引入对象布局变化
+severity: high
+detection:
+  kind: regex_any
+  patterns:
+    - "^[\\+\\-].*\\bstruct\\b.*\\{"
+    - "^[\\+\\-].*\\bstruct\\s+[A-Za-z_]\\w*\\s*\\*?\\s*[A-Za-z_]\\w*\\s*;"
+primitive:
+  - wrapper
+  - shadow_variable
+forbidden_actions:
+  - silent_struct_layout_change

@@ -203,6 +203,8 @@ def _models_payload(models_config: Any) -> dict[str, Any]:
         "fallback_model": models_config.fallback_model,
         "helper_models": models_config.helper_models,
         "helper_notes": models_config.helper_notes,
+        "interaction_record_mode": models_config.interaction_record_mode,
+        "interaction_jsonl_path": models_config.interaction_jsonl_path,
         "execution_boundaries": models_config.execution_boundaries,
     }
     payload.update(models_config.api_key_status())
@@ -751,6 +753,7 @@ def _build_task_runner(runtime: Any) -> TaskRunner:
         verify_config=configs["verify"],
         prompts_config=configs["prompts"],
         skills_config=configs["skills"],
+        models_config=load_models_config(runtime.project_root),
     )
 
 
@@ -844,6 +847,7 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
 
     for fixture in fixtures:
         fixture_id = str(fixture.get("fixture_id") or fixture.get("cve_id") or "unknown")
+        fixture_group = fixture.get("fixture_group") or fixture.get("sample_group") or fixture.get("group") or "default"
         matched_task = _find_latest_task_for_fixture(tasks, fixture)
         if matched_task is None:
             results.append(
@@ -851,7 +855,7 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
                     "fixture_id": fixture_id,
                     "cve_id": fixture.get("cve_id"),
                     "target_kernel": fixture.get("target_kernel"),
-                    "sample_group": fixture.get("sample_group") or fixture.get("group") or "unmatched",
+                    "fixture_group": fixture_group if fixture_group else "unmatched",
                     "matched": False,
                     "task_id": None,
                     "final_status": "missing",
@@ -873,6 +877,7 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
         )
         per_task_payload = {
             "fixture_id": fixture_id,
+            "fixture_group": fixture_group,
             "task_id": matched_task.task_id,
             "cve_id": matched_task.cve_id,
             "target_kernel": matched_task.target_kernel,
@@ -888,7 +893,7 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
                 "fixture_id": fixture_id,
                 "cve_id": matched_task.cve_id,
                 "target_kernel": matched_task.target_kernel,
-                "sample_group": fixture.get("sample_group") or fixture.get("group") or "default",
+                "fixture_group": fixture_group,
                 "matched": True,
                 "task_id": matched_task.task_id,
                 "final_status": matched_task.status,
@@ -1008,6 +1013,14 @@ def _doctor_payload(
                     f"{_api_key_source_label(str(api_key_status['api_key_source']))}"
                     f" / {api_key_status['api_key_masked'] or models_config.api_key_env}"
                 ),
+            ),
+            _check_item(
+                category="models",
+                name="interaction_record_mode",
+                label="模型交互记录模式",
+                ok=models_config.interaction_record_mode in {"off", "basic", "full"},
+                detail=models_config.interaction_record_mode,
+                failed_status="error",
             ),
             _check_item(
                 category="delivery",
@@ -1145,10 +1158,18 @@ def _doctor_payload(
     # 最后一段再看文件系统状态，这里基本能判断当前环境能不能继续跑任务
     log_path = _resolve_project_path(runtime.project_root, logging_config.file_path)
     jsonl_path = _resolve_project_path(runtime.project_root, logging_config.jsonl_path)
+    interaction_jsonl_path = _resolve_project_path(runtime.project_root, models_config.interaction_jsonl_path)
     checks.extend(
         [
             _check_item(category="filesystem", name="log_dir", label="日志目录", ok=log_path.parent.exists(), detail=_project_path(runtime.project_root, log_path.parent)),
             _check_item(category="filesystem", name="jsonl_dir", label="JSONL 目录", ok=jsonl_path.parent.exists(), detail=_project_path(runtime.project_root, jsonl_path.parent)),
+            _check_item(
+                category="filesystem",
+                name="model_interaction_jsonl_dir",
+                label="模型交互日志目录",
+                ok=interaction_jsonl_path.parent.exists(),
+                detail=_project_path(runtime.project_root, interaction_jsonl_path.parent),
+            ),
             _check_item(category="filesystem", name="workspace_root", label="工作区目录", ok=runtime.workspace_root.exists(), detail=_project_path(runtime.project_root, runtime.workspace_root)),
             _check_item(category="filesystem", name="sqlite_file", label="SQLite 文件", ok=runtime.database_path.exists(), detail=_project_path(runtime.project_root, runtime.database_path)),
         ]
@@ -1397,6 +1418,8 @@ def models(
     typer.echo(f"API Key 就绪: {payload['api_key_ready']}")
     typer.echo(f"API Key 脱敏值: {payload['api_key_masked'] or '未配置'}")
     typer.echo(f"配置文件已写入 Key: {payload['api_key_in_config']}")
+    typer.echo(f"交互记录模式: {payload['interaction_record_mode']}")
+    typer.echo(f"交互日志路径: {payload['interaction_jsonl_path']}")
     typer.echo(f"模型拓扑: {payload['topology']}")
     typer.echo(f"主模型: {payload['default_model']}")
     typer.echo(f"开发口径: {payload['development_model']}")
@@ -1657,6 +1680,8 @@ def analyze(
     if payload.get("source_fetch_trace_path"):
         typer.echo(f"SourceFetchTrace: {payload['source_fetch_trace_path']}")
     typer.echo(f"SemanticCard: {payload['semantic_card_path']}")
+    if payload.get("semantic_card_enrichment_path"):
+        typer.echo(f"SemanticEnrichment: {payload['semantic_card_enrichment_path']}")
     typer.echo(f"ConstraintReport: {payload['constraint_report_path']}")
     typer.echo(f"Bootstrap Manifest: {payload['bootstrap_manifest_path']}")
 

@@ -70,7 +70,15 @@ class Validator:
         artifacts_dir.mkdir(parents=True, exist_ok=True)
 
         risk_level = self._resolve_risk_level(constraint_report)
-        validation_intensity = self._resolve_validation_intensity(risk_level)
+        verification_profile = self._resolve_verification_profile()
+        verify_switches = self._resolve_verify_switches(
+            risk_level=risk_level,
+            verification_profile=verification_profile,
+        )
+        validation_intensity = self._resolve_validation_intensity(
+            risk_level=risk_level,
+            verification_profile=verification_profile,
+        )
 
         semantic_precheck_result = self.semantic_precheck.run(rewritten_patch_path=rewritten_patch_path)
         semantic_precheck_path = artifacts_dir / "semantic_precheck.json"
@@ -80,7 +88,16 @@ class Validator:
             f"验证任务: {task.task_id}",
             f"构建状态: {attempt.status}",
             f"风险等级: {risk_level}",
+            f"验证档位: {verification_profile}",
             f"验证强度: {validation_intensity}",
+            (
+                "验证开关: "
+                f"load={verify_switches['enable_load_test']} "
+                f"unload={verify_switches['enable_unload_test']} "
+                f"smoke={verify_switches['enable_smoke_test']} "
+                f"semantic_guard={verify_switches['enable_semantic_guard']} "
+                f"regression={verify_switches['enable_regression']}"
+            ),
         ]
 
         build_succeeded = attempt.status == "built"
@@ -112,7 +129,7 @@ class Validator:
             selftest_result = self._attach_log_path(selftest_result, logs_dir / "selftest.log")
             (logs_dir / "selftest.log").write_text(selftest_log, encoding="utf-8")
 
-            if self.verify_config.enable_load_test:
+            if verify_switches["enable_load_test"]:
                 load_result, load_log = self.load_tester.load(
                     module_path=attempt.module_path,
                 )
@@ -123,13 +140,13 @@ class Validator:
                 load_result = self._attach_log_path(load_result, logs_dir / "load.log")
                 (logs_dir / "load.log").write_text(f"{load_result.detail}\n", encoding="utf-8")
 
-            if self.verify_config.enable_unload_test and load_result.ok:
+            if verify_switches["enable_unload_test"] and load_result.ok:
                 unload_result, unload_log = self.load_tester.unload(
                     module_path=attempt.module_path,
                 )
                 unload_result = self._attach_log_path(unload_result, logs_dir / "unload.log")
                 (logs_dir / "unload.log").write_text(unload_log or f"{unload_result.detail}\n", encoding="utf-8")
-            elif self.verify_config.enable_unload_test:
+            elif verify_switches["enable_unload_test"]:
                 unload_result = self._pending_item("加载测试未通过，暂不执行卸载测试。")
                 unload_result = self._attach_log_path(unload_result, logs_dir / "unload.log")
                 (logs_dir / "unload.log").write_text(f"{unload_result.detail}\n", encoding="utf-8")
@@ -138,12 +155,12 @@ class Validator:
                 unload_result = self._attach_log_path(unload_result, logs_dir / "unload.log")
                 (logs_dir / "unload.log").write_text(f"{unload_result.detail}\n", encoding="utf-8")
 
-            should_run_smoke = self.verify_config.enable_smoke_test and load_result.ok
+            should_run_smoke = verify_switches["enable_smoke_test"] and load_result.ok
             if should_run_smoke:
                 smoke_result, smoke_log = self.smoke_tester.run()
                 smoke_result = self._attach_log_path(smoke_result, logs_dir / "smoke.log")
                 (logs_dir / "smoke.log").write_text(smoke_log or f"{smoke_result.detail}\n", encoding="utf-8")
-            elif self.verify_config.enable_smoke_test:
+            elif verify_switches["enable_smoke_test"]:
                 smoke_result = self._pending_item("加载测试未通过或未执行，暂不执行冒烟测试。")
                 smoke_result = self._attach_log_path(smoke_result, logs_dir / "smoke.log")
                 (logs_dir / "smoke.log").write_text(f"{smoke_result.detail}\n", encoding="utf-8")
@@ -152,7 +169,7 @@ class Validator:
                 smoke_result = self._attach_log_path(smoke_result, logs_dir / "smoke.log")
                 (logs_dir / "smoke.log").write_text(f"{smoke_result.detail}\n", encoding="utf-8")
 
-        semantic_guard_enabled = self.verify_config is None or self.verify_config.enable_semantic_guard
+        semantic_guard_enabled = verify_switches["enable_semantic_guard"]
         if semantic_guard_enabled:
             # 守卫放在动态验证结果之后执行，这样它可以区分模块问题和更像语义偏移的问题
             semantic_guard_result = self.semantic_guard.run(
@@ -169,7 +186,7 @@ class Validator:
         semantic_guard_path = artifacts_dir / "semantic_guard.json"
         semantic_guard_path.write_text(semantic_guard_result.model_dump_json(indent=2), encoding="utf-8")
 
-        if self.verify_config is not None and self.verify_config.enable_regression:
+        if verify_switches["enable_regression"]:
             regression_result, regression_summary, regression_log = self.regression_tester.run(
                 current_attempt=attempt,
                 history_attempts=history_attempts,
@@ -192,18 +209,6 @@ class Validator:
                 json.dumps({"enabled": False, "detail": regression_result.detail}, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8",
             )
-
-        if semantic_guard_enabled:
-            semantic_guard_result = self.semantic_guard.run(
-                semantic_precheck=semantic_precheck_result,
-                rewritten_patch_path=rewritten_patch_path,
-                build_succeeded=build_succeeded,
-                module_path=attempt.module_path,
-                load_result=load_result,
-                smoke_result=smoke_result,
-                regression_result=regression_result,
-            )
-            semantic_guard_path.write_text(semantic_guard_result.model_dump_json(indent=2), encoding="utf-8")
 
         for item, path in [
             (selftest_result, logs_dir / "selftest.log"),
@@ -232,21 +237,21 @@ class Validator:
             self._matrix_entry(
                 name="load_test",
                 category="dynamic",
-                enabled=self.verify_config.enable_load_test if self.verify_config is not None else False,
+                enabled=verify_switches["enable_load_test"],
                 result=load_result,
                 risk_level=risk_level,
             ),
             self._matrix_entry(
                 name="unload_test",
                 category="dynamic",
-                enabled=self.verify_config.enable_unload_test if self.verify_config is not None else False,
+                enabled=verify_switches["enable_unload_test"],
                 result=unload_result,
                 risk_level=risk_level,
             ),
             self._matrix_entry(
                 name="smoke_test",
                 category="dynamic",
-                enabled=self.verify_config.enable_smoke_test if self.verify_config is not None else False,
+                enabled=verify_switches["enable_smoke_test"],
                 result=smoke_result,
                 risk_level=risk_level,
             ),
@@ -260,7 +265,7 @@ class Validator:
             self._matrix_entry(
                 name="regression",
                 category="regression",
-                enabled=self.verify_config.enable_regression if self.verify_config is not None else False,
+                enabled=verify_switches["enable_regression"],
                 result=regression_result,
                 risk_level=risk_level,
             ),
@@ -320,9 +325,60 @@ class Validator:
             return "medium"
         return "low"
 
-    def _resolve_validation_intensity(self, risk_level: str) -> str:
-        """按风险等级返回验证强度"""
+    def _resolve_verification_profile(self) -> str:
+        """返回当前轮实际生效的验证档位"""
 
+        if self.verify_config is None:
+            return "standard"
+        return getattr(self.verify_config, "verification_profile", "standard")
+
+    def _resolve_verify_switches(
+        self,
+        *,
+        risk_level: str,
+        verification_profile: str,
+    ) -> dict[str, bool]:
+        """整理当前轮实际生效的验证开关"""
+
+        if self.verify_config is None:
+            switches = {
+                "enable_semantic_guard": True,
+                "enable_load_test": False,
+                "enable_unload_test": False,
+                "enable_smoke_test": False,
+                "enable_regression": False,
+            }
+        else:
+            switches = {
+                "enable_semantic_guard": bool(self.verify_config.enable_semantic_guard),
+                "enable_load_test": bool(self.verify_config.enable_load_test),
+                "enable_unload_test": bool(self.verify_config.enable_unload_test),
+                "enable_smoke_test": bool(self.verify_config.enable_smoke_test),
+                "enable_regression": bool(self.verify_config.enable_regression),
+            }
+
+        if verification_profile == "strict":
+            switches["enable_semantic_guard"] = True
+            switches["enable_load_test"] = True
+            switches["enable_unload_test"] = True
+            switches["enable_smoke_test"] = True
+            switches["enable_regression"] = True
+        elif verification_profile == "standard" and risk_level == "high":
+            switches["enable_semantic_guard"] = True
+
+        return switches
+
+    def _resolve_validation_intensity(
+        self,
+        risk_level: str,
+        verification_profile: str,
+    ) -> str:
+        """按风险等级和档位返回验证强度"""
+
+        if verification_profile == "dev":
+            return "light"
+        if verification_profile == "strict":
+            return "strict"
         return {
             "low": "light",
             "medium": "standard",

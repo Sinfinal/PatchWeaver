@@ -1,5 +1,8 @@
 # 验证配置
 
+# 开发联调、常规回归、封版验收分别使用 dev / standard / strict
+verification_profile: standard
+
 # 是否验证模块加载
 enable_load_test: true
 

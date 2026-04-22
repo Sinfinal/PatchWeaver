@@ -1,0 +1,14 @@
+id: unsupported_section_change
+description: patch 触及 livepatch 不宜直接修改的特殊 section
+severity: high
+detection:
+  kind: regex_any
+  patterns:
+    - "\\.altinstr_replacement"
+    - "\\.parainstructions"
+    - "__patchable_function_entries"
+    - "__jump_table"
+primitive:
+  - wrapper
+forbidden_actions:
+  - patch_unsupported_section

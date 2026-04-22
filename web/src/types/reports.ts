@@ -1,7 +1,8 @@
 import type { ReplayPayload, TaskSummary } from "./tasks";
 
 export type EvaluationGroupItem = {
-  group_id: string;
+  fixture_group: string;
+  group_id?: string;
   display_name: string;
   summary_json_path: string;
   summary_md_path: string;
@@ -34,7 +35,8 @@ export type EvaluationFixtureSummary = {
 };
 
 export type EvaluationGroupSummaryResponse = {
-  group_id: string;
+  fixture_group: string;
+  group_id?: string;
   display_name: string;
   summary_json_path: string;
   summary_md_path: string;
@@ -54,7 +56,8 @@ export type EvaluationGroupSummaryResponse = {
 };
 
 export type EvaluationFixtureDetailResponse = {
-  group_id: string;
+  fixture_group: string;
+  group_id?: string;
   display_name: string;
   fixture_id: string;
   detail_path: string;

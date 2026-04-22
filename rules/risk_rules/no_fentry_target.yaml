@@ -1,5 +1,5 @@
-id: missing_fentry
-description: patch 涉及 ftrace / fentry 相关路径，直接 apply 后可能缺少稳定入口。
+id: no_fentry_target
+description: patch 涉及 ftrace 或 fentry 相关路径，可能缺少稳定入口
 severity: high
 detection:
   kind: regex_any
@@ -9,5 +9,6 @@ detection:
     - "ftrace"
 primitive:
   - wrapper
+  - callback
 forbidden_actions:
   - direct_trampoline_injection

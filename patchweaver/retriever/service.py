@@ -14,10 +14,10 @@ from patchweaver.retriever.repair_chain import RepairChainResolver
 class RetrieverService:
     """负责组织 CVE 与补丁来源的检索流程"""
 
-    def __init__(self) -> None:
+    def __init__(self, *, cache_dir: Path | None = None) -> None:
         """初始化修复链路解析器"""
 
-        self.repair_chain = RepairChainResolver()
+        self.repair_chain = RepairChainResolver(cache_dir=cache_dir)
         self.last_fetch_trace_path: Path | None = None
 
     def fetch_patch_bundle(self, *, task: TaskContext, raw_patch_path: Path) -> PatchBundle:

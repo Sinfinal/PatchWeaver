@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import tempfile
 from uuid import uuid4
 
 from patchweaver.context.assembler import ContextAssembler
@@ -25,7 +26,7 @@ def _project_root() -> Path:
 
 
 def _case_dir(case_name: str) -> Path:
-    base_dir = _project_root() / ".pytest_tmp"
+    base_dir = Path(tempfile.gettempdir()) / "patchweaver-pytest"
     base_dir.mkdir(parents=True, exist_ok=True)
     root = base_dir / f"{case_name}-{uuid4().hex[:8]}"
     root.mkdir(parents=True, exist_ok=True)
@@ -143,3 +144,57 @@ def test_dual_memory_context_and_prompt_compiler_form_a_closed_loop() -> None:
     assert any("plan_id" in section for section in packet.prompt_sections)
     assert any("记忆摘要" in section for section in packet.prompt_sections)
     assert any("选中 Skill: rewrite_recipe" in section for section in packet.prompt_sections)
+
+
+def test_context_retriever_prefers_stage_inputs_for_analysis_stages() -> None:
+    bundle = EvidenceBundle(
+        evidence_ids=["EV-001", "EV-002", "EV-003", "EV-004"],
+        spans=[
+            EvidenceSpan(
+                evidence_id="EV-001",
+                source_type="json",
+                source_path="analysis/semantic_card.json",
+                excerpt="semantic card excerpt",
+                start_line=1,
+                end_line=2,
+                score=0.95,
+            ),
+            EvidenceSpan(
+                evidence_id="EV-002",
+                source_type="json",
+                source_path="input/patch_bundle.json",
+                excerpt="patch bundle excerpt",
+                start_line=1,
+                end_line=2,
+                score=0.60,
+            ),
+            EvidenceSpan(
+                evidence_id="EV-003",
+                source_type="patch",
+                source_path="normalized/normalized.patch",
+                excerpt="normalized patch excerpt",
+                start_line=1,
+                end_line=4,
+                score=0.70,
+            ),
+            EvidenceSpan(
+                evidence_id="EV-004",
+                source_type="json",
+                source_path="analysis/constraint_report.json",
+                excerpt="constraint report excerpt",
+                start_line=1,
+                end_line=2,
+                score=0.99,
+            ),
+        ],
+    )
+
+    semantic_selected = ContextRetriever().select(bundle, stage_name="semantic_card", max_evidence=2)
+    semantic_paths = [item.source_path for item in semantic_selected.spans]
+    assert semantic_paths[0] == "input/patch_bundle.json"
+    assert all("semantic_card.json" not in path for path in semantic_paths)
+
+    constraint_selected = ContextRetriever().select(bundle, stage_name="constraint_diagnosis", max_evidence=3)
+    constraint_paths = [item.source_path for item in constraint_selected.spans]
+    assert constraint_paths[0] == "analysis/semantic_card.json"
+    assert "analysis/constraint_report.json" not in constraint_paths

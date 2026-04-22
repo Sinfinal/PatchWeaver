@@ -59,6 +59,8 @@ def apply_profile_overrides(
     if profile is None:
         return resolved_verify, resolved_prompts, resolved_skills
 
+    if profile.verification_profile is not None:
+        resolved_verify.verification_profile = profile.verification_profile
     if profile.enable_semantic_guard is not None:
         resolved_verify.enable_semantic_guard = profile.enable_semantic_guard
     if profile.enable_regression is not None:

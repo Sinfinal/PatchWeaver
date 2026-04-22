@@ -13,9 +13,13 @@ class RewriteCandidate(BaseModel):
 
     candidate_id: str
     recipe_name: str
+    route_family: str = "wrapper"
+    execution_mode: str = "template_wrap"
     primitives: list[str] = Field(default_factory=list)
     target_functions: list[str] = Field(default_factory=list)
     rule_hits: list[str] = Field(default_factory=list)
+    requires_kernel_scaffold: bool = False
+    scaffold_notes: list[str] = Field(default_factory=list)
     expected_risk: float = 0.0
     expected_semantic_drift: float = 0.0
     expected_build_cost: float = 0.0
@@ -32,9 +36,13 @@ class RewritePlan(BaseModel):
     plan_id: str
     candidate_ids: list[str] = Field(default_factory=list)
     selected_recipe: str | None = None
+    selected_route_family: str | None = None
+    selected_execution_mode: str | None = None
     selected_primitives: list[str] = Field(default_factory=list)
     target_files: list[str] = Field(default_factory=list)
     rule_hits: list[str] = Field(default_factory=list)
+    requires_kernel_scaffold: bool = False
+    scaffold_notes: list[str] = Field(default_factory=list)
     risk_coverage: float = 0.0
     selection_reason: str | None = None
     notes: list[str] = Field(default_factory=list)
@@ -45,7 +53,7 @@ class TransformationStep(BaseModel):
     """记录单个改写步骤的执行轨迹"""
 
     step_id: str
-    engine: Literal["template", "smpl", "diff_editor", "apply_precheck"]
+    engine: Literal["route_dispatch", "template", "smpl", "diff_editor", "apply_precheck"]
     action: str
     recipe_name: str | None = None
     primitive: str | None = None

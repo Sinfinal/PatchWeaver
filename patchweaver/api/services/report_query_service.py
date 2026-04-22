@@ -72,10 +72,11 @@ class ReportQueryService:
                 continue
 
             fixture_name = str(payload.get("fixture_name") or summary_path.parent.name)
-            group_id = self._group_id(summary_path.parent.name)
+            fixture_group = self._fixture_group(summary_path.parent.name)
             items.append(
                 {
-                    "group_id": group_id,
+                    "fixture_group": fixture_group,
+                    "group_id": fixture_group,
                     "display_name": fixture_name,
                     "summary_json_path": self._path(summary_path),
                     "summary_md_path": self._path(summary_path.with_name("summary.md")),
@@ -86,7 +87,7 @@ class ReportQueryService:
                     "success_rate": float(payload.get("success_rate", 0.0) or 0.0),
                     "average_attempts": float(payload.get("average_attempts", 0.0) or 0.0),
                     "updated_at": self._format_mtime(summary_path),
-                    "sort_order": preferred_order.get(group_id, 99),
+                    "sort_order": preferred_order.get(fixture_group, 99),
                 }
             )
 
@@ -115,17 +116,22 @@ class ReportQueryService:
                 continue
             fixture_id = str(item.get("fixture_id") or "")
             task_id = item.get("task_id")
+            item_fixture_group = str(
+                item.get("fixture_group") or item.get("sample_group") or item.get("group") or self._fixture_group(group_dir.name)
+            ).replace("-", "_")
             enriched_fixtures.append(
                 {
                     **item,
                     "fixture_id": fixture_id,
-                    "report_route": f"/reports/fixtures/{self._group_id(group_dir.name)}/{fixture_id}" if fixture_id else None,
+                    "fixture_group": item_fixture_group,
+                    "report_route": f"/reports/fixtures/{self._fixture_group(group_dir.name)}/{fixture_id}" if fixture_id else None,
                     "task_report_route": f"/reports/tasks/{task_id}" if task_id else None,
                     "task_detail_route": f"/tasks/{task_id}" if task_id else None,
                 }
             )
         return {
-            "group_id": self._group_id(group_dir.name),
+            "fixture_group": self._fixture_group(group_dir.name),
+            "group_id": self._fixture_group(group_dir.name),
             "display_name": str(summary_payload.get("fixture_name") or group_dir.name),
             "summary_json_path": self._path(summary_path),
             "summary_md_path": self._path(summary_md_path),
@@ -145,7 +151,8 @@ class ReportQueryService:
 
         task_id = detail_payload.get("task_id")
         return {
-            "group_id": self._group_id(group_dir.name),
+            "fixture_group": self._fixture_group(group_dir.name),
+            "group_id": self._fixture_group(group_dir.name),
             "display_name": self._group_display_name(group_dir),
             "fixture_id": detail_path.stem,
             "detail_path": self._path(detail_path),
@@ -193,10 +200,10 @@ class ReportQueryService:
             return str(payload["fixture_name"])
         return group_dir.name
 
-    def _group_id(self, value: str) -> str:
-        """把目录名转换成前端路由使用的分组标识"""
+    def _fixture_group(self, value: str) -> str:
+        """把目录名转换成统一的固定样例分组标识"""
 
-        return value.strip().lower().replace("_", "-")
+        return value.strip().lower().replace("-", "_")
 
     def _normalize_token(self, value: str) -> str:
         """统一路由参数和目录名的比较口径"""

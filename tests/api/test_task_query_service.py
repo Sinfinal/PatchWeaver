@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 from patchweaver.api.services.task_query_service import TaskQueryService
-from patchweaver.models.attempt import AttemptRecord
+from patchweaver.models.attempt import AttemptRecord, FailureRecord
 from patchweaver.models.task import MachineProfile, TaskContext
 from patchweaver.storage.artifact_repo import ArtifactRepository
 from patchweaver.storage.attempt_repo import AttemptRepository
@@ -248,3 +248,144 @@ def test_task_query_service_create_task_uses_detected_binding_and_lazy_workspace
     assert not (task_workspace / "analysis").exists()
     assert not (task_workspace / "reports").exists()
     assert not (task_workspace / "attempts" / "001").exists()
+
+
+def test_task_query_service_list_tasks_supports_extended_filters_and_fixture_group() -> None:
+    tmp_path = _case_dir("task-query-filters")
+    project_root = tmp_path / "project"
+    data_dir = project_root / "data"
+    workspace_root = project_root / "workspaces"
+    fixtures_dir = project_root / "evaluations" / "fixtures"
+    database_path = data_dir / "patchweaver.db"
+    project_root.mkdir(parents=True, exist_ok=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
+    workspace_root.mkdir(parents=True, exist_ok=True)
+    fixtures_dir.mkdir(parents=True, exist_ok=True)
+
+    (fixtures_dir / "challenge_dev.json").write_text(
+        json.dumps(
+            [
+                {
+                    "fixture_id": "fixture-1086",
+                    "fixture_group": "challenge_dev",
+                    "cve_id": "CVE-2024-1086",
+                    "target_kernel": "6.6.102-5.2.an23.x86_64",
+                }
+            ],
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (fixtures_dir / "holdout.json").write_text(
+        json.dumps(
+            [
+                {
+                    "fixture_id": "fixture-0185",
+                    "fixture_group": "holdout",
+                    "cve_id": "CVE-2022-0185",
+                    "target_kernel": "6.6.102-5.2.an23.x86_64",
+                }
+            ],
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    task_repo = TaskRepository(database_path, project_root)
+    attempt_repo = AttemptRepository(database_path, project_root)
+    artifact_repo = ArtifactRepository(database_path, project_root)
+
+    task_one = TaskContext(
+        task_id="TASK-FILTER-001",
+        cve_id="CVE-2024-1086",
+        target_kernel="6.6.102-5.2.an23.x86_64",
+        target_kernel_source="detected_build_env",
+        status="failed",
+        current_attempt=1,
+        max_attempts=3,
+        workspace_dir=workspace_root / "TASK-FILTER-001",
+        created_at="2026-04-21T12:00:00",
+        updated_at="2026-04-21T12:10:00",
+    )
+    task_two = TaskContext(
+        task_id="TASK-FILTER-002",
+        cve_id="CVE-2022-0185",
+        target_kernel="6.6.102-5.2.an23.x86_64",
+        target_kernel_source="detected_build_env",
+        status="built",
+        current_attempt=2,
+        max_attempts=3,
+        workspace_dir=workspace_root / "TASK-FILTER-002",
+        created_at="2026-04-21T13:00:00",
+        updated_at="2026-04-21T13:10:00",
+    )
+    task_repo.create_task(task_one)
+    task_repo.create_task(task_two)
+
+    attempt_one = AttemptRecord(
+        task_id=task_one.task_id,
+        attempt_no=1,
+        attempt_id="TASK-FILTER-001-A001",
+        status="failed",
+        failure_type="target_already_patched",
+        build_exec_status="not_run",
+        target_state="target_already_patched",
+    )
+    attempt_two = AttemptRecord(
+        task_id=task_two.task_id,
+        attempt_no=1,
+        attempt_id="TASK-FILTER-002-A001",
+        status="built",
+        build_exec_status="executed",
+    )
+    attempt_repo.create_attempt(attempt_one)
+    attempt_repo.create_attempt(attempt_two)
+    attempt_repo.save_failure_record(
+        FailureRecord(
+            task_id=task_one.task_id,
+            attempt_id=attempt_one.attempt_id,
+            stage_name="build",
+            failure_type="target_already_patched",
+            summary="目标源码已修复",
+        )
+    )
+
+    class _RunnerStub:
+        def replay_task(self, task_id: str) -> dict[str, object]:
+            return {"task_id": task_id, "status": "empty", "stage_routes": {}, "dispatch_modes": {}, "replay_files": [], "comparison": {}}
+
+    context = SimpleNamespace(
+        project_root=project_root,
+        runtime=SimpleNamespace(database_path=database_path),
+        task_repo=task_repo,
+        attempt_repo=attempt_repo,
+        artifact_repo=artifact_repo,
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+        build_task_runner=lambda profile_name=None, max_attempts=None: _RunnerStub(),
+    )
+    service = TaskQueryService(context)
+
+    challenge_items = service.list_tasks(fixture_group="challenge_dev")["items"]
+    executed_items = service.list_tasks(build_exec_status="executed")["items"]
+    target_state_items = service.list_tasks(target_state="target_already_patched")["items"]
+    current_attempt_items = service.list_tasks(current_attempt=2)["items"]
+    created_after_items = service.list_tasks(created_at_from="2026-04-21T12:30:00")["items"]
+    detail = service.get_task_detail(task_one.task_id)
+
+    assert [item["task_id"] for item in challenge_items] == [task_one.task_id]
+    assert challenge_items[0]["fixture_group"] == "challenge_dev"
+    assert challenge_items[0]["fixture_id"] == "fixture-1086"
+    assert [item["task_id"] for item in executed_items] == [task_two.task_id]
+    assert [item["task_id"] for item in target_state_items] == [task_one.task_id]
+    assert [item["task_id"] for item in current_attempt_items] == [task_two.task_id]
+    assert [item["task_id"] for item in created_after_items] == [task_two.task_id]
+    assert detail["task"]["fixture_group"] == "challenge_dev"
+    assert detail["task"]["fixture_id"] == "fixture-1086"

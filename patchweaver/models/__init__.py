@@ -8,6 +8,7 @@ from patchweaver.models.evidence import EvidenceBundle, EvidenceSpan
 from patchweaver.models.failover import FailoverRecord
 from patchweaver.models.harness import ArtifactRef, HarnessTrace, StateTransition, SubagentRecord, ToolCallRecord
 from patchweaver.models.memory import FailureMemoryEntry, RecipeMemoryEntry
+from patchweaver.models.model_interaction import ModelInteractionRecord
 from patchweaver.models.patch import PatchBundle, SourceEvidence
 from patchweaver.models.prompt import PromptPacket
 from patchweaver.models.report import AttemptDigest, FinalReport
@@ -18,7 +19,7 @@ from patchweaver.models.rewrite import (
     TransformationStep,
     TransformationTrace,
 )
-from patchweaver.models.semantic import SemanticCard
+from patchweaver.models.semantic import SemanticCard, SemanticCardEnrichmentTrace
 from patchweaver.models.skill import SkillManifest, SkillRouteDecision
 from patchweaver.models.task import TaskContext
 from patchweaver.models.validation import ValidationItem, ValidationReport
@@ -41,6 +42,7 @@ __all__ = [
     "FailureMemoryEntry",
     "FinalReport",
     "HarnessTrace",
+    "ModelInteractionRecord",
     "PatchBundle",
     "PromptPacket",
     "RewriteCandidate",
@@ -48,6 +50,7 @@ __all__ = [
     "RecipeMemoryEntry",
     "RiskItem",
     "SemanticCard",
+    "SemanticCardEnrichmentTrace",
     "SkillManifest",
     "SkillRouteDecision",
     "SourceEvidence",

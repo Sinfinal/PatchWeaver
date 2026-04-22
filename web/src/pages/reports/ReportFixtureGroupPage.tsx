@@ -105,12 +105,12 @@ export function ReportFixtureGroupPage(): JSX.Element {
                     <StatusBadge value={item.final_status ?? (item.matched ? "matched" : "missing")} />
                     <span className="pw-inline-note">任务：{item.task_id ?? "未匹配"}</span>
                   </div>
-                  <div className="pw-inline-note">{item.cve_id ?? "未记录 CVE"}</div>
-                  <div className="pw-inline-note">{item.target_kernel ?? "未记录目标内核"}</div>
-                  <div className="pw-report-inline">
-                    <Link className="pw-btn" to={`/reports/fixtures/${payload.group_id}/${item.fixture_id}`}>
-                      查看样例详情
-                    </Link>
+                    <div className="pw-inline-note">{item.cve_id ?? "未记录 CVE"}</div>
+                    <div className="pw-inline-note">{item.target_kernel ?? "未记录目标内核"}</div>
+                    <div className="pw-report-inline">
+                      <Link className="pw-btn" to={`/reports/fixtures/${payload.fixture_group}/${item.fixture_id}`}>
+                        查看样例详情
+                      </Link>
                     {item.task_id ? (
                       <Link className="pw-btn" to={`/reports/tasks/${item.task_id}`}>
                         任务报告

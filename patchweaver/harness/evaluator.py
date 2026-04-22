@@ -77,7 +77,7 @@ class Evaluator:
             if item.get("latest_failure_type")
         )
         group_distribution = Counter(
-            str((item.get("sample_group") or item.get("group") or "default"))
+            str((item.get("fixture_group") or item.get("sample_group") or item.get("group") or "default"))
             for item in results
         )
 

@@ -40,6 +40,7 @@ class ProfileSettings(ConfigModel):
 
     # profile 只做策略覆盖，不复制 system.yaml 的全部字段
     max_attempts: int | None = None
+    verification_profile: Literal["dev", "standard", "strict"] | None = None
     enable_semantic_guard: bool | None = None
     enable_regression: bool | None = None
     enable_context_dedup: bool | None = None
@@ -62,8 +63,19 @@ class BuildConfig(ConfigModel):
     # 当前工程固定采用“当前运行机本机构建”模式
     # 开发机与验证机之间只做代码同步，不再把验证机抽象成单独的构建后端
     build_backend: Literal["local"] = "local"
+    clean_kernel_src_dir: str = ""
     kernel_src_dir: str = "/opt/kernel-src"
     kernel_devel_dir: str = "/usr/src/kernels/6.6.102-5.2.an23.x86_64"
+    patched_kernel_src_dir: str = ""
+    build_source_priority: list[str] = Field(
+        default_factory=lambda: [
+            "clean_kernel_src_dir",
+            "kernel_src_dir",
+            "kernel_devel_dir",
+            "patched_kernel_src_dir",
+        ]
+    )
+    auto_switch_source_tree: bool = True
     vmlinux_path: str = "/usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux"
     kpatch_build_cmd: str = "kpatch-build"
     build_timeout_sec: int = 3600
@@ -73,6 +85,7 @@ class VerifyConfig(ConfigModel):
     """热补丁验证阶段的开关配置"""
 
     # 验证开关保持独立，方便 dev/demo/full 三个档位按需组合
+    verification_profile: Literal["dev", "standard", "strict"] = "standard"
     enable_semantic_guard: bool = True
     enable_load_test: bool = True
     enable_unload_test: bool = True
@@ -191,6 +204,8 @@ class ModelsConfig(ConfigModel):
             "log_summary": "用于长日志压缩、失败解释和材料摘要，不直接替代构建判定。",
         }
     )
+    interaction_record_mode: Literal["off", "basic", "full"] = "basic"
+    interaction_jsonl_path: str = "data/logs/model_interactions.jsonl"
     execution_boundaries: list[str] = Field(
         default_factory=lambda: [
             "模型负责语义分析、草拟和解释，最终执行判定仍由规则、原语、Recipe、构建和验证链负责。",

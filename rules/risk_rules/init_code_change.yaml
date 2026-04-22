@@ -1,5 +1,5 @@
-id: init_section
-description: patch 触及 __init / __exit 段或 .init.text，livepatch 需要额外约束。
+id: init_code_change
+description: patch 触及 __init / __exit 或 init/exit 段代码，livepatch 需要额外约束
 severity: high
 detection:
   kind: regex_any
@@ -7,6 +7,7 @@ detection:
     - "__init"
     - "__exit"
     - "\\.init\\.text"
+    - "\\.exit\\.text"
 primitive:
   - wrapper
 forbidden_actions:

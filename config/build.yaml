@@ -4,11 +4,29 @@
 # 日常开发可在开发机完成，联调与验收前再把代码同步到验证机本地运行。
 build_backend: local
 
+# 优先指向未修复源码树。
+# 验收环境若同时保留干净树和已修复树，构建阶段会先从这里选。
+clean_kernel_src_dir: ""
+
 # 目标内核源码目录
 kernel_src_dir: /opt/kernel-src
 
 # kernel-devel 目录
 kernel_devel_dir: /usr/src/kernels/6.6.102-5.2.an23.x86_64
+
+# 若当前 kernel_src_dir 已经打过补丁，可把已修复源码树单独登记在这里。
+patched_kernel_src_dir: ""
+
+# 源码树选择顺序。
+# 一般优先 clean -> 默认源码树 -> kernel-devel -> 已修复树。
+build_source_priority:
+  - clean_kernel_src_dir
+  - kernel_src_dir
+  - kernel_devel_dir
+  - patched_kernel_src_dir
+
+# 首选源码树命中 target_already_patched 时，是否自动切换到下一棵树重试。
+auto_switch_source_tree: true
 
 # vmlinux 符号文件路径
 vmlinux_path: /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux

@@ -44,6 +44,10 @@ class MdWriter:
             lines.extend(["", "## 验证结果"])
             for key, value in report.validation_summary.items():
                 lines.append(f"- {key}: {value}")
+        if report.closure_summary:
+            lines.extend(["", "## 闭环状态"])
+            for key, value in report.closure_summary.items():
+                lines.append(f"- {key}: {value}")
         if report.replay_summary:
             lines.extend(["", "## 回放索引"])
             for key, value in report.replay_summary.items():

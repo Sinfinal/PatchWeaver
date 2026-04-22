@@ -1,13 +1,14 @@
 id: global_data_change
-description: patch 直接改动全局静态数据定义，可能引入数据布局和初始化约束。
+description: patch 直接改动全局静态数据定义，可能引入数据布局和初始化约束
 severity: medium
 detection:
   kind: regex_any
   patterns:
-    - "^\\+.*\\bstatic\\b"
     - "^\\+.*\\bconst struct\\b"
     - "^\\+.*\\bDEFINE_"
+    - "^\\+\\s*(?!static\\s+inline)(?!static\\s+[A-Za-z_][\\w\\s\\*]*\\s+[A-Za-z_]\\w*\\s*\\()static\\s+[A-Za-z_][\\w\\s\\*]*\\s+[A-Za-z_]\\w*\\s*(=|;)"
 primitive:
   - wrapper
+  - shadow_variable
 forbidden_actions:
   - raw_global_data_rewrite

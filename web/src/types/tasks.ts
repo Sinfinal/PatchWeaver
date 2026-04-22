@@ -28,7 +28,11 @@ export type TaskListItem = {
   updated_at: string;
   latest_failure_type?: string | null;
   latest_failure_summary?: string | null;
+  latest_build_exec_status?: string | null;
+  latest_target_state?: string | null;
   attempts_count: number;
+  fixture_group?: string | null;
+  fixture_id?: string | null;
 };
 
 export type TaskListResponse = {
@@ -41,6 +45,7 @@ export type TaskSummary = {
   cve_id: string;
   target_kernel: string;
   target_kernel_source?: string | null;
+  profile_name?: string | null;
   status: string;
   current_attempt: number;
   max_attempts: number;
@@ -48,6 +53,11 @@ export type TaskSummary = {
   machine_profile?: MachineProfile | null;
   created_at: string;
   updated_at: string;
+  latest_failure_type?: string | null;
+  latest_build_exec_status?: string | null;
+  latest_target_state?: string | null;
+  fixture_group?: string | null;
+  fixture_id?: string | null;
 };
 
 export type TaskAttempt = {
@@ -55,6 +65,8 @@ export type TaskAttempt = {
   attempt_no: number;
   status: string;
   failure_type?: string | null;
+  build_exec_status?: string | null;
+  target_state?: string | null;
   build_log_path?: string | null;
   module_path?: string | null;
   rewritten_patch_path?: string | null;

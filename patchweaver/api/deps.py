@@ -58,6 +58,7 @@ class ApiContext:
             verify_config=configs["verify"],
             prompts_config=configs["prompts"],
             skills_config=configs["skills"],
+            models_config=self.models_config,
         )
 
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -33,8 +34,16 @@ class TaskQueryService:
         status: str | None = None,
         failure_type: str | None = None,
         target_kernel: str | None = None,
+        build_exec_status: str | None = None,
+        target_state: str | None = None,
+        fixture_group: str | None = None,
+        created_at_from: str | None = None,
+        created_at_to: str | None = None,
+        current_attempt: int | None = None,
     ) -> dict[str, Any]:
         """按筛选条件读取任务列表"""
+
+        fixture_catalog = self._load_fixture_catalog()
         conditions: list[str] = []
         parameters: list[Any] = []
         if cve_id:
@@ -46,6 +55,23 @@ class TaskQueryService:
         if target_kernel:
             conditions.append("t.target_kernel = ?")
             parameters.append(target_kernel)
+        if build_exec_status:
+            conditions.append("la.build_exec_status = ?")
+            parameters.append(build_exec_status)
+        if target_state:
+            conditions.append("la.target_state = ?")
+            parameters.append(target_state)
+        if current_attempt is not None:
+            conditions.append("t.current_attempt = ?")
+            parameters.append(current_attempt)
+        normalized_created_from = self._normalize_datetime_filter(created_at_from)
+        if normalized_created_from is not None:
+            conditions.append("datetime(substr(replace(t.created_at, 'T', ' '), 1, 19)) >= datetime(?)")
+            parameters.append(normalized_created_from)
+        normalized_created_to = self._normalize_datetime_filter(created_at_to)
+        if normalized_created_to is not None:
+            conditions.append("datetime(substr(replace(t.created_at, 'T', ' '), 1, 19)) <= datetime(?)")
+            parameters.append(normalized_created_to)
         if failure_type:
             conditions.append(
                 """
@@ -57,46 +83,59 @@ class TaskQueryService:
                 """
             )
             parameters.append(failure_type)
+        if fixture_group:
+            normalized_fixture_group = fixture_group.strip().replace("-", "_")
+            fixture_clauses: list[str] = []
+            for item in fixture_catalog:
+                if item["fixture_group"] != normalized_fixture_group:
+                    continue
+                if item["target_kernel"]:
+                    fixture_clauses.append("(t.cve_id = ? AND t.target_kernel = ?)")
+                    parameters.extend([item["cve_id"], item["target_kernel"]])
+                    continue
+                fixture_clauses.append("(t.cve_id = ?)")
+                parameters.append(item["cve_id"])
+            if not fixture_clauses:
+                return {"items": [], "total": 0}
+            conditions.append(f"({' OR '.join(fixture_clauses)})")
 
         where_sql = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
         sql = f"""
+        WITH latest_attempt AS (
+            SELECT a.task_id, a.build_exec_status, a.target_state
+            FROM attempts a
+            JOIN (
+                SELECT task_id, MAX(attempt_no) AS max_attempt_no
+                FROM attempts
+                GROUP BY task_id
+            ) latest ON latest.task_id = a.task_id AND latest.max_attempt_no = a.attempt_no
+        ),
+        attempt_counts AS (
+            SELECT task_id, COUNT(*) AS attempts_count
+            FROM attempts
+            GROUP BY task_id
+        ),
+        latest_failure AS (
+            SELECT fr.task_ref, fr.failure_type, fr.summary
+            FROM failure_records fr
+            JOIN (
+                SELECT task_ref, MAX(id) AS max_id
+                FROM failure_records
+                GROUP BY task_ref
+            ) latest ON latest.task_ref = fr.task_ref AND latest.max_id = fr.id
+        )
         SELECT t.task_id, t.cve_id, t.target_kernel, t.target_kernel_source, t.status, t.current_attempt, t.max_attempts,
                t.workspace_dir, t.created_at, t.updated_at,
-               (
-                   SELECT fr.failure_type
-                   FROM failure_records fr
-                   WHERE fr.task_ref = t.task_id
-                   ORDER BY fr.id DESC
-                   LIMIT 1
-               ) AS latest_failure_type,
-               (
-                   SELECT fr.summary
-                   FROM failure_records fr
-                   WHERE fr.task_ref = t.task_id
-                   ORDER BY fr.id DESC
-                   LIMIT 1
-               ) AS latest_failure_summary,
-               (
-                   SELECT a.build_exec_status
-                   FROM attempts a
-                   WHERE a.task_id = t.id
-                   ORDER BY a.attempt_no DESC
-                   LIMIT 1
-               ) AS latest_build_exec_status,
-               (
-                   SELECT a.target_state
-                   FROM attempts a
-                   WHERE a.task_id = t.id
-                   ORDER BY a.attempt_no DESC
-                   LIMIT 1
-               ) AS latest_target_state,
-               (
-                   SELECT COUNT(*)
-                   FROM attempts a
-                   WHERE a.task_id = t.id
-               ) AS attempts_count
+               lf.failure_type AS latest_failure_type,
+               lf.summary AS latest_failure_summary,
+               la.build_exec_status AS latest_build_exec_status,
+               la.target_state AS latest_target_state,
+               COALESCE(ac.attempts_count, 0) AS attempts_count
         FROM tasks t
+        LEFT JOIN latest_failure lf ON lf.task_ref = t.task_id
+        LEFT JOIN latest_attempt la ON la.task_id = t.id
+        LEFT JOIN attempt_counts ac ON ac.task_id = t.id
         {where_sql}
         ORDER BY t.updated_at DESC
         LIMIT ?
@@ -106,26 +145,34 @@ class TaskQueryService:
         with connect_sqlite(self.context.runtime.database_path) as connection:
             rows = connection.execute(sql, tuple(parameters)).fetchall()
 
-        items = [
-            {
-                "task_id": row["task_id"],
-                "cve_id": row["cve_id"],
-                "target_kernel": row["target_kernel"],
-                "target_kernel_source": row["target_kernel_source"],
-                "status": row["status"],
-                "current_attempt": row["current_attempt"],
-                "max_attempts": row["max_attempts"],
-                "workspace_dir": row["workspace_dir"],
-                "created_at": row["created_at"],
-                "updated_at": row["updated_at"],
-                "latest_failure_type": row["latest_failure_type"],
-                "latest_failure_summary": row["latest_failure_summary"],
-                "latest_build_exec_status": row["latest_build_exec_status"],
-                "latest_target_state": row["latest_target_state"],
-                "attempts_count": row["attempts_count"],
-            }
-            for row in rows
-        ]
+        items = []
+        for row in rows:
+            fixture_binding = self._resolve_fixture_binding(
+                fixture_catalog,
+                cve_id=row["cve_id"],
+                target_kernel=row["target_kernel"],
+            )
+            items.append(
+                {
+                    "task_id": row["task_id"],
+                    "cve_id": row["cve_id"],
+                    "target_kernel": row["target_kernel"],
+                    "target_kernel_source": row["target_kernel_source"],
+                    "status": row["status"],
+                    "current_attempt": row["current_attempt"],
+                    "max_attempts": row["max_attempts"],
+                    "workspace_dir": row["workspace_dir"],
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
+                    "latest_failure_type": row["latest_failure_type"],
+                    "latest_failure_summary": row["latest_failure_summary"],
+                    "latest_build_exec_status": row["latest_build_exec_status"],
+                    "latest_target_state": row["latest_target_state"],
+                    "attempts_count": row["attempts_count"],
+                    "fixture_group": fixture_binding["fixture_group"] if fixture_binding else None,
+                    "fixture_id": fixture_binding["fixture_id"] if fixture_binding else None,
+                }
+            )
         return {"items": items, "total": len(items)}
 
     def create_task(
@@ -264,6 +311,7 @@ class TaskQueryService:
             "patch_bundle": self._load_json(task_dir / "input" / "patch_bundle.json"),
             "analysis": {
                 "semantic_card_path": self._path(task_dir / "analysis" / "semantic_card.json"),
+                "semantic_card_enrichment_path": self._path(task_dir / "analysis" / "trace" / "semantic_card_enrichment.json"),
                 "constraint_report_path": self._path(task_dir / "analysis" / "constraint_report.json"),
                 "context_bundle_path": self._path(task_dir / "analysis" / "context" / "context_bundle.json"),
                 "analysis_trace_path": self._path(task_dir / "analysis" / "trace" / "analysis_trace.json"),
@@ -349,6 +397,11 @@ class TaskQueryService:
     def _task_payload(self, task: TaskContext, latest_attempt=None) -> dict[str, Any]:
         """把任务对象转成接口返回结构"""
 
+        fixture_binding = self._resolve_fixture_binding(
+            self._load_fixture_catalog(),
+            cve_id=task.cve_id,
+            target_kernel=task.target_kernel,
+        )
         return {
             "task_id": task.task_id,
             "cve_id": task.cve_id,
@@ -365,6 +418,8 @@ class TaskQueryService:
             "latest_failure_type": latest_attempt.failure_type if latest_attempt is not None else None,
             "latest_build_exec_status": latest_attempt.build_exec_status if latest_attempt is not None else None,
             "latest_target_state": latest_attempt.target_state if latest_attempt is not None else None,
+            "fixture_group": fixture_binding["fixture_group"] if fixture_binding else None,
+            "fixture_id": fixture_binding["fixture_id"] if fixture_binding else None,
         }
 
     def _require_task(self, task_id: str) -> TaskContext:
@@ -451,3 +506,68 @@ class TaskQueryService:
         """把项目内路径转换成相对源码根目录表达"""
 
         return to_project_relative(self.context.project_root, value)
+
+    def _load_fixture_catalog(self) -> list[dict[str, str | None]]:
+        """从固定样例定义中加载任务到样例分组的映射"""
+
+        fixtures_dir = (self.context.project_root / "evaluations" / "fixtures").resolve()
+        if not fixtures_dir.exists():
+            return []
+
+        items: list[dict[str, str | None]] = []
+        for fixture_path in sorted(fixtures_dir.glob("*.json")):
+            try:
+                payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if not isinstance(payload, list):
+                continue
+            for raw_item in payload:
+                if not isinstance(raw_item, dict):
+                    continue
+                cve_id = raw_item.get("cve_id")
+                if not cve_id:
+                    continue
+                items.append(
+                    {
+                        "fixture_id": str(raw_item.get("fixture_id") or ""),
+                        "fixture_group": str(
+                            raw_item.get("fixture_group") or raw_item.get("sample_group") or raw_item.get("group") or "default"
+                        ).replace("-", "_"),
+                        "cve_id": str(cve_id),
+                        "target_kernel": str(raw_item.get("target_kernel")) if raw_item.get("target_kernel") else None,
+                    }
+                )
+        return items
+
+    def _resolve_fixture_binding(
+        self,
+        fixture_catalog: list[dict[str, str | None]],
+        *,
+        cve_id: str,
+        target_kernel: str | None,
+    ) -> dict[str, str | None] | None:
+        """按 CVE 和目标内核把任务映射回固定样例定义"""
+
+        exact_match: dict[str, str | None] | None = None
+        fallback_match: dict[str, str | None] | None = None
+        for item in fixture_catalog:
+            if item["cve_id"] != cve_id:
+                continue
+            if item["target_kernel"] and target_kernel and item["target_kernel"] == target_kernel:
+                exact_match = item
+                break
+            if fallback_match is None:
+                fallback_match = item
+        return exact_match or fallback_match
+
+    def _normalize_datetime_filter(self, value: str | None) -> str | None:
+        """把前端传入的时间筛选统一转成 SQLite 易比较的格式"""
+
+        if not value:
+            return None
+        try:
+            parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return parsed.strftime("%Y-%m-%d %H:%M:%S")
