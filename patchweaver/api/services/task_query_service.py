@@ -13,6 +13,7 @@ from patchweaver.harness.workspace_guard import WorkspaceGuard
 from patchweaver.models.task import TaskContext
 from patchweaver.observability.run_logger import RunLogger
 from patchweaver.runtime_inspector import resolve_task_binding
+from patchweaver.task_creation_policy import build_duplicate_scope, build_duplicate_task_notice
 from patchweaver.storage.sqlite import connect_sqlite
 from patchweaver.utils.path_policy import relativize_payload, to_project_relative
 
@@ -183,6 +184,7 @@ class TaskQueryService:
         profile: str | None = None,
         max_attempts: int | None = None,
         note: str | None = None,
+        force_new: bool = False,
     ) -> dict[str, Any]:
         """创建任务并准备工作区骨架"""
 
@@ -200,6 +202,44 @@ class TaskQueryService:
             configured_default_kernel=runtime.default_kernel,
             cli_target_kernel=target_kernel,
         )
+        duplicate_scope = build_duplicate_scope(
+            cve_id=cve_id,
+            target_kernel=target_kernel_value,
+            target_kernel_source=target_kernel_source,
+            profile_name=runtime.profile_name,
+            machine_profile=machine_profile,
+        )
+        if not force_new:
+            existing_task = task_repo.find_latest_equivalent_task(
+                cve_id=cve_id,
+                target_kernel=target_kernel_value,
+                profile_name=runtime.profile_name,
+                target_kernel_source=target_kernel_source,
+                machine_profile=machine_profile,
+            )
+            if existing_task is not None:
+                latest_attempt = self.context.attempt_repo.get_latest_attempt(existing_task.task_id)
+                duplicate_notice = build_duplicate_task_notice(existing_task, latest_attempt)
+                self.run_logger.info(
+                    "web.create_task_duplicate",
+                    duplicate_notice["message"],
+                    cve_id=cve_id,
+                    existing_task_id=existing_task.task_id,
+                    reason=duplicate_notice["reason"],
+                    duplicate_scope=duplicate_scope,
+                )
+                return {
+                    "status": "duplicate",
+                    "created": False,
+                    "message": duplicate_notice["message"],
+                    "decision": duplicate_notice["decision"],
+                    "reason": duplicate_notice["reason"],
+                    "recommended_action": duplicate_notice["recommended_action"],
+                    "next_steps": duplicate_notice["next_steps"],
+                    "duplicate_scope": duplicate_scope,
+                    "existing_task": self._task_payload(existing_task, latest_attempt=latest_attempt),
+                }
+
         task = TaskContext(
             task_id=final_task_id,
             cve_id=cve_id,
@@ -253,6 +293,8 @@ class TaskQueryService:
         )
 
         return {
+            "status": "ok",
+            "created": True,
             "task": self._task_payload(task),
             "next_attempt_dir": self._path(task_dir / "attempts" / "001"),
             "prepared_attempt_dir": self._path(task_dir / "attempts" / "001"),

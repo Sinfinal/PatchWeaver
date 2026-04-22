@@ -126,7 +126,7 @@ def test_semantic_enricher_merges_model_output(tmp_path: Path) -> None:
                 "root_cause": "legacy_parse_param 中的长度累加检查原先存在无符号下溢风险，修复通过显式累加 size、len 和常量边界避免越界。",
                 "must_keep_conditions": ["legacy_parse_param: size + len + 2 > PAGE_SIZE"],
                 "must_keep_side_effects": [
-                    "legacy_parse_param: 条件 \\`size + len + 2 > PAGE_SIZE\\` 命中时返回 \\`invalf(...)\\`",
+                    "legacy_parse_param: 当 size + len + 2 > PAGE_SIZE 时返回 invalf(fc, \"VFS: Legacy: Cumulative options too large\")",
                     "legacy_parse_param: 保持对累计挂载参数长度的拒绝路径",
                 ],
                 "critical_calls": ["invalf", "strchr"],
@@ -156,8 +156,10 @@ def test_semantic_enricher_merges_model_output(tmp_path: Path) -> None:
     assert merged_card.root_cause.startswith("legacy_parse_param 中的长度累加检查")
     assert merged_card.critical_calls == ["invalf", "strchr"]
     assert merged_card.touched_files == ["fs/fs_context.c"]
-    assert merged_card.must_keep_side_effects[0] == "legacy_parse_param: 条件 size + len + 2 > PAGE_SIZE 命中时返回 invalf(...)"
-    assert any("拒绝路径" in item for item in merged_card.must_keep_side_effects)
+    assert merged_card.must_keep_side_effects == [
+        "legacy_parse_param: 当 size + len + 2 > PAGE_SIZE 时返回 invalf(fc, \"VFS: Legacy: Cumulative options too large\")",
+        "legacy_parse_param: 保持对累计挂载参数长度的拒绝路径",
+    ]
     assert trace.interaction_record_path == "analysis/trace/semantic_card_model_interaction.json"
 
     interaction_path = tmp_path / "analysis" / "trace" / "semantic_card_model_interaction.json"
@@ -186,6 +188,34 @@ def test_semantic_enricher_merges_model_output(tmp_path: Path) -> None:
     assert len(jsonl_records) == 1
     assert jsonl_records[0]["task_id"] == "semantic-enrich-001"
     assert jsonl_records[0]["usage"]["total_tokens"] == 168
+
+
+def test_semantic_enricher_prefers_more_specific_side_effect_text() -> None:
+    enricher = SemanticCardEnricher(models_config=None)
+
+    merged = enricher._merge_side_effects(
+        ["legacy_parse_param: 条件 size + len + 2 > PAGE_SIZE 命中时返回 invalf(...)"],
+        ["legacy_parse_param: 当 size + len + 2 > PAGE_SIZE 时返回 invalf(fc, \"VFS: Legacy: Cumulative options too large\")"],
+    )
+
+    assert merged == [
+        "legacy_parse_param: 当 size + len + 2 > PAGE_SIZE 时返回 invalf(fc, \"VFS: Legacy: Cumulative options too large\")"
+    ]
+
+
+def test_semantic_side_effect_key_matches_equivalent_return_paths() -> None:
+    enricher = SemanticCardEnricher(models_config=None)
+
+    current_key = enricher._semantic_item_key(
+        "must_keep_side_effects",
+        "legacy_parse_param: 条件 size + len + 2 > PAGE_SIZE 命中时返回 invalf(...)",
+    )
+    enriched_key = enricher._semantic_item_key(
+        "must_keep_side_effects",
+        "legacy_parse_param: 当 size + len + 2 > PAGE_SIZE 时返回 invalf(fc, \"VFS: Legacy: Cumulative options too large\")",
+    )
+
+    assert current_key == enriched_key
 
 
 def test_semantic_enricher_skips_without_api_key(tmp_path: Path, monkeypatch) -> None:

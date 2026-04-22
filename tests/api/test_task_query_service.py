@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from types import SimpleNamespace
-from uuid import uuid4
 
 from patchweaver.api.services.task_query_service import TaskQueryService
 from patchweaver.models.attempt import AttemptRecord, FailureRecord
@@ -12,25 +11,7 @@ from patchweaver.storage.artifact_repo import ArtifactRepository
 from patchweaver.storage.attempt_repo import AttemptRepository
 from patchweaver.storage.task_repo import TaskRepository
 
-
-def _project_root() -> Path:
-    current = Path(__file__).resolve().parent
-    for candidate in (current, *current.parents):
-        if (candidate / "pyproject.toml").exists():
-            return candidate
-    raise RuntimeError(f"Unable to locate project root from {__file__}")
-
-
-def _case_dir(case_name: str) -> Path:
-    base_dir = _project_root() / "data" / "cache" / "pytest-tmp"
-    base_dir.mkdir(parents=True, exist_ok=True)
-    root = base_dir / f"{case_name}-{uuid4().hex[:8]}"
-    root.mkdir(parents=True, exist_ok=True)
-    return root
-
-
-def test_task_query_service_detail_contains_phase_outputs() -> None:
-    tmp_path = _case_dir("task-query-service")
+def test_task_query_service_detail_contains_phase_outputs(tmp_path: Path) -> None:
     project_root = tmp_path / "project"
     database_path = project_root / "data" / "patchweaver.db"
     workspace_root = project_root / "workspaces"
@@ -178,8 +159,7 @@ def test_task_query_service_detail_contains_phase_outputs() -> None:
     assert any(item["stage"] == "report" and item["status"] == "completed" for item in detail["timeline"])
 
 
-def test_task_query_service_create_task_uses_detected_binding_and_lazy_workspace(monkeypatch) -> None:
-    tmp_path = _case_dir("task-query-create")
+def test_task_query_service_create_task_uses_detected_binding_and_lazy_workspace(monkeypatch, tmp_path: Path) -> None:
     project_root = tmp_path / "project"
     data_dir = project_root / "data"
     workspace_root = project_root / "workspaces"
@@ -237,6 +217,8 @@ def test_task_query_service_create_task_uses_detected_binding_and_lazy_workspace
     request_path = project_root / payload["request_path"]
     request_payload = json.loads(request_path.read_text(encoding="utf-8"))
 
+    assert payload["status"] == "ok"
+    assert payload["created"] is True
     assert payload["task"]["target_kernel"] == "6.6.102-5.2.an23.x86_64"
     assert payload["task"]["target_kernel_source"] == "detected_machine"
     assert payload["task"]["machine_profile"]["machine_kernel"] == "6.6.102-5.2.an23.x86_64"
@@ -250,8 +232,7 @@ def test_task_query_service_create_task_uses_detected_binding_and_lazy_workspace
     assert not (task_workspace / "attempts" / "001").exists()
 
 
-def test_task_query_service_list_tasks_supports_extended_filters_and_fixture_group() -> None:
-    tmp_path = _case_dir("task-query-filters")
+def test_task_query_service_list_tasks_supports_extended_filters_and_fixture_group(tmp_path: Path) -> None:
     project_root = tmp_path / "project"
     data_dir = project_root / "data"
     workspace_root = project_root / "workspaces"
@@ -389,3 +370,168 @@ def test_task_query_service_list_tasks_supports_extended_filters_and_fixture_gro
     assert [item["task_id"] for item in created_after_items] == [task_two.task_id]
     assert detail["task"]["fixture_group"] == "challenge_dev"
     assert detail["task"]["fixture_id"] == "fixture-1086"
+
+
+def test_task_query_service_create_task_blocks_duplicate_already_fixed_task(monkeypatch, tmp_path: Path) -> None:
+    project_root = tmp_path / "project"
+    data_dir = project_root / "data"
+    workspace_root = project_root / "workspaces"
+    database_path = data_dir / "patchweaver.db"
+    project_root.mkdir(parents=True, exist_ok=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
+    workspace_root.mkdir(parents=True, exist_ok=True)
+
+    runtime = SimpleNamespace(
+        project_root=project_root,
+        workspace_root=workspace_root,
+        database_path=database_path,
+        profile_name="demo",
+        max_attempts=3,
+        default_kernel="fallback-kernel",
+    )
+    machine_profile = MachineProfile(
+        machine_system="Linux",
+        machine_kernel="6.6.102-5.2.an23.x86_64",
+        machine_arch="x86_64",
+        build_target_kernel="6.6.102-5.2.an23.x86_64",
+        build_target_kernel_source="machine_kernel",
+        selected_source_dir="/root/kernel-src-clean",
+    )
+    monkeypatch.setattr("patchweaver.api.services.task_query_service.resolve_runtime", lambda **_: runtime)
+    monkeypatch.setattr(
+        "patchweaver.api.services.task_query_service.resolve_task_binding",
+        lambda **_: ("6.6.102-5.2.an23.x86_64", "detected_machine", machine_profile),
+    )
+
+    task_repo = TaskRepository(database_path, project_root)
+    attempt_repo = AttemptRepository(database_path, project_root)
+    artifact_repo = ArtifactRepository(database_path, project_root)
+    existing_task = TaskContext(
+        task_id="TASK-DUP-001",
+        cve_id="CVE-2022-0185",
+        target_kernel="6.6.102-5.2.an23.x86_64",
+        target_kernel_source="detected_machine",
+        profile_name="demo",
+        status="target_state",
+        current_attempt=1,
+        max_attempts=3,
+        workspace_dir=workspace_root / "TASK-DUP-001",
+        machine_profile=machine_profile,
+    )
+    task_repo.create_task(existing_task)
+    attempt_repo.create_attempt(
+        AttemptRecord(
+            task_id=existing_task.task_id,
+            attempt_no=1,
+            attempt_id="TASK-DUP-001-A001",
+            status="target_state",
+            failure_type="target_already_patched",
+            build_exec_status="not_run",
+            target_state="target_already_patched",
+        )
+    )
+
+    context = SimpleNamespace(
+        project_root=project_root,
+        runtime=runtime,
+        build_config=SimpleNamespace(),
+        task_repo=task_repo,
+        attempt_repo=attempt_repo,
+        artifact_repo=artifact_repo,
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+    )
+
+    payload = TaskQueryService(context).create_task(
+        cve_id="CVE-2022-0185",
+        profile="demo",
+        max_attempts=3,
+    )
+
+    assert payload["status"] == "duplicate"
+    assert payload["created"] is False
+    assert payload["reason"] == "target_already_patched"
+    assert payload["decision"] == "skip_already_fixed"
+    assert payload["existing_task"]["task_id"] == existing_task.task_id
+    assert payload["existing_task"]["latest_target_state"] == "target_already_patched"
+    assert payload["duplicate_scope"]["selected_source_dir"] == "/root/kernel-src-clean"
+    assert task_repo.list_tasks(limit=10)[0].task_id == existing_task.task_id
+
+
+def test_task_query_service_create_task_allows_force_new_on_duplicate(monkeypatch, tmp_path: Path) -> None:
+    project_root = tmp_path / "project"
+    data_dir = project_root / "data"
+    workspace_root = project_root / "workspaces"
+    database_path = data_dir / "patchweaver.db"
+    project_root.mkdir(parents=True, exist_ok=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
+    workspace_root.mkdir(parents=True, exist_ok=True)
+
+    runtime = SimpleNamespace(
+        project_root=project_root,
+        workspace_root=workspace_root,
+        database_path=database_path,
+        profile_name="demo",
+        max_attempts=3,
+        default_kernel="fallback-kernel",
+    )
+    machine_profile = MachineProfile(
+        machine_system="Linux",
+        machine_kernel="6.6.102-5.2.an23.x86_64",
+        machine_arch="x86_64",
+        build_target_kernel="6.6.102-5.2.an23.x86_64",
+        build_target_kernel_source="machine_kernel",
+        selected_source_dir="/root/kernel-src-clean",
+    )
+    monkeypatch.setattr("patchweaver.api.services.task_query_service.resolve_runtime", lambda **_: runtime)
+    monkeypatch.setattr(
+        "patchweaver.api.services.task_query_service.resolve_task_binding",
+        lambda **_: ("6.6.102-5.2.an23.x86_64", "detected_machine", machine_profile),
+    )
+
+    task_repo = TaskRepository(database_path, project_root)
+    task_repo.create_task(
+        TaskContext(
+            task_id="TASK-DUP-002",
+            cve_id="CVE-2024-1086",
+            target_kernel="6.6.102-5.2.an23.x86_64",
+            target_kernel_source="detected_machine",
+            profile_name="demo",
+            status="failed",
+            current_attempt=1,
+            max_attempts=3,
+            workspace_dir=workspace_root / "TASK-DUP-002",
+            machine_profile=machine_profile,
+        )
+    )
+
+    context = SimpleNamespace(
+        project_root=project_root,
+        runtime=runtime,
+        build_config=SimpleNamespace(),
+        task_repo=task_repo,
+        attempt_repo=AttemptRepository(database_path, project_root),
+        artifact_repo=ArtifactRepository(database_path, project_root),
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+    )
+
+    payload = TaskQueryService(context).create_task(
+        cve_id="CVE-2024-1086",
+        profile="demo",
+        max_attempts=3,
+        force_new=True,
+    )
+
+    task_ids = [item.task_id for item in task_repo.list_tasks(limit=10)]
+
+    assert payload["status"] == "ok"
+    assert payload["created"] is True
+    assert payload["task"]["task_id"] != "TASK-DUP-002"
+    assert payload["task"]["task_id"] in task_ids

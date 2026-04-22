@@ -303,6 +303,14 @@ class AttemptRepository:
             )
         return records
 
+    def get_latest_attempt(self, task_id: str) -> AttemptRecord | None:
+        """读取任务最近一轮尝试记录"""
+
+        attempts = self.list_attempts(task_id)
+        if not attempts:
+            return None
+        return attempts[-1]
+
     def next_attempt_no(self, task_id: str) -> int:
         """返回任务下一轮尝试的编号"""
 

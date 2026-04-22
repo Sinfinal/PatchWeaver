@@ -47,6 +47,7 @@ from patchweaver.storage.artifact_repo import ArtifactRepository
 from patchweaver.storage.attempt_repo import AttemptRepository
 from patchweaver.storage.sqlite import initialize_sqlite_db
 from patchweaver.storage.task_repo import TaskRepository
+from patchweaver.task_creation_policy import build_duplicate_scope, build_duplicate_task_notice
 from patchweaver.utils.path_policy import relativize_payload, to_project_relative
 
 _RAW_TYPER_ECHO = typer.echo
@@ -740,6 +741,26 @@ def _task_payload(task: TaskContext, project_root: Path | None = None) -> dict[s
         "machine_profile": task.machine_profile.model_dump(mode="json") if task.machine_profile is not None else None,
         "created_at": task.created_at.isoformat(),
         "updated_at": task.updated_at.isoformat(),
+    }
+
+
+def _attempt_summary_payload(attempt: Any, project_root: Path | None = None) -> dict[str, Any] | None:
+    """整理最近一轮尝试的摘要字段"""
+
+    if attempt is None:
+        return None
+    return {
+        "attempt_id": attempt.attempt_id,
+        "attempt_no": attempt.attempt_no,
+        "status": attempt.status,
+        "failure_type": attempt.failure_type,
+        "build_exec_status": attempt.build_exec_status,
+        "target_state": attempt.target_state,
+        "build_log_path": _project_path(project_root, attempt.build_log_path),
+        "module_path": _project_path(project_root, attempt.module_path),
+        "rewritten_patch_path": _project_path(project_root, attempt.rewritten_patch_path),
+        "started_at": attempt.started_at.isoformat(),
+        "finished_at": attempt.finished_at.isoformat() if attempt.finished_at else None,
     }
 
 
@@ -1491,6 +1512,7 @@ def create(
     profile: Annotated[str | None, typer.Option("--profile", help="指定运行档位。")] = None,
     max_attempts: Annotated[int | None, typer.Option("--max-attempts", help="覆盖最大尝试次数。")] = None,
     task_id: Annotated[str | None, typer.Option("--task-id", help="手工指定任务编号。")] = None,
+    force_new: Annotated[bool, typer.Option("--force-new", help="忽略同配置任务查重，强制创建新的任务编号。")] = False,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
     """创建任务并初始化工作区骨架"""
@@ -1511,6 +1533,64 @@ def create(
         configured_default_kernel=runtime.default_kernel,
         cli_target_kernel=kernel,
     )
+    duplicate_scope = build_duplicate_scope(
+        cve_id=cve,
+        target_kernel=target_kernel,
+        target_kernel_source=target_kernel_source,
+        profile_name=runtime.profile_name,
+        machine_profile=machine_profile,
+    )
+    if not force_new:
+        existing_task = task_repo.find_latest_equivalent_task(
+            cve_id=cve,
+            target_kernel=target_kernel,
+            profile_name=runtime.profile_name,
+            target_kernel_source=target_kernel_source,
+            machine_profile=machine_profile,
+        )
+        if existing_task is not None:
+            latest_attempt = AttemptRepository(runtime.database_path, runtime.project_root).get_latest_attempt(existing_task.task_id)
+            duplicate_notice = build_duplicate_task_notice(existing_task, latest_attempt)
+            duplicate_payload = _project_payload(
+                runtime.project_root,
+                {
+                    "command": "create",
+                    "status": "duplicate",
+                    "created": False,
+                    "message": duplicate_notice["message"],
+                    "decision": duplicate_notice["decision"],
+                    "reason": duplicate_notice["reason"],
+                    "recommended_action": duplicate_notice["recommended_action"],
+                    "next_steps": duplicate_notice["next_steps"],
+                    "duplicate_scope": duplicate_scope,
+                    "existing_task": _task_payload(existing_task, runtime.project_root),
+                    "latest_attempt": _attempt_summary_payload(latest_attempt, runtime.project_root),
+                },
+            )
+            run_logger.info(
+                "cli.create_duplicate",
+                duplicate_notice["message"],
+                cve_id=cve,
+                existing_task_id=existing_task.task_id,
+                reason=duplicate_notice["reason"],
+                duplicate_scope=duplicate_scope,
+            )
+            if json_output:
+                _emit_json(duplicate_payload)
+                return
+
+            typer.echo("未创建新任务")
+            typer.echo(duplicate_notice["message"])
+            typer.echo(f"现有任务: {existing_task.task_id}")
+            typer.echo(f"目标内核: {existing_task.target_kernel}")
+            typer.echo(f"Profile: {existing_task.profile_name or 'default'}")
+            typer.echo(f"最近状态: {latest_attempt.status if latest_attempt is not None else existing_task.status}")
+            if latest_attempt is not None and latest_attempt.target_state:
+                typer.echo(f"最近目标态: {latest_attempt.target_state}")
+            typer.echo(f"建议: {duplicate_notice['recommended_action']}")
+            typer.echo("说明: 如已切换源码树且确需新建任务，可追加 `--force-new`")
+            return
+
     task = TaskContext(
         task_id=final_task_id,
         cve_id=cve,
@@ -1540,6 +1620,7 @@ def create(
         "next_attempt_dir": _project_path(runtime.project_root, task_dir / "attempts" / "001"),
         "prepared_attempt_dir": _project_path(runtime.project_root, task_dir / "attempts" / "001"),
         "status": "ok",
+        "created": True,
     }
     payload = _project_payload(runtime.project_root, payload)
     run_logger.info(

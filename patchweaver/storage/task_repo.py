@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from patchweaver.models.patch import PatchBundle
 from patchweaver.models.task import MachineProfile, TaskContext
@@ -71,6 +72,46 @@ class TaskRepository:
             connection.commit()
         return task
 
+    def find_latest_equivalent_task(
+        self,
+        *,
+        cve_id: str,
+        target_kernel: str,
+        profile_name: str | None,
+        target_kernel_source: str | None = None,
+        machine_profile: MachineProfile | None = None,
+        limit: int = 20,
+    ) -> TaskContext | None:
+        """按任务创建口径查找最近一条同类任务"""
+
+        with connect_sqlite(self.database_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT task_id, cve_id, target_kernel, target_kernel_source, profile_name, status, current_attempt, max_attempts, workspace_dir, environment_json, created_at, updated_at
+                FROM tasks
+                WHERE cve_id = ?
+                  AND target_kernel = ?
+                  AND COALESCE(profile_name, '') = COALESCE(?, '')
+                  AND COALESCE(target_kernel_source, '') = COALESCE(?, '')
+                ORDER BY datetime(substr(replace(updated_at, 'T', ' '), 1, 19)) DESC, task_id DESC
+                LIMIT ?
+                """,
+                (cve_id, target_kernel, profile_name, target_kernel_source, limit),
+            ).fetchall()
+
+        candidates = [self._task_from_row(row) for row in rows]
+        if not candidates:
+            return None
+
+        selected_source_dir = machine_profile.selected_source_dir if machine_profile is not None else None
+        if selected_source_dir:
+            for candidate in candidates:
+                candidate_source_dir = candidate.machine_profile.selected_source_dir if candidate.machine_profile is not None else None
+                if candidate_source_dir == selected_source_dir:
+                    return candidate
+
+        return candidates[0]
+
     def get_task(self, task_id: str) -> TaskContext | None:
         """按任务编号读取任务记录"""
 
@@ -86,21 +127,7 @@ class TaskRepository:
 
         if row is None:
             return None
-
-        return TaskContext(
-            task_id=row["task_id"],
-            cve_id=row["cve_id"],
-            target_kernel=row["target_kernel"],
-            target_kernel_source=row["target_kernel_source"],
-            profile_name=row["profile_name"],
-            status=row["status"],
-            current_attempt=row["current_attempt"],
-            max_attempts=row["max_attempts"],
-            workspace_dir=self._load_path(row["workspace_dir"]),
-            machine_profile=self._load_environment(row["environment_json"]),
-            created_at=datetime.fromisoformat(row["created_at"]),
-            updated_at=datetime.fromisoformat(row["updated_at"]),
-        )
+        return self._task_from_row(row)
 
     def list_tasks(self, limit: int = 20) -> list[TaskContext]:
         """读取最近创建的任务列表"""
@@ -117,20 +144,7 @@ class TaskRepository:
             ).fetchall()
 
         return [
-            TaskContext(
-                task_id=row["task_id"],
-                cve_id=row["cve_id"],
-                target_kernel=row["target_kernel"],
-                target_kernel_source=row["target_kernel_source"],
-                profile_name=row["profile_name"],
-                status=row["status"],
-                current_attempt=row["current_attempt"],
-                max_attempts=row["max_attempts"],
-                workspace_dir=self._load_path(row["workspace_dir"]),
-                machine_profile=self._load_environment(row["environment_json"]),
-                created_at=datetime.fromisoformat(row["created_at"]),
-                updated_at=datetime.fromisoformat(row["updated_at"]),
-            )
+            self._task_from_row(row)
             for row in rows
         ]
 
@@ -242,3 +256,21 @@ class TaskRepository:
         if not payload:
             return None
         return MachineProfile.model_validate_json(payload)
+
+    def _task_from_row(self, row: Any) -> TaskContext:
+        """把 sqlite 行对象恢复为任务上下文"""
+
+        return TaskContext(
+            task_id=row["task_id"],
+            cve_id=row["cve_id"],
+            target_kernel=row["target_kernel"],
+            target_kernel_source=row["target_kernel_source"],
+            profile_name=row["profile_name"],
+            status=row["status"],
+            current_attempt=row["current_attempt"],
+            max_attempts=row["max_attempts"],
+            workspace_dir=self._load_path(row["workspace_dir"]),
+            machine_profile=self._load_environment(row["environment_json"]),
+            created_at=datetime.fromisoformat(row["created_at"]),
+            updated_at=datetime.fromisoformat(row["updated_at"]),
+        )

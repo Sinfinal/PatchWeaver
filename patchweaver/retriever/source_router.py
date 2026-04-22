@@ -69,6 +69,23 @@ class RetrieverSourceRouter:
         bucket = f"{int(serial) // 1000}xxx"
         return f"https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/{year}/{bucket}/{cve_id}.json"
 
+    def cvelist_cdn_url(self, cve_id: str) -> str:
+        """返回 cvelistV5 的 CDN 镜像地址"""
+
+        year, serial = self._split_cve_id(cve_id)
+        bucket = f"{int(serial) // 1000}xxx"
+        return f"https://cdn.jsdelivr.net/gh/CVEProject/cvelistV5@main/cves/{year}/{bucket}/{cve_id}.json"
+
+    def cvelist_urls(self, cve_id: str) -> list[str]:
+        """返回 cvelistV5 的候选下载地址"""
+
+        # 线上观测里 jsDelivr 往往比 raw 更稳一点
+        # 这里先走 CDN，再回退到 GitHub raw
+        return [
+            self.cvelist_cdn_url(cve_id),
+            self.cvelist_url(cve_id),
+        ]
+
     def classify_reference(self, url: str) -> str:
         """根据 URL 判断来源类型"""
 
@@ -153,6 +170,15 @@ class RetrieverSourceRouter:
 
         candidates = self.patch_urls_for_commit(url)
         return candidates[0] if candidates else None
+
+    def commit_url(self, *, source_name: str, commit_id: str) -> str:
+        """按来源类型拼出标准 commit 地址"""
+
+        if source_name == "linux-stable":
+            return f"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?id={commit_id}"
+        if source_name == "upstream":
+            return f"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id={commit_id}"
+        raise ValueError(f"不支持的来源类型：{source_name}")
 
     def _kernel_org_patch_url(self, path: str, *, commit_id: str, source_name: str) -> str | None:
         """优先为 git.kernel.org 链接生成 patch 地址"""

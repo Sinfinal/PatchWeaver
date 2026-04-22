@@ -414,7 +414,7 @@ class SemanticCardEnricher:
             "touched_functions",
         ):
             current_values = list(getattr(draft_card, field_name))
-            merged_values = self._merge_unique(current_values, model_output.get(field_name) or [])
+            merged_values = self._merge_field_values(field_name, current_values, model_output.get(field_name) or [])
             if merged_values != current_values:
                 updates[field_name] = merged_values
                 merged_fields.append(field_name)
@@ -422,6 +422,13 @@ class SemanticCardEnricher:
         if not updates:
             return draft_card, merged_fields
         return draft_card.model_copy(update=updates), merged_fields
+
+    def _merge_field_values(self, field_name: str, current_values: list[str], new_values: list[str]) -> list[str]:
+        """按字段类型合并列表值"""
+
+        if field_name == "must_keep_side_effects":
+            return self._merge_side_effects(current_values, new_values)
+        return self._merge_unique(current_values, new_values)
 
     def _merge_unique(self, current_values: list[str], new_values: list[str]) -> list[str]:
         """按顺序合并列表，并清理重复项"""
@@ -435,6 +442,111 @@ class SemanticCardEnricher:
             seen.add(normalized)
             result.append(normalized)
         return result
+
+    def _merge_side_effects(self, current_values: list[str], new_values: list[str]) -> list[str]:
+        """合并关键副作用，并把同义项收成一条"""
+
+        result: list[str] = []
+        key_to_index: dict[str, int] = {}
+        for item in [*current_values, *new_values]:
+            normalized = self._clean_text(item)
+            if not normalized:
+                continue
+
+            semantic_key = self._semantic_item_key("must_keep_side_effects", normalized)
+            if semantic_key not in key_to_index:
+                key_to_index[semantic_key] = len(result)
+                result.append(normalized)
+                continue
+
+            current_index = key_to_index[semantic_key]
+            current_value = result[current_index]
+            preferred = self._prefer_side_effect(current_value, normalized)
+            result[current_index] = preferred
+        return result
+
+    def _semantic_item_key(self, field_name: str, value: str) -> str:
+        """给字段值生成一个可比较的语义键"""
+
+        if field_name == "must_keep_side_effects":
+            return self._side_effect_semantic_key(value)
+        return value
+
+    def _side_effect_semantic_key(self, value: str) -> str:
+        """把副作用描述压成一个稳定的比较键"""
+
+        text = value.lower()
+        func_name = ""
+        body = text
+        if ":" in text:
+            prefix, suffix = text.split(":", 1)
+            if re.fullmatch(r"[a-z_][\w]*", prefix.strip()):
+                func_name = prefix.strip()
+                body = suffix.strip()
+
+        condition = ""
+        condition_match = re.search(r"(?:条件|当)\s+(.+?)\s+(?:命中时|成立时|时)", body)
+        if condition_match is not None:
+            condition = self._normalize_signature_fragment(condition_match.group(1))
+
+        action = self._extract_side_effect_action(body)
+        if not action:
+            action = self._normalize_signature_fragment(body)
+
+        return "|".join(part for part in [func_name, condition, action] if part)
+
+    def _extract_side_effect_action(self, text: str) -> str:
+        """抽取副作用描述里的动作骨架"""
+
+        return_match = re.search(r"返回\s+([a-z_][\w]*)", text)
+        if return_match is not None:
+            return f"return:{return_match.group(1)}"
+
+        assign_match = re.search(r"设置\s+([a-z_][\w>\-\.]*)", text)
+        if assign_match is not None:
+            return f"assign:{assign_match.group(1)}"
+
+        call_match = re.search(r"调用\s+([a-z_][\w]*)", text)
+        if call_match is not None:
+            return f"call:{call_match.group(1)}"
+
+        reject_match = re.search(r"(拒绝路径|报错路径|错误路径)", text)
+        if reject_match is not None:
+            return reject_match.group(1)
+
+        return ""
+
+    def _normalize_signature_fragment(self, text: str) -> str:
+        """把条件或动作片段收成稳定格式"""
+
+        normalized = text.lower()
+        normalized = normalized.replace("`", "")
+        normalized = normalized.replace('"', "")
+        normalized = re.sub(r"\([^)]*\.\.\.[^)]*\)", "()", normalized)
+        normalized = re.sub(r"\(\s*\)", "()", normalized)
+        normalized = re.sub(r"\s+", "", normalized)
+        return normalized
+
+    def _prefer_side_effect(self, current_value: str, candidate_value: str) -> str:
+        """同义副作用命中时，优先保留更完整的一条"""
+
+        if self._side_effect_score(candidate_value) > self._side_effect_score(current_value):
+            return candidate_value
+        return current_value
+
+    def _side_effect_score(self, value: str) -> int:
+        """给副作用描述做一个粗粒度信息量评分"""
+
+        score = len(value)
+        if "..." in value:
+            score -= 80
+        if re.search(r'\b[a-zA-Z_][\w]*\([^)]*,', value):
+            score += 30
+        if '"' in value:
+            score += 20
+        if "当 " in value:
+            score += 5
+        return score
 
     def _clean_list(self, value: Any) -> list[str]:
         """把模型输出规整成字符串列表"""

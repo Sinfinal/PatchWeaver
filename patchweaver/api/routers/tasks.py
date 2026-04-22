@@ -55,6 +55,7 @@ def create_task(request: CreateTaskRequest, context: ApiContext = Depends(get_ap
             profile=request.profile,
             max_attempts=request.max_attempts,
             note=request.note,
+            force_new=request.force_new,
         )
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

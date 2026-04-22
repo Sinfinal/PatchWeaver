@@ -120,6 +120,55 @@ def test_fetch_text_uses_stale_cache_after_network_failure(monkeypatch, tmp_path
     assert trace["events"][-1]["outcome"] == "stale_cache_fallback"
 
 
+def test_fetch_text_shares_cache_across_candidate_urls(monkeypatch, tmp_path: Path) -> None:
+    resolver = RepairChainResolver(cache_dir=tmp_path / "cache")
+    resolver._start_fetch_trace("CVE-TEST-0004")
+    calls: list[str] = []
+
+    class DummyResponse:
+        """模拟一个最小可读的 HTTP 响应"""
+
+        def __init__(self, body: bytes) -> None:
+            self.headers = SimpleNamespace(get_content_charset=lambda: "utf-8")
+            self.body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> bool:
+            return False
+
+        def read(self) -> bytes:
+            return self.body
+
+    def fake_urlopen(request, timeout: int):  # noqa: ANN001
+        calls.append(request.full_url)
+        return DummyResponse(b"shared-body")
+
+    monkeypatch.setattr("patchweaver.retriever.repair_chain.urlopen", fake_urlopen)
+
+    first = resolver._fetch_text(
+        "https://cdn.jsdelivr.net/demo.json",
+        source_name="cvelistV5",
+        stage="metadata",
+        cache_key="cvelistV5:CVE-TEST-0004",
+    )
+    second = resolver._fetch_text(
+        "https://raw.githubusercontent.com/demo.json",
+        source_name="cvelistV5",
+        stage="metadata",
+        cache_key="cvelistV5:CVE-TEST-0004",
+    )
+
+    assert first == "shared-body"
+    assert second == "shared-body"
+    assert calls == ["https://cdn.jsdelivr.net/demo.json"]
+    trace = resolver.latest_fetch_trace()
+    assert trace is not None
+    assert trace["summary"]["success_count"] == 1
+    assert trace["summary"]["cache_hit_count"] == 1
+
+
 def test_fetch_patch_text_falls_back_to_next_candidate(monkeypatch) -> None:
     resolver = RepairChainResolver()
 
@@ -142,6 +191,34 @@ def test_fetch_patch_text_falls_back_to_next_candidate(monkeypatch) -> None:
 
     assert payload == "patch-body"
     assert selected_ref["selected_patch_url"] == "https://github.com/gregkh/linux/commit/1234567.patch"
+
+
+def test_derive_stable_probe_refs_from_upstream_commit() -> None:
+    resolver = RepairChainResolver()
+
+    stable_refs = resolver._derive_stable_probe_refs(
+        stable_refs=[],
+        upstream_refs=[
+            {
+                "source_name": "upstream",
+                "commit_id": "722d94847de29310e8aa03fcbdb41fc92c521756",
+                "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=722d94847de29310e8aa03fcbdb41fc92c521756",
+            }
+        ],
+    )
+
+    assert stable_refs == [
+        {
+            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?id=722d94847de29310e8aa03fcbdb41fc92c521756",
+            "source_name": "linux-stable",
+            "commit_id": "722d94847de29310e8aa03fcbdb41fc92c521756",
+            "patch_url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/patch/?id=722d94847de29310e8aa03fcbdb41fc92c521756",
+            "patch_urls": [
+                "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/patch/?id=722d94847de29310e8aa03fcbdb41fc92c521756",
+                "https://github.com/gregkh/linux/commit/722d94847de29310e8aa03fcbdb41fc92c521756.patch",
+            ],
+        }
+    ]
 
 
 def test_fetch_patch_reference_falls_back_from_stable_to_upstream(monkeypatch) -> None:
