@@ -237,7 +237,78 @@ def test_local_apply_precheck_marks_target_already_patched() -> None:
 
     assert result.ok is False
     assert result.failure_type == "target_already_patched"
+    assert result.build_exec_status == "not_run"
+    assert result.target_state == "target_already_patched"
     assert "已包含该补丁" in result.summary
+
+
+def test_local_build_short_circuits_with_target_state_when_patch_already_applied() -> None:
+    tmp_path = _case_dir("build-local-already-patched")
+    source_dir = tmp_path / "kernel"
+    _write_kernel_tree(source_dir)
+    patch_path = tmp_path / "rewritten.patch"
+    patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/foo.c b/foo.c",
+                "--- a/foo.c",
+                "+++ b/foo.c",
+                "@@ -1 +1 @@",
+                "-int value = 1;",
+                "+int value = 2;",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (source_dir / "foo.c").write_text("int value = 2;\n", encoding="utf-8")
+    build_log_path = tmp_path / "attempts" / "001" / "logs" / "build.log"
+
+    build_config = BuildConfig(
+        build_backend="local",
+        kernel_src_dir=str(source_dir),
+        kernel_devel_dir=str(source_dir),
+        vmlinux_path=str(source_dir / "vmlinux"),
+        kpatch_build_cmd="git",
+    )
+    orchestrator = BuildOrchestrator(build_config)
+    task = TaskContext(
+        task_id="TASK-TEST-ALREADY-BUILD",
+        cve_id="CVE-2099-0101",
+        target_kernel="6.6.102-5.2.an23.x86_64",
+        workspace_dir=tmp_path / "workspace",
+    )
+    plan = RewritePlan(
+        task_id=task.task_id,
+        plan_id=f"{task.task_id}-plan-001",
+        candidate_ids=["cand-001"],
+        selected_recipe="direct_apply_patch",
+        selected_primitives=["direct_apply"],
+        target_files=["foo.c"],
+        selection_reason="unit test",
+    )
+
+    attempt, build_log, precheck, summary = orchestrator.execute_build(
+        task=task,
+        attempt_no=1,
+        plan=plan,
+        rewritten_patch_path=patch_path,
+        build_log_path=build_log_path,
+    )
+
+    assert precheck.ok is False
+    assert precheck.failure_type == "target_already_patched"
+    assert precheck.build_exec_status == "not_run"
+    assert precheck.target_state == "target_already_patched"
+    assert attempt.status == "target_state"
+    assert attempt.failure_type == "target_already_patched"
+    assert attempt.build_exec_status == "not_run"
+    assert attempt.target_state == "target_already_patched"
+    assert summary.status == "not_run"
+    assert summary.build_exec_status == "not_run"
+    assert summary.target_state == "target_already_patched"
+    assert "本机构建未执行" in summary.summary
+    assert "目标态结论: target_already_patched" in build_log
 
 
 def test_diff_editor_apply_precheck_marks_target_already_patched() -> None:
@@ -280,6 +351,8 @@ def test_diff_editor_apply_precheck_marks_target_already_patched() -> None:
 
     assert result.status == "failed"
     assert result.failure_type == "target_already_patched"
+    assert result.build_exec_status == "not_run"
+    assert result.target_state == "target_already_patched"
     assert "已包含该补丁" in result.summary
 
 
@@ -386,8 +459,10 @@ def test_report_builder_emits_next_priority_for_already_patched() -> None:
                 task_id="TASK-TEST-REPORT-001",
                 attempt_no=1,
                 attempt_id="TASK-TEST-REPORT-001-A001",
-                status="failed",
+                status="target_state",
                 failure_type="target_already_patched",
+                build_exec_status="not_run",
+                target_state="target_already_patched",
             )
         ],
         artifacts=[],
@@ -397,6 +472,9 @@ def test_report_builder_emits_next_priority_for_already_patched() -> None:
 
     assert report.next_priority_layer == "target_state"
     assert report.next_action is not None
+    assert report.build_summary["latest_build_exec_status"] == "not_run"
+    assert report.build_summary["latest_target_state"] == "target_already_patched"
+    assert any("真实构建未执行" in item for item in report.known_limits)
 
 
 def test_validator_outputs_structured_pending_validation_when_module_missing() -> None:

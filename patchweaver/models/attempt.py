@@ -35,6 +35,8 @@ class AttemptRecord(BaseModel):
     candidate_id: str | None = None
     status: str
     failure_type: str | None = None
+    build_exec_status: str | None = None
+    target_state: str | None = None
     build_log_path: Path | None = None
     module_path: Path | None = None
     rewritten_patch_path: Path | None = None
@@ -66,6 +68,8 @@ class BuildPrecheck(BaseModel):
     source_dir: str | None = None
     command: str | None = None
     failure_type: str | None = None
+    build_exec_status: str | None = None
+    target_state: str | None = None
     stdout_excerpt: str = ""
     stderr_excerpt: str = ""
     checked_at: datetime = Field(default_factory=_utc_now)
@@ -85,5 +89,7 @@ class BuildSummary(BaseModel):
     build_log_path: Path | None = None
     module_path: Path | None = None
     failure_type: str | None = None
+    build_exec_status: str | None = None
+    target_state: str | None = None
     exit_code: int | None = None
     created_at: datetime = Field(default_factory=_utc_now)

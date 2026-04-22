@@ -94,6 +94,13 @@ class Validator:
 
         if self.verify_config is None:
             notes.append("缺少 verify 配置，验证阶段仅保留结构化结果。")
+        elif attempt.target_state == "target_already_patched":
+            notes.append("本轮目标源码已包含修复，真实构建未执行，动态验证阶段不执行。")
+            load_result = ValidationItem(status="skipped", ok=False, detail="目标源码已包含修复，真实构建未执行，未执行加载测试。")
+            unload_result = ValidationItem(status="skipped", ok=False, detail="目标源码已包含修复，真实构建未执行，未执行卸载测试。")
+            smoke_result = ValidationItem(status="skipped", ok=False, detail="目标源码已包含修复，真实构建未执行，未执行冒烟测试。")
+            selftest_result = ValidationItem(status="skipped", ok=False, detail="目标源码已包含修复，真实构建未执行，未执行自检。")
+            regression_result = ValidationItem(status="skipped", ok=False, detail="目标源码已包含修复，真实构建未执行，未执行回归验证。")
         elif not build_succeeded or attempt.module_path is None:
             notes.append("本轮未构建出模块产物，动态验证阶段维持待执行状态。")
         else:

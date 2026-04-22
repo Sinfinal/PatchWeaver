@@ -45,13 +45,35 @@ class OverviewService:
             total_tasks = self._count(connection, "SELECT COUNT(*) FROM tasks")
             failed_tasks = self._count(connection, "SELECT COUNT(*) FROM tasks WHERE status = 'failed'")
             success_tasks = self._count(connection, "SELECT COUNT(*) FROM tasks WHERE status IN ('built', 'reported', 'succeeded')")
+            target_state_tasks = self._count(connection, "SELECT COUNT(*) FROM tasks WHERE status = 'target_state'")
             running_tasks = self._count(
                 connection,
                 "SELECT COUNT(*) FROM tasks WHERE status IN ('created', 'analyzed', 'running', 'building', 'validating')",
             )
             recent_tasks = connection.execute(
                 """
-                SELECT task_id, cve_id, target_kernel, status, current_attempt, max_attempts, updated_at
+                SELECT task_id, cve_id, target_kernel, status, current_attempt, max_attempts, updated_at,
+                       (
+                           SELECT a.failure_type
+                           FROM attempts a
+                           WHERE a.task_id = tasks.id
+                           ORDER BY a.attempt_no DESC
+                           LIMIT 1
+                       ) AS latest_failure_type,
+                       (
+                           SELECT a.build_exec_status
+                           FROM attempts a
+                           WHERE a.task_id = tasks.id
+                           ORDER BY a.attempt_no DESC
+                           LIMIT 1
+                       ) AS latest_build_exec_status,
+                       (
+                           SELECT a.target_state
+                           FROM attempts a
+                           WHERE a.task_id = tasks.id
+                           ORDER BY a.attempt_no DESC
+                           LIMIT 1
+                       ) AS latest_target_state
                 FROM tasks
                 ORDER BY updated_at DESC
                 LIMIT 6
@@ -95,6 +117,7 @@ class OverviewService:
                 "running_tasks": running_tasks,
                 "success_tasks": success_tasks,
                 "failed_tasks": failed_tasks,
+                "target_state_tasks": target_state_tasks,
                 "success_rate": success_rate,
                 "build_backend": build_env["backend"],
                 "build_ready": bool(build_env.get("builder_ok") and build_env.get("selected_source_ok") and build_env.get("config_ok")),
@@ -114,6 +137,9 @@ class OverviewService:
                     "status": row["status"],
                     "current_attempt": row["current_attempt"],
                     "max_attempts": row["max_attempts"],
+                    "latest_failure_type": row["latest_failure_type"],
+                    "latest_build_exec_status": row["latest_build_exec_status"],
+                    "latest_target_state": row["latest_target_state"],
                     "updated_at": row["updated_at"],
                 }
                 for row in recent_tasks

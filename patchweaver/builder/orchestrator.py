@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import shlex
+import platform
 import subprocess
+from collections.abc import Iterable
 from datetime import datetime, timezone
 from pathlib import Path
 from shutil import which
@@ -12,6 +14,7 @@ from typing import Any
 from patchweaver.models.attempt import AttemptRecord, BuildPrecheck, BuildSummary
 from patchweaver.models.rewrite import RewritePlan
 from patchweaver.models.task import TaskContext
+from unidiff import PatchSet
 
 
 class BuildOrchestrator:
@@ -29,7 +32,7 @@ class BuildOrchestrator:
             task_id=task_id,
             attempt_no=attempt_no,
             attempt_id=f"{task_id}-A{attempt_no:03d}",
-            status="created",
+            status="running",
         )
 
     def probe_environment(self) -> dict[str, Any]:
@@ -92,21 +95,21 @@ class BuildOrchestrator:
         ok = result.returncode == 0
         failure_type = None
         summary = "apply 级预检查通过。"
-        if not ok:
+        if ok and self._looks_like_skipped_patch_output(stdout_text=stdout_text, stderr_text=stderr_text):
+            if self._patch_looks_already_applied_locally(patch_path=rewritten_patch_path, source_dir=selected_source_dir):
+                ok = False
+                failure_type = "target_already_patched"
+                summary = self._summarize_precheck_failure(
+                    stdout_text=stdout_text,
+                    stderr_text=stderr_text,
+                    failure_type=failure_type,
+                )
+        elif not ok:
             failure_type = self._classify_apply_precheck_failure(stdout_text=stdout_text, stderr_text=stderr_text)
             if failure_type == "patch_apply_failed":
                 # 这里再补一次 reverse check
                 # 目的是把“补丁打不上”与“目标内核其实已经修过”区分开
-                reverse_result = subprocess.run(
-                    [git_path, "apply", "--reverse", "--check", "--verbose", str(rewritten_patch_path.resolve())],
-                    cwd=selected_source_dir,
-                    capture_output=True,
-                    text=True,
-                    encoding="utf-8",
-                    errors="replace",
-                    check=False,
-                )
-                if reverse_result.returncode == 0:
+                if self._patch_looks_already_applied_locally(patch_path=rewritten_patch_path, source_dir=selected_source_dir):
                     failure_type = "target_already_patched"
             summary = self._summarize_precheck_failure(
                 stdout_text=stdout_text,
@@ -124,6 +127,8 @@ class BuildOrchestrator:
             source_dir=str(selected_source_dir),
             command=" ".join(shlex.quote(part) for part in command),
             failure_type=failure_type,
+            build_exec_status="not_run" if not ok else None,
+            target_state="target_already_patched" if failure_type == "target_already_patched" else None,
             stdout_excerpt=stdout_text[:2000],
             stderr_excerpt=stderr_text[:2000],
         )
@@ -163,6 +168,7 @@ class BuildOrchestrator:
             "builder_cmd": self.build_config.kpatch_build_cmd,
             "builder_path": builder_path,
             "builder_ok": builder_path is not None,
+            "running_kernel": platform.release(),
             "kernel_src_dir": self.build_config.kernel_src_dir,
             "kernel_src_ok": self._local_kernel_tree_ok(Path(self.build_config.kernel_src_dir)),
             "kernel_devel_dir": self.build_config.kernel_devel_dir,
@@ -227,6 +233,7 @@ class BuildOrchestrator:
                 source_dir=probe.get("selected_source_dir"),
                 build_log_path=build_log_path,
                 failure_type=failure_type,
+                build_exec_status="not_run",
             )
             build_log = "\n".join(lines) + "\n"
             build_log_path.write_text(build_log, encoding="utf-8")
@@ -236,6 +243,7 @@ class BuildOrchestrator:
                         "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
                         "status": "failed",
                         "failure_type": failure_type,
+                        "build_exec_status": "not_run",
                         "build_log_path": build_log_path,
                         "module_path": None,
                         "rewritten_patch_path": rewritten_patch_path,
@@ -257,7 +265,13 @@ class BuildOrchestrator:
 
         if not precheck.ok:
             failure_type = precheck.failure_type or "patch_apply_failed"
-            summary_text = "apply 级预检查未通过，已跳过本机构建。"
+            target_state = "target_already_patched" if failure_type == "target_already_patched" else None
+            attempt_status = "target_state" if target_state else "failed"
+            summary_text = (
+                "目标源码已包含该补丁，已识别为目标态已修复，本机构建未执行。"
+                if target_state
+                else "apply 级预检查未通过，已跳过本机构建。"
+            )
             # apply 级预检查没过时，不继续碰 kpatch-build
             # 这样失败原因会更集中，不会被后续一串派生报错淹没
             lines.append(summary_text)
@@ -266,12 +280,14 @@ class BuildOrchestrator:
                 attempt_id=record.attempt_id,
                 backend="local",
                 builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
-                status="precheck_failed",
+                status="not_run",
                 summary=summary_text,
                 rewritten_patch_path=rewritten_patch_path,
                 source_dir=precheck.source_dir,
                 build_log_path=build_log_path,
                 failure_type=failure_type,
+                build_exec_status="not_run",
+                target_state=target_state,
             )
             build_log = "\n".join(lines) + "\n"
             build_log_path.write_text(build_log, encoding="utf-8")
@@ -279,8 +295,10 @@ class BuildOrchestrator:
                 record.model_copy(
                     update={
                         "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
-                        "status": "failed",
+                        "status": attempt_status,
                         "failure_type": failure_type,
+                        "build_exec_status": "not_run",
+                        "target_state": target_state,
                         "build_log_path": build_log_path,
                         "module_path": None,
                         "rewritten_patch_path": rewritten_patch_path,
@@ -388,6 +406,7 @@ class BuildOrchestrator:
             build_log_path=build_log_path,
             module_path=module_path,
             failure_type=final_failure_type,
+            build_exec_status="executed",
             exit_code=exit_code,
         )
         return (
@@ -396,6 +415,7 @@ class BuildOrchestrator:
                     "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
                     "status": status,
                     "failure_type": final_failure_type,
+                    "build_exec_status": "executed",
                     "build_log_path": build_log_path,
                     "module_path": module_path,
                     "rewritten_patch_path": rewritten_patch_path,
@@ -429,6 +449,8 @@ class BuildOrchestrator:
             patch_path=rewritten_patch_path,
             source_dir=source_dir,
             failure_type=failure_type,
+            build_exec_status="not_run",
+            target_state="target_already_patched" if failure_type == "target_already_patched" else None,
         )
 
     def _format_precheck_lines(self, precheck: BuildPrecheck) -> list[str]:
@@ -447,6 +469,10 @@ class BuildOrchestrator:
             lines.extend(["[precheck stdout]", precheck.stdout_excerpt])
         if precheck.stderr_excerpt:
             lines.extend(["[precheck stderr]", precheck.stderr_excerpt])
+        if precheck.build_exec_status:
+            lines.append(f"构建执行状态: {precheck.build_exec_status}")
+        if precheck.target_state:
+            lines.append(f"目标态结论: {precheck.target_state}")
         return lines
 
     def _select_local_source_dir(self) -> tuple[Path | None, str | None]:
@@ -525,6 +551,101 @@ class BuildOrchestrator:
         if "fatal:" in combined and "not a git repository" in combined:
             return "patch_apply_failed"
         return "patch_apply_failed"
+
+    def _looks_like_skipped_patch_output(self, *, stdout_text: str, stderr_text: str) -> bool:
+        """识别 git apply 输出中的 skipped patch 信号。"""
+
+        combined = f"{stdout_text}\n{stderr_text}".lower()
+        return "skipped patch" in combined
+
+    def _patch_looks_already_applied_locally(self, *, patch_path: Path, source_dir: Path) -> bool:
+        """根据目标文件内容确认补丁是否已经体现在源码树中。"""
+
+        return self._patch_looks_already_applied(
+            patch_path=patch_path,
+            reader=lambda relative_path: self._read_local_text(source_dir / relative_path),
+        )
+
+    def _patch_looks_already_applied(self, *, patch_path: Path, reader) -> bool:
+        """检查补丁新增行是否已存在且旧行是否已消失。"""
+
+        with patch_path.open("r", encoding="utf-8", errors="replace") as handle:
+            patch_set = PatchSet(handle)
+
+        inspected = False
+        for patched_file in patch_set:
+            relative_path = getattr(patched_file, "path", None)
+            if not relative_path:
+                continue
+            target_text = reader(relative_path)
+            if target_text is None:
+                return False
+            target_lines = self._normalize_lines(target_text.splitlines())
+            file_inspected = False
+            for hunk in patched_file:
+                for added_block, removed_block in self._collect_change_blocks(hunk):
+                    if added_block and not self._contains_block(target_lines, added_block):
+                        return False
+                    if removed_block and self._contains_block(target_lines, removed_block):
+                        return False
+                    file_inspected = True
+            inspected = inspected or file_inspected
+
+        return inspected
+
+    def _collect_change_blocks(self, hunk: object) -> list[tuple[list[str], list[str]]]:
+        """按上下文行切分 hunk 内连续变更块。"""
+
+        blocks: list[tuple[list[str], list[str]]] = []
+        added_lines: list[str] = []
+        removed_lines: list[str] = []
+
+        def flush() -> None:
+            nonlocal added_lines, removed_lines
+            normalized_added = self._normalize_lines(added_lines)
+            normalized_removed = self._normalize_lines(removed_lines)
+            if normalized_added or normalized_removed:
+                blocks.append((normalized_added, normalized_removed))
+            added_lines = []
+            removed_lines = []
+
+        for line in hunk:
+            value = line.value.rstrip("\n")
+            if line.line_type == "+":
+                added_lines.append(value)
+            elif line.line_type == "-":
+                removed_lines.append(value)
+            else:
+                flush()
+        flush()
+        return blocks
+
+    def _normalize_lines(self, lines: Iterable[str]) -> list[str]:
+        """规整行内容，减少缩进差异对匹配的影响。"""
+
+        normalized: list[str] = []
+        for line in lines:
+            compact = " ".join(line.strip().split())
+            if compact:
+                normalized.append(compact)
+        return normalized
+
+    def _contains_block(self, target_lines: list[str], block_lines: list[str]) -> bool:
+        """判断目标文件中是否存在按顺序连续出现的代码块。"""
+
+        if not block_lines or len(target_lines) < len(block_lines):
+            return False
+        for index in range(len(target_lines) - len(block_lines) + 1):
+            if target_lines[index : index + len(block_lines)] == block_lines:
+                return True
+        return False
+
+    def _read_local_text(self, path: Path) -> str | None:
+        """读取本地源码文件。"""
+
+        if not path.exists():
+            return None
+        return path.read_text(encoding="utf-8", errors="replace")
 
     def _classify_command_failure(self, *, stdout_text: str, stderr_text: str) -> str:
         """根据构建命令的直接输出给出一层快速归因"""

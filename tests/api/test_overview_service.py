@@ -102,8 +102,17 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
         current_attempt=1,
         workspace_dir=workspace_root / "TASK-OVERVIEW-002",
     )
+    target_state_task = TaskContext(
+        task_id="TASK-OVERVIEW-003",
+        cve_id="CVE-2024-1086",
+        target_kernel="6.6.102-5.2.an23.x86_64",
+        status="target_state",
+        current_attempt=1,
+        workspace_dir=workspace_root / "TASK-OVERVIEW-003",
+    )
     task_repo.create_task(failed_task)
     task_repo.create_task(built_task)
+    task_repo.create_task(target_state_task)
 
     failed_attempt = AttemptRecord(
         task_id=failed_task.task_id,
@@ -118,11 +127,23 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
         attempt_no=1,
         attempt_id=f"{built_task.task_id}-A001",
         status="built",
+        build_exec_status="executed",
         build_log_path=built_task.workspace_dir / "attempts" / "001" / "logs" / "build.log",
         module_path=built_task.workspace_dir / "attempts" / "001" / "artifacts" / "demo.ko",
     )
+    target_state_attempt = AttemptRecord(
+        task_id=target_state_task.task_id,
+        attempt_no=1,
+        attempt_id=f"{target_state_task.task_id}-A001",
+        status="target_state",
+        failure_type="target_already_patched",
+        build_exec_status="not_run",
+        target_state="target_already_patched",
+        build_log_path=target_state_task.workspace_dir / "attempts" / "001" / "logs" / "build.log",
+    )
     attempt_repo.create_attempt(failed_attempt)
     attempt_repo.create_attempt(built_attempt)
+    attempt_repo.create_attempt(target_state_attempt)
     attempt_repo.save_failure_record(
         FailureRecord(
             task_id=failed_task.task_id,
@@ -209,14 +230,16 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
 
     payload = service.get_overview()
 
-    assert payload["metrics"]["total_tasks"] == 2
+    assert payload["metrics"]["total_tasks"] == 3
     assert payload["metrics"]["failed_tasks"] == 1
     assert payload["metrics"]["success_tasks"] == 1
+    assert payload["metrics"]["target_state_tasks"] == 1
     assert payload["metrics"]["validation_passed"] == 1
     assert payload["metrics"]["latest_evaluation_summary"] == "data/evaluations/challenge_dev/summary.json"
     assert payload["metrics"]["selected_model"] == "qwen-plus-2025-07-28"
     assert [item["fixture_name"] for item in payload["evaluation_summaries"]] == ["challenge_dev", "holdout"]
     assert payload["evaluation_summaries"][0]["summary_json_path"] == "data/evaluations/challenge_dev/summary.json"
     assert payload["failure_distribution"][0]["failure_type"] == "missing_fentry"
+    assert any(item["latest_target_state"] == "target_already_patched" for item in payload["recent_tasks"])
     assert payload["release"]["selected_models"]["topology"] == "single_primary_with_optional_helpers"
     assert payload["release"]["selected_models"]["helper_models"]["code_assistant"] == "qwen-coder-turbo-0919"

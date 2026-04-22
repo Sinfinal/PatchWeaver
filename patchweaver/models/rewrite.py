@@ -77,4 +77,6 @@ class ApplyPrecheckReport(BaseModel):
     stdout: str | None = None
     stderr: str | None = None
     failure_type: str | None = None
+    build_exec_status: str | None = None
+    target_state: str | None = None
 

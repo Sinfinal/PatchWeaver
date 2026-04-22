@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS attempts (
     candidate_id TEXT,
     status TEXT NOT NULL,
     failure_type TEXT,
+    build_exec_status TEXT,
+    target_state TEXT,
     patch_path TEXT,
     build_log_path TEXT,
     module_path TEXT,
@@ -209,6 +211,8 @@ def initialize_sqlite_db(database_path: Path) -> Path:
         _ensure_column(connection, "attempts", "attempt_id", "TEXT")
         _ensure_column(connection, "attempts", "rewritten_patch_path", "TEXT")
         _ensure_column(connection, "attempts", "summary_json", "TEXT")
+        _ensure_column(connection, "attempts", "build_exec_status", "TEXT")
+        _ensure_column(connection, "attempts", "target_state", "TEXT")
         _ensure_column(connection, "validation_records", "load_result_json", "TEXT")
         _ensure_column(connection, "validation_records", "unload_result_json", "TEXT")
         _ensure_column(connection, "validation_records", "smoke_result_json", "TEXT")
