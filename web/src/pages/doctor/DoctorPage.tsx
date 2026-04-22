@@ -5,6 +5,7 @@ import { SectionCard } from "../../components/layout/SectionCard";
 import { StatusBadge } from "../../components/status/StatusBadge";
 import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
 import { fetchDoctor, runDoctor } from "../../services/doctor";
+import { formatTime } from "../../utils/format";
 
 const runtimeLabelMap: Record<string, string> = {
   project_root: "项目根目录",
@@ -55,7 +56,7 @@ export function DoctorPage(): JSX.Element {
             <MetricCard label="检查项总数" value={report.summary.total} />
             <MetricCard label="通过" value={report.summary.ok} />
             <MetricCard label="警告" value={report.summary.warn} />
-            <MetricCard label="错误" value={report.summary.error} meta={`报告时间 ${report.generated_at}`} />
+            <MetricCard label="错误" value={report.summary.error} meta={`报告时间 ${formatTime(report.generated_at)}`} />
           </div>
         ) : null}
       </SectionCard>

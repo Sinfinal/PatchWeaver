@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from patchweaver.models.patch import PatchBundle
@@ -137,16 +137,17 @@ class TaskRepository:
     def update_task_status(self, task_id: str, *, status: str, current_attempt: int | None = None) -> None:
         """更新任务状态和当前尝试轮"""
 
+        updated_at = datetime.now(timezone.utc).isoformat()
         with connect_sqlite(self.database_path) as connection:
             connection.execute(
                 """
                 UPDATE tasks
                 SET status = ?,
                     current_attempt = COALESCE(?, current_attempt),
-                    updated_at = CURRENT_TIMESTAMP
+                    updated_at = ?
                 WHERE task_id = ?
                 """,
-                (status, current_attempt, task_id),
+                (status, current_attempt, updated_at, task_id),
             )
             connection.commit()
 

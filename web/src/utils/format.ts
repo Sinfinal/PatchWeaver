@@ -1,10 +1,29 @@
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
+
+const SQLITE_UTC_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
+
+function parseTime(value: string) {
+  if (SQLITE_UTC_PATTERN.test(value)) {
+    return dayjs.utc(`${value.replace(" ", "T")}Z`);
+  }
+
+  return dayjs(value);
+}
 
 export function formatTime(value?: string | null): string {
   if (!value) {
     return "未记录";
   }
-  return dayjs(value).format("YYYY-MM-DD HH:mm:ss");
+
+  const parsed = parseTime(value);
+  if (!parsed.isValid()) {
+    return value;
+  }
+
+  return parsed.local().format("YYYY-MM-DD HH:mm:ss");
 }
 
 export function formatCount(value?: number | null): string {

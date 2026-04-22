@@ -405,7 +405,7 @@ code {
 .pw-metric-card::before {
   content: "";
   position: absolute;
-  inset: 0 auto auto 0;
+  inset: 0 auto auto 18px;
   width: 64px;
   height: 2px;
   background: linear-gradient(90deg, var(--accent-main), rgba(97, 184, 255, 0));

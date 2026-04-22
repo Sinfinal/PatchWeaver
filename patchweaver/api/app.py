@@ -8,11 +8,24 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from patchweaver import __version__
 from patchweaver.api.routers import doctor, logs, overview, reports, rules, settings, skills, tasks
 from patchweaver.api.schemas import HealthResponse
 from patchweaver.config.loader import discover_project_root
+
+
+class SPAStaticFiles(StaticFiles):
+    """Serve built assets and fall back to index.html for SPA deep links."""
+
+    async def get_response(self, path: str, scope):
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code != 404 or _looks_like_static_asset(path):
+                raise
+            return await super().get_response("index.html", scope)
 
 
 def create_app() -> FastAPI:
@@ -73,7 +86,13 @@ def _mount_web_dist(app: FastAPI, dist_dir: Path | None = None) -> None:
     dist_dir = dist_dir or _resolve_web_dist_dir()
     if not dist_dir.exists():
         return
-    app.mount("/console", StaticFiles(directory=dist_dir, html=True), name="console")
+    app.mount("/console", SPAStaticFiles(directory=dist_dir, html=True), name="console")
+
+
+def _looks_like_static_asset(path: str) -> bool:
+    """Only SPA routes should fall back to index.html; asset URLs should stay 404."""
+
+    return "." in Path(path).name
 
 
 app = create_app()
