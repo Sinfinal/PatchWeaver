@@ -89,6 +89,22 @@ class DiffEditor:
         stdout = completed.stdout.strip() or None
         stderr = completed.stderr.strip() or None
         combined = "\n".join(part for part in [stdout, stderr] if part)
+        if self._patch_looks_already_applied_locally(patch_path=patch_path, source_dir=Path(str(source_dir))):
+            return ApplyPrecheckReport(
+                status="failed",
+                ok=False,
+                backend="local",
+                target_source_dir=str(source_dir),
+                command=" ".join(command),
+                checked_patch_path=str(patch_path),
+                exit_code=completed.returncode,
+                summary="本地 apply 预检查显示目标源码已包含该补丁，无需重复应用。",
+                stdout=stdout,
+                stderr=stderr,
+                failure_type="target_already_patched",
+                build_exec_status="not_run",
+                target_state="target_already_patched",
+            )
         if completed.returncode == 0:
             return ApplyPrecheckReport(
                 status="passed",
@@ -128,6 +144,8 @@ class DiffEditor:
                     stdout=stdout,
                     stderr=stderr,
                     failure_type="target_already_patched",
+                    build_exec_status="not_run",
+                    target_state="target_already_patched",
                 )
             # reverse 还不够确定时，再做一次内容级启发式检查
             # 主要兼容 patch 头不完整，但源码实际已经修过的情况
@@ -144,6 +162,8 @@ class DiffEditor:
                     stdout=stdout,
                     stderr=stderr,
                     failure_type="target_already_patched",
+                    build_exec_status="not_run",
+                    target_state="target_already_patched",
                 )
             return ApplyPrecheckReport(
                 status="failed",
@@ -157,6 +177,7 @@ class DiffEditor:
                 stdout=stdout,
                 stderr=stderr,
                 failure_type="patch_apply_failed",
+                build_exec_status="not_run",
             )
 
         return ApplyPrecheckReport(

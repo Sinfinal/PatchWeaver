@@ -26,7 +26,12 @@ class MdWriter:
         if report.attempt_digest:
             lines.extend(["", "## 尝试摘要"])
             for item in report.attempt_digest:
-                lines.append(f"- 第 {item.attempt_no} 轮: {item.status} ({item.failure_type or '无'})")
+                digest = f"- 第 {item.attempt_no} 轮: {item.status} ({item.failure_type or '无'})"
+                if item.build_exec_status:
+                    digest += f" / build_exec_status={item.build_exec_status}"
+                if item.target_state:
+                    digest += f" / target_state={item.target_state}"
+                lines.append(digest)
         if report.analysis_summary:
             lines.extend(["", "## 分析结果"])
             for key, value in report.analysis_summary.items():

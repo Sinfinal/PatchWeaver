@@ -14,6 +14,8 @@ class AttemptDigest(BaseModel):
     attempt_no: int
     status: str
     failure_type: str | None = None
+    build_exec_status: str | None = None
+    target_state: str | None = None
 
 
 class FinalReport(BaseModel):

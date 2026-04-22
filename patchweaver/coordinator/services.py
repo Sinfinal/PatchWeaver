@@ -580,11 +580,14 @@ class AttemptExecutionService(CoordinatorSupport):
                 ]
             ) + "\n"
             build_log_path.write_text(build_log, encoding="utf-8")
+            target_state = apply_precheck_report.target_state
             attempt_record = seed_attempt_record.model_copy(
                 update={
                     "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
-                    "status": "failed",
+                    "status": "target_state" if target_state else "failed",
                     "failure_type": precheck_failure_type,
+                    "build_exec_status": apply_precheck_report.build_exec_status or "not_run",
+                    "target_state": target_state,
                     "build_log_path": build_log_path,
                     "module_path": None,
                     "rewritten_patch_path": rewritten_patch_path,
@@ -596,7 +599,7 @@ class AttemptExecutionService(CoordinatorSupport):
             failure_record = FailureRecord(
                 task_id=task.task_id,
                 attempt_id=attempt_record.attempt_id,
-                stage_name="rewrite",
+                stage_name="build",
                 failure_type=precheck_failure_type,
                 summary=apply_precheck_report.summary,
                 evidence=[
@@ -610,12 +613,14 @@ class AttemptExecutionService(CoordinatorSupport):
                 attempt_id=attempt_record.attempt_id,
                 backend=apply_precheck_report.backend,
                 builder_cmd=apply_precheck_report.command or self.build_config.kpatch_build_cmd,
-                status="precheck_failed",
+                status="not_run",
                 summary=apply_precheck_report.summary,
                 rewritten_patch_path=rewritten_patch_path,
                 source_dir=apply_precheck_report.target_source_dir,
                 build_log_path=build_log_path,
                 failure_type=precheck_failure_type,
+                build_exec_status=apply_precheck_report.build_exec_status or "not_run",
+                target_state=target_state,
             )
         else:
             attempt_record, build_log, build_precheck, build_summary = self.builder.execute_build(
@@ -663,6 +668,8 @@ class AttemptExecutionService(CoordinatorSupport):
                 build_log_path=attempt_record.build_log_path,
                 module_path=attempt_record.module_path,
                 failure_type=attempt_record.failure_type,
+                build_exec_status=attempt_record.build_exec_status,
+                target_state=attempt_record.target_state,
             )
         build_summary_path = self.json_writer.write_model(
             build_summary,
@@ -843,7 +850,11 @@ class AttemptExecutionService(CoordinatorSupport):
             update={
                 "attempt_no": attempt_no,
                 "stage": "validation",
-                "termination_reason": failure_record.failure_type if attempt_record.status == "failed" else "构建完成",
+                "termination_reason": (
+                    failure_record.failure_type
+                    if attempt_record.status in {"failed", "target_state"}
+                    else "构建完成"
+                ),
             }
         )
         self.attempt_repo.save_attempt_state(state)
@@ -1007,6 +1018,8 @@ class AttemptExecutionService(CoordinatorSupport):
             "attempt_no": attempt_no,
             "status": attempt_record.status,
             "failure_type": attempt_record.failure_type,
+            "build_exec_status": attempt_record.build_exec_status,
+            "target_state": attempt_record.target_state,
             "build_log_path": to_project_relative(self.runtime.project_root, attempt_record.build_log_path),
             "trace_path": to_project_relative(self.runtime.project_root, trace_path),
             "failure_record_path": to_project_relative(self.runtime.project_root, failure_record_path),

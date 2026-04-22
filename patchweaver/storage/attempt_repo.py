@@ -59,6 +59,8 @@ class AttemptRepository:
                 record.candidate_id,
                 record.status,
                 record.failure_type,
+                record.build_exec_status,
+                record.target_state,
                 self._store_path(record.build_log_path),
                 self._store_path(record.module_path),
                 self._store_path(record.rewritten_patch_path),
@@ -72,8 +74,12 @@ class AttemptRepository:
                 # 第一次看到时插入，后面同一轮状态推进时只做覆盖更新
                 connection.execute(
                     """
-                    INSERT INTO attempts(task_id, attempt_no, attempt_id, candidate_id, status, failure_type, build_log_path, module_path, rewritten_patch_path, started_at, finished_at, summary_json)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO attempts(
+                        task_id, attempt_no, attempt_id, candidate_id, status, failure_type,
+                        build_exec_status, target_state, build_log_path, module_path,
+                        rewritten_patch_path, started_at, finished_at, summary_json
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         task_row_id,
@@ -82,6 +88,8 @@ class AttemptRepository:
                         record.candidate_id,
                         record.status,
                         record.failure_type,
+                        record.build_exec_status,
+                        record.target_state,
                         self._store_path(record.build_log_path),
                         self._store_path(record.module_path),
                         self._store_path(record.rewritten_patch_path),
@@ -101,6 +109,8 @@ class AttemptRepository:
                         candidate_id = ?,
                         status = ?,
                         failure_type = ?,
+                        build_exec_status = ?,
+                        target_state = ?,
                         build_log_path = ?,
                         module_path = ?,
                         rewritten_patch_path = ?,
@@ -259,7 +269,8 @@ class AttemptRepository:
             rows = connection.execute(
                 """
                 SELECT attempts.attempt_id, attempts.attempt_no, attempts.candidate_id, attempts.status, attempts.failure_type,
-                       attempts.build_log_path, attempts.module_path, attempts.rewritten_patch_path, attempts.started_at, attempts.finished_at,
+                       attempts.build_exec_status, attempts.target_state, attempts.build_log_path,
+                       attempts.module_path, attempts.rewritten_patch_path, attempts.started_at, attempts.finished_at,
                        tasks.task_id AS task_ref
                 FROM attempts
                 JOIN tasks ON attempts.task_id = tasks.id
@@ -281,6 +292,8 @@ class AttemptRepository:
                     candidate_id=row["candidate_id"],
                     status=row["status"],
                     failure_type=row["failure_type"],
+                    build_exec_status=row["build_exec_status"],
+                    target_state=row["target_state"],
                     build_log_path=self._load_optional_path(row["build_log_path"]),
                     module_path=self._load_optional_path(row["module_path"]),
                     rewritten_patch_path=self._load_optional_path(row["rewritten_patch_path"]),
