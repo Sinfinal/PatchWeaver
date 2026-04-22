@@ -102,6 +102,7 @@ def test_task_query_service_detail_contains_phase_outputs() -> None:
         attempt_no=1,
         attempt_id=f"{task.task_id}-A001",
         status="built",
+        build_exec_status="executed",
         build_log_path=build_log_path,
         module_path=attempt_dir / "artifacts" / "demo_patch.ko",
         rewritten_patch_path=attempt_dir / "rewrite" / "rewritten.patch",
@@ -131,6 +132,9 @@ def test_task_query_service_detail_contains_phase_outputs() -> None:
         "task_id": task.task_id,
         "latest_attempt_id": attempt.attempt_id,
         "latest_attempt_status": attempt.status,
+        "latest_failure_type": attempt.failure_type,
+        "latest_build_exec_status": attempt.build_exec_status,
+        "latest_target_state": attempt.target_state,
         "trace_path": str(attempt_dir / "trace" / "harness_trace.json"),
         "report_path": str(task_workspace / "reports" / "report.json"),
         "evaluation_summary_path": str(task_workspace / "reports" / "evaluation_summary.json"),
@@ -163,9 +167,12 @@ def test_task_query_service_detail_contains_phase_outputs() -> None:
     assert detail["task"]["task_id"] == task.task_id
     assert detail["task"]["target_kernel_source"] == "detected_machine"
     assert detail["task"]["machine_profile"]["machine_kernel"] == "6.6.102-5.2.an23.x86_64"
+    assert detail["task"]["latest_build_exec_status"] == "executed"
     assert detail["latest_rewrite_plan"]["selected_recipe"] == "wrapper"
     assert detail["evaluation_summary"]["fixture_name"] == "challenge_dev"
     assert detail["replay"]["status"] == "ok"
+    assert detail["replay"]["latest_build_exec_status"] == "executed"
+    assert detail["attempts"][0]["build_exec_status"] == "executed"
     assert detail["attempts"][0]["planning_hints_path"].endswith("planning_hints.json")
     assert detail["report_closure"]["closure_ok"] is True
     assert any(item["stage"] == "report" and item["status"] == "completed" for item in detail["timeline"])

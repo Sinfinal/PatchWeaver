@@ -67,6 +67,8 @@ class ReportBuilder:
             known_limits.append(f"最近一轮状态为 {latest_attempt.status}，该尝试尚未形成最终构建结论。")
         elif latest_attempt.status == "failed":
             known_limits.append(f"最近一轮失败类型为 {latest_attempt.failure_type or 'unknown'}，仍需结合回放进一步排查。")
+        elif latest_attempt.target_state == "target_already_patched":
+            known_limits.append("最近一轮目标源码已包含修复，真实构建未执行，也未生成新的 .ko 产物。")
 
         return FinalReport(
             task_summary={
@@ -82,6 +84,8 @@ class ReportBuilder:
                     attempt_no=item.attempt_no,
                     status=item.status,
                     failure_type=item.failure_type,
+                    build_exec_status=item.build_exec_status,
+                    target_state=item.target_state,
                 )
                 for item in attempts
             ],
@@ -97,6 +101,8 @@ class ReportBuilder:
                 "latest_attempt_id": latest_attempt.attempt_id if latest_attempt else None,
                 "latest_attempt_status": latest_attempt.status if latest_attempt else None,
                 "latest_failure_type": latest_attempt.failure_type if latest_attempt else None,
+                "latest_build_exec_status": latest_attempt.build_exec_status if latest_attempt else None,
+                "latest_target_state": latest_attempt.target_state if latest_attempt else None,
                 "build_log_path": self._path(latest_attempt.build_log_path) if latest_attempt and latest_attempt.build_log_path else artifact_lookup.get("build_log"),
                 "module_path": self._path(latest_attempt.module_path) if latest_attempt and latest_attempt.module_path else None,
                 "rewritten_patch_path": self._path(latest_attempt.rewritten_patch_path) if latest_attempt and latest_attempt.rewritten_patch_path else artifact_lookup.get("rewritten_patch"),

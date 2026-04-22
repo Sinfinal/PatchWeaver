@@ -78,6 +78,20 @@ class TaskQueryService:
                    LIMIT 1
                ) AS latest_failure_summary,
                (
+                   SELECT a.build_exec_status
+                   FROM attempts a
+                   WHERE a.task_id = t.id
+                   ORDER BY a.attempt_no DESC
+                   LIMIT 1
+               ) AS latest_build_exec_status,
+               (
+                   SELECT a.target_state
+                   FROM attempts a
+                   WHERE a.task_id = t.id
+                   ORDER BY a.attempt_no DESC
+                   LIMIT 1
+               ) AS latest_target_state,
+               (
                    SELECT COUNT(*)
                    FROM attempts a
                    WHERE a.task_id = t.id
@@ -106,6 +120,8 @@ class TaskQueryService:
                 "updated_at": row["updated_at"],
                 "latest_failure_type": row["latest_failure_type"],
                 "latest_failure_summary": row["latest_failure_summary"],
+                "latest_build_exec_status": row["latest_build_exec_status"],
+                "latest_target_state": row["latest_target_state"],
                 "attempts_count": row["attempts_count"],
             }
             for row in rows
@@ -228,6 +244,9 @@ class TaskQueryService:
             "task_id": task_id,
             "latest_attempt_id": None,
             "latest_attempt_status": None,
+            "latest_failure_type": None,
+            "latest_build_exec_status": None,
+            "latest_target_state": None,
             "trace_path": None,
             "report_path": None,
             "evaluation_summary_path": None,
@@ -241,7 +260,7 @@ class TaskQueryService:
         return {
             # task 是顶部摘要
             # analysis、attempts、reports、replay 对应页面里的四块主视图
-            "task": self._task_payload(task),
+            "task": self._task_payload(task, latest_attempt=latest_attempt),
             "patch_bundle": self._load_json(task_dir / "input" / "patch_bundle.json"),
             "analysis": {
                 "semantic_card_path": self._path(task_dir / "analysis" / "semantic_card.json"),
@@ -327,7 +346,7 @@ class TaskQueryService:
         self.run_logger.info("web.replay_task", "通过 Web 读取任务回放。", task_id=task_id)
         return payload
 
-    def _task_payload(self, task: TaskContext) -> dict[str, Any]:
+    def _task_payload(self, task: TaskContext, latest_attempt=None) -> dict[str, Any]:
         """把任务对象转成接口返回结构"""
 
         return {
@@ -343,6 +362,9 @@ class TaskQueryService:
             "machine_profile": task.machine_profile.model_dump(mode="json") if task.machine_profile is not None else None,
             "created_at": task.created_at.isoformat(),
             "updated_at": task.updated_at.isoformat(),
+            "latest_failure_type": latest_attempt.failure_type if latest_attempt is not None else None,
+            "latest_build_exec_status": latest_attempt.build_exec_status if latest_attempt is not None else None,
+            "latest_target_state": latest_attempt.target_state if latest_attempt is not None else None,
         }
 
     def _require_task(self, task_id: str) -> TaskContext:
@@ -362,6 +384,8 @@ class TaskQueryService:
             "attempt_no": attempt.attempt_no,
             "status": attempt.status,
             "failure_type": attempt.failure_type,
+            "build_exec_status": attempt.build_exec_status,
+            "target_state": attempt.target_state,
             "build_log_path": self._path(attempt.build_log_path) if attempt.build_log_path else None,
             "module_path": self._path(attempt.module_path) if attempt.module_path else None,
             "rewritten_patch_path": self._path(attempt.rewritten_patch_path) if attempt.rewritten_patch_path else None,
