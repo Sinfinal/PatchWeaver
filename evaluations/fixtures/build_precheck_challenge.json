@@ -1,0 +1,87 @@
+[
+  {
+    "fixture_id": "build-precheck-cve-2024-26607",
+    "cve_id": "CVE-2024-26607",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "challenge_dev",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_artifacts": [
+      "build_precheck.json",
+      "build_summary.json",
+      "build.log"
+    ],
+    "expected_outcome": "用于 5.6 阶段构建预检查与真实编译链路验证"
+  },
+  {
+    "fixture_id": "build-precheck-cve-2024-26622",
+    "cve_id": "CVE-2024-26622",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "challenge_dev",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_artifacts": [
+      "build_precheck.json",
+      "build_summary.json",
+      "build.log"
+    ],
+    "expected_outcome": "用于 5.6 阶段构建预检查与真实编译链路验证"
+  },
+  {
+    "fixture_id": "build-precheck-cve-2024-26643",
+    "cve_id": "CVE-2024-26643",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "challenge_dev",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_artifacts": [
+      "build_precheck.json",
+      "build_summary.json",
+      "build.log"
+    ],
+    "expected_outcome": "用于 5.6 阶段构建预检查与真实编译链路验证"
+  },
+  {
+    "fixture_id": "build-precheck-cve-2024-26726",
+    "cve_id": "CVE-2024-26726",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "challenge_dev",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_artifacts": [
+      "build_precheck.json",
+      "build_summary.json",
+      "build.log"
+    ],
+    "expected_outcome": "用于 5.6 阶段构建预检查与真实编译链路验证"
+  },
+  {
+    "fixture_id": "build-precheck-cve-2024-26736",
+    "cve_id": "CVE-2024-26736",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "challenge_dev",
+    "input_mode": "cve_only",
+    "source_policy": [
+      "stable_first",
+      "upstream_fallback"
+    ],
+    "expected_artifacts": [
+      "build_precheck.json",
+      "build_summary.json",
+      "build.log"
+    ],
+    "expected_outcome": "用于 5.6 阶段构建预检查与真实编译链路验证"
+  }
+]

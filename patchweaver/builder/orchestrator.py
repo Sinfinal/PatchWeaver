@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shlex
 import platform
+import shutil
 import subprocess
 from collections.abc import Iterable
 from datetime import datetime, timezone
@@ -170,6 +171,10 @@ class BuildOrchestrator:
             "clean_kernel_src_ok": self._local_kernel_tree_ok(Path(self.build_config.clean_kernel_src_dir))
             if self.build_config.clean_kernel_src_dir
             else False,
+            "prepared_kernel_src_dir": self.build_config.prepared_kernel_src_dir,
+            "prepared_kernel_src_ok": self._local_kernel_tree_ok(Path(self.build_config.prepared_kernel_src_dir))
+            if self.build_config.prepared_kernel_src_dir
+            else False,
             "kernel_src_dir": self.build_config.kernel_src_dir,
             "kernel_src_ok": self._local_kernel_tree_ok(Path(self.build_config.kernel_src_dir)),
             "kernel_devel_dir": self.build_config.kernel_devel_dir,
@@ -278,12 +283,14 @@ class BuildOrchestrator:
             source_dir=selected_source_dir,
         )
         lines.extend(self._format_precheck_lines(precheck))
+        primary_target_state_precheck: BuildPrecheck | None = None
 
         if (
             not precheck.ok
             and precheck.failure_type == "target_already_patched"
             and getattr(self.build_config, "auto_switch_source_tree", False)
         ):
+            primary_target_state_precheck = precheck
             fallback_source_dir, fallback_source_reason = self._select_local_source_dir(exclude={selected_source_dir})
             if fallback_source_dir is not None:
                 lines.extend(
@@ -307,12 +314,58 @@ class BuildOrchestrator:
                 )
                 lines.extend(self._format_precheck_lines(precheck))
 
+        if (
+            not precheck.ok
+            and primary_target_state_precheck is not None
+            and getattr(self.build_config, "auto_reverse_source_tree", False)
+        ):
+            reverse_source_dir, reverse_lines = self._prepare_reverse_source_tree(
+                patched_source_dir=Path(primary_target_state_precheck.source_dir or selected_source_dir),
+                rewritten_patch_path=rewritten_patch_path,
+                attempt_dir=build_log_path.parent.parent,
+            )
+            lines.extend(reverse_lines)
+            if reverse_source_dir is not None:
+                probe = self._override_selected_source(
+                    probe=probe,
+                    source_dir=reverse_source_dir,
+                    source_reason="synthetic_reverse_tree",
+                )
+                selected_source_dir = reverse_source_dir
+                precheck = self.precheck_patch(
+                    task_id=task.task_id,
+                    attempt_id=record.attempt_id,
+                    rewritten_patch_path=rewritten_patch_path,
+                    source_dir=selected_source_dir,
+                )
+                lines.extend(self._format_precheck_lines(precheck))
+
         if not precheck.ok:
             failure_type = precheck.failure_type or "patch_apply_failed"
             target_state = "target_already_patched" if failure_type == "target_already_patched" else None
+            summary_source_dir = precheck.source_dir
+            if self._should_collapse_to_target_state(
+                initial_precheck=primary_target_state_precheck,
+                final_precheck=precheck,
+            ):
+                failure_type = "target_already_patched"
+                target_state = "target_already_patched"
+                summary_source_dir = primary_target_state_precheck.source_dir
+                lines.extend(
+                    [
+                        "",
+                        "[build outcome]",
+                        f"首选源码树 {primary_target_state_precheck.source_dir or 'unknown'} 已命中 target_already_patched",
+                        f"备用源码树 {precheck.source_dir or 'unknown'} 未能通过 apply 预检查",
+                        "本轮按 target_already_patched 收口，不继续执行 kpatch-build",
+                    ]
+                )
             attempt_status = "target_state" if target_state else "failed"
             summary_text = (
-                "目标源码已包含该补丁，已识别为目标态已修复，本机构建未执行。"
+                self._target_state_summary_after_switch(
+                    initial_precheck=primary_target_state_precheck,
+                    final_precheck=precheck,
+                )
                 if target_state
                 else "apply 级预检查未通过，已跳过本机构建。"
             )
@@ -327,7 +380,7 @@ class BuildOrchestrator:
                 status="not_run",
                 summary=summary_text,
                 rewritten_patch_path=rewritten_patch_path,
-                source_dir=precheck.source_dir,
+                source_dir=summary_source_dir,
                 build_log_path=build_log_path,
                 failure_type=failure_type,
                 build_exec_status="not_run",
@@ -496,6 +549,37 @@ class BuildOrchestrator:
             target_state="target_already_patched" if failure_type == "target_already_patched" else None,
         )
 
+    def _should_collapse_to_target_state(
+        self,
+        *,
+        initial_precheck: BuildPrecheck | None,
+        final_precheck: BuildPrecheck,
+    ) -> bool:
+        """判断首选源码树已修复但备用树未接住时是否按目标态收口"""
+
+        if initial_precheck is None:
+            return False
+        if initial_precheck.failure_type != "target_already_patched":
+            return False
+        if final_precheck.ok:
+            return False
+        return final_precheck.failure_type != "target_already_patched"
+
+    def _target_state_summary_after_switch(
+        self,
+        *,
+        initial_precheck: BuildPrecheck | None,
+        final_precheck: BuildPrecheck,
+    ) -> str:
+        """生成 target_state 场景下更贴近真实原因的阶段摘要"""
+
+        if self._should_collapse_to_target_state(
+            initial_precheck=initial_precheck,
+            final_precheck=final_precheck,
+        ):
+            return "首选源码树已包含该补丁，备用源码树未能提供可继续构建的落点，本轮按目标态已修复收口。"
+        return "目标源码已包含该补丁，已识别为目标态已修复，本机构建未执行。"
+
     def _format_precheck_lines(self, precheck: BuildPrecheck) -> list[str]:
         """把预检查结果展开成构建日志片段"""
 
@@ -575,11 +659,89 @@ class BuildOrchestrator:
             return None
         mapping = {
             "clean_kernel_src_dir": "unpatched",
+            "prepared_kernel_src_dir": "unknown",
             "kernel_src_dir": "unknown",
             "kernel_devel_dir": "unknown",
             "patched_kernel_src_dir": "patched",
+            "synthetic_reverse_tree": "unpatched",
         }
         return mapping.get(slot_name, "unknown")
+
+    def _prepare_reverse_source_tree(
+        self,
+        *,
+        patched_source_dir: Path,
+        rewritten_patch_path: Path,
+        attempt_dir: Path,
+    ) -> tuple[Path | None, list[str]]:
+        """从已修复源码树反向生成一棵本轮可用的未修复树"""
+
+        reverse_source_dir = attempt_dir / "sources" / "reverse_unpatched"
+        lines = [
+            "",
+            "[reverse source tree]",
+            f"已修复源码树: {patched_source_dir}",
+            f"反向源码树: {reverse_source_dir}",
+        ]
+
+        if not patched_source_dir.is_dir():
+            lines.append("反向源码树生成失败: 已修复源码树不存在")
+            return None, lines
+
+        try:
+            if reverse_source_dir.exists():
+                shutil.rmtree(reverse_source_dir)
+            reverse_source_dir.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(patched_source_dir, reverse_source_dir, symlinks=True)
+        except OSError as exc:
+            lines.append(f"反向源码树复制失败: {exc}")
+            return None, lines
+
+        git_path = which("git")
+        if git_path is None:
+            lines.append("反向源码树生成失败: 未找到 git 命令")
+            return None, lines
+
+        check_command = [git_path, "apply", "--reverse", "--check", "--verbose", str(rewritten_patch_path.resolve())]
+        check_result = subprocess.run(
+            check_command,
+            cwd=reverse_source_dir,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        lines.append("反向检查命令: " + " ".join(shlex.quote(part) for part in check_command))
+        if check_result.stdout.strip():
+            lines.extend(["[reverse check stdout]", check_result.stdout.strip()[:2000]])
+        if check_result.stderr.strip():
+            lines.extend(["[reverse check stderr]", check_result.stderr.strip()[:2000]])
+        if check_result.returncode != 0:
+            lines.append("反向源码树生成失败: 当前补丁无法从已修复源码树回退")
+            return None, lines
+
+        apply_command = [git_path, "apply", "--reverse", "--verbose", str(rewritten_patch_path.resolve())]
+        apply_result = subprocess.run(
+            apply_command,
+            cwd=reverse_source_dir,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        lines.append("反向应用命令: " + " ".join(shlex.quote(part) for part in apply_command))
+        if apply_result.stdout.strip():
+            lines.extend(["[reverse apply stdout]", apply_result.stdout.strip()[:2000]])
+        if apply_result.stderr.strip():
+            lines.extend(["[reverse apply stderr]", apply_result.stderr.strip()[:2000]])
+        if apply_result.returncode != 0:
+            lines.append("反向源码树生成失败: 反向应用 patch 未成功")
+            return None, lines
+
+        lines.append("反向源码树生成完成，继续在该源码树上执行 apply precheck")
+        return reverse_source_dir, lines
 
     def _config_path_for_source(self, source_dir: Path | None) -> Path | None:
         """返回当前源码树对应的 .config 路径"""
@@ -620,6 +782,8 @@ class BuildOrchestrator:
             except OSError:
                 if str(path) == str(candidate_path):
                     return self._source_slot_expected_state(slot_name)
+        if candidate_path.name == "reverse_unpatched":
+            return self._source_slot_expected_state("synthetic_reverse_tree")
         return "unknown"
 
     def _local_kernel_tree_ok(self, path: Path) -> bool:
@@ -645,7 +809,7 @@ class BuildOrchestrator:
 
         messages = {
             "build_env_missing": f"未找到构建命令：{self.build_config.kpatch_build_cmd}",
-            "kernel_src_missing": "找不到可用的内核源码目录，已检查 clean_kernel_src_dir、kernel_src_dir、kernel_devel_dir 和 patched_kernel_src_dir。",
+            "kernel_src_missing": "找不到可用的内核源码目录，已检查 clean_kernel_src_dir、prepared_kernel_src_dir、kernel_src_dir、kernel_devel_dir 和 patched_kernel_src_dir。",
             "kernel_config_missing": "源码目录中没有找到 .config，暂时无法继续构建。",
             "vmlinux_missing": "找不到可用的 vmlinux 文件，无法继续构建。",
             "target_already_patched": "目标源码已包含该补丁，无需重复应用，请更换未修复内核或切换样例。",

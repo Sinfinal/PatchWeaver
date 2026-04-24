@@ -24,6 +24,7 @@ from patchweaver.api.service_manager import (
     wait_for_api_ready,
 )
 from patchweaver.builder.orchestrator import BuildOrchestrator
+from patchweaver.builder.source_preparer import prepare_validation_source_tree
 from patchweaver.config.loader import (
     load_build_config,
     load_logging_config,
@@ -437,6 +438,9 @@ def _command_examples(command_path: str) -> list[tuple[str, str]]:
         "patchweaver install-api-service": [
             (f"{command_path} --host 0.0.0.0 --port 18084", "在 Linux 验证机上安装并启动 API 服务。"),
         ],
+        "patchweaver prepare-build-tree": [
+            (f"{command_path} --kernel-release 6.6.102-5.2.an23.x86_64", "准备可供 kpatch-build 使用的完整源码树。"),
+        ],
         "patchweaver db init": [
             (f"{command_path}", "初始化 SQLite 数据库并写入基础 schema。"),
         ],
@@ -458,6 +462,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
         "paths",
         "models",
         "install-api-service",
+        "prepare-build-tree",
         "finalize",
         "gate",
         "init-db",
@@ -512,6 +517,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
         ("patchweaver paths --json", "输出当前生效的路径、运行时和 manifest 目录。"),
         ("patchweaver serve-api --reload", "启动 FastAPI 接口，供 Web 控制台开发调试。"),
         ("patchweaver install-api-service", "在 Linux 验证机上安装并启动 Web/API 的 systemd 服务。"),
+        ("patchweaver prepare-build-tree", "在 Linux 验证机上准备完整源码树。"),
         ("patchweaver db path", "查看当前配置解析出来的数据库路径。"),
         ("patchweaver evaluate --fixture contest_samples", "按固定样例集输出阶段评测汇总。"),
         ("patchweaver models --json", "查看当前模型分工和 API Key 来源。"),
@@ -2004,6 +2010,79 @@ def install_api_service_command(
     typer.echo(f"healthz: {payload['healthz']}")
     typer.echo(f"console: {payload['console']}")
     typer.echo(f"快照: {_project_path(runtime.project_root, snapshot_path)}")
+
+
+@app.command("prepare-build-tree", cls=PatchWeaverHelpCommand)
+def prepare_build_tree_command(
+    kernel_release: Annotated[str | None, typer.Option("--kernel-release", help="目标内核版本。")] = None,
+    output_dir: Annotated[str | None, typer.Option("--output-dir", help="完整源码树输出目录。")] = None,
+    overlay_dirs: Annotated[list[str] | None, typer.Option("--overlay-dir", help="需要 overlay 到完整源码树上的目录，可重复指定。")] = None,
+    kernel_devel_package: Annotated[str | None, typer.Option("--kernel-devel-package", help="用于下载 source rpm 的包名。")] = None,
+    dnf_cmd: Annotated[str, typer.Option("--dnf-cmd", help="下载 source rpm 时使用的命令。")] = "dnf",
+    force: Annotated[bool, typer.Option("--force", help="若输出目录已存在则强制重建。")] = False,
+    write_build_config: Annotated[bool, typer.Option("--write-build-config/--no-write-build-config", help="是否把 prepared_kernel_src_dir 写回 build.yaml。")] = True,
+    build_config_path: Annotated[str | None, typer.Option("--build-config", help="build.yaml 路径。")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """在 Linux 验证机上准备可供 kpatch-build 使用的完整源码树"""
+
+    runtime = _load_runtime()
+    run_logger = _build_run_logger(runtime)
+
+    if platform.system() != "Linux":
+        typer.secho("错误: prepare-build-tree 仅支持 Linux 环境", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
+    final_kernel_release = kernel_release or runtime.default_kernel
+    final_output_dir = Path(output_dir) if output_dir else Path("/opt/patchweaver/kernel-src-prepared") / final_kernel_release
+    final_overlay_dirs = [Path(item) for item in (overlay_dirs or [])]
+    if not final_overlay_dirs:
+        final_overlay_dirs = [
+            Path("/opt/kernel-src"),
+            Path(f"/usr/src/kernels/{final_kernel_release}"),
+        ]
+    final_build_config_path = Path(build_config_path) if build_config_path else runtime.config_dir / "build.yaml"
+
+    try:
+        result = prepare_validation_source_tree(
+            kernel_release=final_kernel_release,
+            output_dir=final_output_dir,
+            overlay_dirs=final_overlay_dirs,
+            force=force,
+            dnf_cmd=dnf_cmd,
+            kernel_devel_package=kernel_devel_package,
+            build_config_path=final_build_config_path,
+            write_build_config=write_build_config,
+        )
+    except Exception as exc:
+        typer.secho(f"错误: 完整源码树准备失败: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+
+    payload = {
+        "command": "prepare-build-tree",
+        **result.to_payload(),
+    }
+    payload = _project_payload(runtime.project_root, payload)
+    run_logger.info(
+        "cli.prepare_build_tree",
+        "已完成完整源码树准备",
+        kernel_release=final_kernel_release,
+        output_dir=str(final_output_dir),
+        reused_existing=result.reused_existing,
+        build_config_path=str(final_build_config_path) if write_build_config else None,
+    )
+
+    if json_output:
+        _emit_json(payload)
+        return
+
+    typer.echo(f"已准备源码树: {payload['output_dir']}")
+    typer.echo(f"kernel release: {payload['kernel_release']}")
+    typer.echo(f"source rpm: {payload['srpm_path'] or '<reused>'}")
+    typer.echo(f"source tarball: {payload['source_tarball'] or '<reused>'}")
+    typer.echo(f"overlay dirs: {', '.join(payload['overlay_dirs']) if payload['overlay_dirs'] else '<none>'}")
+    typer.echo(f"setlocalversion patched: {payload['setlocalversion_patched']}")
+    typer.echo(f"build config: {payload['build_config_path'] or '<not written>'}")
 
 
 @app.command("serve-api", cls=PatchWeaverHelpCommand)

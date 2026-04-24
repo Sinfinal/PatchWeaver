@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from uuid import uuid4
 
@@ -34,10 +36,14 @@ def _project_root() -> Path:
 
 def _case_dir(case_name: str) -> Path:
     base_dir = _project_root() / ".pytest_tmp"
-    base_dir.mkdir(parents=True, exist_ok=True)
-    root = base_dir / f"{case_name}-{uuid4().hex[:8]}"
-    root.mkdir(parents=True, exist_ok=True)
-    return root
+    try:
+        base_dir.mkdir(parents=True, exist_ok=True)
+        root = base_dir / f"{case_name}-{uuid4().hex[:8]}"
+        root.mkdir(parents=True, exist_ok=True)
+        return root
+    except PermissionError:
+        fallback_root = Path(tempfile.mkdtemp(prefix=f"patchweaver-{case_name}-"))
+        return fallback_root
 
 
 def _write_kernel_tree(root: Path) -> None:
@@ -59,6 +65,7 @@ def test_local_apply_precheck_rejects_placeholder_patch() -> None:
         build_backend="local",
         kernel_src_dir=str(source_dir),
         kernel_devel_dir=str(source_dir),
+        auto_reverse_source_tree=False,
         vmlinux_path=str(source_dir / "vmlinux"),
         kpatch_build_cmd="git",
     )
@@ -100,6 +107,7 @@ def test_local_apply_precheck_accepts_valid_unified_diff() -> None:
         build_backend="local",
         kernel_src_dir=str(source_dir),
         kernel_devel_dir=str(source_dir),
+        auto_reverse_source_tree=False,
         vmlinux_path=str(source_dir / "vmlinux"),
         kpatch_build_cmd="git",
     )
@@ -223,6 +231,7 @@ def test_local_apply_precheck_marks_target_already_patched() -> None:
         build_backend="local",
         kernel_src_dir=str(source_dir),
         kernel_devel_dir=str(source_dir),
+        auto_reverse_source_tree=False,
         vmlinux_path=str(source_dir / "vmlinux"),
         kpatch_build_cmd="git",
     )
@@ -268,6 +277,7 @@ def test_local_build_short_circuits_with_target_state_when_patch_already_applied
         build_backend="local",
         kernel_src_dir=str(source_dir),
         kernel_devel_dir=str(source_dir),
+        auto_reverse_source_tree=False,
         vmlinux_path=str(source_dir / "vmlinux"),
         kpatch_build_cmd="git",
     )
@@ -309,6 +319,188 @@ def test_local_build_short_circuits_with_target_state_when_patch_already_applied
     assert summary.target_state == "target_already_patched"
     assert "本机构建未执行" in summary.summary
     assert "目标态结论: target_already_patched" in build_log
+
+
+def test_local_build_collapses_fallback_failure_into_target_state() -> None:
+    tmp_path = _case_dir("build-local-target-state-fallback")
+    primary_source_dir = tmp_path / "kernel-primary"
+    fallback_source_dir = tmp_path / "kernel-clean"
+    _write_kernel_tree(primary_source_dir)
+    _write_kernel_tree(fallback_source_dir)
+    patch_path = tmp_path / "rewritten.patch"
+    patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/foo.c b/foo.c",
+                "--- a/foo.c",
+                "+++ b/foo.c",
+                "@@ -1 +1 @@",
+                "-int value = 1;",
+                "+int value = 2;",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (primary_source_dir / "foo.c").write_text("int value = 2;\n", encoding="utf-8")
+    (fallback_source_dir / "foo.c").unlink()
+    build_log_path = tmp_path / "attempts" / "001" / "logs" / "build.log"
+
+    build_config = BuildConfig(
+        build_backend="local",
+        clean_kernel_src_dir=str(fallback_source_dir),
+        kernel_src_dir=str(primary_source_dir),
+        kernel_devel_dir=str(primary_source_dir),
+        build_source_priority=["kernel_src_dir", "clean_kernel_src_dir"],
+        auto_switch_source_tree=True,
+        auto_reverse_source_tree=False,
+        vmlinux_path=str(primary_source_dir / "vmlinux"),
+        kpatch_build_cmd="git",
+    )
+    orchestrator = BuildOrchestrator(build_config)
+    task = TaskContext(
+        task_id="TASK-TEST-TARGET-STATE-FALLBACK",
+        cve_id="CVE-2099-0102",
+        target_kernel="6.6.102-5.2.an23.x86_64",
+        workspace_dir=tmp_path / "workspace",
+    )
+    plan = RewritePlan(
+        task_id=task.task_id,
+        plan_id=f"{task.task_id}-plan-001",
+        candidate_ids=["cand-001"],
+        selected_recipe="direct_apply_patch",
+        selected_primitives=["direct_apply"],
+        target_files=["foo.c"],
+        selection_reason="unit test",
+    )
+
+    attempt, build_log, precheck, summary = orchestrator.execute_build(
+        task=task,
+        attempt_no=1,
+        plan=plan,
+        rewritten_patch_path=patch_path,
+        build_log_path=build_log_path,
+    )
+
+    assert precheck.ok is False
+    assert precheck.failure_type == "patch_apply_failed"
+    assert attempt.status == "target_state"
+    assert attempt.failure_type == "target_already_patched"
+    assert attempt.build_exec_status == "not_run"
+    assert attempt.target_state == "target_already_patched"
+    assert summary.status == "not_run"
+    assert summary.failure_type == "target_already_patched"
+    assert summary.build_exec_status == "not_run"
+    assert summary.target_state == "target_already_patched"
+    assert summary.source_dir == str(primary_source_dir)
+    assert "备用源码树未能提供可继续构建的落点" in summary.summary
+    assert "[build outcome]" in build_log
+    assert "阶段最终结果统一收口为 target_already_patched" not in build_log
+
+
+def test_local_build_uses_reverse_tree_when_primary_is_already_patched(monkeypatch) -> None:
+    tmp_path = _case_dir("build-local-reverse-tree")
+    primary_source_dir = tmp_path / "kernel-primary"
+    fallback_source_dir = tmp_path / "kernel-clean"
+    _write_kernel_tree(primary_source_dir)
+    _write_kernel_tree(fallback_source_dir)
+    patch_path = tmp_path / "rewritten.patch"
+    patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/foo.c b/foo.c",
+                "--- a/foo.c",
+                "+++ b/foo.c",
+                "@@ -1 +1 @@",
+                "-int value = 1;",
+                "+int value = 2;",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (primary_source_dir / "foo.c").write_text("int value = 2;\n", encoding="utf-8")
+    (fallback_source_dir / "foo.c").unlink()
+    build_log_path = tmp_path / "attempts" / "001" / "logs" / "build.log"
+
+    git_path = shutil.which("git")
+    assert git_path is not None
+
+    build_config = BuildConfig(
+        build_backend="local",
+        clean_kernel_src_dir=str(fallback_source_dir),
+        kernel_src_dir=str(primary_source_dir),
+        kernel_devel_dir=str(primary_source_dir),
+        build_source_priority=["kernel_src_dir", "clean_kernel_src_dir"],
+        auto_switch_source_tree=True,
+        auto_reverse_source_tree=True,
+        vmlinux_path=str(primary_source_dir / "vmlinux"),
+        kpatch_build_cmd="kpatch-build",
+        build_timeout_sec=120,
+    )
+    orchestrator = BuildOrchestrator(build_config)
+    task = TaskContext(
+        task_id="TASK-TEST-REVERSE-TREE",
+        cve_id="CVE-2099-0103",
+        target_kernel="6.6.102-5.2.an23.x86_64",
+        workspace_dir=tmp_path / "workspace",
+    )
+    plan = RewritePlan(
+        task_id=task.task_id,
+        plan_id=f"{task.task_id}-plan-001",
+        candidate_ids=["cand-001"],
+        selected_recipe="direct_apply_patch",
+        selected_primitives=["direct_apply"],
+        target_files=["foo.c"],
+        selection_reason="unit test",
+    )
+
+    real_run = subprocess.run
+
+    def fake_which(command: str) -> str | None:
+        if command == "git":
+            return git_path
+        if command == "kpatch-build":
+            return "/usr/bin/kpatch-build"
+        return None
+
+    def fake_run(command, cwd=None, capture_output=None, text=None, encoding=None, errors=None, check=None, timeout=None):
+        if command and "kpatch-build" in str(command[0]):
+            output_dir = Path(command[command.index("-o") + 1])
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / "reverse_patch.ko").write_text("fake ko\n", encoding="utf-8")
+            return subprocess.CompletedProcess(command, 0, "kpatch build ok\n", "")
+        return real_run(
+            command,
+            cwd=cwd,
+            capture_output=capture_output,
+            text=text,
+            encoding=encoding,
+            errors=errors,
+            check=check,
+            timeout=timeout,
+        )
+
+    monkeypatch.setattr("patchweaver.builder.orchestrator.which", fake_which)
+    monkeypatch.setattr("patchweaver.builder.orchestrator.subprocess.run", fake_run)
+
+    attempt, build_log, precheck, summary = orchestrator.execute_build(
+        task=task,
+        attempt_no=1,
+        plan=plan,
+        rewritten_patch_path=patch_path,
+        build_log_path=build_log_path,
+    )
+
+    assert precheck.ok is True
+    assert attempt.status == "built"
+    assert summary.status == "built"
+    assert summary.failure_type is None
+    assert summary.source_dir is not None
+    assert summary.source_dir.endswith("reverse_unpatched")
+    assert "反向源码树生成完成" in build_log
+    assert "源码期望状态: unpatched" in build_log
+    assert (Path(summary.source_dir) / "foo.c").read_text(encoding="utf-8") == "int value = 1;\n"
 
 
 def test_diff_editor_apply_precheck_marks_target_already_patched() -> None:
@@ -846,6 +1038,569 @@ def test_attempt_service_uses_builder_summary_and_validator_outputs(monkeypatch)
     assert "load_log" in artifact_types
     assert "unload_log" in artifact_types
     assert "smoke_log" in artifact_types
+
+
+def test_attempt_service_normalizes_target_state_across_build_artifacts(monkeypatch) -> None:
+    tmp_path = _case_dir("attempt-service-target-state-normalize")
+    repo_root = Path(__file__).resolve().parents[2]
+    kernel_dir = tmp_path / "kernel"
+    _write_kernel_tree(kernel_dir)
+
+    runtime = ResolvedRuntime(
+        project_root=repo_root,
+        config_dir=repo_root / "config",
+        data_dir=tmp_path / "data",
+        workspace_root=tmp_path / "workspaces",
+        database_path=tmp_path / "data" / "patchweaver.db",
+        manifest_dir=tmp_path / "data" / "manifests",
+        default_kernel="6.6.102-5.2.an23.x86_64",
+        max_attempts=5,
+        parallel_read_limit=3,
+        write_lock_scope="task",
+        trace_mode="full",
+    )
+    runner = TaskRunner(
+        runtime=runtime,
+        build_config=BuildConfig(
+            build_backend="local",
+            kernel_src_dir=str(kernel_dir),
+            kernel_devel_dir=str(kernel_dir),
+            vmlinux_path=str(kernel_dir / "vmlinux"),
+            kpatch_build_cmd="git",
+        ),
+        verify_config=VerifyConfig(
+            enable_load_test=True,
+            enable_unload_test=True,
+            enable_smoke_test=True,
+            enable_regression=False,
+            smoke_test_script="scripts/validate_smoke.sh",
+        ),
+        prompts_config=PromptsConfig(prompt_profiles={"strict": PromptProfile()}),
+    )
+
+    task = TaskContext(
+        task_id="TASK-TEST-006",
+        cve_id="CVE-2099-0006",
+        target_kernel=runtime.default_kernel,
+        workspace_dir=runtime.workspace_root / "TASK-TEST-006",
+    )
+    runner.services.task_repo.create_task(task)
+    task_dir = runner.services.workspace_guard.create_task_workspace(task)
+
+    raw_patch_path = task_dir / "input" / "raw_patch.patch"
+    raw_patch_path.parent.mkdir(parents=True, exist_ok=True)
+    raw_patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/foo.c b/foo.c",
+                "--- a/foo.c",
+                "+++ b/foo.c",
+                "@@ -1 +1 @@",
+                "-int value = 1;",
+                "+int value = 2;",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    normalized_patch_path = task_dir / "normalized" / "normalized.patch"
+    normalized_patch_path.parent.mkdir(parents=True, exist_ok=True)
+    normalized_patch_path.write_text(raw_patch_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    runner.services.json_writer.write_model(
+        PatchBundle(
+            task_id=task.task_id,
+            cve_id=task.cve_id,
+            affected_files=["foo.c"],
+            raw_patch_path=raw_patch_path,
+            normalized_patch_path=normalized_patch_path,
+        ),
+        task_dir / "input" / "patch_bundle.json",
+    )
+    runner.services.json_writer.write_model(
+        SemanticCard(
+            bug_class="logic_error",
+            root_cause="unit test",
+            touched_functions=["foo"],
+        ),
+        task_dir / "analysis" / "semantic_card.json",
+    )
+    runner.services.json_writer.write_model(
+        ConstraintReport(
+            task_id=task.task_id,
+            summary="unit test",
+        ),
+        task_dir / "analysis" / "constraint_report.json",
+    )
+
+    attempt_service = runner.attempt_service
+
+    def fake_build_bootstrap_manifest() -> BootstrapManifest:
+        return BootstrapManifest(fragment_ids=["boot-001"], total_token_cost=1)
+
+    def fake_assemble_context(*, stage_name: str, evidence_bundle: object) -> ContextBundle:
+        evidence_ids = list(getattr(evidence_bundle, "evidence_ids", []))
+        return ContextBundle(evidence_ids=evidence_ids, token_cost=len(evidence_ids), notes=[f"stage={stage_name}"])
+
+    def fake_materialize_stage_packet(
+        *,
+        stage_name: str,
+        schema_name: str,
+        context_bundle: ContextBundle,
+        bootstrap_manifest: BootstrapManifest,
+        base_dir: Path,
+    ) -> dict[str, object]:
+        route = SkillRouteDecision(
+            stage_name=stage_name,
+            candidate_skills=["unit-test-skill"],
+            selected_skill="unit-test-skill",
+            selection_reason="unit test route",
+            fallback_used=False,
+            route_source="unit-test",
+        )
+        prompt_packet = PromptPacket(
+            stage_name=stage_name,
+            system_prompt_version="test",
+            worker_prompt_version="test",
+            schema_name=schema_name,
+            budget_snapshot={"token_cost": context_bundle.token_cost},
+            bootstrap_fragments=bootstrap_manifest.fragment_ids,
+            prompt_sections=[f"schema={schema_name}"],
+        )
+        route_path = attempt_service.json_writer.write_model(route, base_dir / "route" / f"{stage_name}_skill_route.json")
+        prompt_path = attempt_service.json_writer.write_model(
+            prompt_packet,
+            base_dir / "prompt" / f"{stage_name}_prompt_packet.json",
+        )
+        return {
+            "route": route,
+            "prompt_packet": prompt_packet,
+            "route_path": route_path,
+            "prompt_path": prompt_path,
+        }
+
+    def fake_plan(*, task_id: str, semantic_card: SemanticCard, constraint_report: ConstraintReport) -> RewritePlan:
+        return RewritePlan(
+            task_id=task_id,
+            plan_id=f"{task_id}-plan-001",
+            candidate_ids=["cand-001"],
+            selected_recipe="direct_apply_patch",
+            selected_primitives=["direct_apply"],
+            target_files=["foo.c"],
+            selection_reason="unit test target-state plan",
+        )
+
+    def fake_rewriter_execute(
+        *,
+        plan: RewritePlan,
+        patch_bundle: PatchBundle,
+        rewrite_dir: Path,
+        builder: object,
+        task_id: str,
+        attempt_no: int,
+    ) -> dict[str, object]:
+        rewrite_dir.mkdir(parents=True, exist_ok=True)
+        rewritten_patch_path = rewrite_dir / "rewritten.patch"
+        rewritten_patch_path.write_text(patch_bundle.normalized_patch_path.read_text(encoding="utf-8"), encoding="utf-8")
+        rewrite_reason_path = rewrite_dir / "rewrite_reason.json"
+        rewrite_reason_path.write_text("{\"reason\": \"unit test\"}\n", encoding="utf-8")
+        transformation_trace_path = rewrite_dir / "transformation_trace.json"
+        transformation_trace_path.write_text("{\"trace\": \"unit test\"}\n", encoding="utf-8")
+        apply_precheck_path = rewrite_dir / "apply_precheck.json"
+        apply_precheck_report = ApplyPrecheckReport(
+            status="passed",
+            ok=True,
+            backend="local",
+            target_source_dir=str(kernel_dir),
+            checked_patch_path=str(rewritten_patch_path),
+            summary="预检查通过。",
+        )
+        apply_precheck_path.write_text(apply_precheck_report.model_dump_json(indent=2), encoding="utf-8")
+        return {
+            "rewritten_patch": rewritten_patch_path,
+            "rewrite_reason": rewrite_reason_path,
+            "transformation_trace": transformation_trace_path,
+            "apply_precheck": apply_precheck_path,
+            "apply_precheck_report": apply_precheck_report,
+        }
+
+    def fake_execute_build(
+        *,
+        task: TaskContext,
+        attempt_no: int,
+        plan: RewritePlan,
+        rewritten_patch_path: Path,
+        build_log_path: Path,
+    ) -> tuple[AttemptRecord, str, object, BuildSummary]:
+        build_log_path.parent.mkdir(parents=True, exist_ok=True)
+        build_log = (
+            "[apply precheck]\n"
+            "目标态结论: target_already_patched\n"
+            "当前源码树已命中 target_already_patched，准备切换到备用源码树: /tmp/kernel-clean\n"
+            "Checking patch foo.c...\n"
+            "error: foo.c: No such file or directory\n"
+        )
+        build_log_path.write_text(build_log, encoding="utf-8")
+        attempt_record = AttemptRecord(
+            task_id=task.task_id,
+            attempt_no=attempt_no,
+            attempt_id=f"{task.task_id}-A{attempt_no:03d}",
+            candidate_id=plan.candidate_ids[0],
+            status="failed",
+            failure_type="patch_apply_failed",
+            build_exec_status="not_run",
+            build_log_path=build_log_path,
+            module_path=None,
+            rewritten_patch_path=rewritten_patch_path,
+        )
+        build_precheck = runner.services.builder._precheck_not_run(
+            task_id=task.task_id,
+            attempt_id=attempt_record.attempt_id,
+            backend="local",
+            rewritten_patch_path=rewritten_patch_path,
+            source_dir="/tmp/kernel-clean",
+            failure_type="patch_apply_failed",
+            summary="apply 级预检查未通过。",
+        )
+        build_summary = BuildSummary(
+            task_id=task.task_id,
+            attempt_id=attempt_record.attempt_id,
+            backend="local",
+            builder_cmd="git",
+            status="not_run",
+            summary="apply 级预检查未通过，已跳过本机构建。",
+            rewritten_patch_path=rewritten_patch_path,
+            source_dir="/tmp/kernel-clean",
+            build_log_path=build_log_path,
+            failure_type="patch_apply_failed",
+            build_exec_status="not_run",
+            target_state=None,
+        )
+        return attempt_record, build_log, build_precheck, build_summary
+
+    validator_calls: dict[str, object] = {}
+
+    def fake_validator_run(
+        *,
+        task: TaskContext,
+        attempt: AttemptRecord,
+        attempt_dir: Path,
+        rewritten_patch_path: Path,
+        build_summary: BuildSummary | None = None,
+    ) -> tuple[ValidationReport, dict[str, Path]]:
+        validator_calls["attempt"] = attempt
+        validator_calls["build_summary"] = build_summary
+        artifacts_dir = attempt_dir / "artifacts"
+        logs_dir = attempt_dir / "logs"
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
+        logs_dir.mkdir(parents=True, exist_ok=True)
+
+        semantic_precheck_path = artifacts_dir / "semantic_precheck.json"
+        semantic_precheck_path.write_text("{\"status\": \"failed\"}\n", encoding="utf-8")
+        load_log_path = logs_dir / "load.log"
+        unload_log_path = logs_dir / "unload.log"
+        smoke_log_path = logs_dir / "smoke.log"
+        for log_path in [load_log_path, unload_log_path, smoke_log_path]:
+            log_path.write_text("skipped\n", encoding="utf-8")
+
+        report = ValidationReport(
+            load_result=ValidationItem(status="pending", ok=False, detail="unit test load pending"),
+            unload_result=ValidationItem(status="pending", ok=False, detail="unit test unload pending"),
+            smoke_result=ValidationItem(status="pending", ok=False, detail="unit test smoke pending"),
+            semantic_guard_result=ValidationItem(status="failed", ok=False, detail="unit test semantic guard failed"),
+            notes=["validator invoked"],
+        )
+        validation_report_path = artifacts_dir / "validation_report.json"
+        validation_report_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
+        return report, {
+            "semantic_precheck": semantic_precheck_path,
+            "validation_report": validation_report_path,
+            "load_log": load_log_path,
+            "unload_log": unload_log_path,
+            "smoke_log": smoke_log_path,
+        }
+
+    monkeypatch.setattr(attempt_service, "build_bootstrap_manifest", fake_build_bootstrap_manifest)
+    monkeypatch.setattr(attempt_service, "assemble_context", fake_assemble_context)
+    monkeypatch.setattr(attempt_service, "materialize_stage_packet", fake_materialize_stage_packet)
+    monkeypatch.setattr(attempt_service.planner, "plan", fake_plan)
+    monkeypatch.setattr(attempt_service.rewriter, "execute", fake_rewriter_execute)
+    monkeypatch.setattr(attempt_service.builder, "execute_build", fake_execute_build)
+    monkeypatch.setattr(attempt_service.validator, "run", fake_validator_run)
+
+    result = runner.run_task(task.task_id)
+    replay = runner.replay_task(task.task_id)
+    attempt_dir = task_dir / "attempts" / "001"
+    build_summary = BuildSummary.model_validate_json((attempt_dir / "artifacts" / "build_summary.json").read_text(encoding="utf-8"))
+    failure_record = json.loads((attempt_dir / "logs" / "failure_record.json").read_text(encoding="utf-8"))
+    build_log = (attempt_dir / "logs" / "build.log").read_text(encoding="utf-8")
+
+    assert result["status"] == "target_state"
+    assert result["failure_type"] == "target_already_patched"
+    assert result["target_state"] == "target_already_patched"
+    assert isinstance(validator_calls["build_summary"], BuildSummary)
+    assert validator_calls["build_summary"].failure_type == "target_already_patched"
+    assert validator_calls["build_summary"].target_state == "target_already_patched"
+    assert build_summary.failure_type == "target_already_patched"
+    assert build_summary.target_state == "target_already_patched"
+    assert "备用源码树未能提供可继续构建的落点" in build_summary.summary
+    assert failure_record["failure_type"] == "target_already_patched"
+    assert "目标态已修复" in failure_record["summary"]
+    assert "[build normalization]" in build_log
+    assert replay["latest_failure_type"] == "target_already_patched"
+    assert replay["latest_target_state"] == "target_already_patched"
+
+
+def test_attempt_service_normalizes_target_state_when_apply_precheck_type_is_stale(monkeypatch) -> None:
+    tmp_path = _case_dir("attempt-service-precheck-stale-target-state")
+    repo_root = Path(__file__).resolve().parents[2]
+    kernel_dir = tmp_path / "kernel"
+    _write_kernel_tree(kernel_dir)
+
+    runtime = ResolvedRuntime(
+        project_root=repo_root,
+        config_dir=repo_root / "config",
+        data_dir=tmp_path / "data",
+        workspace_root=tmp_path / "workspaces",
+        database_path=tmp_path / "data" / "patchweaver.db",
+        manifest_dir=tmp_path / "data" / "manifests",
+        default_kernel="6.6.102-5.2.an23.x86_64",
+        max_attempts=5,
+        parallel_read_limit=3,
+        write_lock_scope="task",
+        trace_mode="full",
+    )
+    runner = TaskRunner(
+        runtime=runtime,
+        build_config=BuildConfig(
+            build_backend="local",
+            kernel_src_dir=str(kernel_dir),
+            kernel_devel_dir=str(kernel_dir),
+            vmlinux_path=str(kernel_dir / "vmlinux"),
+            kpatch_build_cmd="git",
+            auto_switch_source_tree=False,
+        ),
+        verify_config=VerifyConfig(
+            enable_load_test=True,
+            enable_unload_test=True,
+            enable_smoke_test=True,
+            enable_regression=False,
+            smoke_test_script="scripts/validate_smoke.sh",
+        ),
+        prompts_config=PromptsConfig(prompt_profiles={"strict": PromptProfile()}),
+    )
+
+    task = TaskContext(
+        task_id="TASK-TEST-006B",
+        cve_id="CVE-2099-0006B",
+        target_kernel=runtime.default_kernel,
+        workspace_dir=runtime.workspace_root / "TASK-TEST-006B",
+    )
+    runner.services.task_repo.create_task(task)
+    task_dir = runner.services.workspace_guard.create_task_workspace(task)
+
+    raw_patch_path = task_dir / "input" / "raw_patch.patch"
+    raw_patch_path.parent.mkdir(parents=True, exist_ok=True)
+    raw_patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/foo.c b/foo.c",
+                "--- a/foo.c",
+                "+++ b/foo.c",
+                "@@ -1 +1 @@",
+                "-int value = 1;",
+                "+int value = 2;",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    normalized_patch_path = task_dir / "normalized" / "normalized.patch"
+    normalized_patch_path.parent.mkdir(parents=True, exist_ok=True)
+    normalized_patch_path.write_text(raw_patch_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    runner.services.json_writer.write_model(
+        PatchBundle(
+            task_id=task.task_id,
+            cve_id=task.cve_id,
+            affected_files=["foo.c"],
+            raw_patch_path=raw_patch_path,
+            normalized_patch_path=normalized_patch_path,
+        ),
+        task_dir / "input" / "patch_bundle.json",
+    )
+    runner.services.json_writer.write_model(
+        SemanticCard(
+            bug_class="logic_error",
+            root_cause="unit test",
+            touched_functions=["foo"],
+        ),
+        task_dir / "analysis" / "semantic_card.json",
+    )
+    runner.services.json_writer.write_model(
+        ConstraintReport(
+            task_id=task.task_id,
+            summary="unit test",
+        ),
+        task_dir / "analysis" / "constraint_report.json",
+    )
+
+    attempt_service = runner.attempt_service
+
+    def fake_build_bootstrap_manifest() -> BootstrapManifest:
+        return BootstrapManifest(fragment_ids=["boot-001"], total_token_cost=1)
+
+    def fake_assemble_context(*, stage_name: str, evidence_bundle: object) -> ContextBundle:
+        evidence_ids = list(getattr(evidence_bundle, "evidence_ids", []))
+        return ContextBundle(evidence_ids=evidence_ids, token_cost=len(evidence_ids), notes=[f"stage={stage_name}"])
+
+    def fake_materialize_stage_packet(
+        *,
+        stage_name: str,
+        schema_name: str,
+        context_bundle: ContextBundle,
+        bootstrap_manifest: BootstrapManifest,
+        base_dir: Path,
+    ) -> dict[str, object]:
+        route = SkillRouteDecision(
+            stage_name=stage_name,
+            candidate_skills=["unit-test-skill"],
+            selected_skill="unit-test-skill",
+            selection_reason="unit test route",
+            fallback_used=False,
+            route_source="unit-test",
+        )
+        prompt_packet = PromptPacket(
+            stage_name=stage_name,
+            system_prompt_version="test",
+            worker_prompt_version="test",
+            schema_name=schema_name,
+            budget_snapshot={"token_cost": context_bundle.token_cost},
+            bootstrap_fragments=bootstrap_manifest.fragment_ids,
+            prompt_sections=[f"schema={schema_name}"],
+        )
+        route_path = attempt_service.json_writer.write_model(route, base_dir / "route" / f"{stage_name}_skill_route.json")
+        prompt_path = attempt_service.json_writer.write_model(
+            prompt_packet,
+            base_dir / "prompt" / f"{stage_name}_prompt_packet.json",
+        )
+        return {
+            "route": route,
+            "prompt_packet": prompt_packet,
+            "route_path": route_path,
+            "prompt_path": prompt_path,
+        }
+
+    def fake_plan(*, task_id: str, semantic_card: SemanticCard, constraint_report: ConstraintReport) -> RewritePlan:
+        return RewritePlan(
+            task_id=task_id,
+            plan_id=f"{task_id}-plan-001",
+            candidate_ids=["cand-001"],
+            selected_recipe="direct_apply_patch",
+            selected_primitives=["direct_apply"],
+            target_files=["foo.c"],
+            selection_reason="unit test precheck normalize",
+        )
+
+    def fake_rewriter_execute(
+        *,
+        plan: RewritePlan,
+        patch_bundle: PatchBundle,
+        rewrite_dir: Path,
+        builder: object,
+        task_id: str,
+        attempt_no: int,
+    ) -> dict[str, object]:
+        rewrite_dir.mkdir(parents=True, exist_ok=True)
+        rewritten_patch_path = rewrite_dir / "rewritten.patch"
+        rewritten_patch_path.write_text(patch_bundle.normalized_patch_path.read_text(encoding="utf-8"), encoding="utf-8")
+        rewrite_reason_path = rewrite_dir / "rewrite_reason.json"
+        rewrite_reason_path.write_text("{\"reason\": \"unit test\"}\n", encoding="utf-8")
+        transformation_trace_path = rewrite_dir / "transformation_trace.json"
+        transformation_trace_path.write_text("{\"trace\": \"unit test\"}\n", encoding="utf-8")
+        apply_precheck_path = rewrite_dir / "apply_precheck.json"
+        apply_precheck_report = ApplyPrecheckReport(
+            status="failed",
+            ok=False,
+            backend="local",
+            target_source_dir=str(kernel_dir),
+            command="git apply --check --verbose rewritten.patch",
+            checked_patch_path=str(rewritten_patch_path),
+            summary="本地 apply 预检查显示目标源码已包含该补丁，无需重复应用。",
+            stdout="Checking patch foo.c...",
+            stderr="error: patch does not apply",
+            failure_type="patch_apply_failed",
+            build_exec_status="not_run",
+            target_state="target_already_patched",
+        )
+        apply_precheck_path.write_text(apply_precheck_report.model_dump_json(indent=2), encoding="utf-8")
+        return {
+            "rewritten_patch": rewritten_patch_path,
+            "rewrite_reason": rewrite_reason_path,
+            "transformation_trace": transformation_trace_path,
+            "apply_precheck": apply_precheck_path,
+            "apply_precheck_report": apply_precheck_report,
+        }
+
+    def fake_execute_build(**kwargs):
+        raise AssertionError("target_state 预检查应在进入 builder 前完成统一收口")
+
+    def fake_validator_run(
+        *,
+        task: TaskContext,
+        attempt: AttemptRecord,
+        attempt_dir: Path,
+        rewritten_patch_path: Path,
+        build_summary: BuildSummary | None = None,
+    ) -> tuple[ValidationReport, dict[str, Path]]:
+        artifacts_dir = attempt_dir / "artifacts"
+        logs_dir = attempt_dir / "logs"
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
+        logs_dir.mkdir(parents=True, exist_ok=True)
+
+        semantic_precheck_path = artifacts_dir / "semantic_precheck.json"
+        semantic_precheck_path.write_text("{\"status\": \"failed\", \"detail\": \"target_state\"}\n", encoding="utf-8")
+        report = ValidationReport(
+            load_result=ValidationItem(status="pending", ok=False, detail="unit test load pending"),
+            unload_result=ValidationItem(status="pending", ok=False, detail="unit test unload pending"),
+            smoke_result=ValidationItem(status="pending", ok=False, detail="unit test smoke pending"),
+            semantic_guard_result=ValidationItem(status="failed", ok=False, detail="unit test semantic guard failed"),
+            notes=["validator invoked"],
+        )
+        validation_report_path = artifacts_dir / "validation_report.json"
+        validation_report_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
+        for name in ["load.log", "unload.log", "smoke.log"]:
+            (logs_dir / name).write_text("skipped\n", encoding="utf-8")
+        return report, {
+            "semantic_precheck": semantic_precheck_path,
+            "validation_report": validation_report_path,
+            "load_log": logs_dir / "load.log",
+            "unload_log": logs_dir / "unload.log",
+            "smoke_log": logs_dir / "smoke.log",
+        }
+
+    monkeypatch.setattr(attempt_service, "build_bootstrap_manifest", fake_build_bootstrap_manifest)
+    monkeypatch.setattr(attempt_service, "assemble_context", fake_assemble_context)
+    monkeypatch.setattr(attempt_service, "materialize_stage_packet", fake_materialize_stage_packet)
+    monkeypatch.setattr(attempt_service.planner, "plan", fake_plan)
+    monkeypatch.setattr(attempt_service.rewriter, "execute", fake_rewriter_execute)
+    monkeypatch.setattr(attempt_service.builder, "execute_build", fake_execute_build)
+    monkeypatch.setattr(attempt_service.validator, "run", fake_validator_run)
+
+    result = runner.run_task(task.task_id)
+    replay = runner.replay_task(task.task_id)
+    attempt_dir = task_dir / "attempts" / "001"
+    build_summary = BuildSummary.model_validate_json((attempt_dir / "artifacts" / "build_summary.json").read_text(encoding="utf-8"))
+    failure_record = json.loads((attempt_dir / "logs" / "failure_record.json").read_text(encoding="utf-8"))
+
+    assert result["status"] == "target_state"
+    assert result["failure_type"] == "target_already_patched"
+    assert result["target_state"] == "target_already_patched"
+    assert build_summary.failure_type == "target_already_patched"
+    assert build_summary.target_state == "target_already_patched"
+    assert failure_record["failure_type"] == "target_already_patched"
+    assert replay["latest_failure_type"] == "target_already_patched"
+    assert replay["latest_target_state"] == "target_already_patched"
 
 
 def test_attempt_service_records_narrow_failover_when_failure_occurs(monkeypatch) -> None:

@@ -27,7 +27,7 @@ def test_joint_planner_uses_memory_hints_to_rank_candidates() -> None:
         forbidden_actions=["direct_trampoline_injection"],
         route_hints=[
             RouteHint(
-                route_name="minimal_livepatch_wrap",
+                route_name="callback_livepatch_wrap",
                 summary="当前已命中 no_fentry_target，优先走包装与回调路线",
                 recommended_primitives=["wrapper", "callback"],
                 blocking_risk_types=["no_fentry_target"],
@@ -117,3 +117,219 @@ def test_joint_planner_expands_complex_routes_into_competing_candidates() -> Non
     assert "smpl_primary" in families
     assert "direct_apply_patch" in recipes
     assert any(item.requires_kernel_scaffold for item in plan.candidate_summaries if item.route_family in {"callback", "shadow_variable"})
+
+
+def test_joint_planner_keeps_state_preserving_route_distinct() -> None:
+    semantic_card = SemanticCard(
+        root_cause="结构布局变化需要显式的状态迁移路线",
+        touched_files=["include/linux/demo.h"],
+        touched_functions=["demo_state_apply"],
+    )
+    constraint_report = ConstraintReport(
+        task_id="TASK-PLANNER-003",
+        target_files=["include/linux/demo.h"],
+        target_functions=["demo_state_apply"],
+        dominant_risk_types=["struct_layout_change", "header_abi_change"],
+        candidate_routes=["state_preserving_wrap", "shadow_variable_wrap", "minimal_livepatch_wrap"],
+        preferred_route="state_preserving_wrap",
+        high_risk_count=2,
+        requires_shadow_variable=True,
+        direct_apply_viable=False,
+        summary="结构布局变化时优先保留状态迁移路线",
+    )
+
+    plan = JointPlanner().plan(
+        task_id="TASK-PLANNER-003",
+        semantic_card=semantic_card,
+        constraint_report=constraint_report,
+    )
+
+    recipes = {item.recipe_name for item in plan.candidate_summaries}
+    families = {item.route_family for item in plan.candidate_summaries}
+
+    assert "state_preserving_wrap" in recipes
+    assert "shadow_variable_wrap" in recipes
+    assert "state_preserving" in families
+    assert any(
+        item.requires_kernel_scaffold and item.route_family == "state_preserving"
+        for item in plan.candidate_summaries
+    )
+
+
+def test_joint_planner_selects_callback_recipe_when_callback_route_is_preferred() -> None:
+    semantic_card = SemanticCard(
+        root_cause="目标路径依赖 fentry 入口，需要保留 callback 路线",
+        touched_files=["kernel/livepatch/demo.c"],
+        touched_functions=["demo_callback_target"],
+    )
+    constraint_report = ConstraintReport(
+        task_id="TASK-PLANNER-004",
+        target_files=["kernel/livepatch/demo.c"],
+        target_functions=["demo_callback_target"],
+        dominant_risk_types=["no_fentry_target"],
+        suggested_primitives=["callback", "direct_apply", "wrapper"],
+        candidate_routes=["callback_livepatch_wrap", "minimal_livepatch_wrap", "direct_apply_patch"],
+        preferred_route="callback_livepatch_wrap",
+        high_risk_count=1,
+        requires_callback=True,
+        direct_apply_viable=True,
+        summary="当前应优先尝试 callback 路线",
+    )
+
+    plan = JointPlanner().plan(
+        task_id="TASK-PLANNER-004",
+        semantic_card=semantic_card,
+        constraint_report=constraint_report,
+    )
+
+    assert plan.selected_recipe == "callback_livepatch_wrap"
+    assert plan.selected_route_family == "callback"
+    assert plan.requires_kernel_scaffold is True
+
+
+def test_joint_planner_selects_shadow_recipe_when_shadow_route_is_preferred() -> None:
+    semantic_card = SemanticCard(
+        root_cause="目标路径新增静态状态，需要保留 shadow_variable 路线",
+        touched_files=["kernel/livepatch/demo.c"],
+        touched_functions=["demo_shadow_target"],
+    )
+    constraint_report = ConstraintReport(
+        task_id="TASK-PLANNER-005",
+        target_files=["kernel/livepatch/demo.c"],
+        target_functions=["demo_shadow_target"],
+        dominant_risk_types=["global_data_change", "static_local_change"],
+        suggested_primitives=["direct_apply", "shadow_variable", "wrapper"],
+        candidate_routes=["shadow_variable_wrap", "minimal_livepatch_wrap", "direct_apply_patch"],
+        preferred_route="shadow_variable_wrap",
+        high_risk_count=1,
+        requires_shadow_variable=True,
+        direct_apply_viable=True,
+        summary="当前应优先尝试 shadow_variable 路线",
+    )
+
+    plan = JointPlanner().plan(
+        task_id="TASK-PLANNER-005",
+        semantic_card=semantic_card,
+        constraint_report=constraint_report,
+    )
+
+    assert plan.selected_recipe == "shadow_variable_wrap"
+    assert plan.selected_route_family == "shadow_variable"
+    assert plan.requires_kernel_scaffold is True
+
+
+def test_joint_planner_selects_callback_shadow_recipe_when_shadow_and_callback_are_both_required() -> None:
+    semantic_card = SemanticCard(
+        root_cause="当前路径既缺稳定 fentry 落点，又需要补齐 shadow state",
+        touched_files=["kernel/livepatch/demo.c"],
+        touched_functions=["demo_callback_shadow_target"],
+    )
+    constraint_report = ConstraintReport(
+        task_id="TASK-PLANNER-006",
+        target_files=["kernel/livepatch/demo.c"],
+        target_functions=["demo_callback_shadow_target"],
+        dominant_risk_types=["no_fentry_target", "global_data_change", "static_local_change"],
+        suggested_primitives=["wrapper", "callback", "shadow_variable"],
+        candidate_routes=[
+            "callback_shadow_wrap",
+            "callback_livepatch_wrap",
+            "shadow_variable_wrap",
+            "minimal_livepatch_wrap",
+        ],
+        preferred_route="callback_shadow_wrap",
+        high_risk_count=2,
+        requires_callback=True,
+        requires_shadow_variable=True,
+        direct_apply_viable=False,
+        summary="当前应优先尝试 callback_shadow 路线",
+    )
+
+    plan = JointPlanner().plan(
+        task_id="TASK-PLANNER-006",
+        semantic_card=semantic_card,
+        constraint_report=constraint_report,
+    )
+
+    assert plan.selected_recipe == "callback_shadow_wrap"
+    assert plan.selected_route_family == "callback_shadow"
+    assert plan.requires_kernel_scaffold is True
+
+
+def test_joint_planner_selects_smpl_primary_recipe_when_rule_prefers_structured_rewrite() -> None:
+    semantic_card = SemanticCard(
+        root_cause="需要优先尝试结构化变换而不是直接套 wrapper",
+        touched_files=["fs/demo.c"],
+        touched_functions=["demo_smpl_target"],
+    )
+    constraint_report = ConstraintReport(
+        task_id="TASK-PLANNER-007",
+        target_files=["fs/demo.c"],
+        target_functions=["demo_smpl_target"],
+        dominant_risk_types=["macro_control_flow_change", "error_unwind_change"],
+        suggested_primitives=["wrapper", "smpl"],
+        candidate_routes=["smpl_primary_rewrite", "minimal_livepatch_wrap", "direct_apply_patch"],
+        preferred_route="smpl_primary_rewrite",
+        high_risk_count=2,
+        direct_apply_viable=False,
+        summary="当前应优先尝试 SmPL 主导改写",
+    )
+
+    plan = JointPlanner().plan(
+        task_id="TASK-PLANNER-007",
+        semantic_card=semantic_card,
+        constraint_report=constraint_report,
+    )
+
+    assert plan.selected_recipe == "smpl_primary_rewrite"
+    assert plan.selected_route_family == "smpl_primary"
+    assert plan.requires_kernel_scaffold is False
+
+
+def test_joint_planner_deduplicates_same_route_candidates_with_different_primitive_order() -> None:
+    semantic_card = SemanticCard(
+        root_cause="需要确认 callback 路线只保留一份真实候选",
+        touched_files=["kernel/livepatch/demo.c"],
+        touched_functions=["demo_callback_target"],
+    )
+    constraint_report = ConstraintReport(
+        task_id="TASK-PLANNER-008",
+        target_files=["kernel/livepatch/demo.c"],
+        target_functions=["demo_callback_target"],
+        dominant_risk_types=["no_fentry_target"],
+        suggested_primitives=["callback", "wrapper"],
+        route_hints=[
+            RouteHint(
+                route_name="callback_livepatch_wrap",
+                summary="缺少稳定 fentry，优先 callback 路线",
+                recommended_primitives=["callback", "wrapper"],
+                blocking_risk_types=["no_fentry_target"],
+                preferred=True,
+            ),
+            RouteHint(
+                route_name="direct_apply_patch",
+                summary="保留 direct apply 对照路径",
+                recommended_primitives=["direct_apply"],
+                blocking_risk_types=["no_fentry_target"],
+                preferred=False,
+            ),
+        ],
+        candidate_routes=["callback_livepatch_wrap", "minimal_livepatch_wrap", "direct_apply_patch"],
+        preferred_route="callback_livepatch_wrap",
+        high_risk_count=1,
+        requires_callback=True,
+        direct_apply_viable=True,
+        summary="需要验证候选去重稳定性",
+    )
+
+    plan = JointPlanner().plan(
+        task_id="TASK-PLANNER-008",
+        semantic_card=semantic_card,
+        constraint_report=constraint_report,
+    )
+
+    callback_candidates = [item for item in plan.candidate_summaries if item.recipe_name == "callback_livepatch_wrap"]
+
+    assert len(callback_candidates) == 1
+    assert len(plan.candidate_summaries) == len(
+        {(item.recipe_name, tuple(item.primitives)) for item in plan.candidate_summaries}
+    )

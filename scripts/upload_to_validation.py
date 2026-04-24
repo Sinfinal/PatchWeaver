@@ -56,11 +56,14 @@ class UploadConfig:
     keep_remote_archive: bool = False
     clean_remote_dir: bool = True
     build_frontend: bool = True
+    prepare_remote_build_tree: bool = True
+    force_remote_build_tree: bool = False
     install_remote_runtime: bool = True
     run_remote_smoke_check: bool = True
     remote_python: str = "python3"
     remote_venv_name: str = ".venv"
     remote_smoke_port: int = 18084
+    remote_kernel_release: str = ""
 
 
 class ValidationUploader:
@@ -74,38 +77,51 @@ class ValidationUploader:
     def run(self) -> None:
         """执行打包、上传和验证机目录展开"""
 
-        step_total = 6
+        step_total = 7
+        current_step = 1
         if self.config.build_frontend:
             # 先在本地把前端静态资源固化出来
             # 这样验证机只负责部署和运行，不把 Node 构建链路带过去
             self._build_frontend()
-            print(f"[1/{step_total}] 前端构建完成 -> {self._web_dist_dir()}")
+            print(f"[{current_step}/{step_total}] 前端构建完成 -> {self._web_dist_dir()}")
         else:
-            print(f"[1/{step_total}] 已跳过前端构建，沿用现有 dist -> {self._web_dist_dir()}")
+            print(f"[{current_step}/{step_total}] 已跳过前端构建，沿用现有 dist -> {self._web_dist_dir()}")
+        current_step += 1
 
         archive_path, file_count = self._build_archive()
         remote_archive = PurePosixPath("/root") / archive_path.name
 
-        print(f"[2/{step_total}] 已打包本地项目，共 {file_count} 个条目")
+        print(f"[{current_step}/{step_total}] 已打包本地项目，共 {file_count} 个条目")
         print(f"      {archive_path}")
+        current_step += 1
 
         client = self._connect()
         try:
-            print(f"[3/{step_total}] 已连接验证机 {self.config.username}@{self.config.host}:{self.config.port}")
+            print(f"[{current_step}/{step_total}] 已连接验证机 {self.config.username}@{self.config.host}:{self.config.port}")
+            current_step += 1
             self._upload_archive(client, archive_path=archive_path, remote_archive=remote_archive)
-            print(f"[4/{step_total}] 上传完成 -> {remote_archive}")
+            print(f"[{current_step}/{step_total}] 上传完成 -> {remote_archive}")
+            current_step += 1
             self._extract_archive(client, remote_archive=remote_archive)
-            print(f"[5/{step_total}] 验证机目录已更新 -> {self.config.remote_dir}")
+            print(f"[{current_step}/{step_total}] 验证机目录已更新 -> {self.config.remote_dir}")
+            current_step += 1
+            if self.config.prepare_remote_build_tree:
+                self._prepare_remote_build_tree(client)
+                print(f"[{current_step}/{step_total}] 验证机构建源码树准备完成")
+            else:
+                print(f"[{current_step}/{step_total}] 已跳过验证机构建源码树准备")
+            current_step += 1
             if self.config.install_remote_runtime:
                 self._install_remote_runtime(client)
-                print(f"[6/{step_total}] 验证机运行时安装完成")
+                print(f"[{current_step}/{step_total}] 验证机运行时安装完成")
             else:
-                print(f"[6/{step_total}] 已跳过验证机运行时安装")
+                print(f"[{current_step}/{step_total}] 已跳过验证机运行时安装")
+            current_step += 1
             if self.config.run_remote_smoke_check:
                 self._run_remote_smoke_check(client)
-                print("      验证机 API / Web 冒烟检查通过")
+                print(f"[{current_step}/{step_total}] 验证机 API / Web 冒烟检查通过")
             else:
-                print("      已跳过验证机冒烟检查")
+                print(f"[{current_step}/{step_total}] 已跳过验证机冒烟检查")
             print("      可在验证机上继续执行:")
             print(f"      cd {self.config.remote_dir}")
             print(f"      source {self._remote_venv_dir().as_posix()}/bin/activate")
@@ -277,7 +293,6 @@ class ValidationUploader:
 
         remote_dir = self.config.remote_dir.as_posix()
         remote_venv = self._remote_venv_dir().as_posix()
-        remote_python = shlex.quote(self.config.remote_python)
         api_port = self.config.remote_smoke_port
         remote_cli_wrapper = PurePosixPath("/usr/local/bin/patchweaver").as_posix()
         remote_cli_compat_wrapper = PurePosixPath("/usr/bin/patchweaver").as_posix()
@@ -293,20 +308,7 @@ class ValidationUploader:
 
             # 优先复用验证机上已经装好依赖的解释器
             # 这样可以避开现场再联网装包，部署会稳很多
-            PYTHON_BIN=""
-            for candidate in {remote_python} /usr/bin/python3 python3 python; do
-              if [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; then
-                if "$candidate" -c "mods = ['paramiko', 'fastapi', 'uvicorn', 'typer', 'pydantic', 'yaml', 'jinja2', 'unidiff', 'rich']; [__import__(name) for name in mods]" >/dev/null 2>&1; then
-                  PYTHON_BIN="$candidate"
-                  break
-                fi
-              fi
-            done
-
-            if [ -z "$PYTHON_BIN" ]; then
-              echo "未找到带项目依赖的 Python 解释器" >&2
-              exit 1
-            fi
+            {self._remote_python_probe_script()}
 
             rm -rf {shlex.quote(remote_venv)}
             "$PYTHON_BIN" -m venv --system-site-packages {shlex.quote(remote_venv)}
@@ -371,6 +373,60 @@ class ValidationUploader:
             print("      验证机安装输出:")
             for line in stdout_text.strip().splitlines():
                 print(f"      {line}")
+
+    def _prepare_remote_build_tree(self, client: paramiko.SSHClient) -> None:
+        """在验证机上自动准备完整源码树并回写 build.yaml"""
+
+        remote_dir = self.config.remote_dir.as_posix()
+        command_parts = ["$PYTHON_BIN", "-m", "patchweaver", "prepare-build-tree", "--json"]
+        if self.config.force_remote_build_tree:
+            command_parts.append("--force")
+        if self.config.remote_kernel_release:
+            command_parts.extend(["--kernel-release", shlex.quote(self.config.remote_kernel_release)])
+        command_text = " ".join(command_parts)
+        prepare_script = textwrap.dedent(
+            f"""
+            set -e
+            cd {shlex.quote(remote_dir)}
+            {self._remote_python_probe_script()}
+            {command_text}
+            """
+        ).strip()
+
+        stdout_text, stderr_text, exit_code = self._run_remote_shell_script(client, prepare_script, timeout=7200)
+        if exit_code != 0:
+            raise RuntimeError(
+                "验证机构建源码树准备失败:\n"
+                f"stdout:\n{stdout_text}\n"
+                f"stderr:\n{stderr_text}"
+            )
+        if stdout_text.strip():
+            print("      验证机构建源码树输出:")
+            for line in stdout_text.strip().splitlines():
+                print(f"      {line}")
+
+    def _remote_python_probe_script(self) -> str:
+        """返回一段用于挑选验证机 Python 解释器的 shell 片段"""
+
+        remote_python = shlex.quote(self.config.remote_python)
+        return textwrap.dedent(
+            f"""
+            PYTHON_BIN=""
+            for candidate in {remote_python} /usr/bin/python3 python3 python; do
+              if [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; then
+                if "$candidate" -c "mods = ['paramiko', 'fastapi', 'uvicorn', 'typer', 'pydantic', 'yaml', 'jinja2', 'unidiff', 'rich']; [__import__(name) for name in mods]" >/dev/null 2>&1; then
+                  PYTHON_BIN="$candidate"
+                  break
+                fi
+              fi
+            done
+
+            if [ -z "$PYTHON_BIN" ]; then
+              echo "未找到带项目依赖的 Python 解释器" >&2
+              exit 1
+            fi
+            """
+        ).strip()
 
     def _run_remote_smoke_check(self, client: paramiko.SSHClient) -> None:
         """验证已安装的验证机 API 服务，并检查健康检查和控制台页面"""
@@ -498,6 +554,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="上传后不在验证机上创建虚拟环境和安装依赖。",
     )
     parser.add_argument(
+        "--skip-target-build-tree-prepare",
+        "--skip-remote-build-tree-prepare",
+        dest="skip_remote_build_tree_prepare",
+        action="store_true",
+        help="上传后不在验证机上自动准备完整源码树。",
+    )
+    parser.add_argument(
+        "--force-target-build-tree-prepare",
+        "--force-remote-build-tree-prepare",
+        dest="force_remote_build_tree_prepare",
+        action="store_true",
+        help="强制重建验证机上的完整源码树。",
+    )
+    parser.add_argument(
         "--skip-target-smoke",
         "--skip-remote-smoke",
         dest="skip_remote_smoke",
@@ -525,6 +595,13 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=int(os.getenv("PATCHWEAVER_VALIDATION_TARGET_SMOKE_PORT", os.getenv("PATCHWEAVER_VALIDATION_SMOKE_PORT", "18084"))),
         help="验证机冒烟检查时临时启动 API 的端口。",
+    )
+    parser.add_argument(
+        "--target-kernel-release",
+        "--remote-kernel-release",
+        dest="remote_kernel_release",
+        default=os.getenv("PATCHWEAVER_VALIDATION_TARGET_KERNEL_RELEASE", ""),
+        help="验证机准备完整源码树时使用的目标内核版本。默认让 PatchWeaver 自动解析。",
     )
     return parser
 
@@ -559,11 +636,14 @@ def main() -> int:
         keep_remote_archive=args.keep_remote_archive,
         clean_remote_dir=not args.no_clean,
         build_frontend=not args.skip_frontend_build,
+        prepare_remote_build_tree=not args.skip_remote_build_tree_prepare,
+        force_remote_build_tree=args.force_remote_build_tree_prepare,
         install_remote_runtime=not args.skip_remote_install,
         run_remote_smoke_check=not args.skip_remote_smoke,
         remote_python=args.remote_python,
         remote_venv_name=args.remote_venv_name,
         remote_smoke_port=args.remote_smoke_port,
+        remote_kernel_release=args.remote_kernel_release,
     )
 
     # main 保持很薄，只做参数解析和对象装配

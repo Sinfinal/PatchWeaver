@@ -475,6 +475,102 @@ class AnalysisService(CoordinatorSupport):
 class AttemptExecutionService(CoordinatorSupport):
     """负责单轮尝试的执行与落盘"""
 
+    def _normalize_target_state_outcome(
+        self,
+        *,
+        attempt_record: Any,
+        build_summary: BuildSummary | None,
+        build_log: str,
+        build_log_path: Path,
+    ) -> tuple[Any, BuildSummary | None, str]:
+        """把 target_state 场景在 run/build/replay 三条口径上统一收口。"""
+
+        target_state = attempt_record.target_state or (build_summary.target_state if build_summary is not None else None)
+        saw_already_patched_fallback = (
+            build_summary is not None
+            and build_summary.build_exec_status == "not_run"
+            and "当前源码树已命中 target_already_patched" in build_log
+        )
+        if target_state is None and saw_already_patched_fallback:
+            target_state = "target_already_patched"
+        if target_state is None:
+            return attempt_record, build_summary, build_log
+
+        summary_text = (
+            build_summary.summary
+            if build_summary is not None and build_summary.summary
+            else f"本轮按 {target_state} 收口。"
+        )
+        if (
+            target_state == "target_already_patched"
+            and saw_already_patched_fallback
+            and "备用源码树未能提供可继续构建的落点" not in summary_text
+        ):
+            summary_text = "首选源码树已包含该补丁，备用源码树未能提供可继续构建的落点，本轮按目标态已修复收口"
+
+        if target_state == "target_already_patched" and saw_already_patched_fallback and "[build normalization]" not in build_log:
+            build_log = build_log.rstrip("\n") + "\n\n[build normalization]\n首选源码树命中 target_already_patched\n备用源码树未能通过 apply 预检查\n阶段最终结果统一收口为 target_already_patched\n"
+            build_log_path.write_text(build_log, encoding="utf-8")
+
+        attempt_record = attempt_record.model_copy(
+            update={
+                "status": "target_state",
+                "failure_type": target_state,
+                "build_exec_status": "not_run",
+                "target_state": target_state,
+            }
+        )
+        if build_summary is not None:
+            build_summary = build_summary.model_copy(
+                update={
+                    "status": "not_run",
+                    "summary": summary_text,
+                    "failure_type": target_state,
+                    "build_exec_status": "not_run",
+                    "target_state": target_state,
+                }
+            )
+        return attempt_record, build_summary, build_log
+
+    def _build_target_state_failure_record(
+        self,
+        *,
+        task_id: str,
+        attempt_id: str,
+        build_summary: BuildSummary | None,
+        build_log: str,
+        target_state: str,
+    ) -> FailureRecord:
+        """为 target_state 结果生成一条可复用的失败归因记录"""
+
+        evidence: list[str] = []
+        for line in build_log.splitlines():
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if (
+                "target_already_patched" in stripped
+                or "目标源码已包含该补丁" in stripped
+                or "备用源码树" in stripped
+            ) and stripped not in evidence:
+                evidence.append(stripped)
+            if len(evidence) >= 3:
+                break
+
+        summary = (
+            build_summary.summary
+            if build_summary is not None and build_summary.summary
+            else "目标源码已包含该补丁，本轮按目标态已修复收口"
+        )
+        return FailureRecord(
+            task_id=task_id,
+            attempt_id=attempt_id,
+            stage_name="build",
+            failure_type=target_state,
+            summary=summary,
+            evidence=evidence,
+        )
+
     def _write_failover_record(self, *, attempt_dir: Path, failure_record: FailureRecord) -> Path | None:
         """在启用窄状态回退时，为下一轮保留一份受控回退建议"""
 
@@ -622,11 +718,18 @@ class AttemptExecutionService(CoordinatorSupport):
         # apply 预检查失败时，大多数情况都直接停在这里
         # 但 target_already_patched 还需要给 builder 一次源码树切换机会
         allow_builder_retry = (
-            apply_precheck_report.failure_type == "target_already_patched"
+            (
+                apply_precheck_report.target_state == "target_already_patched"
+                or apply_precheck_report.failure_type == "target_already_patched"
+            )
             and getattr(self.build_config, "auto_switch_source_tree", False)
         )
         if apply_precheck_report.status == "failed" and not allow_builder_retry:
-            precheck_failure_type = apply_precheck_report.failure_type or "patch_apply_failed"
+            precheck_failure_type = (
+                apply_precheck_report.target_state
+                or apply_precheck_report.failure_type
+                or "patch_apply_failed"
+            )
             build_log = "\n".join(
                 [
                     "构建阶段已跳过。",
@@ -657,20 +760,6 @@ class AttemptExecutionService(CoordinatorSupport):
                     "finished_at": datetime.now(timezone.utc),
                 }
             )
-            self.attempt_repo.save_attempt(attempt_record)
-            self.attempt_repo.save_evidence_spans(task.task_id, attempt_record.attempt_id, rewrite_evidence.spans)
-            failure_record = FailureRecord(
-                task_id=task.task_id,
-                attempt_id=attempt_record.attempt_id,
-                stage_name="build",
-                failure_type=precheck_failure_type,
-                summary=apply_precheck_report.summary,
-                evidence=[
-                    item
-                    for item in [apply_precheck_report.stdout, apply_precheck_report.stderr]
-                    if item
-                ][:3],
-            )
             build_summary = BuildSummary(
                 task_id=task.task_id,
                 attempt_id=attempt_record.attempt_id,
@@ -685,12 +774,47 @@ class AttemptExecutionService(CoordinatorSupport):
                 build_exec_status=apply_precheck_report.build_exec_status or "not_run",
                 target_state=target_state,
             )
+            attempt_record, build_summary, build_log = self._normalize_target_state_outcome(
+                attempt_record=attempt_record,
+                build_summary=build_summary,
+                build_log=build_log,
+                build_log_path=build_log_path,
+            )
+            self.attempt_repo.save_attempt(attempt_record)
+            self.attempt_repo.save_evidence_spans(task.task_id, attempt_record.attempt_id, rewrite_evidence.spans)
+            if attempt_record.status == "target_state" and attempt_record.target_state:
+                failure_record = self._build_target_state_failure_record(
+                    task_id=task.task_id,
+                    attempt_id=attempt_record.attempt_id,
+                    build_summary=build_summary,
+                    build_log=build_log,
+                    target_state=attempt_record.target_state,
+                )
+            else:
+                failure_record = FailureRecord(
+                    task_id=task.task_id,
+                    attempt_id=attempt_record.attempt_id,
+                    stage_name="build",
+                    failure_type=precheck_failure_type,
+                    summary=apply_precheck_report.summary,
+                    evidence=[
+                        item
+                        for item in [apply_precheck_report.stdout, apply_precheck_report.stderr]
+                        if item
+                    ][:3],
+                )
         else:
             attempt_record, build_log, build_precheck, build_summary = self.builder.execute_build(
                 task=task,
                 attempt_no=attempt_no,
                 plan=plan,
                 rewritten_patch_path=rewritten_patch_path,
+                build_log_path=build_log_path,
+            )
+            attempt_record, build_summary, build_log = self._normalize_target_state_outcome(
+                attempt_record=attempt_record,
+                build_summary=build_summary,
+                build_log=build_log,
                 build_log_path=build_log_path,
             )
             attempt_record = attempt_record.model_copy(update={"started_at": seed_attempt_record.started_at})
@@ -705,6 +829,16 @@ class AttemptExecutionService(CoordinatorSupport):
                     task_id=task.task_id,
                     attempt_id=attempt_record.attempt_id,
                     build_log=build_log,
+                    build_exec_status=build_summary.build_exec_status if build_summary is not None else None,
+                    failure_type_hint=build_summary.failure_type if build_summary is not None else attempt_record.failure_type,
+                )
+            elif attempt_record.status == "target_state" and attempt_record.target_state:
+                failure_record = self._build_target_state_failure_record(
+                    task_id=task.task_id,
+                    attempt_id=attempt_record.attempt_id,
+                    build_summary=build_summary,
+                    build_log=build_log,
+                    target_state=attempt_record.target_state,
                 )
             else:
                 failure_record = FailureRecord(

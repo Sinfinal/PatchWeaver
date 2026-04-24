@@ -142,15 +142,18 @@ class ConstraintDiagnoser:
             return route_hints
 
         if risk_items:
-            wrapper_primitives = [item for item in suggested_primitives if item != "direct_apply"] or ["wrapper"]
+            preferred_primitives = self._preferred_route_primitives(
+                preferred_route=preferred_hint,
+                suggested_primitives=suggested_primitives,
+            )
             route_hints.append(
                 RouteHint(
-                    route_name="minimal_livepatch_wrap",
+                    route_name=preferred_hint,
                     summary=(
                         f"当前已命中约束 {', '.join(risk_types)}，{function_hint}，"
-                        f"首选语义路线 {preferred_hint}，当前执行层先落到 minimal_livepatch_wrap recipe"
+                        f"首选语义路线 {preferred_hint}，后续规划层应优先按该路线组织候选"
                     ),
-                    recommended_primitives=wrapper_primitives,
+                    recommended_primitives=preferred_primitives,
                     blocking_risk_types=risk_types,
                     preferred=True,
                 )
@@ -184,6 +187,20 @@ class ConstraintDiagnoser:
         )
         return route_hints
 
+    def _preferred_route_primitives(self, *, preferred_route: str, suggested_primitives: list[str]) -> list[str]:
+        """按首选路线补齐更贴近当前语义的原语集合"""
+
+        primitives = [item for item in suggested_primitives if item != "direct_apply"]
+        if preferred_route != "direct_apply_patch" and "wrapper" not in primitives:
+            primitives.insert(0, "wrapper")
+        if "callback" in preferred_route and "callback" not in primitives:
+            primitives.append("callback")
+        if "shadow" in preferred_route and "shadow_variable" not in primitives:
+            primitives.append("shadow_variable")
+        if "state_preserving" in preferred_route and "state_preserving" not in primitives:
+            primitives.append("state_preserving")
+        return list(dict.fromkeys(primitives)) or ["wrapper"]
+
     def _candidate_routes(
         self,
         *,
@@ -199,21 +216,26 @@ class ConstraintDiagnoser:
         risk_types = {item.risk_type for item in risk_items}
         primitives = set(suggested_primitives)
         routes: list[str] = []
-
-        if "callback" in primitives and "shadow_variable" in primitives:
-            routes.append("callback_shadow_wrap")
-        elif "callback" in primitives:
-            routes.append("callback_livepatch_wrap")
-        elif "shadow_variable" in primitives:
-            routes.append("shadow_variable_wrap")
-
-        if risk_types & {
+        state_shadow_risks = {
             "global_data_change",
             "static_local_change",
+        }
+        state_preserving_risks = {
             "struct_layout_change",
             "header_abi_change",
-        }:
+        }
+        shadow_required = "shadow_variable" in primitives or bool(risk_types & state_shadow_risks)
+        callback_required = "callback" in primitives
+        state_preserving_required = bool(risk_types & state_preserving_risks)
+
+        if callback_required and shadow_required:
+            routes.append("callback_shadow_wrap")
+        elif callback_required:
+            routes.append("callback_livepatch_wrap")
+        if state_preserving_required:
             routes.append("state_preserving_wrap")
+        if shadow_required:
+            routes.append("shadow_variable_wrap")
 
         if not routes:
             routes.append("minimal_livepatch_wrap")

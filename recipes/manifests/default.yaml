@@ -9,5 +9,36 @@ recipes:
     template: recipes/templates/minimal_livepatch_wrap.patch.j2
     smpl: recipes/smpl/minimal_livepatch_wrap.cocci
     primitives:
-      - direct_apply
       - wrapper
+  - name: callback_livepatch_wrap
+    template: recipes/templates/callback_livepatch_wrap.patch.j2
+    smpl: recipes/smpl/callback_livepatch_wrap.cocci
+    primitives:
+      - wrapper
+      - callback
+  - name: shadow_variable_wrap
+    template: recipes/templates/shadow_variable_wrap.patch.j2
+    smpl: recipes/smpl/shadow_variable_wrap.cocci
+    primitives:
+      - wrapper
+      - shadow_variable
+  - name: callback_shadow_wrap
+    template: recipes/templates/callback_shadow_wrap.patch.j2
+    smpl: recipes/smpl/callback_shadow_wrap.cocci
+    primitives:
+      - wrapper
+      - callback
+      - shadow_variable
+  - name: state_preserving_wrap
+    template: recipes/templates/state_preserving_wrap.patch.j2
+    smpl: recipes/smpl/state_preserving_wrap.cocci
+    primitives:
+      - wrapper
+      - shadow_variable
+      - state_preserving
+  - name: smpl_primary_rewrite
+    template: recipes/templates/smpl_primary_rewrite.patch.j2
+    smpl: recipes/smpl/smpl_primary_rewrite.cocci
+    primitives:
+      - wrapper
+      - smpl

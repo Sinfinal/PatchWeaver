@@ -117,6 +117,8 @@ class JointPlanner:
         candidates: list[RewriteCandidate] = []
         seen_keys: set[tuple[str, tuple[str, ...]]] = set()
         route_inputs: list[dict[str, object]] = []
+        preferred_route_name = constraint_report.preferred_route
+        preferred_route_primitives = self._preferred_route_primitives(preferred_route_name)
 
         for hint in constraint_report.route_hints:
             route_inputs.append(
@@ -158,6 +160,7 @@ class JointPlanner:
                 str(item) for item in list(route_input.get("blocking_risk_types") or [])
             ]
             metrics = self._estimate_candidate_metrics(
+                route_name=route_spec["recipe_name"],
                 route_family=route_spec["route_family"],
                 preferred=bool(route_input.get("preferred")),
                 blocking_risk_count=len(blocking_risk_types),
@@ -165,6 +168,8 @@ class JointPlanner:
                 primitives=primitives,
                 forbidden_actions=constraint_report.forbidden_actions,
                 requires_kernel_scaffold=route_spec["requires_kernel_scaffold"],
+                preferred_route_name=preferred_route_name,
+                preferred_route_primitives=preferred_route_primitives,
             )
             candidates.append(
                 RewriteCandidate(
@@ -189,6 +194,7 @@ class JointPlanner:
 
         route_spec = self._resolve_route_spec("minimal_livepatch_wrap")
         metrics = self._estimate_candidate_metrics(
+            route_name=route_spec["recipe_name"],
             route_family=route_spec["route_family"],
             preferred=True,
             blocking_risk_count=len(constraint_report.dominant_risk_types),
@@ -196,6 +202,8 @@ class JointPlanner:
             primitives=fallback_primitives or ["wrapper"],
             forbidden_actions=constraint_report.forbidden_actions,
             requires_kernel_scaffold=route_spec["requires_kernel_scaffold"],
+            preferred_route_name=preferred_route_name,
+            preferred_route_primitives=preferred_route_primitives,
         )
         return [
             RewriteCandidate(
@@ -247,6 +255,18 @@ class JointPlanner:
             ordered_names.append(canonical)
         return ordered_names
 
+    def _preferred_route_primitives(self, route_name: str | None) -> set[str]:
+        """抽取首选路线要求的关键原语，供候选排序做对齐检查"""
+
+        if not route_name:
+            return set()
+        route_spec = self._resolve_route_spec(route_name)
+        return {
+            str(item)
+            for item in list(route_spec["default_primitives"])
+            if item not in {"direct_apply", "wrapper"}
+        }
+
     def _resolve_route_spec(self, route_name: str) -> dict[str, object]:
         """把路线名折叠成当前工程可执行的 recipe 定义"""
 
@@ -259,6 +279,18 @@ class JointPlanner:
                 "default_primitives": ["direct_apply"],
                 "requires_kernel_scaffold": False,
                 "scaffold_notes": [],
+            }
+        if lowered in {"callback_shadow_wrap", "callback_shadow"}:
+            return {
+                "recipe_name": "callback_shadow_wrap",
+                "route_family": "callback_shadow",
+                "execution_mode": "callback_shadow_scaffold",
+                "default_primitives": ["wrapper", "callback", "shadow_variable"],
+                "requires_kernel_scaffold": True,
+                "scaffold_notes": [
+                    "需要同时补齐 callback 落点与 shadow state 生命周期",
+                    "进入构建前需要确认状态同步和回调切换不会彼此干扰",
+                ],
             }
         if lowered in {"callback_livepatch_wrap", "callback_wrap"} or "callback" in lowered:
             return {
@@ -282,6 +314,18 @@ class JointPlanner:
                 "scaffold_notes": [
                     "需要补齐 shadow state 的定义与回收路径",
                     "进入构建前需要确认状态同步逻辑不会放大语义漂移",
+                ],
+            }
+        if lowered in {"state_preserving_wrap", "state_preserving", "stateful_wrap"} or "state_preserving" in lowered:
+            return {
+                "recipe_name": "state_preserving_wrap",
+                "route_family": "state_preserving",
+                "execution_mode": "state_preserving_scaffold",
+                "default_primitives": ["wrapper", "shadow_variable", "state_preserving"],
+                "requires_kernel_scaffold": True,
+                "scaffold_notes": [
+                    "需要补齐旧状态到新状态的迁移与回收路径",
+                    "进入构建前需要确认布局兼容和状态接续逻辑都可落地",
                 ],
             }
         if lowered in {"smpl_primary_rewrite", "smpl_primary"} or "smpl" in lowered:
@@ -313,14 +357,29 @@ class JointPlanner:
     ) -> list[str]:
         """整理当前路线最终使用的原语集合"""
 
-        primitives = list(dict.fromkeys(recommended_primitives + route_defaults))
+        primitives = self._normalize_primitives(recommended_primitives + route_defaults)
         if primitives:
             return primitives
-        return fallback_primitives or ["wrapper"]
+        return self._normalize_primitives(fallback_primitives or ["wrapper"])
+
+    def _normalize_primitives(self, primitives: list[str]) -> list[str]:
+        """把原语集合压成稳定顺序，避免同一路线因为顺序不同重复入选"""
+
+        priority = {
+            "direct_apply": 0,
+            "wrapper": 1,
+            "callback": 2,
+            "shadow_variable": 3,
+            "state_preserving": 4,
+            "smpl": 5,
+        }
+        unique = list(dict.fromkeys(str(item) for item in primitives if str(item)))
+        return sorted(unique, key=lambda item: (priority.get(item, 99), item))
 
     def _estimate_candidate_metrics(
         self,
         *,
+        route_name: str,
         route_family: str,
         preferred: bool,
         blocking_risk_count: int,
@@ -328,6 +387,8 @@ class JointPlanner:
         primitives: list[str],
         forbidden_actions: list[str],
         requires_kernel_scaffold: bool,
+        preferred_route_name: str | None,
+        preferred_route_primitives: set[str],
     ) -> dict[str, float]:
         """把路线提示折叠成候选评分输入"""
 
@@ -343,10 +404,18 @@ class JointPlanner:
             base_risk = 0.18 + max(high_risk, blocking_risk_count) * 0.07
             base_drift = 0.14 + blocking_risk_count * 0.03
             base_build_cost = 0.24
+        elif route_family == "callback_shadow":
+            base_risk = 0.2 + max(high_risk, blocking_risk_count) * 0.08
+            base_drift = 0.16 + blocking_risk_count * 0.04
+            base_build_cost = 0.3
         elif route_family == "shadow_variable":
             base_risk = 0.22 + max(high_risk, blocking_risk_count) * 0.08
             base_drift = 0.16 + blocking_risk_count * 0.03
             base_build_cost = 0.28
+        elif route_family == "state_preserving":
+            base_risk = 0.17 + max(high_risk, blocking_risk_count) * 0.06
+            base_drift = 0.12 + blocking_risk_count * 0.025
+            base_build_cost = 0.24
         else:
             base_risk = 0.2 + max(high_risk, blocking_risk_count) * 0.07
             base_drift = 0.1 + blocking_risk_count * 0.02
@@ -358,6 +427,8 @@ class JointPlanner:
         if "shadow_variable" in primitives:
             base_build_cost += 0.05
             base_drift += 0.03
+        if "state_preserving" in primitives:
+            base_build_cost += 0.02
         if "smpl" in primitives:
             base_build_cost += 0.03
         if forbidden_actions and route_family == "direct_apply":
@@ -365,8 +436,25 @@ class JointPlanner:
             base_drift += 0.04
         if requires_kernel_scaffold:
             base_build_cost += 0.05
+        if preferred and route_family != "direct_apply":
+            base_risk = max(0.04, base_risk - 0.03)
+            base_drift = max(0.03, base_drift - 0.01)
         if not preferred:
             base_risk += 0.03
+
+        if preferred_route_primitives:
+            candidate_primitives = set(primitives)
+            missing_primitives = preferred_route_primitives - candidate_primitives
+            matched_primitives = preferred_route_primitives & candidate_primitives
+
+            # 当约束层已经明确要求 callback / shadow / state_preserving 这类专用原语时，
+            # 仅有通用 wrapper 的候选不应因为代价更低就把专用路线整体压掉。
+            if missing_primitives:
+                base_risk += 0.07 * len(missing_primitives)
+                base_drift += 0.03 * len(missing_primitives)
+            if matched_primitives and route_name == preferred_route_name:
+                base_risk = max(0.04, base_risk - 0.05 * len(matched_primitives))
+                base_drift = max(0.03, base_drift - 0.02 * len(matched_primitives))
 
         return {
             "risk": min(0.85, round(base_risk, 2)),

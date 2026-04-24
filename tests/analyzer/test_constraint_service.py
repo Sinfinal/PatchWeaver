@@ -113,9 +113,128 @@ def test_constraint_diagnoser_uses_semantic_card_to_enrich_risk_items() -> None:
     assert report.requires_callback is True
     assert report.requires_shadow_variable is True
     assert "shadow_variable" in report.suggested_primitives
-    assert report.route_hints[0].route_name == "minimal_livepatch_wrap"
+    assert report.route_hints[0].route_name == "callback_shadow_wrap"
     assert report.semantic_card_source == "enriched"
     assert report.semantic_card_enriched is True
     assert report.preferred_route == "callback_shadow_wrap"
     assert report.candidate_routes[:2] == ["callback_shadow_wrap", "state_preserving_wrap"]
     assert all(item.affected_functions == ["demo_inline"] for item in report.risk_items)
+
+
+def test_constraint_diagnoser_prefers_callback_route_for_fentry_only_risk() -> None:
+    tmp_path = _case_dir("constraint-service-callback")
+    patch_path = tmp_path / "normalized.patch"
+    patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/kernel/livepatch/demo.c b/kernel/livepatch/demo.c",
+                "--- a/kernel/livepatch/demo.c",
+                "+++ b/kernel/livepatch/demo.c",
+                "@@ -1 +1,2 @@",
+                "+void ftrace_entry_hook(void);",
+                "+return invoke_ftrace_path(ctx);",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    bundle = PatchBundle(
+        task_id="TASK-CONSTRAINT-003",
+        cve_id="CVE-2099-0010",
+        affected_files=["kernel/livepatch/demo.c"],
+        normalized_patch_path=patch_path,
+    )
+    semantic_card = SemanticCard(
+        bug_class="cve_fix",
+        root_cause="目标路径依赖 fentry 入口",
+        touched_files=["kernel/livepatch/demo.c"],
+        touched_functions=["demo_callback_target"],
+    )
+
+    report = ConstraintDiagnoser().diagnose(bundle, semantic_card=semantic_card)
+
+    assert report.preferred_route == "callback_livepatch_wrap"
+    assert report.candidate_routes[0] == "callback_livepatch_wrap"
+    assert report.route_hints[0].route_name == "callback_livepatch_wrap"
+    assert report.requires_callback is True
+    assert report.requires_shadow_variable is False
+
+
+def test_constraint_diagnoser_prefers_shadow_route_for_state_only_risk() -> None:
+    tmp_path = _case_dir("constraint-service-shadow")
+    patch_path = tmp_path / "normalized.patch"
+    patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/kernel/livepatch/demo.c b/kernel/livepatch/demo.c",
+                "--- a/kernel/livepatch/demo.c",
+                "+++ b/kernel/livepatch/demo.c",
+                "@@ -1 +1,2 @@",
+                "+static int shadow_state = 0;",
+                "+shadow_state++;",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    bundle = PatchBundle(
+        task_id="TASK-CONSTRAINT-004",
+        cve_id="CVE-2099-0011",
+        affected_files=["kernel/livepatch/demo.c"],
+        normalized_patch_path=patch_path,
+    )
+    semantic_card = SemanticCard(
+        bug_class="cve_fix",
+        root_cause="目标路径新增静态状态",
+        touched_files=["kernel/livepatch/demo.c"],
+        touched_functions=["demo_shadow_target"],
+    )
+
+    report = ConstraintDiagnoser().diagnose(bundle, semantic_card=semantic_card)
+
+    assert report.preferred_route == "shadow_variable_wrap"
+    assert report.candidate_routes[:2] == ["shadow_variable_wrap", "minimal_livepatch_wrap"]
+    assert report.route_hints[0].route_name == "shadow_variable_wrap"
+    assert report.requires_callback is False
+    assert report.requires_shadow_variable is True
+
+
+def test_constraint_diagnoser_prefers_state_preserving_route_for_layout_risk() -> None:
+    tmp_path = _case_dir("constraint-service-state-preserving")
+    patch_path = tmp_path / "normalized.patch"
+    patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/include/linux/demo.h b/include/linux/demo.h",
+                "--- a/include/linux/demo.h",
+                "+++ b/include/linux/demo.h",
+                "@@ -1 +1,4 @@",
+                "+struct demo_state {",
+                "+    int version;",
+                "+};",
+                "+static int global_state = 0;",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    bundle = PatchBundle(
+        task_id="TASK-CONSTRAINT-005",
+        cve_id="CVE-2099-0012",
+        affected_files=["include/linux/demo.h"],
+        normalized_patch_path=patch_path,
+    )
+    semantic_card = SemanticCard(
+        bug_class="cve_fix",
+        root_cause="结构布局发生变化",
+        touched_files=["include/linux/demo.h"],
+        touched_functions=["demo_state_apply"],
+    )
+
+    report = ConstraintDiagnoser().diagnose(bundle, semantic_card=semantic_card)
+
+    assert report.preferred_route == "state_preserving_wrap"
+    assert report.candidate_routes[:2] == ["state_preserving_wrap", "shadow_variable_wrap"]
+    assert report.route_hints[0].route_name == "state_preserving_wrap"
+    assert report.requires_callback is False
+    assert report.requires_shadow_variable is True

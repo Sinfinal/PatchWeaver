@@ -64,18 +64,21 @@ class BuildConfig(ConfigModel):
     # 开发机与验证机之间只做代码同步，不再把验证机抽象成单独的构建后端
     build_backend: Literal["local"] = "local"
     clean_kernel_src_dir: str = ""
+    prepared_kernel_src_dir: str = ""
     kernel_src_dir: str = "/opt/kernel-src"
     kernel_devel_dir: str = "/usr/src/kernels/6.6.102-5.2.an23.x86_64"
     patched_kernel_src_dir: str = ""
     build_source_priority: list[str] = Field(
         default_factory=lambda: [
             "clean_kernel_src_dir",
+            "prepared_kernel_src_dir",
             "kernel_src_dir",
             "kernel_devel_dir",
             "patched_kernel_src_dir",
         ]
     )
     auto_switch_source_tree: bool = True
+    auto_reverse_source_tree: bool = True
     vmlinux_path: str = "/usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux"
     kpatch_build_cmd: str = "kpatch-build"
     build_timeout_sec: int = 3600
