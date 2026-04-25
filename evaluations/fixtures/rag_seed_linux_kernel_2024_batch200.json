@@ -1,0 +1,1202 @@
+[
+  {
+    "cve_id": "CVE-2024-26600",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/phy",
+    "summary": "phy: ti: phy-omap-usb2: Fix NULL pointer dereference for SRP"
+  },
+  {
+    "cve_id": "CVE-2024-26601",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/ext4",
+    "summary": "ext4: regenerate buddy after block freeing failed if under fc replay"
+  },
+  {
+    "cve_id": "CVE-2024-26602",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "kernel/sched",
+    "summary": "sched/membarrier: reduce the ability to hammer on sys_membarrier"
+  },
+  {
+    "cve_id": "CVE-2024-26603",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "arch/x86",
+    "summary": "x86/fpu: Stop relying on userspace for info to fault in xsave buffer"
+  },
+  {
+    "cve_id": "CVE-2024-26604",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "lib/kobject.c",
+    "summary": "Revert \"kobject: Remove redundant checks for whether ktype is NULL\""
+  },
+  {
+    "cve_id": "CVE-2024-26605",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/pci",
+    "summary": "PCI/ASPM: Fix deadlock when enabling ASPM"
+  },
+  {
+    "cve_id": "CVE-2024-26606",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/android",
+    "summary": "binder: signal epoll threads of self-work"
+  },
+  {
+    "cve_id": "CVE-2024-26607",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/bridge: sii902x: Fix probing race issue"
+  },
+  {
+    "cve_id": "CVE-2024-26608",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/smb",
+    "summary": "ksmbd: fix global oob in ksmbd_nl_policy"
+  },
+  {
+    "cve_id": "CVE-2024-26610",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "wifi: iwlwifi: fix a memory corruption"
+  },
+  {
+    "cve_id": "CVE-2024-26611",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "include/net",
+    "summary": "xsk: fix usage of multi-buffer BPF helpers for ZC XDP"
+  },
+  {
+    "cve_id": "CVE-2024-26612",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/fscache",
+    "summary": "netfs, fscache: Prevent Oops in fscache_put_cache()"
+  },
+  {
+    "cve_id": "CVE-2024-26614",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "include/net",
+    "summary": "tcp: make sure init the accept_queue's spinlocks once"
+  },
+  {
+    "cve_id": "CVE-2024-26615",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/smc",
+    "summary": "net/smc: fix illegal rmb_desc access in SMC-D connection dump"
+  },
+  {
+    "cve_id": "CVE-2024-26616",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/btrfs",
+    "summary": "btrfs: scrub: avoid use-after-free when chunk length is not 64K"
+  },
+  {
+    "cve_id": "CVE-2024-26617",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/proc",
+    "summary": "fs/proc/task_mmu: move mmu notification mechanism inside mm lock"
+  },
+  {
+    "cve_id": "CVE-2024-26618",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "arch/arm64",
+    "summary": "arm64/sme: Always exit sme_alloc() early with existing storage"
+  },
+  {
+    "cve_id": "CVE-2024-26619",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "arch/riscv",
+    "summary": "riscv: Fix module loading free order"
+  },
+  {
+    "cve_id": "CVE-2024-26620",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/s390",
+    "summary": "s390/vfio-ap: always filter entire AP matrix"
+  },
+  {
+    "cve_id": "CVE-2024-26621",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "mm/huge_memory.c",
+    "summary": "mm: huge_memory: don't force huge page alignment on 32 bit"
+  },
+  {
+    "cve_id": "CVE-2024-26622",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "security/tomoyo",
+    "summary": "tomoyo: fix UAF write bug in tomoyo_write_control()"
+  },
+  {
+    "cve_id": "CVE-2024-26623",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "pds_core: Prevent race issues involving the adminq"
+  },
+  {
+    "cve_id": "CVE-2024-26625",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/llc",
+    "summary": "llc: call sock_orphan() at release time"
+  },
+  {
+    "cve_id": "CVE-2024-26626",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "include/net",
+    "summary": "ipmr: fix kernel panic when forwarding mcast packets"
+  },
+  {
+    "cve_id": "CVE-2024-26627",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/scsi",
+    "summary": "scsi: core: Move scsi_host_busy() out of host lock for waking up EH"
+  },
+  {
+    "cve_id": "CVE-2024-26629",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/nfsd",
+    "summary": "Revert \"NFSD: Fix possible sleep during nfsd4_release_lockowner()\""
+  },
+  {
+    "cve_id": "CVE-2024-26630",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "mm/filemap.c",
+    "summary": "mm: cachestat: fix folio read-after-free in cache walk"
+  },
+  {
+    "cve_id": "CVE-2024-26631",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/ipv6",
+    "summary": "ipv6: mcast: fix data-race in ipv6_mc_down / mld_ifc_work"
+  },
+  {
+    "cve_id": "CVE-2024-26632",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "include/linux",
+    "summary": "block: Fix iterating over an empty bio with bio_for_each_folio_all"
+  },
+  {
+    "cve_id": "CVE-2024-26633",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/ipv6",
+    "summary": "ip6_tunnel: fix NEXTHDR_FRAGMENT handling in"
+  },
+  {
+    "cve_id": "CVE-2024-26634",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/core",
+    "summary": "net: fix removing a namespace with conflicting altnames"
+  },
+  {
+    "cve_id": "CVE-2024-26635",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "include/net",
+    "summary": "llc: Drop support for ETH_P_TR_802_2."
+  },
+  {
+    "cve_id": "CVE-2024-26636",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/llc",
+    "summary": "llc: make llc_ui_sendmsg() more robust against bonding changes"
+  },
+  {
+    "cve_id": "CVE-2024-26637",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "wifi: ath11k: rely on mac80211 debugfs handling for vif"
+  },
+  {
+    "cve_id": "CVE-2024-26638",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/block",
+    "summary": "nbd: always initialize struct msghdr completely"
+  },
+  {
+    "cve_id": "CVE-2024-26640",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/ipv4",
+    "summary": "tcp: add sanity checks to rx zerocopy"
+  },
+  {
+    "cve_id": "CVE-2024-26641",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/ipv6",
+    "summary": "ip6_tunnel: make sure to pull inner header in __ip6_tnl_rcv()"
+  },
+  {
+    "cve_id": "CVE-2024-26642",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/netfilter",
+    "summary": "netfilter: nf_tables: disallow anonymous set with timeout flag"
+  },
+  {
+    "cve_id": "CVE-2024-26643",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/netfilter",
+    "summary": "netfilter: nf_tables: mark set as dead when unbinding anonymous set"
+  },
+  {
+    "cve_id": "CVE-2024-26644",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/btrfs",
+    "summary": "btrfs: don't abort filesystem when attempting to snapshot deleted"
+  },
+  {
+    "cve_id": "CVE-2024-26645",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "kernel/trace",
+    "summary": "tracing: Ensure visibility when inserting an element into tracing_map"
+  },
+  {
+    "cve_id": "CVE-2024-26646",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/thermal",
+    "summary": "thermal: intel: hfi: Add syscore callbacks for system-wide PM"
+  },
+  {
+    "cve_id": "CVE-2024-26647",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amd/display: Fix late derefrence 'dsc' check in"
+  },
+  {
+    "cve_id": "CVE-2024-26648",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amd/display: Fix variable deferencing before NULL check in"
+  },
+  {
+    "cve_id": "CVE-2024-26649",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amdgpu: Fix the null pointer when load rlc firmware"
+  },
+  {
+    "cve_id": "CVE-2024-26651",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "sr9800: Add check for usbnet_get_endpoints"
+  },
+  {
+    "cve_id": "CVE-2024-26652",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "net: pds_core: Fix possible double free in error handling path"
+  },
+  {
+    "cve_id": "CVE-2024-26653",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/usb",
+    "summary": "usb: misc: ljca: Fix double free in error handling path"
+  },
+  {
+    "cve_id": "CVE-2024-26654",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "sound/sh",
+    "summary": "ALSA: sh: aica: reorder cleanup operations to avoid UAF bugs"
+  },
+  {
+    "cve_id": "CVE-2024-26655",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "kernel/time",
+    "summary": "Fix memory leak in posix_clock_open()"
+  },
+  {
+    "cve_id": "CVE-2024-26656",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amdgpu: fix use-after-free bug"
+  },
+  {
+    "cve_id": "CVE-2024-26657",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/sched: fix null-ptr-deref in init entity"
+  },
+  {
+    "cve_id": "CVE-2024-26658",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/bcachefs",
+    "summary": "bcachefs: grab s_umount only if snapshotting"
+  },
+  {
+    "cve_id": "CVE-2024-26659",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/usb",
+    "summary": "xhci: handle isoc Babble and Buffer Overrun events properly"
+  },
+  {
+    "cve_id": "CVE-2024-26660",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amd/display: Implement bounds check for stream encoder creation"
+  },
+  {
+    "cve_id": "CVE-2024-26661",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amd/display: Add NULL test for 'timing generator' in"
+  },
+  {
+    "cve_id": "CVE-2024-26662",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amd/display: Fix 'panel_cntl' could be null in"
+  },
+  {
+    "cve_id": "CVE-2024-26663",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/tipc",
+    "summary": "tipc: Check the bearer type before calling tipc_udp_nl_bearer_add()"
+  },
+  {
+    "cve_id": "CVE-2024-26664",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/hwmon",
+    "summary": "hwmon: (coretemp) Fix out-of-bounds memory access"
+  },
+  {
+    "cve_id": "CVE-2024-26665",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/ipv4",
+    "summary": "tunnels: fix out of bounds access when building IPv6 PMTU error"
+  },
+  {
+    "cve_id": "CVE-2024-26666",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/mac80211",
+    "summary": "wifi: mac80211: fix RCU use in TDLS fast-xmit"
+  },
+  {
+    "cve_id": "CVE-2024-26667",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/msm/dpu: check for valid hw_pp in dpu_encoder_helper_phys_cleanup"
+  },
+  {
+    "cve_id": "CVE-2024-26668",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/netfilter",
+    "summary": "netfilter: nft_limit: reject configurations that cause integer"
+  },
+  {
+    "cve_id": "CVE-2024-26669",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "include/net",
+    "summary": "net/sched: flower: Fix chain template offload"
+  },
+  {
+    "cve_id": "CVE-2024-26670",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "arch/arm64",
+    "summary": "arm64: entry: fix ARM64_WORKAROUND_SPECULATIVE_UNPRIV_LOAD"
+  },
+  {
+    "cve_id": "CVE-2024-26671",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "block/blk-mq.c",
+    "summary": "blk-mq: fix IO hang from sbitmap wakeup race"
+  },
+  {
+    "cve_id": "CVE-2024-26672",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amdgpu: Fix variable 'mca_funcs' dereferenced before NULL check"
+  },
+  {
+    "cve_id": "CVE-2024-26673",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/netfilter",
+    "summary": "netfilter: nft_ct: sanitize layer 3 and 4 protocol number in custom"
+  },
+  {
+    "cve_id": "CVE-2024-26674",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "arch/x86",
+    "summary": "x86/lib: Revert to _ASM_EXTABLE_UA() for {get,put}_user()"
+  },
+  {
+    "cve_id": "CVE-2024-26675",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "ppp_async: limit MRU to 64K"
+  },
+  {
+    "cve_id": "CVE-2024-26676",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/unix",
+    "summary": "af_unix: Call kfree_skb() for dead unix_(sk)->oob_skb in GC."
+  },
+  {
+    "cve_id": "CVE-2024-26677",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/rxrpc",
+    "summary": "rxrpc: Fix delayed ACKs to not set the reference serial number"
+  },
+  {
+    "cve_id": "CVE-2024-26678",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "arch/x86",
+    "summary": "x86/efistub: Use 1:1 file:memory mapping for PE/COFF .compat section"
+  },
+  {
+    "cve_id": "CVE-2024-26679",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/ipv4",
+    "summary": "inet: read sk->sk_family once in inet_recv_error()"
+  },
+  {
+    "cve_id": "CVE-2024-26680",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "net: atlantic: Fix DMA mapping for PTP hwts ring"
+  },
+  {
+    "cve_id": "CVE-2024-26681",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "netdevsim: avoid potential loop in nsim_dev_trap_report_work()"
+  },
+  {
+    "cve_id": "CVE-2024-26682",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "net/mac80211",
+    "summary": "wifi: mac80211: improve CSA/ECSA connection refusal"
+  },
+  {
+    "cve_id": "CVE-2024-26683",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "include/net",
+    "summary": "wifi: cfg80211: detect stuck ECSA element in probe resp"
+  },
+  {
+    "cve_id": "CVE-2024-26684",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "net: stmmac: xgmac: fix handling of DPP safety error for DMA channels"
+  },
+  {
+    "cve_id": "CVE-2024-26685",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/nilfs2",
+    "summary": "nilfs2: fix potential bug in end_buffer_async_write"
+  },
+  {
+    "cve_id": "CVE-2024-26686",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/proc",
+    "summary": "fs/proc: do_task_stat: use sig->stats_lock to gather the"
+  },
+  {
+    "cve_id": "CVE-2024-26687",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/xen",
+    "summary": "xen/events: close evtchn after mapping cleanup"
+  },
+  {
+    "cve_id": "CVE-2024-26688",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/hugetlbfs",
+    "summary": "fs,hugetlb: fix NULL pointer dereference in hugetlbs_fill_super"
+  },
+  {
+    "cve_id": "CVE-2024-26689",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/ceph",
+    "summary": "ceph: prevent use-after-free in encode_cap_msg()"
+  },
+  {
+    "cve_id": "CVE-2024-26690",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "net: stmmac: protect updates of 64-bit statistics counters"
+  },
+  {
+    "cve_id": "CVE-2024-26691",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "arch/arm64",
+    "summary": "KVM: arm64: Fix circular locking dependency"
+  },
+  {
+    "cve_id": "CVE-2024-26692",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/smb",
+    "summary": "smb: Fix regression in writes when non-standard maximum write size"
+  },
+  {
+    "cve_id": "CVE-2024-26693",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "wifi: iwlwifi: mvm: fix a crash when we run out of stations"
+  },
+  {
+    "cve_id": "CVE-2024-26694",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "wifi: iwlwifi: fix double-free bug"
+  },
+  {
+    "cve_id": "CVE-2024-26695",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/crypto",
+    "summary": "crypto: ccp - Fix null pointer dereference in"
+  },
+  {
+    "cve_id": "CVE-2024-26696",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/nilfs2",
+    "summary": "nilfs2: fix hang in nilfs_lookup_dirty_data_buffers()"
+  },
+  {
+    "cve_id": "CVE-2024-26697",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/nilfs2",
+    "summary": "nilfs2: fix data corruption in dsync block recovery for small block"
+  },
+  {
+    "cve_id": "CVE-2024-26698",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/net",
+    "summary": "hv_netvsc: Fix race condition between netvsc_probe and netvsc_remove"
+  },
+  {
+    "cve_id": "CVE-2024-26699",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amd/display: Fix array-index-out-of-bounds in dcn35_clkmgr"
+  },
+  {
+    "cve_id": "CVE-2024-26700",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amd/display: Fix MST Null Ptr for RV"
+  },
+  {
+    "cve_id": "CVE-2024-26702",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "drivers/iio",
+    "summary": "iio: magnetometer: rm3100: add boundary check for the value read from"
+  },
+  {
+    "cve_id": "CVE-2024-26703",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "kernel/trace",
+    "summary": "tracing/timerlat: Move hrtimer_init to timerlat_fd open()"
+  },
+  {
+    "cve_id": "CVE-2024-26704",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "fs/ext4",
+    "summary": "ext4: fix double-free of blocks due to wrong extents moved_len"
+  },
+  {
+    "cve_id": "CVE-2024-26705",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "arch/parisc",
+    "summary": "parisc: BTLB: Fix crash when setting up BTLB at CPU bringup"
+  },
+  {
+    "cve_id": "CVE-2024-26706",
+    "seed_group": "rag-linux-kernel-2024-batch100",
+    "subsystem": "arch/parisc",
+    "summary": "parisc: Fix random data corruption from exception handler"
+  },
+  {
+    "cve_id": "CVE-2024-26707",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/hsr",
+    "summary": "net: hsr: remove WARN_ONCE() in send_hsr_supervision_frame()"
+  },
+  {
+    "cve_id": "CVE-2024-26708",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/mptcp",
+    "summary": "mptcp: really cope with fastopen race"
+  },
+  {
+    "cve_id": "CVE-2024-26709",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "arch/powerpc",
+    "summary": "powerpc/iommu: Fix the missing iommu_group_put() during platform"
+  },
+  {
+    "cve_id": "CVE-2024-26710",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "arch/powerpc",
+    "summary": "powerpc/kasan: Limit KASAN thread size increase to 32KB"
+  },
+  {
+    "cve_id": "CVE-2024-26711",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/iio",
+    "summary": "iio: adc: ad4130: zero-initialize clock init data"
+  },
+  {
+    "cve_id": "CVE-2024-26712",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "arch/powerpc",
+    "summary": "powerpc/kasan: Fix addr error caused by page alignment"
+  },
+  {
+    "cve_id": "CVE-2024-26714",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/interconnect",
+    "summary": "interconnect: qcom: sc8180x: Mark CO0 BCM keepalive"
+  },
+  {
+    "cve_id": "CVE-2024-26715",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/usb",
+    "summary": "usb: dwc3: gadget: Fix NULL pointer dereference in"
+  },
+  {
+    "cve_id": "CVE-2024-26716",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/usb",
+    "summary": "usb: core: Prevent null pointer dereference in"
+  },
+  {
+    "cve_id": "CVE-2024-26717",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/hid",
+    "summary": "HID: i2c-hid-of: fix NULL-deref on failed power up"
+  },
+  {
+    "cve_id": "CVE-2024-26718",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/md",
+    "summary": "dm-crypt, dm-verity: disable tasklets"
+  },
+  {
+    "cve_id": "CVE-2024-26719",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/gpu",
+    "summary": "nouveau: offload fence uevents work to workqueue"
+  },
+  {
+    "cve_id": "CVE-2024-26721",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/i915/dsc: Fix the macro that calculates DSCC_/DSCA_ PPS reg"
+  },
+  {
+    "cve_id": "CVE-2024-26722",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "sound/soc",
+    "summary": "ASoC: rt5645: Fix deadlock in rt5645_jack_detect_work()"
+  },
+  {
+    "cve_id": "CVE-2024-26723",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/net",
+    "summary": "lan966x: Fix crash when adding interface under a lag"
+  },
+  {
+    "cve_id": "CVE-2024-26724",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/net",
+    "summary": "net/mlx5: DPLL, Fix possible use after free after delayed work timer"
+  },
+  {
+    "cve_id": "CVE-2024-26725",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "Documentation/netlink",
+    "summary": "dpll: fix possible deadlock during netlink dump operation"
+  },
+  {
+    "cve_id": "CVE-2024-26726",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "fs/btrfs",
+    "summary": "btrfs: don't drop extent_map for free space inode on write error"
+  },
+  {
+    "cve_id": "CVE-2024-26727",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "fs/btrfs",
+    "summary": "btrfs: do not ASSERT() if the newly created subvolume already got"
+  },
+  {
+    "cve_id": "CVE-2024-26728",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amd/display: fix null-pointer dereference on edid reading"
+  },
+  {
+    "cve_id": "CVE-2024-26729",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amd/display: Fix potential null pointer dereference in"
+  },
+  {
+    "cve_id": "CVE-2024-26730",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/hwmon",
+    "summary": "hwmon: (nct6775) Fix access to temperature configuration registers"
+  },
+  {
+    "cve_id": "CVE-2024-26731",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/core",
+    "summary": "bpf, sockmap: Fix NULL pointer dereference in"
+  },
+  {
+    "cve_id": "CVE-2024-26732",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/core",
+    "summary": "net: implement lockless setsockopt(SO_PEEK_OFF)"
+  },
+  {
+    "cve_id": "CVE-2024-26733",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/ipv4",
+    "summary": "arp: Prevent overflow in arp_req_get()."
+  },
+  {
+    "cve_id": "CVE-2024-26734",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/devlink",
+    "summary": "devlink: fix possible use-after-free and memory leaks in"
+  },
+  {
+    "cve_id": "CVE-2024-26735",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/ipv6",
+    "summary": "ipv6: sr: fix possible use-after-free and null-ptr-deref"
+  },
+  {
+    "cve_id": "CVE-2024-26736",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "fs/afs",
+    "summary": "afs: Increase buffer size in afs_update_volume_status()"
+  },
+  {
+    "cve_id": "CVE-2024-26737",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "kernel/bpf",
+    "summary": "bpf: Fix racing between bpf_timer_cancel_and_free and"
+  },
+  {
+    "cve_id": "CVE-2024-26738",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "arch/powerpc",
+    "summary": "powerpc/pseries/iommu: DLPAR add doesn't completely initialize"
+  },
+  {
+    "cve_id": "CVE-2024-26739",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/sched",
+    "summary": "net/sched: act_mirred: don't override retval if we already lost the"
+  },
+  {
+    "cve_id": "CVE-2024-26740",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/sched",
+    "summary": "net/sched: act_mirred: use the backlog for mirred ingress"
+  },
+  {
+    "cve_id": "CVE-2024-26741",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/ipv4",
+    "summary": "dccp/tcp: Unhash sk from ehash for tb2 alloc failure after"
+  },
+  {
+    "cve_id": "CVE-2024-26742",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/scsi",
+    "summary": "scsi: smartpqi: Fix disable_managed_interrupts"
+  },
+  {
+    "cve_id": "CVE-2024-26743",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/infiniband",
+    "summary": "RDMA/qedr: Fix qedr_create_user_qp error flow"
+  },
+  {
+    "cve_id": "CVE-2024-26744",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/infiniband",
+    "summary": "RDMA/srpt: Support specifying the srpt_service_guid parameter"
+  },
+  {
+    "cve_id": "CVE-2024-26745",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "arch/powerpc",
+    "summary": "powerpc/pseries/iommu: IOMMU table is not initialized for kdump over"
+  },
+  {
+    "cve_id": "CVE-2024-26746",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/dma",
+    "summary": "dmaengine: idxd: Ensure safe user copy of completion record"
+  },
+  {
+    "cve_id": "CVE-2024-26747",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/usb",
+    "summary": "usb: roles: fix NULL pointer issue when put module's reference"
+  },
+  {
+    "cve_id": "CVE-2024-26748",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/usb",
+    "summary": "usb: cdns3: fix memory double free when handle zero packet"
+  },
+  {
+    "cve_id": "CVE-2024-26749",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/usb",
+    "summary": "usb: cdns3: fixed memory use after free at cdns3_gadget_ep_disable()"
+  },
+  {
+    "cve_id": "CVE-2024-26750",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/unix",
+    "summary": "af_unix: Drop oob_skb ref before purging queue in GC."
+  },
+  {
+    "cve_id": "CVE-2024-26751",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "arch/arm",
+    "summary": "ARM: ep93xx: Add terminator to gpiod_lookup_table"
+  },
+  {
+    "cve_id": "CVE-2024-26752",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/l2tp",
+    "summary": "l2tp: pass correct message length to ip6_append_data"
+  },
+  {
+    "cve_id": "CVE-2024-26753",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/crypto",
+    "summary": "crypto: virtio/akcipher - Fix stack overflow on memcpy"
+  },
+  {
+    "cve_id": "CVE-2024-26754",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/net",
+    "summary": "gtp: fix use-after-free and null-ptr-deref in gtp_genl_dump_pdp()"
+  },
+  {
+    "cve_id": "CVE-2024-26755",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/md",
+    "summary": "md: Don't suspend the array for interrupted reshape"
+  },
+  {
+    "cve_id": "CVE-2024-26756",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/md",
+    "summary": "md: Don't register sync_thread for reshape directly"
+  },
+  {
+    "cve_id": "CVE-2024-26757",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/md",
+    "summary": "md: Don't ignore read-only array in md_check_recovery()"
+  },
+  {
+    "cve_id": "CVE-2024-26758",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/md",
+    "summary": "md: Don't ignore suspended array in md_check_recovery()"
+  },
+  {
+    "cve_id": "CVE-2024-26759",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "include/linux",
+    "summary": "mm/swap: fix race when skipping swapcache"
+  },
+  {
+    "cve_id": "CVE-2024-26760",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/target",
+    "summary": "scsi: target: pscsi: Fix bio_put() for error case"
+  },
+  {
+    "cve_id": "CVE-2024-26761",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/cxl",
+    "summary": "cxl/pci: Fix disabling memory if DVSEC CXL Range does not match a"
+  },
+  {
+    "cve_id": "CVE-2024-26762",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/cxl",
+    "summary": "cxl/pci: Skip to handle RAS errors if CXL.mem device is detached"
+  },
+  {
+    "cve_id": "CVE-2024-26763",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/md",
+    "summary": "dm-crypt: don't modify the data when using authenticated encryption"
+  },
+  {
+    "cve_id": "CVE-2024-26764",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "fs/aio.c",
+    "summary": "fs/aio: Restrict kiocb_set_cancel_fn() to I/O submitted via libaio"
+  },
+  {
+    "cve_id": "CVE-2024-26765",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "arch/loongarch",
+    "summary": "LoongArch: Disable IRQ before init_fn() for nonboot CPUs"
+  },
+  {
+    "cve_id": "CVE-2024-26766",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/infiniband",
+    "summary": "IB/hfi1: Fix sdma.h tx->num_descs off-by-one error"
+  },
+  {
+    "cve_id": "CVE-2024-26767",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amd/display: fixed integer types and null check locations"
+  },
+  {
+    "cve_id": "CVE-2024-26768",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "arch/loongarch",
+    "summary": "LoongArch: Change acpi_core_pic[NR_CPUS] to"
+  },
+  {
+    "cve_id": "CVE-2024-26769",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/nvme",
+    "summary": "nvmet-fc: avoid deadlock on delete association path"
+  },
+  {
+    "cve_id": "CVE-2024-26770",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/hid",
+    "summary": "HID: nvidia-shield: Add missing null pointer checks to LED"
+  },
+  {
+    "cve_id": "CVE-2024-26771",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/dma",
+    "summary": "dmaengine: ti: edma: Add some null pointer checks to the edma_probe"
+  },
+  {
+    "cve_id": "CVE-2024-26772",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "fs/ext4",
+    "summary": "ext4: avoid allocating blocks from corrupted group in"
+  },
+  {
+    "cve_id": "CVE-2024-26773",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "fs/ext4",
+    "summary": "ext4: avoid allocating blocks from corrupted group in"
+  },
+  {
+    "cve_id": "CVE-2024-26774",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "fs/ext4",
+    "summary": "ext4: avoid dividing by 0 in mb_update_avg_fragment_size() when block"
+  },
+  {
+    "cve_id": "CVE-2024-26775",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/block",
+    "summary": "aoe: avoid potential deadlock at set_capacity"
+  },
+  {
+    "cve_id": "CVE-2024-26776",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/spi",
+    "summary": "spi: hisi-sfc-v3xx: Return IRQ_NONE if no interrupts were detected"
+  },
+  {
+    "cve_id": "CVE-2024-26777",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/video",
+    "summary": "fbdev: sis: Error out if pixclock equals zero"
+  },
+  {
+    "cve_id": "CVE-2024-26778",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/video",
+    "summary": "fbdev: savage: Error out if pixclock equals zero"
+  },
+  {
+    "cve_id": "CVE-2024-26779",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/mac80211",
+    "summary": "wifi: mac80211: fix race condition on enabling fast-xmit"
+  },
+  {
+    "cve_id": "CVE-2024-26780",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/unix",
+    "summary": "af_unix: Fix task hung while purging oob_skb in GC."
+  },
+  {
+    "cve_id": "CVE-2024-26781",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/mptcp",
+    "summary": "mptcp: fix possible deadlock in subflow diag"
+  },
+  {
+    "cve_id": "CVE-2024-26782",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/mptcp",
+    "summary": "mptcp: fix double-free on socket dismantle"
+  },
+  {
+    "cve_id": "CVE-2024-26783",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "mm/migrate.c",
+    "summary": "mm/vmscan: fix a bug calling wakeup_kswapd() with a wrong zone index"
+  },
+  {
+    "cve_id": "CVE-2024-26784",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/pmdomain",
+    "summary": "pmdomain: arm: Fix NULL dereference on scmi_perf_domain removal"
+  },
+  {
+    "cve_id": "CVE-2024-26785",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/iommu",
+    "summary": "iommufd: Fix protection fault in iommufd_test_syz_conv_iova"
+  },
+  {
+    "cve_id": "CVE-2024-26786",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/iommu",
+    "summary": "iommufd: Fix iopt_access_list_id overwrite bug"
+  },
+  {
+    "cve_id": "CVE-2024-26787",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/mmc",
+    "summary": "mmc: mmci: stm32: fix DMA API overlapping mappings warning"
+  },
+  {
+    "cve_id": "CVE-2024-26788",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/dma",
+    "summary": "dmaengine: fsl-qdma: init irq after reg initialization"
+  },
+  {
+    "cve_id": "CVE-2024-26789",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "arch/arm64",
+    "summary": "crypto: arm64/neonbs - fix out-of-bounds access on short input"
+  },
+  {
+    "cve_id": "CVE-2024-26790",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/dma",
+    "summary": "dmaengine: fsl-qdma: fix SoC may hang on 16 byte unaligned read"
+  },
+  {
+    "cve_id": "CVE-2024-26791",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "fs/btrfs",
+    "summary": "btrfs: dev-replace: properly validate device names"
+  },
+  {
+    "cve_id": "CVE-2024-26792",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "fs/btrfs",
+    "summary": "btrfs: fix double free of anonymous device after snapshot creation"
+  },
+  {
+    "cve_id": "CVE-2024-26793",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/net",
+    "summary": "gtp: fix use-after-free and null-ptr-deref in gtp_newlink()"
+  },
+  {
+    "cve_id": "CVE-2024-26795",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "arch/riscv",
+    "summary": "riscv: Sparse-Memory/vmemmap out-of-bounds fix"
+  },
+  {
+    "cve_id": "CVE-2024-26796",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/perf",
+    "summary": "drivers: perf: ctr_get_width function for legacy is not defined"
+  },
+  {
+    "cve_id": "CVE-2024-26797",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/gpu",
+    "summary": "drm/amd/display: Prevent potential buffer overflow in"
+  },
+  {
+    "cve_id": "CVE-2024-26798",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/video",
+    "summary": "fbcon: always restore the old font data in fbcon_do_set_font()"
+  },
+  {
+    "cve_id": "CVE-2024-26799",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "sound/soc",
+    "summary": "ASoC: qcom: Fix uninitialized pointer dmactl"
+  },
+  {
+    "cve_id": "CVE-2024-26800",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/tls",
+    "summary": "tls: fix use-after-free on failed backlog decryption"
+  },
+  {
+    "cve_id": "CVE-2024-26801",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/bluetooth",
+    "summary": "Bluetooth: Avoid potential use-after-free in hci_error_reset"
+  },
+  {
+    "cve_id": "CVE-2024-26802",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/net",
+    "summary": "stmmac: Clear variable when destroying workqueue"
+  },
+  {
+    "cve_id": "CVE-2024-26803",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/net",
+    "summary": "net: veth: clear GRO when clearing XDP even when down"
+  },
+  {
+    "cve_id": "CVE-2024-26804",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/ipv4",
+    "summary": "net: ip_tunnel: prevent perpetual headroom growth"
+  },
+  {
+    "cve_id": "CVE-2024-26805",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/netlink",
+    "summary": "netlink: Fix kernel-infoleak-after-free in __skb_datagram_iter"
+  },
+  {
+    "cve_id": "CVE-2024-26806",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/spi",
+    "summary": "spi: cadence-qspi: remove system-wide suspend helper calls from"
+  },
+  {
+    "cve_id": "CVE-2024-26807",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "drivers/spi",
+    "summary": "spi: cadence-qspi: fix pointer reference in runtime PM hooks"
+  },
+  {
+    "cve_id": "CVE-2024-26808",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/netfilter",
+    "summary": "netfilter: nft_chain_filter: handle NETDEV_UNREGISTER for"
+  },
+  {
+    "cve_id": "CVE-2024-26809",
+    "seed_group": "rag-linux-kernel-2024-batch200",
+    "subsystem": "net/netfilter",
+    "summary": "netfilter: nft_set_pipapo: release elements in clone only from"
+  }
+]

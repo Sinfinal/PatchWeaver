@@ -1,0 +1,25 @@
+# RAG 向量检索配置
+
+enabled: true
+
+# 当前仅支持 Milvus
+vector_backend: milvus
+milvus_uri: "http://127.0.0.1:19530"
+milvus_token: ""
+milvus_database: "default"
+milvus_collection: "patchweaver_cve_chunks"
+metric_type: "COSINE"
+search_limit: 6
+
+# Embedding 模型使用百炼兼容接口
+embedding_provider: "bailian"
+embedding_base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+embedding_api_key_env: "PATCHWEAVER_BAILIAN_API_KEY"
+embedding_api_key: ""
+embedding_model: "text-embedding-v4"
+embedding_dimensions: 1024
+embedding_timeout_sec: 60
+
+# 默认导入当前 200 条修复语料
+corpus_jsonl_path: "rag_corpus_batch200/chunks/all_chunks.jsonl"
+import_batch_size: 32
