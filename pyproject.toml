@@ -30,7 +30,9 @@ dependencies = [
   #Web API
   "fastapi>=0.115",
   #API 服务启动
-  "uvicorn>=0.30"
+  "uvicorn>=0.30",
+  #Milvus 向量数据库客户端
+  "pymilvus>=2.6"
 ]
 
 # 命令入口

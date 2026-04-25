@@ -10,6 +10,7 @@ from patchweaver.config.loader import (
     discover_project_root,
     load_logging_config,
     load_models_config,
+    load_rag_config,
     load_rules_config,
     load_system_config,
 )
@@ -36,6 +37,7 @@ class ApiContext:
     rules_config: object
     logging_config: object
     models_config: object
+    rag_config: object
     task_repo: TaskRepository
     attempt_repo: AttemptRepository
     artifact_repo: ArtifactRepository
@@ -73,6 +75,7 @@ def get_api_context() -> ApiContext:
     rules_config = load_rules_config(project_root)
     logging_config = load_logging_config(project_root)
     models_config = load_models_config(project_root)
+    rag_config = load_rag_config(project_root)
 
     return ApiContext(
         project_root=project_root,
@@ -85,6 +88,7 @@ def get_api_context() -> ApiContext:
         rules_config=rules_config,
         logging_config=logging_config,
         models_config=models_config,
+        rag_config=rag_config,
         task_repo=TaskRepository(runtime.database_path, project_root),
         attempt_repo=AttemptRepository(runtime.database_path, project_root),
         artifact_repo=ArtifactRepository(runtime.database_path, project_root),

@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from patchweaver import __version__
-from patchweaver.api.routers import doctor, logs, overview, reports, rules, settings, skills, tasks
+from patchweaver.api.routers import doctor, logs, overview, rag, reports, rules, settings, skills, tasks
 from patchweaver.api.schemas import HealthResponse
 from patchweaver.config.loader import discover_project_root
 
@@ -54,6 +54,7 @@ def create_app() -> FastAPI:
     app.include_router(skills.router, prefix=api_prefix)
     app.include_router(logs.router, prefix=api_prefix)
     app.include_router(settings.router, prefix=api_prefix)
+    app.include_router(rag.router, prefix=api_prefix)
 
     @app.get("/healthz", response_model=HealthResponse)
     def healthz() -> HealthResponse:

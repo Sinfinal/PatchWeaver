@@ -43,3 +43,34 @@ class HealthResponse(BaseModel):
 
     status: str
     version: str
+
+
+class RagSearchRequest(BaseModel):
+    """RAG 检索请求"""
+
+    query: str
+    limit: int | None = None
+    cve_id: str | None = None
+    subsystem: str | None = None
+
+
+class RagSearchHit(BaseModel):
+    """单条 RAG 命中结果"""
+
+    chunk_id: str
+    cve_id: str
+    section: str
+    subsystem: str | None = None
+    score: float
+    text: str
+    card_path: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class RagSearchResponse(BaseModel):
+    """RAG 检索响应"""
+
+    query: str
+    limit: int
+    collection: str
+    items: list[RagSearchHit] = Field(default_factory=list)
