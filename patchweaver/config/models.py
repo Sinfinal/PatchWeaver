@@ -282,6 +282,39 @@ class ModelsConfig(ConfigModel):
         return payload
 
 
+class RagConfig(ConfigModel):
+    """RAG 向量检索配置"""
+
+    enabled: bool = True
+    vector_backend: Literal["milvus"] = "milvus"
+    milvus_uri: str = "http://127.0.0.1:19530"
+    milvus_token: str = ""
+    milvus_database: str = "default"
+    milvus_collection: str = "patchweaver_cve_chunks"
+    metric_type: Literal["COSINE", "IP", "L2"] = "COSINE"
+    search_limit: int = 6
+    embedding_provider: Literal["bailian"] = "bailian"
+    embedding_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    embedding_api_key_env: str = "PATCHWEAVER_BAILIAN_API_KEY"
+    embedding_api_key: str = ""
+    embedding_model: str = "text-embedding-v4"
+    embedding_dimensions: int = 1024
+    embedding_timeout_sec: int = 60
+    corpus_jsonl_path: str = "rag_corpus_batch200/chunks/all_chunks.jsonl"
+    import_batch_size: int = 32
+
+    def resolve_api_key(self) -> str | None:
+        """解析 embedding API Key"""
+
+        env_value = os.getenv(self.embedding_api_key_env, "").strip()
+        if env_value:
+            return env_value
+        config_value = self.embedding_api_key.strip()
+        if config_value:
+            return config_value
+        return None
+
+
 class ResolvedRuntime(ConfigModel):
     """命令行解析后的生效运行时快照"""
 

@@ -16,6 +16,7 @@ from patchweaver.config.models import (
     ModelsConfig,
     ProfilesConfig,
     PromptsConfig,
+    RagConfig,
     RulesConfig,
     SkillsConfig,
     SystemConfig,
@@ -120,6 +121,13 @@ def load_models_config(project_root: Path | None = None) -> ModelsConfig:
 
     root = discover_project_root(project_root)
     return load_model(config_path(root, "models.yaml"), ModelsConfig)
+
+
+def load_rag_config(project_root: Path | None = None) -> RagConfig:
+    """加载 rag.yaml"""
+
+    root = discover_project_root(project_root)
+    return load_model(config_path(root, "rag.yaml"), RagConfig)
 
 
 def _render_yaml_scalar(value: str) -> str:
