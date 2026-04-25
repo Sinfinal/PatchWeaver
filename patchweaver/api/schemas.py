@@ -1,4 +1,4 @@
-"""Web API 使用的请求与响应模型"""
+"""Request and response models used by the Web API."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class CreateTaskRequest(BaseModel):
-    """创建任务时的表单参数"""
+    """Request payload for creating a task."""
 
     cve_id: str
     target_kernel: str | None = None
@@ -19,7 +19,7 @@ class CreateTaskRequest(BaseModel):
 
 
 class TaskActionResponse(BaseModel):
-    """任务动作执行后的通用返回结构"""
+    """Common response for task actions."""
 
     task_id: str
     status: str
@@ -27,7 +27,7 @@ class TaskActionResponse(BaseModel):
 
 
 class ArtifactContentResponse(BaseModel):
-    """单个产物文件的预览内容"""
+    """Preview payload for a single artifact file."""
 
     task_id: str
     relative_path: str
@@ -39,14 +39,14 @@ class ArtifactContentResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
-    """最小健康检查结果"""
+    """Minimal service health response."""
 
     status: str
     version: str
 
 
 class RagSearchRequest(BaseModel):
-    """RAG 检索请求"""
+    """RAG search request."""
 
     query: str
     limit: int | None = None
@@ -55,7 +55,7 @@ class RagSearchRequest(BaseModel):
 
 
 class RagSearchHit(BaseModel):
-    """单条 RAG 命中结果"""
+    """Single RAG search hit."""
 
     chunk_id: str
     cve_id: str
@@ -68,9 +68,83 @@ class RagSearchHit(BaseModel):
 
 
 class RagSearchResponse(BaseModel):
-    """RAG 检索响应"""
+    """RAG search response."""
 
     query: str
     limit: int
     collection: str
     items: list[RagSearchHit] = Field(default_factory=list)
+
+
+class RagHealthResponse(BaseModel):
+    """RAG backend health snapshot."""
+
+    status: str
+    enabled: bool
+    backend: str
+    milvus_uri: str
+    milvus_database: str
+    collection: str
+    connection_ready: bool
+    collection_exists: bool
+    api_key_ready: bool
+    embedding_model: str
+    embedding_dimensions: int
+    detail: str | None = None
+
+
+class RagStatsResponse(BaseModel):
+    """RAG backend statistics."""
+
+    status: str
+    enabled: bool
+    backend: str
+    milvus_uri: str
+    milvus_database: str
+    collection: str
+    collection_exists: bool
+    document_count: int | None = None
+    default_search_limit: int
+    metric_type: str
+    embedding_model: str
+    embedding_dimensions: int
+    default_corpus_path: str
+    status_path: str
+    last_import_status: str | None = None
+    last_import_at: str | None = None
+    detail: str | None = None
+
+
+class RagImportStatusResponse(BaseModel):
+    """Latest RAG import status snapshot."""
+
+    available: bool
+    status_path: str
+    status: str | None = None
+    updated_at: str | None = None
+    collection: str | None = None
+    source_path: str | None = None
+    imported: int | None = None
+    drop_existing: bool | None = None
+    detail: str | None = None
+    error: str | None = None
+
+
+class RagReindexRequest(BaseModel):
+    """Request payload for rebuilding the active RAG collection."""
+
+    corpus_path: str | None = None
+    drop_existing: bool = True
+
+
+class RagReindexResponse(BaseModel):
+    """Response payload for rebuilding the active RAG collection."""
+
+    status: str
+    status_path: str
+    updated_at: str
+    collection: str
+    source_path: str
+    imported: int
+    drop_existing: bool
+    detail: str | None = None

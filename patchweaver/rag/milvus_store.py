@@ -1,4 +1,4 @@
-"""Milvus 向量库访问。"""
+"""Milvus vector store wrapper."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ def _escape_expr_value(value: str) -> str:
 
 
 class MilvusStore:
-    """Milvus collection 封装。"""
+    """Thin wrapper around the PatchWeaver Milvus collection."""
 
     def __init__(self, config: RagConfig, *, alias: str = "patchweaver_rag") -> None:
         self.config = config
@@ -26,16 +26,42 @@ class MilvusStore:
         try:
             from pymilvus import connections
         except ImportError as exc:
-            raise RuntimeError("未安装 pymilvus，请先执行 `pip install -e .`。") from exc
+            raise RuntimeError("pymilvus is not installed. Run `pip install -e .` first.") from exc
 
         kwargs: dict[str, Any] = {"alias": self.alias, "uri": self.config.milvus_uri}
         if self.config.milvus_token.strip():
             kwargs["token"] = self.config.milvus_token.strip()
+        if self.config.milvus_database.strip():
+            kwargs["db_name"] = self.config.milvus_database.strip()
         connections.connect(**kwargs)
         self._connected = True
 
+    def ping(self) -> bool:
+        """Return whether the connection can be established."""
+
+        self._connect()
+        return True
+
+    def collection_exists(self) -> bool:
+        """Return whether the target collection exists."""
+
+        self._connect()
+        from pymilvus import utility
+
+        return bool(utility.has_collection(self.config.milvus_collection, using=self.alias))
+
+    def count_documents(self) -> int:
+        """Return the number of stored vectors."""
+
+        if not self.collection_exists():
+            return 0
+        from pymilvus import Collection
+
+        collection = Collection(self.config.milvus_collection, using=self.alias)
+        return int(collection.num_entities)
+
     def ensure_collection(self, *, drop_existing: bool = False) -> None:
-        """确保 collection 已创建。"""
+        """Ensure the target collection exists."""
 
         self._connect()
         from pymilvus import Collection, CollectionSchema, DataType, FieldSchema, utility
@@ -69,7 +95,7 @@ class MilvusStore:
         collection.load()
 
     def insert_documents(self, docs: list[dict[str, Any]]) -> int:
-        """批量写入文档。"""
+        """Insert a batch of chunk documents."""
 
         if not docs:
             return 0
@@ -99,7 +125,7 @@ class MilvusStore:
         cve_id: str | None = None,
         subsystem: str | None = None,
     ) -> list[dict[str, Any]]:
-        """执行向量检索。"""
+        """Run a vector search against the configured collection."""
 
         self._connect()
         from pymilvus import Collection
