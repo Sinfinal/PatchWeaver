@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import shlex
 import platform
+import re
+import shlex
 import shutil
 import subprocess
 from collections.abc import Iterable
@@ -410,6 +411,10 @@ class BuildOrchestrator:
         output_dir = build_log_path.parent.parent / "output"
         output_dir.mkdir(parents=True, exist_ok=True)
         builder_cmd = probe["builder_path"] or self.build_config.kpatch_build_cmd
+        build_targets = self._infer_build_targets(
+            source_dir=selected_source_dir,
+            rewritten_patch_path=rewritten_patch_path,
+        )
         # 输出目录固定在 attempt 目录下，方便 report/replay 直接定位本轮产物
         command = [
             builder_cmd,
@@ -423,9 +428,13 @@ class BuildOrchestrator:
             self._module_name(task.task_id, attempt_no),
             "-o",
             str(output_dir),
-            str(rewritten_patch_path.resolve()),
         ]
+        for build_target in build_targets:
+            command.extend(["-t", build_target])
+        command.append(str(rewritten_patch_path.resolve()))
         command_text = " ".join(shlex.quote(part) for part in command)
+        if build_targets:
+            lines.extend(["", "[build targets]", ", ".join(build_targets)])
         lines.extend(["", "[local command]", command_text])
 
         exit_code: int | None = None
@@ -659,13 +668,233 @@ class BuildOrchestrator:
             return None
         mapping = {
             "clean_kernel_src_dir": "unpatched",
-            "prepared_kernel_src_dir": "unknown",
-            "kernel_src_dir": "unknown",
+            "prepared_kernel_src_dir": "likely_patched",
+            "kernel_src_dir": "likely_patched",
             "kernel_devel_dir": "unknown",
             "patched_kernel_src_dir": "patched",
             "synthetic_reverse_tree": "unpatched",
         }
         return mapping.get(slot_name, "unknown")
+
+    def _infer_build_targets(self, *, source_dir: Path, rewritten_patch_path: Path) -> list[str]:
+        """根据补丁触达文件尽量收窄 kpatch-build 的构建目标"""
+
+        if not getattr(self.build_config, "auto_build_targets", True):
+            return []
+
+        config_values = self._load_kernel_config_values(source_dir)
+        touched_files = self._collect_patch_target_files(rewritten_patch_path)
+        if not touched_files:
+            return ["vmlinux"]
+
+        module_targets: list[str] = []
+        built_in_needed = False
+
+        for relative_path in touched_files:
+            resolved_target = self._resolve_build_target_for_path(
+                source_dir=source_dir,
+                relative_path=relative_path,
+                config_values=config_values,
+            )
+            if resolved_target is None:
+                built_in_needed = True
+                continue
+            if resolved_target == "vmlinux":
+                built_in_needed = True
+                continue
+            if resolved_target not in module_targets:
+                module_targets.append(resolved_target)
+
+        if not module_targets and not built_in_needed:
+            return ["vmlinux"]
+
+        if module_targets and self._has_vmlinux_build_state(source_dir) and not built_in_needed:
+            return module_targets
+
+        targets = ["vmlinux"]
+        targets.extend(module_targets)
+        return targets
+
+    def _collect_patch_target_files(self, patch_path: Path) -> list[Path]:
+        """从 unified diff 里提取本轮实际触达的源码文件"""
+
+        with patch_path.open("r", encoding="utf-8", errors="replace") as handle:
+            patch_set = PatchSet(handle)
+
+        touched_files: list[Path] = []
+        for patched_file in patch_set:
+            relative_path = getattr(patched_file, "path", None)
+            if not relative_path:
+                continue
+            normalized = self._normalize_patch_relative_path(relative_path)
+            if normalized is None or normalized in touched_files:
+                continue
+            touched_files.append(normalized)
+        return touched_files
+
+    def _normalize_patch_relative_path(self, raw_path: str) -> Path | None:
+        """把 patch 里的 a/ b/ 路径整理成源码树相对路径"""
+
+        normalized = raw_path.strip()
+        if not normalized or normalized == "/dev/null":
+            return None
+        if normalized.startswith("a/") or normalized.startswith("b/"):
+            normalized = normalized[2:]
+        return Path(normalized)
+
+    def _load_kernel_config_values(self, source_dir: Path) -> dict[str, str]:
+        """读取 .config 里和目标推导有关的开关值"""
+
+        config_path = source_dir / ".config"
+        if not config_path.exists():
+            return {}
+
+        values: dict[str, str] = {}
+        for raw_line in config_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = raw_line.strip()
+            if not line.startswith("CONFIG_") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            values[key] = value.strip()
+        return values
+
+    def _resolve_build_target_for_path(
+        self,
+        *,
+        source_dir: Path,
+        relative_path: Path,
+        config_values: dict[str, str],
+    ) -> str | None:
+        """把源码文件映射成更贴近实际的 make target"""
+
+        if relative_path.suffix != ".c":
+            return "vmlinux"
+
+        file_name = relative_path.name
+        object_name = relative_path.with_suffix(".o").name
+        makefile_lines = self._load_kbuild_lines(source_dir / relative_path.parent)
+        if not makefile_lines:
+            return "vmlinux"
+
+        composite_object = self._find_composite_object(makefile_lines, member_object=object_name)
+        final_object = composite_object or object_name
+        final_target = self._find_final_kbuild_target(
+            makefile_lines,
+            final_object=final_object,
+            relative_dir=relative_path.parent,
+            config_values=config_values,
+        )
+        if final_target is not None:
+            return final_target
+
+        if composite_object is not None:
+            return "vmlinux"
+
+        if self._file_is_direct_module_member(makefile_lines, file_name=file_name):
+            return "vmlinux"
+
+        return "vmlinux"
+
+    def _load_kbuild_lines(self, directory: Path) -> list[str]:
+        """读取 Makefile 或 Kbuild，并按续行拼成逻辑行"""
+
+        for candidate_name in ["Makefile", "Kbuild"]:
+            candidate = directory / candidate_name
+            if not candidate.exists():
+                continue
+            content = candidate.read_text(encoding="utf-8", errors="replace")
+            return self._collapse_make_lines(content)
+        return []
+
+    def _collapse_make_lines(self, content: str) -> list[str]:
+        """把 Makefile 里的反斜杠续行合并起来，方便后续规则匹配"""
+
+        logical_lines: list[str] = []
+        pending = ""
+        for raw_line in content.splitlines():
+            body, _, _ = raw_line.partition("#")
+            stripped = body.rstrip()
+            if not stripped:
+                continue
+            if stripped.endswith("\\"):
+                pending += stripped[:-1].rstrip() + " "
+                continue
+            combined = (pending + stripped).strip()
+            pending = ""
+            if combined:
+                logical_lines.append(combined)
+        if pending.strip():
+            logical_lines.append(pending.strip())
+        return logical_lines
+
+    def _find_composite_object(self, makefile_lines: list[str], *, member_object: str) -> str | None:
+        """判断当前 .c 是否只是某个复合目标的一部分"""
+
+        pattern = re.compile(r"^(?P<parent>[\w-]+)-(?:objs|y|m|\$\([^)]+\))\s*[:+]?=\s*(?P<rest>.+)$")
+        for line in makefile_lines:
+            match = pattern.match(line)
+            if match is None:
+                continue
+            members = match.group("rest").split()
+            if member_object in members:
+                return f"{match.group('parent')}.o"
+        return None
+
+    def _find_final_kbuild_target(
+        self,
+        makefile_lines: list[str],
+        *,
+        final_object: str,
+        relative_dir: Path,
+        config_values: dict[str, str],
+    ) -> str | None:
+        """从 obj-* 规则里推导最终会生成的目标"""
+
+        pattern = re.compile(
+            r"^obj-(?:(?P<config>\$\([^)]+\))|(?P<literal>[ym]))\s*[:+]?=\s*(?P<rest>.+)$"
+        )
+        relative_dir_text = relative_dir.as_posix()
+
+        for line in makefile_lines:
+            match = pattern.match(line)
+            if match is None:
+                continue
+            tokens = match.group("rest").split()
+            if final_object not in tokens:
+                continue
+
+            config_token = match.group("config")
+            if config_token:
+                config_key = config_token[2:-1]
+                state = config_values.get(config_key)
+            else:
+                state = match.group("literal")
+
+            if state == "m":
+                target_name = final_object.removesuffix(".o") + ".ko"
+                if relative_dir_text in {"", "."}:
+                    return target_name
+                return f"{relative_dir_text}/{target_name}"
+            if state == "y":
+                return "vmlinux"
+        return None
+
+    def _file_is_direct_module_member(self, makefile_lines: list[str], *, file_name: str) -> bool:
+        """识别以 source 形式直接挂到模块规则里的少见写法"""
+
+        pattern = re.compile(r"^[\w-]+-(?:src|y|m)\s*[:+]?=\s*(?P<rest>.+)$")
+        for line in makefile_lines:
+            match = pattern.match(line)
+            if match is None:
+                continue
+            if file_name in match.group("rest").split():
+                return True
+        return False
+
+    def _has_vmlinux_build_state(self, source_dir: Path) -> bool:
+        """判断源码树里是否已经具备可复用的 vmlinux 构建缓存"""
+
+        return (source_dir / "vmlinux.o").exists() and (source_dir / "Module.symvers").exists()
 
     def _prepare_reverse_source_tree(
         self,

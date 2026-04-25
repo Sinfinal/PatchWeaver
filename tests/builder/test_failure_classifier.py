@@ -59,4 +59,5 @@ def test_classify_build_log_prefers_timeout_summary_after_local_command() -> Non
 
     assert record.failure_type == "compile_failed"
     assert record.summary == "构建命令超时：3600 秒。"
+    assert any("构建命令超时" in item for item in record.evidence)
     assert all("patch failed" not in item for item in record.evidence)

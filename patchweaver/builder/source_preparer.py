@@ -8,9 +8,13 @@ import subprocess
 import tarfile
 import tempfile
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
+
+WARMUP_MARKER_NAME = "patchweaver_source_warmup.json"
+WARMUP_LOG_NAME = "patchweaver_source_warmup.log"
 
 
 @dataclass(slots=True)
@@ -20,13 +24,18 @@ class PreparedSourceTreeResult:
     kernel_release: str
     kernel_devel_package: str
     output_dir: str
-    srpm_path: str
-    source_tarball: str
+    srpm_path: str | None
+    source_tarball: str | None
     overlay_dirs: list[str]
     config_path: str | None
     setlocalversion_patched: bool
     build_config_path: str | None = None
     reused_existing: bool = False
+    warmup_targets: list[str] | None = None
+    warmup_jobs: int | None = None
+    warmup_performed: bool = False
+    warmup_marker_path: str | None = None
+    warmup_log_path: str | None = None
 
     def to_payload(self) -> dict[str, object]:
         """转成可直接输出的结构化结果"""
@@ -45,11 +54,17 @@ def prepare_validation_source_tree(
     kernel_devel_package: str | None = None,
     build_config_path: Path | None = None,
     write_build_config: bool = False,
+    warm_targets: list[str] | None = None,
+    warm_jobs: int | None = None,
+    force_warm: bool = False,
 ) -> PreparedSourceTreeResult:
     """准备可供 kpatch-build 使用的完整源码树"""
 
     package_name = kernel_devel_package or f"kernel-devel-{kernel_release}"
     normalized_output_dir = output_dir.resolve()
+    normalized_warm_targets = _normalize_warm_targets(warm_targets)
+    warmup_marker_path = _warmup_marker_path(normalized_output_dir)
+    warmup_log_path = normalized_output_dir / WARMUP_LOG_NAME
     if normalized_output_dir.exists():
         if force:
             shutil.rmtree(normalized_output_dir)
@@ -57,17 +72,28 @@ def prepare_validation_source_tree(
             patched = _patch_setlocalversion(normalized_output_dir)
             if write_build_config and build_config_path is not None:
                 _write_prepared_path_to_build_config(build_config_path, normalized_output_dir)
+            warmup_performed = _maybe_warm_prepared_tree(
+                normalized_output_dir,
+                warm_targets=normalized_warm_targets,
+                warm_jobs=warm_jobs,
+                force=force_warm,
+            )
             return PreparedSourceTreeResult(
                 kernel_release=kernel_release,
                 kernel_devel_package=package_name,
                 output_dir=str(normalized_output_dir),
-                srpm_path="",
-                source_tarball="",
+                srpm_path=None,
+                source_tarball=None,
                 overlay_dirs=[str(path) for path in overlay_dirs if path.exists()],
                 config_path=str(_resolve_config_path(normalized_output_dir)) if _resolve_config_path(normalized_output_dir) else None,
                 setlocalversion_patched=patched,
                 build_config_path=str(build_config_path.resolve()) if write_build_config and build_config_path is not None else None,
                 reused_existing=True,
+                warmup_targets=normalized_warm_targets or None,
+                warmup_jobs=warm_jobs,
+                warmup_performed=warmup_performed,
+                warmup_marker_path=str(warmup_marker_path) if normalized_warm_targets else None,
+                warmup_log_path=str(warmup_log_path) if normalized_warm_targets else None,
             )
         else:
             raise RuntimeError(f"目标目录已存在但不是可复用的源码树: {normalized_output_dir}")
@@ -131,6 +157,12 @@ def prepare_validation_source_tree(
             config_path = normalized_output_dir / ".config"
 
     setlocalversion_patched = _patch_setlocalversion(normalized_output_dir)
+    warmup_performed = _maybe_warm_prepared_tree(
+        normalized_output_dir,
+        warm_targets=normalized_warm_targets,
+        warm_jobs=warm_jobs,
+        force=force_warm,
+    )
 
     manifest_path = normalized_output_dir / "patchweaver_source_prepare.json"
     result = PreparedSourceTreeResult(
@@ -144,6 +176,11 @@ def prepare_validation_source_tree(
         setlocalversion_patched=setlocalversion_patched,
         build_config_path=str(build_config_path.resolve()) if write_build_config and build_config_path is not None else None,
         reused_existing=False,
+        warmup_targets=normalized_warm_targets or None,
+        warmup_jobs=warm_jobs,
+        warmup_performed=warmup_performed,
+        warmup_marker_path=str(warmup_marker_path) if normalized_warm_targets else None,
+        warmup_log_path=str(warmup_log_path) if normalized_warm_targets else None,
     )
     manifest_path.write_text(json.dumps(result.to_payload(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -185,6 +222,17 @@ def _looks_like_prepared_tree(path: Path) -> bool:
     return path.is_dir() and (path / "Makefile").exists() and (path / "scripts" / "setlocalversion").exists()
 
 
+def _normalize_warm_targets(warm_targets: list[str] | None) -> list[str]:
+    """清洗 prepare-build-tree 传入的预热目标"""
+
+    normalized: list[str] = []
+    for raw_target in warm_targets or []:
+        target = raw_target.strip()
+        if target and target not in normalized:
+            normalized.append(target)
+    return normalized
+
+
 def _resolve_config_path(source_dir: Path) -> Path | None:
     """返回源码树中的 .config 路径"""
 
@@ -204,7 +252,7 @@ def _overlay_tree(source_dir: Path, target_dir: Path) -> None:
 
 
 def _patch_setlocalversion(source_dir: Path) -> bool:
-    """让 vendor kernel 的 setlocalversion 忽略 --save-scmversion"""
+    """确保 vendor kernel 的 setlocalversion 满足 PatchWeaver 运行要求"""
 
     script_path = source_dir / "scripts" / "setlocalversion"
     if not script_path.exists():
@@ -230,7 +278,10 @@ def _patch_setlocalversion(source_dir: Path) -> bool:
         shebang, _, body = body.partition("\n")
         shebang += "\n"
 
-    if "--save-scmversion" not in body:
+    has_save_scmversion_support = "--save-scmversion" in body
+    has_kernelversion_fallback = 'KERNELVERSION="$(cat include/config/kernel.release)"' in body
+
+    if not has_save_scmversion_support:
         marker = "set -e\n"
         injected = "set -e\n\n" + save_scm_block
         if marker in body:
@@ -238,17 +289,103 @@ def _patch_setlocalversion(source_dir: Path) -> bool:
         else:
             body = save_scm_block + body
 
-    if 'KERNELVERSION="$(cat include/config/kernel.release)"' not in body:
+    if not has_kernelversion_fallback:
         marker = 'if [ -z "${KERNELVERSION}" ]; then\n'
         if marker in body:
             body = body.replace(marker, kernel_release_block + marker, 1)
 
     updated = shebang + body
     if updated == original:
-        return False
+        return has_save_scmversion_support and has_kernelversion_fallback
 
     script_path.write_text(updated, encoding="utf-8")
     script_path.chmod(script_path.stat().st_mode | 0o111)
+    return True
+
+
+def _warmup_marker_path(source_dir: Path) -> Path:
+    """返回源码树预热状态文件路径"""
+
+    return source_dir / WARMUP_MARKER_NAME
+
+
+def _load_warmup_marker(marker_path: Path) -> dict[str, object] | None:
+    """读取预热状态文件"""
+
+    if not marker_path.exists():
+        return None
+    try:
+        return json.loads(marker_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _warmup_marker_matches(marker_path: Path, *, warm_targets: list[str], warm_jobs: int | None) -> bool:
+    """判断当前预热记录是否可以直接复用"""
+
+    payload = _load_warmup_marker(marker_path)
+    if payload is None:
+        return False
+    return payload.get("targets") == warm_targets and payload.get("jobs") == warm_jobs
+
+
+def _maybe_warm_prepared_tree(
+    source_dir: Path,
+    *,
+    warm_targets: list[str],
+    warm_jobs: int | None,
+    force: bool,
+) -> bool:
+    """按需执行 prepared source tree 预热"""
+
+    if not warm_targets:
+        return False
+
+    marker_path = _warmup_marker_path(source_dir)
+    if not force and _warmup_marker_matches(marker_path, warm_targets=warm_targets, warm_jobs=warm_jobs):
+        return False
+
+    command = ["make"]
+    if warm_jobs is not None:
+        command.append(f"-j{warm_jobs}")
+    command.extend(warm_targets)
+
+    log_path = source_dir / WARMUP_LOG_NAME
+    with log_path.open("w", encoding="utf-8", errors="replace") as log_handle:
+        result = subprocess.run(
+            command,
+            cwd=source_dir,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+
+    if result.returncode != 0:
+        log_excerpt = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
+        raise RuntimeError(
+            "prepared source tree 预热失败\n"
+            f"command: {' '.join(command)}\n"
+            f"log: {log_path}\n"
+            f"excerpt:\n{log_excerpt}"
+        )
+
+    marker_path.write_text(
+        json.dumps(
+            {
+                "targets": warm_targets,
+                "jobs": warm_jobs,
+                "finished_at": datetime.now(timezone.utc).isoformat(),
+                "log_path": str(log_path),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     return True
 
 

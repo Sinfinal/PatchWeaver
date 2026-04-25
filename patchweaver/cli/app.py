@@ -439,7 +439,10 @@ def _command_examples(command_path: str) -> list[tuple[str, str]]:
             (f"{command_path} --host 0.0.0.0 --port 18084", "在 Linux 验证机上安装并启动 API 服务。"),
         ],
         "patchweaver prepare-build-tree": [
-            (f"{command_path} --kernel-release 6.6.102-5.2.an23.x86_64", "准备可供 kpatch-build 使用的完整源码树。"),
+            (
+                f"{command_path} --kernel-release 6.6.102-5.2.an23.x86_64 --warm-target vmlinux --warm-jobs 20",
+                "准备完整源码树，并预热 vmlinux 构建缓存。",
+            ),
         ],
         "patchweaver db init": [
             (f"{command_path}", "初始化 SQLite 数据库并写入基础 schema。"),
@@ -517,7 +520,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
         ("patchweaver paths --json", "输出当前生效的路径、运行时和 manifest 目录。"),
         ("patchweaver serve-api --reload", "启动 FastAPI 接口，供 Web 控制台开发调试。"),
         ("patchweaver install-api-service", "在 Linux 验证机上安装并启动 Web/API 的 systemd 服务。"),
-        ("patchweaver prepare-build-tree", "在 Linux 验证机上准备完整源码树。"),
+        ("patchweaver prepare-build-tree --warm-target vmlinux", "在 Linux 验证机上准备并预热完整源码树。"),
         ("patchweaver db path", "查看当前配置解析出来的数据库路径。"),
         ("patchweaver evaluate --fixture contest_samples", "按固定样例集输出阶段评测汇总。"),
         ("patchweaver models --json", "查看当前模型分工和 API Key 来源。"),
@@ -1943,7 +1946,7 @@ def install_api_service_command(
     port: Annotated[int | None, typer.Option("--port", help="API 服务监听端口。")] = None,
     enable: Annotated[bool, typer.Option("--enable/--no-enable", help="是否加入开机自启。")] = True,
     start: Annotated[bool, typer.Option("--start/--no-start", help="安装后是否立即启动。")] = True,
-    timeout_sec: Annotated[int, typer.Option("--timeout-sec", help="等待健康检查通过的秒数。")] = 15,
+    timeout_sec: Annotated[int, typer.Option("--timeout-sec", help="等待健康检查通过的秒数。")] = 45,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
     """在 Linux 验证机上安装并启动 Web/API 的 systemd 服务"""
@@ -2020,6 +2023,9 @@ def prepare_build_tree_command(
     kernel_devel_package: Annotated[str | None, typer.Option("--kernel-devel-package", help="用于下载 source rpm 的包名。")] = None,
     dnf_cmd: Annotated[str, typer.Option("--dnf-cmd", help="下载 source rpm 时使用的命令。")] = "dnf",
     force: Annotated[bool, typer.Option("--force", help="若输出目录已存在则强制重建。")] = False,
+    warm_targets: Annotated[list[str] | None, typer.Option("--warm-target", help="额外预热的 make target，可重复指定。")] = None,
+    warm_jobs: Annotated[int | None, typer.Option("--warm-jobs", help="预热源码树时 make 使用的并发数。")] = None,
+    force_warm: Annotated[bool, typer.Option("--force-warm", help="即便已有预热记录也重新执行预热。")] = False,
     write_build_config: Annotated[bool, typer.Option("--write-build-config/--no-write-build-config", help="是否把 prepared_kernel_src_dir 写回 build.yaml。")] = True,
     build_config_path: Annotated[str | None, typer.Option("--build-config", help="build.yaml 路径。")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
@@ -2053,6 +2059,9 @@ def prepare_build_tree_command(
             kernel_devel_package=kernel_devel_package,
             build_config_path=final_build_config_path,
             write_build_config=write_build_config,
+            warm_targets=warm_targets,
+            warm_jobs=warm_jobs,
+            force_warm=force_warm,
         )
     except Exception as exc:
         typer.secho(f"错误: 完整源码树准备失败: {exc}", err=True, fg=typer.colors.RED)
@@ -2069,6 +2078,8 @@ def prepare_build_tree_command(
         kernel_release=final_kernel_release,
         output_dir=str(final_output_dir),
         reused_existing=result.reused_existing,
+        warmup_targets=result.warmup_targets,
+        warmup_performed=result.warmup_performed,
         build_config_path=str(final_build_config_path) if write_build_config else None,
     )
 

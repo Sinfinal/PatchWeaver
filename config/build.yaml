@@ -37,6 +37,10 @@ auto_switch_source_tree: true
 # 是否在 attempt 目录下自动准备一棵反向补丁树。
 auto_reverse_source_tree: true
 
+# 是否根据补丁触达文件自动收窄 kpatch-build 的构建目标。
+# 模块补丁会尽量落到 vmlinux + 受影响模块，已预热源码树时可进一步缩到单模块。
+auto_build_targets: true
+
 # vmlinux 符号文件路径
 vmlinux_path: /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux
 

@@ -64,6 +64,9 @@ class UploadConfig:
     remote_venv_name: str = ".venv"
     remote_smoke_port: int = 18084
     remote_kernel_release: str = ""
+    remote_build_tree_warm_targets: list[str] | None = None
+    remote_build_tree_warm_jobs: int | None = None
+    force_remote_build_tree_warm: bool = False
 
 
 class ValidationUploader:
@@ -77,7 +80,7 @@ class ValidationUploader:
     def run(self) -> None:
         """执行打包、上传和验证机目录展开"""
 
-        step_total = 7
+        step_total = 8
         current_step = 1
         if self.config.build_frontend:
             # 先在本地把前端静态资源固化出来
@@ -357,7 +360,7 @@ class ValidationUploader:
             # 初始化数据库并直接把 API 服务装成 systemd
             # 这样验证机侧既能跑 CLI，也能直接起 Web 控制台
             {shlex.quote(remote_venv)}/bin/python -m patchweaver init-db
-            {shlex.quote(remote_venv)}/bin/python -m patchweaver install-api-service --service-name patchweaver-web --host 0.0.0.0 --port {api_port}
+            {shlex.quote(remote_venv)}/bin/python -m patchweaver install-api-service --service-name patchweaver-web --host 0.0.0.0 --port {api_port} --timeout-sec 45
             {shlex.quote(remote_venv)}/bin/python -c "from pathlib import Path; from patchweaver.api.app import app; required_routes = {{'/', '/healthz', '/api/v1/overview', '/api/v1/tasks', '/api/v1/reports/tasks/{{task_id}}', '/api/v1/evaluations/groups'}}; route_paths = {{getattr(route, 'path', '') for route in app.routes}}; missing = sorted(required_routes - route_paths); dist_dir = Path('web/dist'); missing and (_ for _ in ()).throw(SystemExit(f'缺少接口路由: {{missing}}')); (not dist_dir.exists()) and (_ for _ in ()).throw(SystemExit(f'未找到前端构建产物: {{dist_dir.resolve()}}')); print('validation install ok'); print(f'dist: {{dist_dir.resolve()}}'); print('launcher: scripts/run_validation_api.sh')"
             """
         ).strip()
@@ -383,6 +386,12 @@ class ValidationUploader:
             command_parts.append("--force")
         if self.config.remote_kernel_release:
             command_parts.extend(["--kernel-release", shlex.quote(self.config.remote_kernel_release)])
+        for warm_target in self.config.remote_build_tree_warm_targets or []:
+            command_parts.extend(["--warm-target", shlex.quote(warm_target)])
+        if self.config.remote_build_tree_warm_jobs is not None:
+            command_parts.extend(["--warm-jobs", str(self.config.remote_build_tree_warm_jobs)])
+        if self.config.force_remote_build_tree_warm:
+            command_parts.append("--force-warm")
         command_text = " ".join(command_parts)
         prepare_script = textwrap.dedent(
             f"""
@@ -603,6 +612,26 @@ def build_parser() -> argparse.ArgumentParser:
         default=os.getenv("PATCHWEAVER_VALIDATION_TARGET_KERNEL_RELEASE", ""),
         help="验证机准备完整源码树时使用的目标内核版本。默认让 PatchWeaver 自动解析。",
     )
+    parser.add_argument(
+        "--prepare-build-tree-warm-target",
+        dest="remote_build_tree_warm_targets",
+        action="append",
+        default=None,
+        help="验证机 prepare-build-tree 阶段额外执行的预热目标，可重复指定。",
+    )
+    parser.add_argument(
+        "--prepare-build-tree-warm-jobs",
+        dest="remote_build_tree_warm_jobs",
+        type=int,
+        default=None,
+        help="验证机预热完整源码树时 make 使用的并发数。",
+    )
+    parser.add_argument(
+        "--force-target-build-tree-warm",
+        dest="force_remote_build_tree_warm",
+        action="store_true",
+        help="即便验证机已有预热记录，也重新执行源码树预热。",
+    )
     return parser
 
 
@@ -644,6 +673,9 @@ def main() -> int:
         remote_venv_name=args.remote_venv_name,
         remote_smoke_port=args.remote_smoke_port,
         remote_kernel_release=args.remote_kernel_release,
+        remote_build_tree_warm_targets=args.remote_build_tree_warm_targets,
+        remote_build_tree_warm_jobs=args.remote_build_tree_warm_jobs,
+        force_remote_build_tree_warm=args.force_remote_build_tree_warm,
     )
 
     # main 保持很薄，只做参数解析和对象装配

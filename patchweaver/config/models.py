@@ -79,6 +79,7 @@ class BuildConfig(ConfigModel):
     )
     auto_switch_source_tree: bool = True
     auto_reverse_source_tree: bool = True
+    auto_build_targets: bool = True
     vmlinux_path: str = "/usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux"
     kpatch_build_cmd: str = "kpatch-build"
     build_timeout_sec: int = 3600

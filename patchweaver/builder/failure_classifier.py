@@ -105,7 +105,8 @@ class FailureClassifier:
             evidence = [
                 line
                 for line in lines
-                if "error" in line.lower()
+                if "构建命令超时" in line
+                or "error" in line.lower()
                 or "failed" in line.lower()
                 or "kernelversion is not set" in line.lower()
                 or "退出码" in line

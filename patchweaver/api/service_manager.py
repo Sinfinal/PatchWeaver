@@ -124,7 +124,7 @@ def wait_for_api_ready(
     *,
     host: str,
     port: int,
-    timeout_sec: float = 15.0,
+    timeout_sec: float = 45.0,
     interval_sec: float = 0.5,
 ) -> dict[str, Any]:
     """等待 API 服务健康检查通过"""
