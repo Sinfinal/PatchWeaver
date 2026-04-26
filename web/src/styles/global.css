@@ -863,6 +863,149 @@ code {
   opacity: 1;
 }
 
+.pw-timeline-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.pw-step-progress {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scrollbar-gutter: stable both-edges;
+}
+
+.pw-step-item {
+  position: relative;
+  flex: 0 0 180px;
+  min-width: 180px;
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)),
+    rgba(17, 26, 47, 0.92);
+}
+
+.pw-step-item.is-current {
+  border-color: rgba(97, 184, 255, 0.32);
+  background:
+    radial-gradient(circle at top right, rgba(97, 184, 255, 0.12), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    rgba(18, 29, 52, 0.96);
+  box-shadow: 0 18px 34px rgba(5, 10, 22, 0.2);
+}
+
+.pw-step-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+}
+
+.pw-step-marker {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pw-step-marker:empty::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pw-step-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.pw-step-description {
+  min-height: 38px;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pw-step-connector {
+  flex: 1 0 44px;
+  min-width: 44px;
+  align-self: flex-start;
+  height: 2px;
+  margin: 27px 8px 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pw-step-item.is-success .pw-step-marker {
+  color: var(--success-main);
+  border-color: rgba(82, 210, 115, 0.34);
+  background: rgba(82, 210, 115, 0.1);
+}
+
+.pw-step-item.is-failed .pw-step-marker {
+  color: var(--danger-main);
+  border-color: rgba(255, 107, 107, 0.34);
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.pw-step-item.is-running .pw-step-marker {
+  color: var(--accent-blue);
+  border-color: rgba(97, 184, 255, 0.34);
+  background: rgba(97, 184, 255, 0.1);
+}
+
+.pw-step-item.is-skipped .pw-step-marker {
+  color: var(--accent-gold);
+  border-color: rgba(255, 202, 122, 0.36);
+  background: rgba(255, 202, 122, 0.12);
+}
+
+.pw-step-item.is-pending .pw-step-marker {
+  color: var(--accent-gold);
+  border-color: rgba(255, 202, 122, 0.36);
+  background: rgba(255, 202, 122, 0.12);
+}
+
+.pw-step-connector.is-success {
+  background: linear-gradient(90deg, rgba(82, 210, 115, 0.78), rgba(82, 210, 115, 0.18));
+}
+
+.pw-step-connector.is-failed {
+  background: linear-gradient(90deg, rgba(255, 107, 107, 0.72), rgba(255, 107, 107, 0.16));
+}
+
+.pw-step-connector.is-running {
+  background: linear-gradient(90deg, rgba(97, 184, 255, 0.74), rgba(97, 184, 255, 0.18));
+}
+
+.pw-step-connector.is-skipped {
+  background: linear-gradient(90deg, rgba(255, 202, 122, 0.74), rgba(255, 202, 122, 0.18));
+}
+
+.pw-step-connector.is-pending {
+  background: linear-gradient(90deg, rgba(140, 153, 176, 0.48), rgba(140, 153, 176, 0.12));
+}
+
 .pw-timeline {
   display: flex;
   flex-wrap: wrap;
@@ -888,6 +1031,20 @@ code {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.pw-stage-heading {
+  min-width: 0;
+}
+
+.pw-stage-heading strong {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.pw-stage-heading .pw-status {
+  margin-left: auto;
+  flex: 0 0 auto;
 }
 
 .pw-stage-text {
@@ -1875,5 +2032,16 @@ button.pw-list-item {
 
   .pw-mini-grid {
     grid-template-columns: 1fr;
+  }
+
+  .pw-step-item {
+    flex-basis: 160px;
+    min-width: 160px;
+  }
+
+  .pw-step-connector {
+    flex-basis: 28px;
+    min-width: 28px;
+    margin-inline: 6px;
   }
 }

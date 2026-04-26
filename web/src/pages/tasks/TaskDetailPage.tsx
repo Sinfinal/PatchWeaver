@@ -227,7 +227,7 @@ export function TaskDetailPage(): JSX.Element {
         subtitle="展示任务在主链路中的推进位置及各阶段产物状态。"
       >
         {detail.process_summary ? <ProcessSummaryPanel detail={detail} /> : null}
-        <StageTimeline items={detail.stage_view ?? detail.timeline} />
+        <StageTimeline items={detail.stage_view ?? detail.timeline} currentStage={detail.process_summary?.current_stage} />
       </SectionCard>
 
       <SectionCard
