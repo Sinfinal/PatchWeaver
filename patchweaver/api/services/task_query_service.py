@@ -319,12 +319,16 @@ class TaskQueryService:
         latest_validation_path = None
         latest_trace_path = None
         latest_rewrite_plan_path = None
+        latest_apply_precheck_path = None
+        latest_build_summary_path = None
         if latest_attempt is not None:
             attempt_dir = task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}"
             latest_failure_path = attempt_dir / "logs" / "failure_record.json"
             latest_validation_path = attempt_dir / "artifacts" / "validation_report.json"
             latest_trace_path = attempt_dir / "trace" / "harness_trace.json"
             latest_rewrite_plan_path = attempt_dir / "rewrite" / "rewrite_plan.json"
+            latest_apply_precheck_path = attempt_dir / "rewrite" / "apply_precheck.json"
+            latest_build_summary_path = attempt_dir / "artifacts" / "build_summary.json"
 
         # replay 会顺着 attempts、trace 和报告再做一次归并
         # 没有尝试记录时直接给空结果，避免详情页首开就走一串无效读取
@@ -346,6 +350,13 @@ class TaskQueryService:
             "status": "empty",
         }
 
+        latest_failure = self._load_json(latest_failure_path)
+        latest_validation = self._load_json(latest_validation_path)
+        latest_trace = self._load_json(latest_trace_path)
+        latest_rewrite_plan = self._load_json(latest_rewrite_plan_path)
+        latest_apply_precheck = self._load_json(latest_apply_precheck_path)
+        latest_build_summary = self._load_json(latest_build_summary_path)
+
         return {
             # task 是顶部摘要
             # analysis、attempts、reports、replay 对应页面里的四块主视图
@@ -359,10 +370,10 @@ class TaskQueryService:
                 "analysis_trace_path": self._path(task_dir / "analysis" / "trace" / "analysis_trace.json"),
             },
             "attempts": [self._attempt_payload(task_dir, item) for item in attempts],
-            "latest_failure": self._load_json(latest_failure_path),
-            "latest_validation": self._load_json(latest_validation_path),
-            "latest_trace": self._load_json(latest_trace_path),
-            "latest_rewrite_plan": self._load_json(latest_rewrite_plan_path),
+            "latest_failure": latest_failure,
+            "latest_validation": latest_validation,
+            "latest_trace": latest_trace,
+            "latest_rewrite_plan": latest_rewrite_plan,
             "evaluation_summary": self._load_json(task_dir / "reports" / "evaluation_summary.json"),
             "reports": {
                 "json_path": self._path(task_dir / "reports" / "report.json"),
@@ -389,6 +400,25 @@ class TaskQueryService:
                 ),
             },
             "replay": replay,
+            "process_summary": self._build_process_summary(
+                task=task,
+                task_dir=task_dir,
+                latest_attempt=latest_attempt,
+                latest_failure=latest_failure,
+                latest_validation=latest_validation,
+                latest_apply_precheck=latest_apply_precheck,
+                latest_build_summary=latest_build_summary,
+                replay=replay,
+            ),
+            "stage_view": self._build_stage_view(
+                task=task,
+                task_dir=task_dir,
+                latest_attempt=latest_attempt,
+                latest_failure=latest_failure,
+                latest_validation=latest_validation,
+                latest_apply_precheck=latest_apply_precheck,
+                latest_build_summary=latest_build_summary,
+            ),
             # timeline 和 artifact_index 都是给前端直接展示用的
             # 后端先把阶段完成情况和产物索引算好，页面层就不用再猜
             "timeline": self._build_timeline(task_dir, attempts),
@@ -506,6 +536,522 @@ class TaskQueryService:
             return json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             return None
+
+    def _build_process_summary(
+        self,
+        *,
+        task: TaskContext,
+        task_dir: Path,
+        latest_attempt: Any | None,
+        latest_failure: dict[str, Any] | None,
+        latest_validation: dict[str, Any] | None,
+        latest_apply_precheck: dict[str, Any] | None,
+        latest_build_summary: dict[str, Any] | None,
+        replay: dict[str, Any],
+    ) -> dict[str, Any]:
+        """按文档口径给详情页输出一份主流程摘要"""
+
+        latest_failure_type = self._latest_failure_type(latest_attempt, latest_failure, latest_build_summary, latest_apply_precheck)
+        latest_target_state = self._latest_target_state(latest_attempt, latest_build_summary, latest_apply_precheck)
+        latest_build_exec_status = self._latest_build_exec_status(latest_attempt, latest_build_summary, latest_apply_precheck)
+        validation_status = str((latest_validation or {}).get("status") or "")
+        state_conflicts = self._state_conflicts(
+            latest_attempt=latest_attempt,
+            latest_failure=latest_failure,
+            latest_apply_precheck=latest_apply_precheck,
+            latest_build_summary=latest_build_summary,
+        )
+
+        if latest_target_state == "target_already_patched" or latest_failure_type == "target_already_patched":
+            overall_status = "skipped"
+            current_stage = "build"
+            headline = "目标已修复 / 构建未执行"
+            reached_effect = "已完成补丁来源、语义分析、改写规划和目标源码状态判定。"
+            missing_effect = "未进入真实 kpatch-build，未产出 .ko，未执行 load/unload/smoke。"
+            problem = "目标源码树已经包含该修复，不属于普通构建失败。"
+            analysis = "按控制面和报告文档口径，该状态应作为 target_already_patched 展示。"
+            next_action = "切换未修复源码树或保留该任务作为已修复态样例。"
+            primary_evidence_path = self._path(task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" / "logs" / "failure_record.json") if latest_attempt else None
+        elif latest_attempt is None:
+            overall_status = "pending"
+            current_stage = "prepare"
+            headline = "任务已创建，尚未进入尝试轮"
+            reached_effect = "任务上下文已建立。"
+            missing_effect = "尚未完成分析、改写、构建和验证。"
+            problem = None
+            analysis = "当前还没有 attempt 记录，不能推断构建或验证结论。"
+            next_action = "先执行分析，再执行一轮尝试。"
+            primary_evidence_path = self._path(task_dir / "task_context.json")
+        elif latest_attempt.status == "built" and validation_status == "passed":
+            overall_status = "success"
+            current_stage = "validate"
+            headline = "热补丁已构建并通过验证"
+            reached_effect = "已产出构建结果，并完成验证报告。"
+            missing_effect = "无关键缺口。"
+            problem = None
+            analysis = "最近一轮构建和验证证据均已就绪。"
+            next_action = "可进入报告、回放和交付展示。"
+            primary_evidence_path = self._path(task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" / "artifacts" / "validation_report.json")
+        elif latest_attempt.status == "built":
+            overall_status = "pending"
+            current_stage = "validate"
+            headline = "构建已完成，验证证据待补齐"
+            reached_effect = "已进入成功侧并形成构建产物记录。"
+            missing_effect = "验证报告、验证矩阵或动态验证日志仍需补齐。"
+            problem = None
+            analysis = "按报告文档口径，该状态属于 success pending，不能直接宣称闭环成功。"
+            next_action = "补齐 validation_report、validation_matrix 和动态验证日志。"
+            primary_evidence_path = self._path(latest_attempt.build_log_path) if latest_attempt.build_log_path else None
+        elif latest_attempt.status == "failed":
+            overall_status = "failed"
+            current_stage = "build" if latest_build_exec_status == "executed" else "build_precheck"
+            headline = "构建链路失败"
+            reached_effect = "已完成来源、分析、约束诊断、规划和改写，并形成失败证据。"
+            missing_effect = "未产出可加载 .ko，动态验证未进入成功闭环。"
+            problem = latest_failure_type or "unknown"
+            analysis = str((latest_failure or {}).get("summary") or (latest_build_summary or {}).get("summary") or "请查看 failure_record 和 build.log。")
+            next_action = self._next_action_for_failure(latest_failure_type, latest_build_exec_status)
+            primary_evidence_path = self._path(task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" / "logs" / "failure_record.json")
+        elif task.status in {"created", "analyzed", "running"}:
+            overall_status = "running" if task.status == "running" else "pending"
+            current_stage = "analysis" if task.status == "analyzed" else "prepare"
+            headline = "任务尚未形成最终构建或验证结论"
+            reached_effect = "已完成部分前置阶段。"
+            missing_effect = "尚未形成最终构建、失败归因或验证结论。"
+            problem = None
+            analysis = "不能把未完成状态误报成成功或失败。"
+            next_action = "继续执行下一阶段。"
+            primary_evidence_path = self._path(task_dir / "task_context.json")
+        else:
+            overall_status = "pending"
+            current_stage = task.status
+            headline = "任务处于中间状态"
+            reached_effect = "已有部分阶段产物。"
+            missing_effect = "最终构建和验证结论仍需结合证据确认。"
+            problem = latest_failure_type
+            analysis = "当前状态无法仅凭任务状态字段判断，需要查看阶段证据。"
+            next_action = "优先查看最新 attempt、failure_record、build.log 和 replay。"
+            primary_evidence_path = self._path(task_dir)
+
+        return {
+            "overall_status": overall_status,
+            "current_stage": current_stage,
+            "headline": headline,
+            "reached_effect": reached_effect,
+            "missing_effect": missing_effect,
+            "problem": problem,
+            "analysis": analysis,
+            "next_action": next_action,
+            "primary_evidence_path": primary_evidence_path,
+            "current_attempt_no": latest_attempt.attempt_no if latest_attempt is not None else None,
+            "latest_failure_type": latest_failure_type,
+            "latest_build_exec_status": latest_build_exec_status,
+            "latest_target_state": latest_target_state,
+            "replay_status": replay.get("status"),
+            "state_conflicts": state_conflicts,
+        }
+
+    def _build_stage_view(
+        self,
+        *,
+        task: TaskContext,
+        task_dir: Path,
+        latest_attempt: Any | None,
+        latest_failure: dict[str, Any] | None,
+        latest_validation: dict[str, Any] | None,
+        latest_apply_precheck: dict[str, Any] | None,
+        latest_build_summary: dict[str, Any] | None,
+    ) -> list[dict[str, Any]]:
+        """输出前端可直接展示的阶段视图，避免页面端重推业务结论"""
+
+        attempt_dir = task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" if latest_attempt else None
+        latest_failure_type = self._latest_failure_type(latest_attempt, latest_failure, latest_build_summary, latest_apply_precheck)
+        latest_target_state = self._latest_target_state(latest_attempt, latest_build_summary, latest_apply_precheck)
+        latest_build_exec_status = self._latest_build_exec_status(latest_attempt, latest_build_summary, latest_apply_precheck)
+        target_already_patched = latest_target_state == "target_already_patched" or latest_failure_type == "target_already_patched"
+
+        validation_status = str((latest_validation or {}).get("status") or "")
+
+        return [
+            self._stage_node(
+                stage="prepare",
+                label="准备",
+                status="success" if (task_dir / "task_context.json").exists() else "pending",
+                current_effect="任务上下文和工作区已建立。" if (task_dir / "task_context.json").exists() else "等待任务上下文落盘。",
+                missing_effect="无" if (task_dir / "task_context.json").exists() else "缺少 task_context.json。",
+                problem=None,
+                analysis="该阶段只确认任务输入与工作区，不判定补丁是否可修复。",
+                next_action="进入来源获取与语义分析。",
+                evidence_paths=[task_dir / "task_context.json"],
+            ),
+            self._stage_node(
+                stage="source",
+                label="来源获取",
+                status="success" if (task_dir / "input" / "patch_bundle.json").exists() else "pending",
+                current_effect="已获取 CVE 修复来源、patch bundle 和来源证据。" if (task_dir / "input" / "patch_bundle.json").exists() else "尚未获取 patch bundle。",
+                missing_effect="无" if (task_dir / "input" / "patch_bundle.json").exists() else "缺少 patch_bundle/source_evidence/raw_patch。",
+                problem=None,
+                analysis="赛题要求从 CVE 定位上游或 stable 修复补丁，本阶段承接该要求。",
+                next_action="进入语义理解和约束诊断。",
+                evidence_paths=[
+                    task_dir / "input" / "patch_bundle.json",
+                    task_dir / "input" / "source_evidence.json",
+                    task_dir / "analysis" / "trace" / "source_fetch_trace.json",
+                ],
+            ),
+            self._stage_node(
+                stage="analysis",
+                label="语义分析",
+                status="success" if (task_dir / "analysis" / "semantic_card.json").exists() else "pending",
+                current_effect="已生成修复意图和触达对象摘要。" if (task_dir / "analysis" / "semantic_card.json").exists() else "尚未形成语义卡片。",
+                missing_effect="无" if (task_dir / "analysis" / "semantic_card.json").exists() else "缺少 semantic_card.json。",
+                problem=None,
+                analysis="该阶段用于守住语义一致性，避免后续改写偏离上游修复意图。",
+                next_action="进入 kpatch 约束诊断。",
+                evidence_paths=[
+                    task_dir / "analysis" / "semantic_card.json",
+                    task_dir / "analysis" / "trace" / "semantic_card_enrichment.json",
+                ],
+            ),
+            self._stage_node(
+                stage="diagnose",
+                label="约束诊断",
+                status="success" if (task_dir / "analysis" / "constraint_report.json").exists() else "pending",
+                current_effect="已输出热补丁约束和候选路线。" if (task_dir / "analysis" / "constraint_report.json").exists() else "尚未形成约束报告。",
+                missing_effect="无" if (task_dir / "analysis" / "constraint_report.json").exists() else "缺少 constraint_report.json。",
+                problem=None,
+                analysis="该阶段对齐 kpatch 限制，例如 fentry、init、静态数据和 ABI 风险。",
+                next_action="进入改写规划。",
+                evidence_paths=[task_dir / "analysis" / "constraint_report.json"],
+            ),
+            self._stage_node(
+                stage="plan",
+                label="改写规划",
+                status="success" if attempt_dir and (attempt_dir / "rewrite" / "rewrite_plan.json").exists() else "pending",
+                current_effect="已选择改写 recipe 和候选路径。" if attempt_dir and (attempt_dir / "rewrite" / "rewrite_plan.json").exists() else "尚未形成改写计划。",
+                missing_effect="无" if attempt_dir and (attempt_dir / "rewrite" / "rewrite_plan.json").exists() else "缺少 rewrite_plan.json。",
+                problem=None,
+                analysis="规划层只选择路线，不直接代表构建成功。",
+                next_action="输出 rewritten.patch 并执行 apply 预检查。",
+                evidence_paths=[attempt_dir / "rewrite" / "rewrite_plan.json"] if attempt_dir else [],
+            ),
+            self._stage_node(
+                stage="rewrite",
+                label="补丁改写",
+                status="success" if attempt_dir and (attempt_dir / "rewrite" / "rewritten.patch").exists() else "pending",
+                current_effect="已输出 rewritten.patch 和改写留痕。" if attempt_dir and (attempt_dir / "rewrite" / "rewritten.patch").exists() else "尚未输出 rewritten.patch。",
+                missing_effect="无" if attempt_dir and (attempt_dir / "rewrite" / "rewritten.patch").exists() else "缺少 rewritten.patch。",
+                problem=str((latest_apply_precheck or {}).get("failure_type") or "") or None,
+                analysis=str((latest_apply_precheck or {}).get("summary") or "改写阶段只说明补丁产物是否已生成。"),
+                next_action="进入构建预检查或真实 kpatch-build。",
+                evidence_paths=[
+                    attempt_dir / "rewrite" / "rewritten.patch",
+                    attempt_dir / "rewrite" / "apply_precheck.json",
+                    attempt_dir / "rewrite" / "transformation_trace.json",
+                ] if attempt_dir else [],
+            ),
+            self._build_stage_node(
+                attempt_dir=attempt_dir,
+                latest_attempt=latest_attempt,
+                latest_failure=latest_failure,
+                latest_build_summary=latest_build_summary,
+                latest_failure_type=latest_failure_type,
+                latest_build_exec_status=latest_build_exec_status,
+                target_already_patched=target_already_patched,
+            ),
+            self._stage_node(
+                stage="failure_analysis",
+                label="失败归因",
+                status="success" if attempt_dir and (attempt_dir / "logs" / "failure_record.json").exists() else ("skipped" if latest_attempt and latest_attempt.status == "built" else "pending"),
+                current_effect="已形成结构化失败记录。" if attempt_dir and (attempt_dir / "logs" / "failure_record.json").exists() else "当前没有失败归因记录。",
+                missing_effect="无" if attempt_dir and (attempt_dir / "logs" / "failure_record.json").exists() else "失败时应补齐 failure_record.json。",
+                problem=latest_failure_type,
+                analysis=str((latest_failure or {}).get("summary") or "失败归因阶段只读取主链失败证据。"),
+                next_action="根据 failure_type 决定下一轮改写或环境修复。",
+                evidence_paths=[attempt_dir / "logs" / "failure_record.json"] if attempt_dir else [],
+            ),
+            self._stage_node(
+                stage="validate",
+                label="验证",
+                status=self._validation_stage_status(latest_attempt, latest_validation, target_already_patched),
+                current_effect=self._validation_current_effect(latest_validation, target_already_patched),
+                missing_effect=self._validation_missing_effect(latest_attempt, latest_validation, target_already_patched),
+                problem=None if validation_status in {"", "passed", "pending"} else validation_status,
+                analysis="验证阶段必须区分构建未产出模块、配置跳过、目标已修复导致跳过。",
+                next_action="构建成功后补齐 load/unload/smoke/semantic_guard 证据。",
+                evidence_paths=[
+                    attempt_dir / "artifacts" / "validation_report.json",
+                    attempt_dir / "artifacts" / "validation_matrix.json",
+                    attempt_dir / "logs" / "load.log",
+                    attempt_dir / "logs" / "unload.log",
+                    attempt_dir / "logs" / "smoke.log",
+                ] if attempt_dir else [],
+            ),
+            self._stage_node(
+                stage="report",
+                label="报告与回放",
+                status="success" if (task_dir / "reports" / "report.json").exists() else "pending",
+                current_effect="已生成结构化报告。" if (task_dir / "reports" / "report.json").exists() else "尚未生成最终报告。",
+                missing_effect="无" if (task_dir / "reports" / "report.json").exists() else "缺少 report.json/report.md。",
+                problem=None,
+                analysis="报告阶段应复用主链结论，不重新判定业务状态。",
+                next_action="用于演示、回放和阶段验收。",
+                evidence_paths=[
+                    task_dir / "reports" / "report.json",
+                    task_dir / "reports" / "report.md",
+                    task_dir / "reports" / "evaluation_summary.json",
+                ],
+            ),
+        ]
+
+    def _build_stage_node(
+        self,
+        *,
+        attempt_dir: Path | None,
+        latest_attempt: Any | None,
+        latest_failure: dict[str, Any] | None,
+        latest_build_summary: dict[str, Any] | None,
+        latest_failure_type: str | None,
+        latest_build_exec_status: str | None,
+        target_already_patched: bool,
+    ) -> dict[str, Any]:
+        """生成构建阶段节点"""
+
+        if latest_attempt is None:
+            status = "pending"
+            current_effect = "尚未进入构建阶段。"
+            missing_effect = "未执行 apply 预检查和 kpatch-build。"
+            problem = None
+            analysis = "没有 attempt 记录，不能判定构建结果。"
+            next_action = "执行一轮尝试。"
+        elif target_already_patched:
+            status = "skipped"
+            current_effect = "已完成目标源码状态判定。"
+            missing_effect = "真实 kpatch-build 未执行，未产出 .ko。"
+            problem = "target_already_patched"
+            analysis = "目标已修复不是普通构建失败，页面应展示为构建未执行。"
+            next_action = "切换未修复源码树或将样例标注为已修复态。"
+        elif latest_attempt.status == "built":
+            status = "success"
+            current_effect = "真实 kpatch-build 已执行并形成构建成功记录。"
+            missing_effect = "无" if latest_attempt.module_path else "模块产物路径缺失。"
+            problem = None
+            analysis = "构建成功后仍需验证阶段确认 load/unload/smoke。"
+            next_action = "进入验证阶段。"
+        elif latest_attempt.status == "failed":
+            status = "failed"
+            current_effect = "已形成构建或构建预检查失败证据。"
+            missing_effect = "未产出可加载 .ko。"
+            problem = latest_failure_type or "unknown"
+            analysis = str((latest_failure or {}).get("summary") or (latest_build_summary or {}).get("summary") or "请查看 build.log。")
+            next_action = self._next_action_for_failure(latest_failure_type, latest_build_exec_status)
+        else:
+            status = "pending"
+            current_effect = "构建阶段尚未收口。"
+            missing_effect = "缺少最终 build_summary 或 failure_record。"
+            problem = latest_failure_type
+            analysis = "当前 attempt 状态仍在中间态。"
+            next_action = "等待本轮执行结束或补齐失败记录。"
+
+        return self._stage_node(
+            stage="build",
+            label="构建",
+            status=status,
+            current_effect=current_effect,
+            missing_effect=missing_effect,
+            problem=problem,
+            analysis=analysis,
+            next_action=next_action,
+            evidence_paths=[
+                attempt_dir / "logs" / "build.log",
+                attempt_dir / "artifacts" / "build_summary.json",
+                attempt_dir / "artifacts" / "build_precheck.json",
+            ] if attempt_dir else [],
+        )
+
+    def _stage_node(
+        self,
+        *,
+        stage: str,
+        label: str,
+        status: str,
+        current_effect: str,
+        missing_effect: str,
+        problem: str | None,
+        analysis: str,
+        next_action: str,
+        evidence_paths: list[Path],
+    ) -> dict[str, Any]:
+        """统一阶段节点字段"""
+
+        existing_paths = [path for path in evidence_paths if path.exists()]
+        primary_path = existing_paths[0] if existing_paths else (evidence_paths[0] if evidence_paths else None)
+        return {
+            "stage": stage,
+            "label": label,
+            "status": status,
+            "current_effect": current_effect,
+            "missing_effect": missing_effect,
+            "problem": problem,
+            "analysis": analysis,
+            "next_action": next_action,
+            "evidence_paths": [self._path(path) for path in existing_paths],
+            "primary_evidence_path": self._path(primary_path) if primary_path is not None else None,
+            "path": self._path(primary_path) if primary_path is not None else None,
+        }
+
+    def _latest_failure_type(
+        self,
+        latest_attempt: Any | None,
+        latest_failure: dict[str, Any] | None,
+        latest_build_summary: dict[str, Any] | None,
+        latest_apply_precheck: dict[str, Any] | None,
+    ) -> str | None:
+        """读取最近失败类型，真实构建执行后以最终构建结论优先"""
+
+        build_exec_status = self._latest_build_exec_status(latest_attempt, latest_build_summary, latest_apply_precheck)
+        if build_exec_status == "executed":
+            for value in [
+                (latest_build_summary or {}).get("failure_type"),
+                latest_attempt.failure_type if latest_attempt is not None else None,
+                (latest_failure or {}).get("failure_type"),
+            ]:
+                if value:
+                    return str(value)
+            return None
+
+        for source in [latest_build_summary, latest_apply_precheck, latest_failure]:
+            if source and source.get("target_state") == "target_already_patched":
+                return "target_already_patched"
+        if latest_attempt is not None and latest_attempt.target_state == "target_already_patched":
+            return "target_already_patched"
+        for source in [latest_failure, latest_build_summary, latest_apply_precheck]:
+            value = (source or {}).get("failure_type")
+            if value:
+                return str(value)
+        return latest_attempt.failure_type if latest_attempt is not None else None
+
+    def _latest_target_state(
+        self,
+        latest_attempt: Any | None,
+        latest_build_summary: dict[str, Any] | None,
+        latest_apply_precheck: dict[str, Any] | None,
+    ) -> str | None:
+        """读取最近目标态结论"""
+
+        build_exec_status = self._latest_build_exec_status(latest_attempt, latest_build_summary, latest_apply_precheck)
+        if build_exec_status == "executed":
+            return None
+
+        target_state_sources = [latest_build_summary, latest_apply_precheck]
+        for source in target_state_sources:
+            value = (source or {}).get("target_state")
+            if value:
+                return str(value)
+        return latest_attempt.target_state if latest_attempt is not None else None
+
+    def _latest_build_exec_status(
+        self,
+        latest_attempt: Any | None,
+        latest_build_summary: dict[str, Any] | None,
+        latest_apply_precheck: dict[str, Any] | None,
+    ) -> str | None:
+        """读取最近构建执行状态"""
+
+        value = (latest_build_summary or {}).get("build_exec_status")
+        if value:
+            return str(value)
+        if latest_attempt is not None and latest_attempt.build_exec_status:
+            return latest_attempt.build_exec_status
+        value = (latest_apply_precheck or {}).get("build_exec_status")
+        if value:
+            return str(value)
+        return None
+
+    def _state_conflicts(
+        self,
+        *,
+        latest_attempt: Any | None,
+        latest_failure: dict[str, Any] | None,
+        latest_apply_precheck: dict[str, Any] | None,
+        latest_build_summary: dict[str, Any] | None,
+    ) -> list[str]:
+        """暴露历史产物或多层口径不一致，不在前端隐式掩盖"""
+
+        observed = {
+            "attempt": latest_attempt.failure_type if latest_attempt is not None else None,
+            "failure_record": (latest_failure or {}).get("failure_type"),
+            "apply_precheck": (latest_apply_precheck or {}).get("failure_type"),
+            "build_summary": (latest_build_summary or {}).get("failure_type"),
+        }
+        present = {name: value for name, value in observed.items() if value}
+        if len(set(present.values())) <= 1:
+            return []
+        return [f"{name}={value}" for name, value in present.items()]
+
+    def _next_action_for_failure(self, failure_type: str | None, build_exec_status: str | None) -> str:
+        """把失败类型映射成用户可执行的下一步"""
+
+        if failure_type == "patch_apply_failed":
+            return "优先检查 rewritten.patch 与目标源码树上下文，必要时做 backport 适配。"
+        if failure_type == "compile_failed" and build_exec_status == "executed":
+            return "优先查看 build.log 和本地 kpatch 日志，区分编译错误、补丁输入格式和超时。"
+        if failure_type == "kpatch_constraint":
+            return "回到约束诊断和 Recipe 选择，避开 fentry、init、全局数据或 ABI 风险。"
+        if failure_type in {"build_env_missing", "kernel_src_missing", "kernel_config_missing", "vmlinux_missing"}:
+            return "先补齐构建环境、源码树、.config 或 vmlinux，再重跑。"
+        return "查看 failure_record、build.log 和 harness_trace 后决定下一轮改写策略。"
+
+    def _validation_stage_status(
+        self,
+        latest_attempt: Any | None,
+        latest_validation: dict[str, Any] | None,
+        target_already_patched: bool,
+    ) -> str:
+        """判定验证阶段展示状态"""
+
+        if target_already_patched:
+            return "skipped"
+        raw_status = str((latest_validation or {}).get("status") or "")
+        if raw_status == "passed":
+            return "success"
+        if raw_status == "failed":
+            return "failed"
+        if latest_attempt is not None and latest_attempt.status == "built":
+            return "pending"
+        return "pending"
+
+    def _validation_current_effect(self, latest_validation: dict[str, Any] | None, target_already_patched: bool) -> str:
+        """描述验证阶段当前效果"""
+
+        if target_already_patched:
+            return "目标已修复导致真实构建跳过，验证链未执行。"
+        if latest_validation is None:
+            return "尚未形成验证报告。"
+        status = latest_validation.get("status")
+        if status == "passed":
+            return "验证报告已通过。"
+        if status == "failed":
+            return "验证报告已形成失败结论。"
+        return "已有验证报告，但动态验证尚未完成。"
+
+    def _validation_missing_effect(
+        self,
+        latest_attempt: Any | None,
+        latest_validation: dict[str, Any] | None,
+        target_already_patched: bool,
+    ) -> str:
+        """描述验证阶段缺口"""
+
+        if target_already_patched:
+            return "未产出 .ko，未执行 load/unload/smoke。"
+        if latest_attempt is None or latest_attempt.status != "built":
+            return "未产出可验证模块，load/unload/smoke 未执行。"
+        if latest_validation is None:
+            return "缺少 validation_report.json。"
+        if latest_validation.get("status") != "passed":
+            return "验证尚未通过。"
+        return "无"
 
     def _relative_to_workspace(self, workspace_dir: Path, path: Path) -> str:
         """把产物绝对路径转成相对工作区路径"""

@@ -226,7 +226,8 @@ export function TaskDetailPage(): JSX.Element {
         title="阶段时间线"
         subtitle="展示任务在主链路中的推进位置及各阶段产物状态。"
       >
-        <StageTimeline items={detail.timeline} />
+        {detail.process_summary ? <ProcessSummaryPanel detail={detail} /> : null}
+        <StageTimeline items={detail.stage_view ?? detail.timeline} />
       </SectionCard>
 
       <SectionCard
@@ -287,6 +288,49 @@ export function TaskDetailPage(): JSX.Element {
           />
         </div>
       </SectionCard>
+    </div>
+  );
+}
+
+function ProcessSummaryPanel({ detail }: { detail: TaskDetailResponse }): JSX.Element | null {
+  const summary = detail.process_summary;
+  if (!summary) {
+    return null;
+  }
+
+  return (
+    <div className="pw-process-summary">
+      <div className="pw-process-heading">
+        <div>
+          <strong>{summary.headline}</strong>
+          <div className="pw-inline-note">
+            当前阶段 {summary.current_stage}，最近尝试轮 {summary.current_attempt_no ?? "未开始"}
+          </div>
+        </div>
+        <StatusBadge value={summary.overall_status} />
+      </div>
+      <div className="pw-process-grid">
+        <div>
+          <span className="pw-process-label">已达效果</span>
+          <div>{summary.reached_effect}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">缺失效果</span>
+          <div>{summary.missing_effect}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">问题判断</span>
+          <div>{summary.problem ?? "无关键失败类型"}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">下一步</span>
+          <div>{summary.next_action}</div>
+        </div>
+      </div>
+      <div className="pw-inline-note">证据：{summary.primary_evidence_path ?? "未记录"}</div>
+      {summary.state_conflicts.length > 0 ? (
+        <div className="pw-process-conflict">口径冲突：{summary.state_conflicts.join("；")}</div>
+      ) : null}
     </div>
   );
 }

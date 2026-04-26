@@ -85,6 +85,43 @@ export type TimelineNode = {
   stage: string;
   status: string;
   path?: string | null;
+  label?: string;
+  current_effect?: string;
+  missing_effect?: string;
+  problem?: string | null;
+  analysis?: string;
+  next_action?: string;
+  evidence_paths?: string[];
+  primary_evidence_path?: string | null;
+};
+
+export type StageViewNode = TimelineNode & {
+  label: string;
+  current_effect: string;
+  missing_effect: string;
+  problem?: string | null;
+  analysis: string;
+  next_action: string;
+  evidence_paths: string[];
+  primary_evidence_path?: string | null;
+};
+
+export type ProcessSummary = {
+  overall_status: string;
+  current_stage: string;
+  headline: string;
+  reached_effect: string;
+  missing_effect: string;
+  problem?: string | null;
+  analysis: string;
+  next_action: string;
+  primary_evidence_path?: string | null;
+  current_attempt_no?: number | null;
+  latest_failure_type?: string | null;
+  latest_build_exec_status?: string | null;
+  latest_target_state?: string | null;
+  replay_status?: string | null;
+  state_conflicts: string[];
 };
 
 export type ArtifactIndexItem = {
@@ -128,6 +165,8 @@ export type TaskDetailResponse = {
     evaluation_summary_path: string;
   };
   replay: ReplayPayload;
+  process_summary?: ProcessSummary;
+  stage_view?: StageViewNode[];
   timeline: TimelineNode[];
   artifact_index: ArtifactIndexItem[];
   workspace_exists: boolean;

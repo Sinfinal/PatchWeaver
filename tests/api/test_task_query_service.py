@@ -155,6 +155,10 @@ def test_task_query_service_detail_contains_phase_outputs(tmp_path: Path) -> Non
     assert detail["replay"]["latest_build_exec_status"] == "executed"
     assert detail["attempts"][0]["build_exec_status"] == "executed"
     assert detail["attempts"][0]["planning_hints_path"].endswith("planning_hints.json")
+    assert detail["process_summary"]["overall_status"] == "success"
+    assert detail["process_summary"]["headline"] == "热补丁已构建并通过验证"
+    assert any(item["stage"] == "build" and item["status"] == "success" for item in detail["stage_view"])
+    assert any(item["stage"] == "validate" and item["status"] == "success" for item in detail["stage_view"])
     assert detail["report_closure"]["closure_ok"] is True
     assert any(item["stage"] == "report" and item["status"] == "completed" for item in detail["timeline"])
 
@@ -325,6 +329,55 @@ def test_task_query_service_list_tasks_supports_extended_filters_and_fixture_gro
     )
     attempt_repo.create_attempt(attempt_one)
     attempt_repo.create_attempt(attempt_two)
+    attempt_one_dir = task_one.workspace_dir / "attempts" / "001"
+    (attempt_one_dir / "logs").mkdir(parents=True, exist_ok=True)
+    (attempt_one_dir / "rewrite").mkdir(parents=True, exist_ok=True)
+    (attempt_one_dir / "artifacts").mkdir(parents=True, exist_ok=True)
+    (task_one.workspace_dir / "reports").mkdir(parents=True, exist_ok=True)
+    (task_one.workspace_dir / "task_context.json").write_text("{\"task_id\":\"TASK-FILTER-001\"}\n", encoding="utf-8")
+    (attempt_one_dir / "logs" / "failure_record.json").write_text(
+        json.dumps(
+            {
+                "task_id": task_one.task_id,
+                "attempt_id": attempt_one.attempt_id,
+                "stage_name": "build",
+                "failure_type": "target_already_patched",
+                "summary": "目标源码已修复",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (attempt_one_dir / "rewrite" / "apply_precheck.json").write_text(
+        json.dumps(
+            {
+                "failure_type": "target_already_patched",
+                "build_exec_status": "not_run",
+                "target_state": "target_already_patched",
+                "summary": "目标源码已包含该补丁",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (attempt_one_dir / "artifacts" / "build_summary.json").write_text(
+        json.dumps(
+            {
+                "status": "failed",
+                "failure_type": "patch_apply_failed",
+                "build_exec_status": "not_run",
+                "summary": "历史构建摘要仍保留旧失败类型",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     attempt_repo.save_failure_record(
         FailureRecord(
             task_id=task_one.task_id,
@@ -370,6 +423,11 @@ def test_task_query_service_list_tasks_supports_extended_filters_and_fixture_gro
     assert [item["task_id"] for item in created_after_items] == [task_two.task_id]
     assert detail["task"]["fixture_group"] == "challenge_dev"
     assert detail["task"]["fixture_id"] == "fixture-1086"
+    assert detail["process_summary"]["headline"] == "目标已修复 / 构建未执行"
+    assert detail["process_summary"]["latest_failure_type"] == "target_already_patched"
+    assert "build_summary=patch_apply_failed" in detail["process_summary"]["state_conflicts"]
+    assert any(item["stage"] == "build" and item["status"] == "skipped" for item in detail["stage_view"])
+    assert any(item["stage"] == "validate" and item["status"] == "skipped" for item in detail["stage_view"])
 
 
 def test_task_query_service_create_task_blocks_duplicate_already_fixed_task(monkeypatch, tmp_path: Path) -> None:

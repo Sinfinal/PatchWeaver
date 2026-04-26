@@ -870,7 +870,8 @@ code {
 }
 
 .pw-timeline-node {
-  min-width: 120px;
+  flex: 1 1 260px;
+  min-width: 240px;
   border-radius: 14px;
   padding: 14px;
   background:
@@ -879,6 +880,60 @@ code {
   border: 1px solid var(--border-main);
   display: grid;
   gap: 6px;
+}
+
+.pw-stage-heading,
+.pw-process-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pw-stage-text {
+  color: var(--text-main);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.pw-stage-muted {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.pw-process-summary {
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-main);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent),
+    var(--bg-panel-soft);
+}
+
+.pw-process-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.pw-process-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.pw-process-conflict {
+  margin-top: 10px;
+  color: #ffd189;
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: break-word;
 }
 
 .pw-tabs {
