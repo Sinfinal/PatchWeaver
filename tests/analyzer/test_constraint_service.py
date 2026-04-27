@@ -57,6 +57,8 @@ def test_constraint_diagnoser_builds_route_hints_for_direct_apply_path() -> None
 
     assert report.risk_items == []
     assert report.direct_apply_viable is True
+    assert report.direct_apply_recommended is True
+    assert report.direct_apply_role == "primary"
     assert report.suggested_primitives == ["direct_apply"]
     assert report.route_hints[0].route_name == "direct_apply_patch"
     assert report.semantic_card_source == "deterministic"
@@ -112,6 +114,9 @@ def test_constraint_diagnoser_uses_semantic_card_to_enrich_risk_items() -> None:
     assert "inline_side_effect" in risk_types
     assert report.requires_callback is True
     assert report.requires_shadow_variable is True
+    assert report.direct_apply_viable is True
+    assert report.direct_apply_recommended is False
+    assert report.direct_apply_role == "fallback"
     assert "shadow_variable" in report.suggested_primitives
     assert report.route_hints[0].route_name == "callback_shadow_wrap"
     assert report.semantic_card_source == "enriched"
@@ -158,6 +163,8 @@ def test_constraint_diagnoser_prefers_callback_route_for_fentry_only_risk() -> N
     assert report.route_hints[0].route_name == "callback_livepatch_wrap"
     assert report.requires_callback is True
     assert report.requires_shadow_variable is False
+    assert report.direct_apply_recommended is False
+    assert report.direct_apply_role == "fallback"
 
 
 def test_constraint_diagnoser_prefers_shadow_route_for_state_only_risk() -> None:
@@ -197,6 +204,8 @@ def test_constraint_diagnoser_prefers_shadow_route_for_state_only_risk() -> None
     assert report.route_hints[0].route_name == "shadow_variable_wrap"
     assert report.requires_callback is False
     assert report.requires_shadow_variable is True
+    assert report.direct_apply_recommended is False
+    assert report.direct_apply_role == "fallback"
 
 
 def test_constraint_diagnoser_prefers_state_preserving_route_for_layout_risk() -> None:
@@ -238,3 +247,40 @@ def test_constraint_diagnoser_prefers_state_preserving_route_for_layout_risk() -
     assert report.route_hints[0].route_name == "state_preserving_wrap"
     assert report.requires_callback is False
     assert report.requires_shadow_variable is True
+    assert report.direct_apply_recommended is False
+    assert report.direct_apply_role == "fallback"
+
+
+def test_constraint_diagnoser_marks_direct_apply_blocked_when_patch_shape_not_ready() -> None:
+    tmp_path = _case_dir("constraint-service-blocked")
+    patch_path = tmp_path / "normalized.patch"
+    patch_path.write_text(
+        "\n".join(
+            [
+                "+struct demo_state {",
+                "+    int version;",
+                "+};",
+                "+return invoke_helper(ctx);",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    bundle = PatchBundle(
+        task_id="TASK-CONSTRAINT-006",
+        cve_id="CVE-2099-0013",
+        affected_files=["fs/demo.c"],
+        normalized_patch_path=patch_path,
+    )
+    semantic_card = SemanticCard(
+        bug_class="cve_fix",
+        root_cause="复杂形态不适合 direct apply",
+        touched_files=["fs/demo.c"],
+        touched_functions=["demo_blocked_target"],
+    )
+
+    report = ConstraintDiagnoser().diagnose(bundle, semantic_card=semantic_card)
+
+    assert report.direct_apply_viable is False
+    assert report.direct_apply_recommended is False
+    assert report.direct_apply_role == "blocked"

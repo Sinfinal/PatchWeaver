@@ -6,6 +6,8 @@ import platform
 import re
 import shlex
 import shutil
+import os
+import signal
 import subprocess
 from collections.abc import Iterable
 from datetime import datetime, timezone
@@ -257,7 +259,7 @@ class BuildOrchestrator:
                 build_exec_status="not_run",
             )
             build_log = "\n".join(lines) + "\n"
-            build_log_path.write_text(build_log, encoding="utf-8")
+            self._persist_build_log(build_log_path=build_log_path, build_log=build_log)
             return (
                 record.model_copy(
                     update={
@@ -277,6 +279,62 @@ class BuildOrchestrator:
             )
 
         selected_source_dir = Path(str(probe["selected_source_dir"]))
+        disabled_target_files = self._collect_disabled_patch_target_files(
+            source_dir=selected_source_dir,
+            rewritten_patch_path=rewritten_patch_path,
+        )
+        if disabled_target_files:
+            summary_text = "目标内核配置未启用补丁涉及源码，已跳过本机构建。"
+            lines.extend(
+                [
+                    "",
+                    "[build target coverage]",
+                    "目标内核配置未启用以下源码: " + ", ".join(disabled_target_files),
+                    "当前样例在该验证内核上不会编译出对应对象，已跳过 kpatch-build",
+                ]
+            )
+            precheck = self._precheck_not_run(
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                backend="local",
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=str(selected_source_dir),
+                failure_type="feature_not_enabled",
+                summary=summary_text,
+            )
+            summary = BuildSummary(
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                backend="local",
+                builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
+                status="not_run",
+                summary=summary_text,
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=str(selected_source_dir),
+                build_log_path=build_log_path,
+                failure_type="feature_not_enabled",
+                build_exec_status="not_run",
+            )
+            build_log = "\n".join(lines) + "\n"
+            self._persist_build_log(build_log_path=build_log_path, build_log=build_log)
+            return (
+                record.model_copy(
+                    update={
+                        "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
+                        "status": "failed",
+                        "failure_type": "feature_not_enabled",
+                        "build_exec_status": "not_run",
+                        "build_log_path": build_log_path,
+                        "module_path": None,
+                        "rewritten_patch_path": rewritten_patch_path,
+                        "finished_at": datetime.now(timezone.utc),
+                    }
+                ),
+                build_log,
+                precheck,
+                summary,
+            )
+
         precheck = self.precheck_patch(
             task_id=task.task_id,
             attempt_id=record.attempt_id,
@@ -285,6 +343,7 @@ class BuildOrchestrator:
         )
         lines.extend(self._format_precheck_lines(precheck))
         primary_target_state_precheck: BuildPrecheck | None = None
+        generated_source_dir: Path | None = None
 
         if (
             not precheck.ok
@@ -327,6 +386,7 @@ class BuildOrchestrator:
             )
             lines.extend(reverse_lines)
             if reverse_source_dir is not None:
+                generated_source_dir = reverse_source_dir
                 probe = self._override_selected_source(
                     probe=probe,
                     source_dir=reverse_source_dir,
@@ -373,6 +433,7 @@ class BuildOrchestrator:
             # apply 级预检查没过时，不继续碰 kpatch-build
             # 这样失败原因会更集中，不会被后续一串派生报错淹没
             lines.append(summary_text)
+            lines.extend(self._cleanup_generated_source_tree(generated_source_dir))
             summary = BuildSummary(
                 task_id=task.task_id,
                 attempt_id=record.attempt_id,
@@ -388,7 +449,7 @@ class BuildOrchestrator:
                 target_state=target_state,
             )
             build_log = "\n".join(lines) + "\n"
-            build_log_path.write_text(build_log, encoding="utf-8")
+            self._persist_build_log(build_log_path=build_log_path, build_log=build_log)
             return (
                 record.model_copy(
                     update={
@@ -397,6 +458,54 @@ class BuildOrchestrator:
                         "failure_type": failure_type,
                         "build_exec_status": "not_run",
                         "target_state": target_state,
+                        "build_log_path": build_log_path,
+                        "module_path": None,
+                        "rewritten_patch_path": rewritten_patch_path,
+                        "finished_at": datetime.now(timezone.utc),
+                    }
+                ),
+                build_log,
+                precheck,
+                summary,
+            )
+
+        disabled_target_files = self._collect_disabled_patch_target_files(
+            source_dir=selected_source_dir,
+            rewritten_patch_path=rewritten_patch_path,
+        )
+        if disabled_target_files:
+            summary_text = "目标内核配置未启用补丁涉及源码，已跳过本机构建。"
+            lines.extend(
+                [
+                    "",
+                    "[build target coverage]",
+                    "目标内核配置未启用以下源码: " + ", ".join(disabled_target_files),
+                    "当前样例在该验证内核上不会编译出对应对象，已跳过 kpatch-build",
+                ]
+            )
+            lines.extend(self._cleanup_generated_source_tree(generated_source_dir))
+            summary = BuildSummary(
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                backend="local",
+                builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
+                status="not_run",
+                summary=summary_text,
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=precheck.source_dir,
+                build_log_path=build_log_path,
+                failure_type="feature_not_enabled",
+                build_exec_status="not_run",
+            )
+            build_log = "\n".join(lines) + "\n"
+            self._persist_build_log(build_log_path=build_log_path, build_log=build_log)
+            return (
+                record.model_copy(
+                    update={
+                        "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
+                        "status": "failed",
+                        "failure_type": "feature_not_enabled",
+                        "build_exec_status": "not_run",
                         "build_log_path": build_log_path,
                         "module_path": None,
                         "rewritten_patch_path": rewritten_patch_path,
@@ -443,28 +552,18 @@ class BuildOrchestrator:
         stdout_text = ""
         stderr_text = ""
 
-        try:
-            # 这里保持一次性执行，不做流式输出
-            # 一方面简化最小 MVP，另一方面方便把 stdout/stderr 成块写进构建日志
-            result = subprocess.run(
-                command,
-                cwd=str(selected_source_dir),
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                check=False,
-                timeout=self.build_config.build_timeout_sec,
-            )
-            stdout_text = result.stdout.strip()
-            stderr_text = result.stderr.strip()
-            exit_code = result.returncode
-        except subprocess.TimeoutExpired as exc:
-            stdout_text = self._normalize_process_output(exc.stdout).strip()
-            stderr_text = self._normalize_process_output(exc.stderr).strip()
-            exit_code = -1
+        command_result = self._run_build_command(
+            command=command,
+            cwd=selected_source_dir,
+            timeout_sec=self.build_config.build_timeout_sec,
+        )
+        stdout_text = command_result["stdout"].strip()
+        stderr_text = command_result["stderr"].strip()
+        exit_code = int(command_result["exit_code"])
+        if command_result["timed_out"]:
             failure_type = "compile_failed"
-            lines.append(f"构建命令超时：{self.build_config.build_timeout_sec} 秒。")
+            lines.append(f"构建命令超时: {self.build_config.build_timeout_sec} 秒")
+            lines.extend(command_result["cleanup_lines"])
 
         lines.extend(
             [
@@ -495,10 +594,12 @@ class BuildOrchestrator:
             if local_kpatch_log:
                 lines.extend(["", "[local kpatch log]", local_kpatch_log])
 
+        lines.extend(self._cleanup_generated_source_tree(generated_source_dir))
+
         status = "built" if exit_code == 0 and module_path is not None else "failed"
         final_failure_type = None if status == "built" else (failure_type or "compile_failed")
         build_log = "\n".join(lines) + "\n"
-        build_log_path.write_text(build_log, encoding="utf-8")
+        self._persist_build_log(build_log_path=build_log_path, build_log=build_log)
         summary = BuildSummary(
             task_id=task.task_id,
             attempt_id=record.attempt_id,
@@ -557,6 +658,12 @@ class BuildOrchestrator:
             build_exec_status="not_run",
             target_state="target_already_patched" if failure_type == "target_already_patched" else None,
         )
+
+    def _persist_build_log(self, *, build_log_path: Path, build_log: str) -> None:
+        """写构建日志前兜底创建目录，避免中途切树后日志落盘失败"""
+
+        build_log_path.parent.mkdir(parents=True, exist_ok=True)
+        build_log_path.write_text(build_log, encoding="utf-8")
 
     def _should_collapse_to_target_state(
         self,
@@ -691,11 +798,13 @@ class BuildOrchestrator:
         built_in_needed = False
 
         for relative_path in touched_files:
-            resolved_target = self._resolve_build_target_for_path(
+            resolved_target, target_state = self._resolve_build_target_detail(
                 source_dir=source_dir,
                 relative_path=relative_path,
                 config_values=config_values,
             )
+            if target_state == "disabled":
+                continue
             if resolved_target is None:
                 built_in_needed = True
                 continue
@@ -708,12 +817,151 @@ class BuildOrchestrator:
         if not module_targets and not built_in_needed:
             return ["vmlinux"]
 
-        if module_targets and self._has_vmlinux_build_state(source_dir) and not built_in_needed:
-            return module_targets
+        expanded_module_targets = self._expand_module_dependency_targets(module_targets)
+
+        if expanded_module_targets and self._has_vmlinux_build_state(source_dir) and not built_in_needed:
+            return expanded_module_targets
 
         targets = ["vmlinux"]
-        targets.extend(module_targets)
+        targets.extend(expanded_module_targets)
         return targets
+
+    def _collect_disabled_patch_target_files(self, *, source_dir: Path, rewritten_patch_path: Path) -> list[str]:
+        """收集当前内核配置下不会参与编译的源码文件"""
+
+        config_values = self._load_kernel_config_values(source_dir)
+        touched_files = self._collect_patch_target_files(rewritten_patch_path)
+        disabled_files: list[str] = []
+        for relative_path in touched_files:
+            _, target_state = self._resolve_build_target_detail(
+                source_dir=source_dir,
+                relative_path=relative_path,
+                config_values=config_values,
+            )
+            if target_state == "disabled":
+                disabled_files.append(relative_path.as_posix())
+        return disabled_files
+
+    def _expand_module_dependency_targets(self, module_targets: list[str]) -> list[str]:
+        """按已安装模块依赖补齐 kpatch-build 目标"""
+
+        if not module_targets:
+            return []
+        if not getattr(self.build_config, "auto_expand_module_dependencies", True):
+            return module_targets
+
+        expanded: list[str] = []
+        for target in module_targets:
+            for dependency_target in self._module_dependency_targets(target):
+                if dependency_target not in expanded:
+                    expanded.append(dependency_target)
+            if target not in expanded:
+                expanded.append(target)
+        return expanded
+
+    def _module_dependency_targets(self, module_target: str) -> list[str]:
+        """通过 modinfo depends 推导模块依赖的源码树构建目标"""
+
+        modinfo = which("modinfo")
+        if modinfo is None:
+            return []
+
+        kernel_release = self._target_kernel_release()
+        module_name = self._module_name_from_build_target(module_target)
+        if not module_name:
+            return []
+
+        dependency_targets: list[str] = []
+        seen_modules = {module_name}
+
+        def visit(current_module: str, depth: int) -> None:
+            if depth > 6:
+                return
+            depends_result = self._run_modinfo([modinfo, "-k", kernel_release, "-F", "depends", current_module])
+            if depends_result.returncode != 0:
+                return
+
+            dependency_names = [
+                item.strip()
+                for item in depends_result.stdout.replace("\n", ",").split(",")
+                if item.strip()
+            ]
+            for dependency_name in dependency_names:
+                if dependency_name in seen_modules:
+                    continue
+                seen_modules.add(dependency_name)
+                visit(dependency_name, depth + 1)
+                dependency_target = self._module_target_from_modinfo(
+                    modinfo=modinfo,
+                    kernel_release=kernel_release,
+                    module_name=dependency_name,
+                )
+                if dependency_target and dependency_target != module_target and dependency_target not in dependency_targets:
+                    dependency_targets.append(dependency_target)
+
+        visit(module_name, 0)
+        return dependency_targets
+
+    def _module_target_from_modinfo(self, *, modinfo: str, kernel_release: str, module_name: str) -> str | None:
+        """查询单个模块对应的源码树构建目标"""
+
+        path_result = self._run_modinfo([modinfo, "-k", kernel_release, "-n", module_name])
+        if path_result.returncode != 0:
+            return None
+        return self._installed_module_path_to_build_target(
+            installed_path=path_result.stdout.strip(),
+            kernel_release=kernel_release,
+        )
+
+    def _run_modinfo(self, command: list[str]) -> subprocess.CompletedProcess[str]:
+        """执行 modinfo 查询，失败时让调用方按无依赖处理"""
+
+        try:
+            return subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=False,
+                timeout=5,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return subprocess.CompletedProcess(command, returncode=1, stdout="", stderr=str(exc))
+
+    def _target_kernel_release(self) -> str:
+        """从 vmlinux 路径推导目标内核版本"""
+
+        normalized = str(self.build_config.vmlinux_path).replace("\\", "/")
+        match = re.search(r"/lib/modules/([^/]+)/vmlinux$", normalized)
+        if match is not None:
+            return match.group(1)
+        return platform.release()
+
+    def _module_name_from_build_target(self, module_target: str) -> str | None:
+        """从 foo/bar.ko 目标中取出 modinfo 能识别的模块名"""
+
+        name = Path(module_target).name
+        for suffix in [".ko.xz", ".ko.zst", ".ko.gz", ".ko"]:
+            if name.endswith(suffix):
+                return name[: -len(suffix)]
+        return None
+
+    def _installed_module_path_to_build_target(self, *, installed_path: str, kernel_release: str) -> str | None:
+        """把 /lib/modules 下的模块路径转回源码树 make target"""
+
+        normalized = installed_path.strip().replace("\\", "/")
+        marker = f"/lib/modules/{kernel_release}/kernel/"
+        if marker not in normalized:
+            return None
+        relative = normalized.split(marker, 1)[1]
+        for suffix in [".ko.xz", ".ko.zst", ".ko.gz"]:
+            if relative.endswith(suffix):
+                relative = relative[: -len(suffix)] + ".ko"
+                break
+        if not relative.endswith(".ko"):
+            return None
+        return relative
 
     def _collect_patch_target_files(self, patch_path: Path) -> list[Path]:
         """从 unified diff 里提取本轮实际触达的源码文件"""
@@ -767,33 +1015,114 @@ class BuildOrchestrator:
     ) -> str | None:
         """把源码文件映射成更贴近实际的 make target"""
 
+        resolved_target, _ = self._resolve_build_target_detail(
+            source_dir=source_dir,
+            relative_path=relative_path,
+            config_values=config_values,
+        )
+        return resolved_target
+
+    def _resolve_build_target_detail(
+        self,
+        *,
+        source_dir: Path,
+        relative_path: Path,
+        config_values: dict[str, str],
+    ) -> tuple[str | None, str]:
+        """返回源码文件对应的构建目标，以及当前内核配置下的启用状态"""
+
         if relative_path.suffix != ".c":
-            return "vmlinux"
+            return "vmlinux", "built_in"
+
+        if self._directory_gate_state(
+            source_dir=source_dir,
+            relative_dir=relative_path.parent,
+            config_values=config_values,
+        ) == "disabled":
+            return None, "disabled"
 
         file_name = relative_path.name
         object_name = relative_path.with_suffix(".o").name
         makefile_lines = self._load_kbuild_lines(source_dir / relative_path.parent)
         if not makefile_lines:
-            return "vmlinux"
+            return "vmlinux", "unknown"
 
         composite_object = self._find_composite_object(makefile_lines, member_object=object_name)
         final_object = composite_object or object_name
-        final_target = self._find_final_kbuild_target(
+        final_target, target_state = self._find_final_kbuild_target_detail(
             makefile_lines,
             final_object=final_object,
             relative_dir=relative_path.parent,
             config_values=config_values,
         )
         if final_target is not None:
-            return final_target
+            return final_target, target_state
+
+        if target_state == "disabled":
+            return None, "disabled"
 
         if composite_object is not None:
-            return "vmlinux"
+            return "vmlinux", "unknown"
 
         if self._file_is_direct_module_member(makefile_lines, file_name=file_name):
-            return "vmlinux"
+            return "vmlinux", "unknown"
 
-        return "vmlinux"
+        return "vmlinux", "unknown"
+
+    def _directory_gate_state(
+        self,
+        *,
+        source_dir: Path,
+        relative_dir: Path,
+        config_values: dict[str, str],
+    ) -> str:
+        """检查源码目录链路里是否存在被 .config 关闭的子目录门控"""
+
+        current_dir = Path()
+        for part in relative_dir.parts:
+            makefile_lines = self._load_kbuild_lines(source_dir / current_dir)
+            gate_state = self._match_directory_gate(makefile_lines, subdir_name=part, config_values=config_values)
+            if gate_state == "disabled":
+                return "disabled"
+            current_dir = current_dir / part
+        return "enabled"
+
+    def _match_directory_gate(
+        self,
+        makefile_lines: list[str],
+        *,
+        subdir_name: str,
+        config_values: dict[str, str],
+    ) -> str:
+        """识别 obj-$(CONFIG_*) += foo/ 这类目录级门控是否被关闭"""
+
+        pattern = re.compile(
+            r"^obj-(?:(?P<config>\$\([^)]+\))|(?P<literal>[ym]))\s*[:+]?=\s*(?P<rest>.+)$"
+        )
+        token_name = f"{subdir_name}/"
+        saw_disabled_match = False
+
+        for line in makefile_lines:
+            match = pattern.match(line)
+            if match is None:
+                continue
+            tokens = match.group("rest").split()
+            if token_name not in tokens:
+                continue
+
+            config_token = match.group("config")
+            if config_token:
+                config_key = config_token[2:-1]
+                state = config_values.get(config_key)
+            else:
+                state = match.group("literal")
+
+            if state in {"m", "y"}:
+                return "enabled"
+            if config_token and state not in {"m", "y"}:
+                saw_disabled_match = True
+
+        return "disabled" if saw_disabled_match else "unknown"
 
     def _load_kbuild_lines(self, directory: Path) -> list[str]:
         """读取 Makefile 或 Kbuild，并按续行拼成逻辑行"""
@@ -835,9 +1164,14 @@ class BuildOrchestrator:
             match = pattern.match(line)
             if match is None:
                 continue
+            parent_name = match.group("parent")
+            # obj-y / lib-y 这类聚合变量只是把目标并到当前目录
+            # 不能把它们误当成某个复合对象，否则会把最终目标错写成 obj.o / lib.o
+            if parent_name in {"obj", "lib", "always", "extra", "subdir", "targets"}:
+                continue
             members = match.group("rest").split()
             if member_object in members:
-                return f"{match.group('parent')}.o"
+                return f"{parent_name}.o"
         return None
 
     def _find_final_kbuild_target(
@@ -850,10 +1184,29 @@ class BuildOrchestrator:
     ) -> str | None:
         """从 obj-* 规则里推导最终会生成的目标"""
 
+        target, _ = self._find_final_kbuild_target_detail(
+            makefile_lines,
+            final_object=final_object,
+            relative_dir=relative_dir,
+            config_values=config_values,
+        )
+        return target
+
+    def _find_final_kbuild_target_detail(
+        self,
+        makefile_lines: list[str],
+        *,
+        final_object: str,
+        relative_dir: Path,
+        config_values: dict[str, str],
+    ) -> tuple[str | None, str]:
+        """从 obj-* 规则里推导最终目标，并保留启用/禁用状态"""
+
         pattern = re.compile(
             r"^obj-(?:(?P<config>\$\([^)]+\))|(?P<literal>[ym]))\s*[:+]?=\s*(?P<rest>.+)$"
         )
         relative_dir_text = relative_dir.as_posix()
+        saw_disabled_match = False
 
         for line in makefile_lines:
             match = pattern.match(line)
@@ -873,11 +1226,13 @@ class BuildOrchestrator:
             if state == "m":
                 target_name = final_object.removesuffix(".o") + ".ko"
                 if relative_dir_text in {"", "."}:
-                    return target_name
-                return f"{relative_dir_text}/{target_name}"
+                    return target_name, "module"
+                return f"{relative_dir_text}/{target_name}", "module"
             if state == "y":
-                return "vmlinux"
-        return None
+                return "vmlinux", "built_in"
+            if config_token and state not in {"m", "y"}:
+                saw_disabled_match = True
+        return None, ("disabled" if saw_disabled_match else "unknown")
 
     def _file_is_direct_module_member(self, makefile_lines: list[str], *, file_name: str) -> bool:
         """识别以 source 形式直接挂到模块规则里的少见写法"""
@@ -924,6 +1279,7 @@ class BuildOrchestrator:
             shutil.copytree(patched_source_dir, reverse_source_dir, symlinks=True)
         except OSError as exc:
             lines.append(f"反向源码树复制失败: {exc}")
+            lines.extend(self._cleanup_generated_source_tree(reverse_source_dir, force=True))
             return None, lines
 
         git_path = which("git")
@@ -948,6 +1304,7 @@ class BuildOrchestrator:
             lines.extend(["[reverse check stderr]", check_result.stderr.strip()[:2000]])
         if check_result.returncode != 0:
             lines.append("反向源码树生成失败: 当前补丁无法从已修复源码树回退")
+            lines.extend(self._cleanup_generated_source_tree(reverse_source_dir))
             return None, lines
 
         apply_command = [git_path, "apply", "--reverse", "--verbose", str(rewritten_patch_path.resolve())]
@@ -967,10 +1324,70 @@ class BuildOrchestrator:
             lines.extend(["[reverse apply stderr]", apply_result.stderr.strip()[:2000]])
         if apply_result.returncode != 0:
             lines.append("反向源码树生成失败: 反向应用 patch 未成功")
+            lines.extend(self._cleanup_generated_source_tree(reverse_source_dir))
             return None, lines
 
+        lines.extend(self._normalize_x86_function_padding(reverse_source_dir))
         lines.append("反向源码树生成完成，继续在该源码树上执行 apply precheck")
         return reverse_source_dir, lines
+
+    def _normalize_x86_function_padding(self, source_dir: Path) -> list[str]:
+        """修正 x86 函数入口 padding，避开 kpatch diff-object offset 识别问题"""
+
+        if not getattr(self.build_config, "normalize_x86_function_padding_for_kpatch", True):
+            return []
+
+        makefile_path = source_dir / "arch" / "x86" / "Makefile"
+        lines = ["", "[kpatch source normalization]", f"x86 Makefile: {makefile_path}"]
+        if not makefile_path.exists():
+            lines.append("跳过函数入口 padding 修正: arch/x86/Makefile 不存在")
+            return lines
+
+        original = makefile_path.read_text(encoding="utf-8", errors="replace")
+        normalized = original.replace(
+            "-fpatchable-function-entry=$(CONFIG_FUNCTION_PADDING_BYTES),$(CONFIG_FUNCTION_PADDING_BYTES)",
+            "-fpatchable-function-entry=$(CONFIG_FUNCTION_PADDING_BYTES),0",
+        )
+        if normalized == original:
+            lines.append("函数入口 padding 已经符合 kpatch 构建要求")
+            return lines
+
+        makefile_path.write_text(normalized, encoding="utf-8")
+        lines.append("已将 -fpatchable-function-entry 第二参数归零")
+        return lines
+
+    def _cleanup_generated_source_tree(self, source_dir: Path | None, *, force: bool = False) -> list[str]:
+        """清理 attempt 内生成的临时源码树"""
+
+        if source_dir is None:
+            return []
+        if not force and not getattr(self.build_config, "cleanup_generated_source_tree", True):
+            return []
+
+        if not self._is_safe_generated_source_dir(source_dir):
+            return [
+                "",
+                "[source cleanup]",
+                f"跳过临时源码树清理，路径不在 attempt/sources 下: {source_dir}",
+            ]
+
+        lines = ["", "[source cleanup]", f"临时源码树: {source_dir}"]
+        if not source_dir.exists():
+            lines.append("临时源码树不存在，无需清理")
+            return lines
+
+        try:
+            shutil.rmtree(source_dir)
+            lines.append("临时源码树已清理")
+        except OSError as exc:
+            lines.append(f"临时源码树清理失败: {exc}")
+        return lines
+
+    def _is_safe_generated_source_dir(self, source_dir: Path) -> bool:
+        """限制自动清理范围，避免误删真实源码树"""
+
+        parts = source_dir.parts
+        return len(parts) >= 3 and parts[-1] == "reverse_unpatched" and parts[-2] == "sources"
 
     def _config_path_for_source(self, source_dir: Path | None) -> Path | None:
         """返回当前源码树对应的 .config 路径"""
@@ -1042,6 +1459,7 @@ class BuildOrchestrator:
             "kernel_config_missing": "源码目录中没有找到 .config，暂时无法继续构建。",
             "vmlinux_missing": "找不到可用的 vmlinux 文件，无法继续构建。",
             "target_already_patched": "目标源码已包含该补丁，无需重复应用，请更换未修复内核或切换样例。",
+            "feature_not_enabled": "目标内核配置未启用补丁涉及源码，当前验证内核不会编译出对应对象。",
         }
         return messages.get(failure_type, "构建环境检查未通过。")
 
@@ -1173,6 +1591,125 @@ class BuildOrchestrator:
         if not path.exists():
             return None
         return path.read_text(encoding="utf-8", errors="replace")
+
+    def _run_build_command(
+        self,
+        *,
+        command: list[str],
+        cwd: Path,
+        timeout_sec: int,
+    ) -> dict[str, object]:
+        """执行构建命令并在超时时清理整棵子进程树"""
+
+        creationflags = 0
+        start_new_session = False
+        if os.name == "nt":
+            creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        else:
+            start_new_session = True
+
+        process = subprocess.Popen(
+            command,
+            cwd=str(cwd),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            start_new_session=start_new_session,
+            creationflags=creationflags,
+        )
+        try:
+            stdout_text, stderr_text = process.communicate(timeout=timeout_sec)
+            return {
+                "stdout": stdout_text,
+                "stderr": stderr_text,
+                "exit_code": process.returncode,
+                "timed_out": False,
+                "cleanup_lines": [],
+            }
+        except subprocess.TimeoutExpired:
+            cleanup_lines = self._cleanup_timed_out_process(process)
+            try:
+                stdout_text, stderr_text = process.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                stdout_text, stderr_text = "", ""
+                cleanup_lines.append("构建进程组清理后仍未退出")
+            return {
+                "stdout": self._normalize_process_output(stdout_text),
+                "stderr": self._normalize_process_output(stderr_text),
+                "exit_code": -1,
+                "timed_out": True,
+                "cleanup_lines": cleanup_lines,
+            }
+
+    def _cleanup_timed_out_process(self, process: subprocess.Popen[str]) -> list[str]:
+        """清理超时构建命令及其子进程"""
+
+        cleanup_lines = ["[process cleanup]"]
+        if process.poll() is not None:
+            cleanup_lines.append(f"构建进程已退出: pid={process.pid}")
+            return cleanup_lines
+
+        if os.name == "nt":
+            cleanup_lines.extend(self._cleanup_windows_process_tree(process))
+        else:
+            cleanup_lines.extend(self._cleanup_posix_process_group(process))
+        return cleanup_lines
+
+    def _cleanup_posix_process_group(self, process: subprocess.Popen[str]) -> list[str]:
+        """按 POSIX 进程组清理构建子进程"""
+
+        lines: list[str] = []
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+            lines.append(f"已发送 SIGTERM 到构建进程组: pgid={process.pid}")
+        except ProcessLookupError:
+            lines.append(f"构建进程组已经退出: pgid={process.pid}")
+            return lines
+        except OSError as exc:
+            lines.append(f"发送 SIGTERM 失败: {exc}")
+
+        try:
+            process.wait(timeout=3)
+            lines.append(f"构建进程组已在 SIGTERM 后退出: pgid={process.pid}")
+            return lines
+        except subprocess.TimeoutExpired:
+            lines.append(f"构建进程组 SIGTERM 后仍在运行: pgid={process.pid}")
+
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+            lines.append(f"已发送 SIGKILL 到构建进程组: pgid={process.pid}")
+        except ProcessLookupError:
+            lines.append(f"构建进程组已经退出: pgid={process.pid}")
+        except OSError as exc:
+            lines.append(f"发送 SIGKILL 失败: {exc}")
+        return lines
+
+    def _cleanup_windows_process_tree(self, process: subprocess.Popen[str]) -> list[str]:
+        """在 Windows 上使用 taskkill 清理构建进程树"""
+
+        lines: list[str] = []
+        taskkill = shutil.which("taskkill")
+        if taskkill is None:
+            process.kill()
+            lines.append(f"未找到 taskkill，已终止构建进程: pid={process.pid}")
+            return lines
+
+        result = subprocess.run(
+            [taskkill, "/PID", str(process.pid), "/T", "/F"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        lines.append(f"已执行 taskkill 清理构建进程树: pid={process.pid}, exit={result.returncode}")
+        if result.stdout.strip():
+            lines.append(result.stdout.strip()[:1000])
+        if result.stderr.strip():
+            lines.append(result.stderr.strip()[:1000])
+        return lines
 
     def _classify_command_failure(self, *, stdout_text: str, stderr_text: str) -> str:
         """根据构建命令的直接输出给出一层快速归因"""

@@ -37,9 +37,20 @@ auto_switch_source_tree: true
 # 是否在 attempt 目录下自动准备一棵反向补丁树。
 auto_reverse_source_tree: true
 
+# 反向补丁树只作为本轮构建临时输入，构建结束后清理，避免多 CVE 测试堆满磁盘。
+cleanup_generated_source_tree: true
+
+# Anolis 6.6 验证内核使用 -fpatchable-function-entry=16,16。
+# 当前 kpatch-build/create-diff-object 对该布局会把函数入口识别到 offset 16。
+# 反向源码树构建前把第二参数归零，让本轮热补丁模块按 kpatch 可识别的入口布局生成。
+normalize_x86_function_padding_for_kpatch: true
+
 # 是否根据补丁触达文件自动收窄 kpatch-build 的构建目标。
 # 模块补丁会尽量落到 vmlinux + 受影响模块，已预热源码树时可进一步缩到单模块。
 auto_build_targets: true
+
+# 模块目标构建时，按 modinfo depends 自动补齐依赖模块目标，减少 modpost 未解析符号。
+auto_expand_module_dependencies: true
 
 # vmlinux 符号文件路径
 vmlinux_path: /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux

@@ -28,6 +28,10 @@ class ConstraintDiagnoser:
 
         risk_items = self.registry.evaluate(patch_bundle, semantic_card=semantic_card)
         direct_apply_viable = self.registry.direct_apply_ready(patch_bundle)
+        direct_apply_recommended, direct_apply_role = self._direct_apply_decision(
+            risk_items=risk_items,
+            direct_apply_viable=direct_apply_viable,
+        )
         target_files = list(dict.fromkeys((semantic_card.touched_files if semantic_card is not None else []) or patch_bundle.affected_files))
         target_functions = list(dict.fromkeys(semantic_card.touched_functions if semantic_card is not None else []))
         suggested_primitives = self._suggested_primitives(risk_items=risk_items, direct_apply_viable=direct_apply_viable)
@@ -60,10 +64,13 @@ class ConstraintDiagnoser:
             requires_callback=any("callback" in item.required_primitives for item in risk_items),
             requires_shadow_variable=any("shadow_variable" in item.required_primitives for item in risk_items),
             direct_apply_viable=direct_apply_viable,
+            direct_apply_recommended=direct_apply_recommended,
+            direct_apply_role=direct_apply_role,
             summary=self._build_summary(
                 risk_items,
                 semantic_card=semantic_card,
                 direct_apply_viable=direct_apply_viable,
+                direct_apply_role=direct_apply_role,
                 suggested_primitives=suggested_primitives,
             ),
         )
@@ -74,6 +81,7 @@ class ConstraintDiagnoser:
         *,
         semantic_card: SemanticCard | None,
         direct_apply_viable: bool,
+        direct_apply_role: str,
         suggested_primitives: list[str],
     ) -> str:
         """把风险项压成一条适合状态页和报告复用的摘要"""
@@ -87,9 +95,28 @@ class ConstraintDiagnoser:
         touched_functions = semantic_card.touched_functions if semantic_card is not None else []
         function_hint = f"涉及函数 {', '.join(touched_functions[:2])}" if touched_functions else "当前未稳定抽到函数级范围"
         primitive_hint = f"建议原语 {', '.join(suggested_primitives)}" if suggested_primitives else "当前未生成明确原语建议"
+        direct_apply_hint = {
+            "primary": "direct apply 可作为当前首选路线",
+            "fallback": "direct apply 仅保留为对照或回退路线",
+            "blocked": "当前不建议 direct apply",
+        }.get(direct_apply_role, "direct apply 状态待进一步确认")
         if risk_types == ["unknown_patchability"]:
-            return f"当前规则库未命中明确约束类型，{function_hint}，{primitive_hint}"
-        return f"命中 {len(risk_types)} 类热补丁约束：{', '.join(risk_types)}，{function_hint}，{primitive_hint}"
+            return f"当前规则库未命中明确约束类型，{function_hint}，{primitive_hint}，{direct_apply_hint}"
+        return f"命中 {len(risk_types)} 类热补丁约束：{', '.join(risk_types)}，{function_hint}，{primitive_hint}，{direct_apply_hint}"
+
+    def _direct_apply_decision(
+        self,
+        *,
+        risk_items: list[RiskItem],
+        direct_apply_viable: bool,
+    ) -> tuple[bool, str]:
+        """区分 direct apply 是否可尝试，以及它是不是当前主推荐路线"""
+
+        if not direct_apply_viable:
+            return False, "blocked"
+        if not risk_items:
+            return True, "primary"
+        return False, "fallback"
 
     def _suggested_primitives(self, *, risk_items: list[RiskItem], direct_apply_viable: bool) -> list[str]:
         """从风险项和补丁形态整理建议原语集合"""

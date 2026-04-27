@@ -400,6 +400,10 @@ class Validator:
         items = [load_result, unload_result, smoke_result, selftest_result, regression_result, semantic_guard_result]
         if any(item.status == "failed" for item in items):
             return "failed"
+        if load_result.ok and selftest_result.ok:
+            optional_items = [unload_result, smoke_result, regression_result, semantic_guard_result]
+            if all(item.ok or item.status == "skipped" for item in optional_items):
+                return "passed"
         if semantic_guard_result.ok and load_result.ok:
             return "passed"
         if any(item.status == "passed" for item in items):

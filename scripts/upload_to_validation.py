@@ -308,6 +308,7 @@ class ValidationUploader:
             f"""
             set -e
             cd {shlex.quote(remote_dir)}
+            mkdir -p data/cache data/logs data/manifests
 
             # 优先复用验证机上已经装好依赖的解释器
             # 这样可以避开现场再联网装包，部署会稳很多

@@ -1,0 +1,82 @@
+{
+  "fixture_name": "challenge_positive_pool_confirmed_v0426",
+  "total_fixtures": 1,
+  "matched_fixtures": 0,
+  "missing_fixtures": 1,
+  "success_count": 0,
+  "failed_count": 0,
+  "success_rate": 0.0,
+  "average_attempts": 0.0,
+  "status_distribution": {},
+  "failure_distribution": {},
+  "group_distribution": {
+    "regression": 1
+  },
+  "bucket_order": [
+    "buildable_and_should_pass"
+  ],
+  "bucket_counts": {
+    "buildable_and_should_pass": 1
+  },
+  "bucket_summary": {
+    "buildable_and_should_pass": {
+      "bucket": "buildable_and_should_pass",
+      "label": "正向可构建类",
+      "goal": "看 .ko 产出率和动态验证通过率",
+      "total_fixtures": 1,
+      "matched_fixtures": 0,
+      "missing_fixtures": 1,
+      "success_count": 0,
+      "failed_count": 0,
+      "success_rate": 0.0,
+      "average_attempts": 0.0,
+      "status_distribution": {},
+      "failure_distribution": {},
+      "recognized_count": 0,
+      "explained_count": 0,
+      "module_built_count": 0,
+      "validation_passed_count": 0,
+      "primary_metric": {
+        "name": "validation_passed_rate",
+        "label": "动态验证通过率",
+        "value": 0.0,
+        "display_value": "0.00%",
+        "numerator": 0,
+        "denominator": 0
+      },
+      "secondary_metric": {
+        "name": "module_built_rate",
+        "label": ".ko 产出率",
+        "value": 0.0,
+        "display_value": "0.00%",
+        "numerator": 0,
+        "denominator": 0
+      },
+      "fixture_ids": [
+        "challenge-positive-cve-2024-26742"
+      ]
+    }
+  },
+  "mixed_summary_note": "兼容总成功率只用于存量接口兼容，不再作为固定样例的主结论",
+  "fixtures": [
+    {
+      "fixture_id": "challenge-positive-cve-2024-26742",
+      "cve_id": "CVE-2024-26742",
+      "target_kernel": "6.6.102-5.2.an23.x86_64",
+      "fixture_group": "regression",
+      "sample_bucket": "buildable_and_should_pass",
+      "matched": false,
+      "task_id": null,
+      "final_status": "missing",
+      "attempts": 0,
+      "latest_failure_type": null,
+      "latest_build_exec_status": null,
+      "latest_target_state": null,
+      "validation_status": null,
+      "module_built": false,
+      "constraint_report_ready": false,
+      "evaluation_summary_path": null
+    }
+  ],
+  "generated_files": []
+}

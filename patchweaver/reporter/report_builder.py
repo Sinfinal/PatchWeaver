@@ -41,6 +41,7 @@ class ReportBuilder:
             "vmlinux_missing": ("build_env", "补齐 vmlinux 调试符号文件后重试"),
             "patch_apply_failed": ("patch_apply", "优先检查补丁上下文与目标源码差异，必要时补 backport 改写"),
             "target_already_patched": ("target_state", "目标源码已包含修复；请切换未修复内核、调整样例或显式识别已修复状态"),
+            "feature_not_enabled": ("kernel_profile", "当前验证内核未启用目标子系统；请切换内核配置或更换样例"),
             "compile_failed": ("compile", "分析编译报错并收缩改写范围"),
             "kpatch_constraint": ("kpatch_constraint", "根据 kpatch 约束调整原语和改写策略"),
         }

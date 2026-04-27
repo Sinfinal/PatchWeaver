@@ -231,23 +231,28 @@ def test_evaluator_summarizes_fixture_set() -> None:
     summary = Evaluator().summarize_fixture_set(
         fixture_name="contest_samples",
         fixtures=[
-            {"fixture_id": "fixture-1"},
-            {"fixture_id": "fixture-2"},
+            {"fixture_id": "fixture-1", "sample_bucket": "already_patched"},
+            {"fixture_id": "fixture-2", "sample_bucket": "buildable_and_should_pass"},
         ],
         results=[
             {
                 "fixture_id": "fixture-1",
                 "fixture_group": "challenge",
-                "final_status": "built",
+                "sample_bucket": "already_patched",
+                "final_status": "target_state",
                 "attempts": 2,
-                "latest_failure_type": None,
+                "latest_failure_type": "target_already_patched",
+                "latest_target_state": "target_already_patched",
             },
             {
                 "fixture_id": "fixture-2",
                 "fixture_group": "holdout",
-                "final_status": "failed",
+                "sample_bucket": "buildable_and_should_pass",
+                "final_status": "built",
                 "attempts": 3,
-                "latest_failure_type": "compile_failed",
+                "latest_failure_type": None,
+                "module_built": True,
+                "validation_status": "passed",
             },
         ],
     )
@@ -258,29 +263,36 @@ def test_evaluator_summarizes_fixture_set() -> None:
     assert summary["failed_count"] == 1
     assert summary["success_rate"] == 0.5
     assert summary["status_distribution"]["built"] == 1
-    assert summary["failure_distribution"]["compile_failed"] == 1
+    assert summary["failure_distribution"]["target_already_patched"] == 1
     assert summary["group_distribution"]["challenge"] == 1
+    assert summary["bucket_summary"]["already_patched"]["recognized_count"] == 1
+    assert summary["bucket_summary"]["already_patched"]["primary_metric"]["display_value"] == "100.00%"
+    assert summary["bucket_summary"]["buildable_and_should_pass"]["module_built_count"] == 1
+    assert summary["bucket_summary"]["buildable_and_should_pass"]["validation_passed_count"] == 1
 
 
 def test_evaluator_skips_missing_fixture_from_summary() -> None:
     summary = Evaluator().summarize_fixture_set(
         fixture_name="contest_samples",
         fixtures=[
-            {"fixture_id": "fixture-1"},
-            {"fixture_id": "fixture-2"},
+            {"fixture_id": "fixture-1", "sample_bucket": "kpatch_constraint"},
+            {"fixture_id": "fixture-2", "sample_bucket": "kpatch_constraint"},
         ],
         results=[
             {
                 "fixture_id": "fixture-1",
                 "matched": True,
                 "fixture_group": "holdout",
+                "sample_bucket": "kpatch_constraint",
                 "final_status": "failed",
                 "attempts": 1,
-                "latest_failure_type": "patch_apply_failed",
+                "latest_failure_type": "kpatch_constraint",
+                "constraint_report_ready": True,
             },
             {
                 "fixture_id": "fixture-2",
                 "matched": False,
+                "sample_bucket": "kpatch_constraint",
                 "final_status": "missing",
                 "attempts": 0,
                 "latest_failure_type": None,
@@ -291,5 +303,7 @@ def test_evaluator_skips_missing_fixture_from_summary() -> None:
     assert summary["matched_fixtures"] == 1
     assert summary["missing_fixtures"] == 1
     assert summary["average_attempts"] == 1.0
-    assert summary["failure_distribution"]["patch_apply_failed"] == 1
+    assert summary["failure_distribution"]["kpatch_constraint"] == 1
     assert summary["group_distribution"]["holdout"] == 1
+    assert summary["bucket_summary"]["kpatch_constraint"]["explained_count"] == 1
+    assert summary["bucket_summary"]["kpatch_constraint"]["primary_metric"]["display_value"] == "100.00%"

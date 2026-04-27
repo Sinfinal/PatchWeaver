@@ -52,4 +52,6 @@ class ConstraintReport(BaseModel):
     requires_callback: bool = False
     requires_shadow_variable: bool = False
     direct_apply_viable: bool = False
+    direct_apply_recommended: bool = False
+    direct_apply_role: Literal["primary", "fallback", "blocked"] = "blocked"
     summary: str | None = None

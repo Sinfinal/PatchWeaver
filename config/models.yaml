@@ -43,7 +43,7 @@ helper_notes:
   log_summary: 用于长日志压缩、失败解释和材料摘要，不直接替代构建判定。
 
 # 模型交互记录模式，off=关闭，basic=记录成本与摘要，full=额外保留完整提示词和原始响应
-interaction_record_mode: basic
+interaction_record_mode: full
 
 # 模型交互全局 JSONL 日志路径，按仓库根目录解析
 interaction_jsonl_path: data/logs/model_interactions.jsonl

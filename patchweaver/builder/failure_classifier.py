@@ -48,6 +48,8 @@ class FailureClassifier:
             failure_type = "vmlinux_missing"
         elif not executed_build and ("目标源码已包含该补丁" in build_log or "无需重复应用" in build_log):
             failure_type = "target_already_patched"
+        elif not executed_build and "目标内核配置未启用补丁涉及源码" in build_log:
+            failure_type = "feature_not_enabled"
         elif not executed_build and "apply 级预检查未通过" in build_log:
             failure_type = "patch_apply_failed"
         elif not executed_build and "file failed to apply" in lowered_log:
@@ -91,6 +93,12 @@ class FailureClassifier:
                 line
                 for line in lines
                 if "目标源码已包含该补丁" in line or "无需重复应用" in line
+            ][:3] or evidence
+        elif failure_type == "feature_not_enabled":
+            evidence = [
+                line
+                for line in lines
+                if "目标内核配置未启用" in line or "跳过 kpatch-build" in line
             ][:3] or evidence
         elif failure_type == "kpatch_constraint":
             evidence = [
@@ -139,6 +147,11 @@ class FailureClassifier:
 
         if not lines:
             return "构建失败"
+
+        if failure_type == "feature_not_enabled":
+            for line in lines:
+                if "目标内核配置未启用" in line:
+                    return line
 
         if executed_build:
             for marker in [

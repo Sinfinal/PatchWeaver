@@ -3,6 +3,7 @@
     "fixture_id": "linux-kernel-cve-2024-1086",
     "cve_id": "CVE-2024-1086",
     "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "sample_bucket": "buildable_and_should_pass",
     "input_mode": "cve_only",
     "source_policy": [
       "stable_first",
@@ -20,6 +21,7 @@
     "fixture_id": "linux-kernel-cve-2022-0185",
     "cve_id": "CVE-2022-0185",
     "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "sample_bucket": "buildable_and_should_pass",
     "input_mode": "cve_only",
     "source_policy": [
       "stable_first",

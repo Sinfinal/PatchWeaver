@@ -37,7 +37,7 @@ from patchweaver.config.loader import (
 )
 from patchweaver.config.resolver import load_effective_configs, resolve_runtime
 from patchweaver.coordinator.task_runner import TaskRunner
-from patchweaver.harness.evaluator import Evaluator
+from patchweaver.harness.evaluator import Evaluator, normalize_sample_bucket
 from patchweaver.harness.workspace_guard import WorkspaceGuard
 from patchweaver.models.task import TaskContext
 from patchweaver.observability.run_logger import RunLogger
@@ -49,7 +49,7 @@ from patchweaver.storage.attempt_repo import AttemptRepository
 from patchweaver.storage.sqlite import initialize_sqlite_db
 from patchweaver.storage.task_repo import TaskRepository
 from patchweaver.task_creation_policy import build_duplicate_scope, build_duplicate_task_notice
-from patchweaver.utils.path_policy import relativize_payload, to_project_relative
+from patchweaver.utils.path_policy import relativize_payload, resolve_project_path, to_project_relative
 
 _RAW_TYPER_ECHO = typer.echo
 _RAW_TYPER_SECHO = typer.secho
@@ -858,6 +858,28 @@ def _find_latest_task_for_fixture(tasks: list[TaskContext], fixture: dict[str, A
     return None
 
 
+def _fixture_group_name(fixture: dict[str, Any]) -> str:
+    """统一读取固定样例分组"""
+
+    return str(fixture.get("fixture_group") or fixture.get("sample_group") or fixture.get("group") or "default")
+
+
+def _fixture_sample_bucket(fixture: dict[str, Any]) -> str:
+    """统一读取固定样例所属桶"""
+
+    return normalize_sample_bucket(fixture.get("sample_bucket"), fallback=_fixture_group_name(fixture))
+
+
+def _load_json_file(path: Path) -> dict[str, Any] | None:
+    """读取阶段产物里的 JSON 文件"""
+
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
     """执行固定样例评测并输出阶段摘要"""
 
@@ -877,7 +899,8 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
 
     for fixture in fixtures:
         fixture_id = str(fixture.get("fixture_id") or fixture.get("cve_id") or "unknown")
-        fixture_group = fixture.get("fixture_group") or fixture.get("sample_group") or fixture.get("group") or "default"
+        fixture_group = _fixture_group_name(fixture)
+        sample_bucket = _fixture_sample_bucket(fixture)
         matched_task = _find_latest_task_for_fixture(tasks, fixture)
         if matched_task is None:
             results.append(
@@ -886,11 +909,17 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
                     "cve_id": fixture.get("cve_id"),
                     "target_kernel": fixture.get("target_kernel"),
                     "fixture_group": fixture_group if fixture_group else "unmatched",
+                    "sample_bucket": sample_bucket,
                     "matched": False,
                     "task_id": None,
                     "final_status": "missing",
                     "attempts": 0,
                     "latest_failure_type": None,
+                    "latest_build_exec_status": None,
+                    "latest_target_state": None,
+                    "validation_status": None,
+                    "module_built": False,
+                    "constraint_report_ready": False,
                     "evaluation_summary_path": None,
                 }
             )
@@ -900,6 +929,26 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
         artifacts = artifact_repo.list_artifacts(matched_task.task_id)
         task_summary = evaluator.summarize(attempts=attempts, artifacts=artifacts)
         task_dir = matched_task.workspace_dir.resolve()
+        latest_attempt = attempts[-1] if attempts else None
+        latest_attempt_dir = task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" if latest_attempt is not None else None
+        build_summary_path = latest_attempt_dir / "artifacts" / "build_summary.json" if latest_attempt_dir is not None else None
+        validation_report_path = latest_attempt_dir / "artifacts" / "validation_report.json" if latest_attempt_dir is not None else None
+        constraint_report_path = task_dir / "analysis" / "constraint_report.json"
+        build_summary_payload = _load_json_file(build_summary_path) if build_summary_path is not None and build_summary_path.exists() else None
+        validation_payload = _load_json_file(validation_report_path) if validation_report_path is not None and validation_report_path.exists() else None
+        constraint_payload = _load_json_file(constraint_report_path) if constraint_report_path.exists() else None
+        module_path = resolve_project_path(runtime.project_root, latest_attempt.module_path) if latest_attempt is not None else None
+        module_built = bool(module_path is not None and module_path.exists()) or matched_task.status in {"built", "reported", "succeeded"}
+        validation_status = str((validation_payload or {}).get("status") or "") or None
+        constraint_report_ready = bool(
+            constraint_payload
+            and (
+                constraint_payload.get("summary")
+                or constraint_payload.get("risk_items")
+                or constraint_payload.get("route_hints")
+                or constraint_payload.get("candidate_routes")
+            )
+        )
         replay_comparison = evaluator.replay_comparison(
             task_id=matched_task.task_id,
             attempts=attempts,
@@ -908,10 +957,16 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
         per_task_payload = {
             "fixture_id": fixture_id,
             "fixture_group": fixture_group,
+            "sample_bucket": sample_bucket,
             "task_id": matched_task.task_id,
             "cve_id": matched_task.cve_id,
             "target_kernel": matched_task.target_kernel,
             "task_status": matched_task.status,
+            "latest_build_exec_status": latest_attempt.build_exec_status if latest_attempt is not None else None,
+            "latest_target_state": latest_attempt.target_state if latest_attempt is not None else None,
+            "validation_status": validation_status,
+            "module_built": module_built,
+            "constraint_report_ready": constraint_report_ready,
             "task_summary": task_summary,
             "replay_comparison": replay_comparison,
         }
@@ -924,11 +979,17 @@ def _evaluate_fixture_set(runtime: Any, fixture_name: str) -> dict[str, Any]:
                 "cve_id": matched_task.cve_id,
                 "target_kernel": matched_task.target_kernel,
                 "fixture_group": fixture_group,
+                "sample_bucket": sample_bucket,
                 "matched": True,
                 "task_id": matched_task.task_id,
                 "final_status": matched_task.status,
                 "attempts": len(attempts),
-                "latest_failure_type": task_summary.get("latest_failure_type"),
+                "latest_failure_type": task_summary.get("latest_failure_type") or (build_summary_payload or {}).get("failure_type"),
+                "latest_build_exec_status": latest_attempt.build_exec_status if latest_attempt is not None else (build_summary_payload or {}).get("build_exec_status"),
+                "latest_target_state": latest_attempt.target_state if latest_attempt is not None else (build_summary_payload or {}).get("target_state"),
+                "validation_status": validation_status,
+                "module_built": module_built,
+                "constraint_report_ready": constraint_report_ready,
                 "evaluation_summary_path": _project_path(runtime.project_root, per_task_path),
             }
         )
@@ -1871,9 +1932,35 @@ def evaluate(
     typer.echo(f"固定样例集: {payload['fixture_name']}")
     typer.echo(f"样例总数: {payload['fixture_count']}")
     typer.echo(f"命中样例: {summary['matched_fixtures']}")
-    typer.echo(f"成功数: {summary['success_count']}")
-    typer.echo(f"成功率: {summary['success_rate']:.2%}")
+    typer.echo(f"兼容总成功数: {summary['success_count']}")
+    typer.echo(f"兼容总成功率: {summary['success_rate']:.2%}")
     typer.echo(f"平均尝试轮次: {summary['average_attempts']}")
+    if summary.get("mixed_summary_note"):
+        typer.echo(f"说明: {summary['mixed_summary_note']}")
+    bucket_summary = summary.get("bucket_summary") or {}
+    bucket_order = summary.get("bucket_order") or list(bucket_summary.keys())
+    if bucket_order:
+        typer.echo("按桶统计:")
+        for bucket_name in bucket_order:
+            item = bucket_summary.get(bucket_name) or {}
+            primary_metric = item.get("primary_metric") or {}
+            secondary_metric = item.get("secondary_metric") or {}
+            typer.echo(
+                f"  - {bucket_name} / {item.get('label') or bucket_name}: "
+                f"样例 {item.get('total_fixtures', 0)} / 命中 {item.get('matched_fixtures', 0)} / 缺失 {item.get('missing_fixtures', 0)}"
+            )
+            if primary_metric:
+                typer.echo(
+                    f"    主指标 {primary_metric.get('label', primary_metric.get('name', 'unknown'))}: "
+                    f"{primary_metric.get('display_value') or primary_metric.get('value')}"
+                    f" ({primary_metric.get('numerator', 0)}/{primary_metric.get('denominator', 0)})"
+                )
+            if secondary_metric:
+                typer.echo(
+                    f"    次指标 {secondary_metric.get('label', secondary_metric.get('name', 'unknown'))}: "
+                    f"{secondary_metric.get('display_value') or secondary_metric.get('value')}"
+                    f" ({secondary_metric.get('numerator', 0)}/{secondary_metric.get('denominator', 0)})"
+                )
     typer.echo(f"JSON 摘要: {payload['summary_json']}")
     typer.echo(f"Markdown 摘要: {payload['summary_md']}")
 

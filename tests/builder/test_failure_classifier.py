@@ -61,3 +61,28 @@ def test_classify_build_log_prefers_timeout_summary_after_local_command() -> Non
     assert record.summary == "构建命令超时：3600 秒。"
     assert any("构建命令超时" in item for item in record.evidence)
     assert all("patch failed" not in item for item in record.evidence)
+
+
+def test_classify_build_log_marks_feature_not_enabled_when_kernel_config_skips_target() -> None:
+    classifier = FailureClassifier()
+    build_log = "\n".join(
+        [
+            "[apply precheck]",
+            "apply 级预检查通过。",
+            "[build target coverage]",
+            "目标内核配置未启用以下源码: security/tomoyo/common.c",
+            "当前样例在该验证内核上不会编译出对应对象，已跳过 kpatch-build",
+        ]
+    )
+
+    record = classifier.classify_build_log(
+        task_id="TASK-TEST-FAILURE-FEATURE-DISABLED",
+        attempt_id="TASK-TEST-FAILURE-FEATURE-DISABLED-A001",
+        build_log=build_log,
+        build_exec_status="not_run",
+        failure_type_hint="feature_not_enabled",
+    )
+
+    assert record.failure_type == "feature_not_enabled"
+    assert "未启用以下源码" in record.summary
+    assert any("security/tomoyo/common.c" in item for item in record.evidence)

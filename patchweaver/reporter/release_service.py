@@ -299,9 +299,20 @@ class ReleaseService:
         lines.extend(["", "## 阶段评测摘要"])
         if manifest["evaluations"]:
             for item in manifest["evaluations"]:
-                lines.append(
-                    f"- {item['fixture_name']}: 成功 {item['success_count']}/{item['matched_fixtures']}，成功率 {item['success_rate']:.2%}"
-                )
+                bucket_summary = item.get("bucket_summary") or {}
+                buildable_bucket = bucket_summary.get("buildable_and_should_pass") or {}
+                primary_metric = buildable_bucket.get("primary_metric") or {}
+                secondary_metric = buildable_bucket.get("secondary_metric") or {}
+                if buildable_bucket:
+                    lines.append(
+                        f"- {item['fixture_name']}: 正向桶动态验证通过率 "
+                        f"{primary_metric.get('display_value') or '0.00%'} / .ko 产出率 "
+                        f"{secondary_metric.get('display_value') or '0.00%'}"
+                    )
+                else:
+                    lines.append(
+                        f"- {item['fixture_name']}: 兼容总成功率 {item['success_rate']:.2%}"
+                    )
         else:
             lines.append("- 当前还没有阶段评测摘要。")
 
@@ -579,6 +590,10 @@ class ReleaseService:
                     "matched_fixtures": int(payload.get("matched_fixtures", 0) or 0),
                     "missing_fixtures": int(payload.get("missing_fixtures", 0) or 0),
                     "success_rate": float(payload.get("success_rate", 0.0) or 0.0),
+                    "bucket_order": payload.get("bucket_order") or [],
+                    "bucket_counts": payload.get("bucket_counts") or {},
+                    "bucket_summary": payload.get("bucket_summary") or {},
+                    "mixed_summary_note": payload.get("mixed_summary_note"),
                     "summary_json_path": self._path(path),
                     "summary_md_path": self._path(path.with_name("summary.md")),
                 }

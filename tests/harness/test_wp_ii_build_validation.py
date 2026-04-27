@@ -54,6 +54,29 @@ def _write_kernel_tree(root: Path) -> None:
     (root / "vmlinux").write_text("fake-vmlinux\n", encoding="utf-8")
 
 
+def _write_disabled_sii902x_tree(root: Path) -> None:
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "Makefile").write_text("all:\n\t@echo ok\n", encoding="utf-8")
+    (root / ".config").write_text("# CONFIG_DRM_SII902X is not set\n", encoding="utf-8")
+    (root / "vmlinux").write_text("fake-vmlinux\n", encoding="utf-8")
+    (root / "drivers" / "Makefile").parent.mkdir(parents=True, exist_ok=True)
+    (root / "drivers" / "gpu" / "drm" / "bridge").mkdir(parents=True, exist_ok=True)
+    (root / "drivers" / "Makefile").write_text("obj-y += gpu/\n", encoding="utf-8")
+    (root / "drivers" / "gpu" / "Makefile").write_text("obj-y += drm/\n", encoding="utf-8")
+    (root / "drivers" / "gpu" / "drm" / "Makefile").write_text("obj-y += bridge/\n", encoding="utf-8")
+    (root / "drivers" / "gpu" / "drm" / "bridge" / "Makefile").write_text(
+        "\n".join(
+            [
+                "obj-y += panel.o",
+                "obj-$(CONFIG_DRM_SII902X) += sii902x.o",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (root / "drivers" / "gpu" / "drm" / "bridge" / "sii902x.c").write_text("static int demo(void) { return 0; }\n", encoding="utf-8")
+
+
 def test_local_apply_precheck_rejects_placeholder_patch() -> None:
     tmp_path = _case_dir("build-precheck-placeholder")
     source_dir = tmp_path / "kernel"
@@ -546,6 +569,51 @@ def test_diff_editor_apply_precheck_marks_target_already_patched() -> None:
     assert result.build_exec_status == "not_run"
     assert result.target_state == "target_already_patched"
     assert "已包含该补丁" in result.summary
+
+
+def test_diff_editor_apply_precheck_marks_feature_not_enabled() -> None:
+    tmp_path = _case_dir("diff-editor-feature-not-enabled")
+    source_dir = tmp_path / "kernel"
+    _write_disabled_sii902x_tree(source_dir)
+    patch_path = tmp_path / "rewritten.patch"
+    patch_path.write_text(
+        "\n".join(
+            [
+                "diff --git a/drivers/gpu/drm/bridge/sii902x.c b/drivers/gpu/drm/bridge/sii902x.c",
+                "--- a/drivers/gpu/drm/bridge/sii902x.c",
+                "+++ b/drivers/gpu/drm/bridge/sii902x.c",
+                "@@ -1 +1 @@",
+                "-static int demo(void) { return 0; }",
+                "+static int demo(void) { return 1; }",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    build_config = BuildConfig(
+        build_backend="local",
+        kernel_src_dir=str(source_dir),
+        kernel_devel_dir=str(source_dir),
+        vmlinux_path=str(source_dir / "vmlinux"),
+        kpatch_build_cmd="git",
+    )
+    orchestrator = BuildOrchestrator(build_config)
+    diff_editor = DiffEditor()
+
+    result = diff_editor.apply_precheck(
+        builder=orchestrator,
+        patch_path=patch_path,
+        task_id="TASK-TEST-FEATURE-001",
+        attempt_no=1,
+    )
+
+    assert result.status == "failed"
+    assert result.failure_type == "feature_not_enabled"
+    assert result.build_exec_status == "not_run"
+    assert "未启用" in result.summary
+    assert result.stderr is not None
+    assert "drivers/gpu/drm/bridge/sii902x.c" in result.stderr
 
 
 def test_diff_editor_heuristic_detects_reordered_already_patched_block() -> None:

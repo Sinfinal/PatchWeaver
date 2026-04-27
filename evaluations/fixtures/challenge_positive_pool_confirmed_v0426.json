@@ -1,0 +1,18 @@
+[
+  {
+    "fixture_id": "challenge-positive-cve-2024-26742",
+    "cve_id": "CVE-2024-26742",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "buildable_and_should_pass",
+    "screening_tier": "positive_acceptance_confirmed",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "validation_report.json",
+      "report.json",
+      "patchweaver-*.ko"
+    ],
+    "expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检"
+  }
+]

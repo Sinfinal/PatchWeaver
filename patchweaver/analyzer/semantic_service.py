@@ -26,6 +26,37 @@ _CALL_EXCLUDE = {
     "likely",
     "unlikely",
 }
+_SYMBOL_EXCLUDE = {
+    *_CALL_EXCLUDE,
+    "auto",
+    "bool",
+    "char",
+    "const",
+    "define",
+    "defined",
+    "double",
+    "else",
+    "enum",
+    "extern",
+    "false",
+    "float",
+    "ifdef",
+    "ifndef",
+    "include",
+    "inline",
+    "int",
+    "long",
+    "return",
+    "short",
+    "signed",
+    "static",
+    "struct",
+    "true",
+    "union",
+    "unsigned",
+    "void",
+    "volatile",
+}
 _ROOT_CAUSE_HINTS: list[tuple[tuple[str, ...], str]] = [
     (("underflow", "unsigned", "wraparound"), "无符号算术导致的边界判断错误"),
     (("overflow", "out-of-bounds", "out of bounds", "bounds", "buffer"), "边界长度校验缺陷"),
@@ -248,7 +279,12 @@ class SemanticAnalyzer:
                 index = next_index
                 continue
 
-            critical_calls.extend(self._extract_calls(stripped))
+            calls = self._extract_calls(stripped)
+            critical_calls.extend(calls)
+            if line.kind != "context" and not calls:
+                # 有些修复只改全局对象或属性，没有 xxx(...) 形式的调用
+                # 这里保留变更行里的关键符号，避免语义卡片完全失去锚点
+                critical_calls.extend(self._extract_symbol_references(stripped))
             if line.kind != "context":
                 direct_side_effect = self._summarize_statement(stripped, function_name)
                 if direct_side_effect is not None:
@@ -535,6 +571,29 @@ class SemanticAnalyzer:
                 continue
             calls.append(name)
         return self._ordered_unique(calls)
+
+    def _extract_symbol_references(self, text: str) -> list[str]:
+        """从非调用变更行中抽取关键数据对象、类型和属性符号"""
+
+        stripped = text.strip()
+        if not stripped or stripped.startswith(("*", "//", "/*")):
+            return []
+
+        references: list[str] = []
+        for name in re.findall(r"\b[A-Za-z_]\w*\b", stripped):
+            lowered = name.lower()
+            if lowered in _SYMBOL_EXCLUDE:
+                continue
+            if name.startswith("CONFIG_"):
+                continue
+            if re.fullmatch(r"[A-Z0-9_]{4,}", name):
+                continue
+            if name.startswith("__"):
+                references.append(name)
+                continue
+            if "_" in name or name.endswith(("_t", "_info")):
+                references.append(name)
+        return self._ordered_unique(references[:6])
 
     def _clip_text(self, text: str, *, limit: int) -> str:
         """把说明文本裁剪到适合展示的长度"""

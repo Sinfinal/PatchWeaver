@@ -1,0 +1,216 @@
+[
+  {
+    "fixture_id": "challenge-pass-cve-2024-26742",
+    "cve_id": "CVE-2024-26742",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "buildable_and_should_pass",
+    "screening_tier": "positive_acceptance_confirmed",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "validation_report.json",
+      "report.json",
+      "patchweaver-*.ko"
+    ],
+    "expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检"
+  },
+  {
+    "fixture_id": "challenge-target-state-cve-2024-26631",
+    "cve_id": "CVE-2024-26631",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "already_patched",
+    "screening_tier": "positive_candidate_blocked_by_target_state",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "report.json"
+    ],
+    "expected_outcome": "当前验证机源码树应稳定识别为 target_already_patched，不进入真实构建"
+  },
+  {
+    "fixture_id": "challenge-target-state-cve-2024-26633",
+    "cve_id": "CVE-2024-26633",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "already_patched",
+    "screening_tier": "positive_candidate_blocked_by_target_state",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "report.json"
+    ],
+    "expected_outcome": "当前验证机源码树应稳定识别为 target_already_patched，不进入真实构建"
+  },
+  {
+    "fixture_id": "challenge-target-state-cve-2024-26642",
+    "cve_id": "CVE-2024-26642",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "already_patched",
+    "screening_tier": "positive_candidate_blocked_by_target_state",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "report.json"
+    ],
+    "expected_outcome": "当前验证机源码树应稳定识别为 target_already_patched，不进入真实构建"
+  },
+  {
+    "fixture_id": "challenge-target-state-cve-2024-26706",
+    "cve_id": "CVE-2024-26706",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "already_patched",
+    "screening_tier": "development_only_target_state",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "report.json"
+    ],
+    "expected_outcome": "当前验证机源码树应稳定识别为 target_already_patched，不进入真实构建"
+  },
+  {
+    "fixture_id": "challenge-target-state-cve-2024-26740",
+    "cve_id": "CVE-2024-26740",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "already_patched",
+    "screening_tier": "positive_candidate_blocked_by_target_state",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "report.json"
+    ],
+    "expected_outcome": "当前验证机源码树应稳定识别为 target_already_patched，不进入真实构建"
+  },
+  {
+    "fixture_id": "challenge-target-state-cve-2024-26752",
+    "cve_id": "CVE-2024-26752",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "already_patched",
+    "screening_tier": "positive_candidate_blocked_by_target_state",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "report.json"
+    ],
+    "expected_outcome": "当前验证机源码树应稳定识别为 target_already_patched，不进入真实构建"
+  },
+  {
+    "fixture_id": "challenge-feature-gate-cve-2024-26607",
+    "cve_id": "CVE-2024-26607",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "feature_not_enabled",
+    "screening_tier": "development_only_feature_gate",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "report.json"
+    ],
+    "expected_outcome": "应稳定识别为 feature_not_enabled，不再误记成 patch_apply_failed"
+  },
+  {
+    "fixture_id": "challenge-feature-gate-cve-2024-26622",
+    "cve_id": "CVE-2024-26622",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "feature_not_enabled",
+    "screening_tier": "development_only_feature_gate",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "report.json"
+    ],
+    "expected_outcome": "应稳定识别为 feature_not_enabled，不再误记成 compile_failed"
+  },
+  {
+    "fixture_id": "challenge-feature-gate-cve-2024-26625",
+    "cve_id": "CVE-2024-26625",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "feature_not_enabled",
+    "screening_tier": "development_only_feature_gate",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "report.json"
+    ],
+    "expected_outcome": "应稳定识别为 feature_not_enabled，不进入真实构建"
+  },
+  {
+    "fixture_id": "challenge-feature-gate-cve-2024-26736",
+    "cve_id": "CVE-2024-26736",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "feature_not_enabled",
+    "screening_tier": "development_only_feature_gate",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "report.json"
+    ],
+    "expected_outcome": "应稳定识别为 feature_not_enabled，不进入真实构建"
+  },
+  {
+    "fixture_id": "challenge-kpatch-cve-2024-26643",
+    "cve_id": "CVE-2024-26643",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "kpatch_constraint",
+    "screening_tier": "blocked_by_kpatch_constraint",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "constraint_report.json",
+      "report.json"
+    ],
+    "expected_outcome": "应进入真实构建，并稳定收口为 kpatch_constraint"
+  },
+  {
+    "fixture_id": "challenge-kpatch-cve-2024-26726",
+    "cve_id": "CVE-2024-26726",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "kpatch_constraint",
+    "screening_tier": "blocked_by_kpatch_constraint",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "constraint_report.json",
+      "report.json"
+    ],
+    "expected_outcome": "应进入真实构建，并稳定收口为 kpatch_constraint"
+  },
+  {
+    "fixture_id": "challenge-kpatch-cve-2024-26760",
+    "cve_id": "CVE-2024-26760",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "kpatch_constraint",
+    "screening_tier": "blocked_by_kpatch_constraint",
+    "screening_round": "v0426",
+    "expected_artifacts": [
+      "build_summary.json",
+      "failure_record.json",
+      "constraint_report.json",
+      "report.json"
+    ],
+    "expected_outcome": "应进入真实构建，并稳定收口为 kpatch_constraint"
+  }
+]

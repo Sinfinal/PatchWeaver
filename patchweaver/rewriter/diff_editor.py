@@ -51,9 +51,15 @@ class DiffEditor:
         """在构建前执行 apply 级别预检查"""
 
         probe = builder.probe_environment()
-        return self._local_apply_precheck(patch_path=patch_path, probe=probe)
+        return self._local_apply_precheck(builder=builder, patch_path=patch_path, probe=probe)
 
-    def _local_apply_precheck(self, *, patch_path: Path, probe: dict[str, object]) -> ApplyPrecheckReport:
+    def _local_apply_precheck(
+        self,
+        *,
+        builder: object,
+        patch_path: Path,
+        probe: dict[str, object],
+    ) -> ApplyPrecheckReport:
         """执行本地 apply 预检查"""
 
         source_dir = probe.get("selected_source_dir")
@@ -73,6 +79,26 @@ class DiffEditor:
                 target_source_dir=str(source_dir),
                 checked_patch_path=str(patch_path),
                 summary="本机未找到 git，跳过 apply 预检查。",
+            )
+
+        disabled_target_files = self._collect_disabled_target_files(
+            builder=builder,
+            patch_path=patch_path,
+            source_dir=Path(str(source_dir)),
+        )
+        if disabled_target_files:
+            disabled_summary = "目标内核配置未启用补丁涉及源码，已在 apply 预检查阶段提前识别"
+            disabled_detail = "目标内核配置未启用以下源码: " + ", ".join(disabled_target_files)
+            return ApplyPrecheckReport(
+                status="failed",
+                ok=False,
+                backend="local",
+                target_source_dir=str(source_dir),
+                checked_patch_path=str(patch_path),
+                summary=disabled_summary,
+                stderr=disabled_detail,
+                failure_type="feature_not_enabled",
+                build_exec_status="not_run",
             )
 
         # 先跑正向 apply --check
@@ -193,6 +219,18 @@ class DiffEditor:
             stderr=stderr,
             failure_type="build_env_missing",
         )
+
+    def _collect_disabled_target_files(self, *, builder: object, patch_path: Path, source_dir: Path) -> list[str]:
+        """复用 builder 的目标覆盖判断，避免改写层和构建层结论不一致"""
+
+        collector = getattr(builder, "_collect_disabled_patch_target_files", None)
+        if not callable(collector):
+            return []
+        try:
+            disabled_files = collector(source_dir=source_dir, rewritten_patch_path=patch_path)
+        except TypeError:
+            return []
+        return [str(item) for item in disabled_files]
 
     def _is_patch_apply_failure(self, text: str) -> bool:
         """判断错误是否属于 patch 无法 apply"""

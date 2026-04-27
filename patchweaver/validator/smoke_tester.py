@@ -31,7 +31,7 @@ class SmokeTester:
         if not script_path.exists():
             return ValidationItem(status="pending", ok=False, detail=f"未找到冒烟测试脚本：{script_path}"), ""
 
-        command = [str(script_path)]
+        command = ["bash", str(script_path)] if script_path.suffix == ".sh" else [str(script_path)]
         try:
             result = subprocess.run(
                 command,
@@ -44,11 +44,11 @@ class SmokeTester:
                 shell=False,
             )
         except OSError as exc:
-            return ValidationItem(status="failed", ok=False, detail=f"冒烟测试启动失败：{exc}", command=str(script_path)), ""
+            return ValidationItem(status="failed", ok=False, detail=f"冒烟测试启动失败：{exc}", command=" ".join(command)), ""
 
         log_text = "\n".join(
             [
-                f"command: {script_path}",
+                f"command: {' '.join(command)}",
                 "",
                 "[stdout]",
                 result.stdout.strip() or "<empty>",
@@ -60,5 +60,5 @@ class SmokeTester:
             ]
         ) + "\n"
         if result.returncode == 0:
-            return ValidationItem(status="passed", ok=True, detail="冒烟测试通过。", command=str(script_path)), log_text
-        return ValidationItem(status="failed", ok=False, detail="冒烟测试未通过。", command=str(script_path)), log_text
+            return ValidationItem(status="passed", ok=True, detail="冒烟测试通过。", command=" ".join(command)), log_text
+        return ValidationItem(status="failed", ok=False, detail="冒烟测试未通过。", command=" ".join(command)), log_text

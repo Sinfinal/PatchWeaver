@@ -56,6 +56,15 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
                 "success_rate": 0.6667,
                 "average_attempts": 2.33,
                 "failure_distribution": {"missing_fentry": 1},
+                "bucket_order": ["buildable_and_should_pass"],
+                "bucket_counts": {"buildable_and_should_pass": 3},
+                "bucket_summary": {
+                    "buildable_and_should_pass": {
+                        "label": "正向可构建类",
+                        "primary_metric": {"label": "动态验证通过率", "display_value": "66.67%"},
+                    }
+                },
+                "mixed_summary_note": "兼容总成功率只用于存量接口兼容",
             },
             ensure_ascii=False,
             indent=2,
@@ -239,6 +248,7 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
     assert payload["metrics"]["selected_model"] == "qwen-plus-2025-07-28"
     assert [item["fixture_name"] for item in payload["evaluation_summaries"]] == ["challenge_dev", "holdout"]
     assert payload["evaluation_summaries"][0]["summary_json_path"] == "data/evaluations/challenge_dev/summary.json"
+    assert payload["evaluation_summaries"][0]["bucket_summary"]["buildable_and_should_pass"]["label"] == "正向可构建类"
     assert payload["failure_distribution"][0]["failure_type"] == "missing_fentry"
     assert any(item["latest_target_state"] == "target_already_patched" for item in payload["recent_tasks"])
     assert payload["release"]["selected_models"]["topology"] == "single_primary_with_optional_helpers"

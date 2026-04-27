@@ -137,6 +137,49 @@ def test_semantic_analyzer_fallback_keeps_file_scope_without_fake_functions(tmp_
     assert card.root_cause == "Fallback path still needs a stable summary for downstream stages"
 
 
+def test_semantic_analyzer_keeps_symbol_anchors_for_data_declaration_changes(tmp_path: Path) -> None:
+    patch_path = tmp_path / "raw.patch"
+    patch_path.write_text(
+        """From 54944f45470af5965fb9c28cf962ec30f38a8f5b Mon Sep 17 00:00:00 2001
+Subject: parisc: BTLB: Fix crash when setting up BTLB at CPU bringup
+
+When using hotplug and bringing up a 32-bit CPU, ask the firmware about
+the BTLB information to set up the static TLB entries.
+
+---
+diff --git a/arch/parisc/kernel/cache.c b/arch/parisc/kernel/cache.c
+index 268d90a9325b4..127ee0bc0df07 100644
+--- a/arch/parisc/kernel/cache.c
++++ b/arch/parisc/kernel/cache.c
+@@ -58,7 +58,7 @@ int pa_serialize_tlb_flushes __ro_after_init;
+ struct pdc_cache_info cache_info __ro_after_init;
+ #ifndef CONFIG_PA20
+-struct pdc_btlb_info btlb_info __ro_after_init;
++struct pdc_btlb_info btlb_info;
+ #endif
+ 
+ DEFINE_STATIC_KEY_TRUE(parisc_has_cache);
+""",
+        encoding="utf-8",
+    )
+    bundle = PatchBundle(
+        task_id="cve-2024-26705-task",
+        cve_id="CVE-2024-26705",
+        commit_message="parisc: BTLB: Fix crash when setting up BTLB at CPU bringup",
+        affected_files=["arch/parisc/kernel/cache.c"],
+        raw_patch_path=patch_path,
+    )
+
+    card = SemanticAnalyzer().analyze(_build_task(tmp_path, "CVE-2024-26705"), bundle)
+
+    assert card.touched_files == ["arch/parisc/kernel/cache.c"]
+    assert card.touched_functions == []
+    assert "pdc_btlb_info" in card.critical_calls
+    assert "btlb_info" in card.critical_calls
+    assert "__ro_after_init" in card.critical_calls
+    assert len(card.critical_calls) >= 3
+
+
 def test_semantic_analyzer_keeps_function_scope_empty_when_header_has_no_function(tmp_path: Path) -> None:
     patch_path = tmp_path / "raw.patch"
     patch_path.write_text(

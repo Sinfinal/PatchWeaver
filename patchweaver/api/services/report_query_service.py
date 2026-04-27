@@ -86,6 +86,10 @@ class ReportQueryService:
                     "success_count": int(payload.get("success_count", 0) or 0),
                     "success_rate": float(payload.get("success_rate", 0.0) or 0.0),
                     "average_attempts": float(payload.get("average_attempts", 0.0) or 0.0),
+                    "bucket_order": payload.get("bucket_order") or [],
+                    "bucket_counts": payload.get("bucket_counts") or {},
+                    "bucket_summary": payload.get("bucket_summary") or {},
+                    "mixed_summary_note": payload.get("mixed_summary_note"),
                     "updated_at": self._format_mtime(summary_path),
                     "sort_order": preferred_order.get(fixture_group, 99),
                 }

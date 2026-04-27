@@ -4,6 +4,7 @@
     "cve_id": "CVE-2024-26607",
     "target_kernel": "6.6.102-5.2.an23.x86_64",
     "fixture_group": "source_fetch",
+    "sample_bucket": "buildable_and_should_pass",
     "input_mode": "cve_only",
     "source_policy": [
       "stable_first",
@@ -21,6 +22,7 @@
     "cve_id": "CVE-2024-26622",
     "target_kernel": "6.6.102-5.2.an23.x86_64",
     "fixture_group": "source_fetch",
+    "sample_bucket": "buildable_and_should_pass",
     "input_mode": "cve_only",
     "source_policy": [
       "stable_first",
@@ -38,6 +40,7 @@
     "cve_id": "CVE-2024-26643",
     "target_kernel": "6.6.102-5.2.an23.x86_64",
     "fixture_group": "source_fetch",
+    "sample_bucket": "buildable_and_should_pass",
     "input_mode": "cve_only",
     "source_policy": [
       "stable_first",
@@ -55,6 +58,7 @@
     "cve_id": "CVE-2024-26726",
     "target_kernel": "6.6.102-5.2.an23.x86_64",
     "fixture_group": "source_fetch",
+    "sample_bucket": "buildable_and_should_pass",
     "input_mode": "cve_only",
     "source_policy": [
       "stable_first",

@@ -23,6 +23,7 @@ class CandidateRanker:
         for candidate in candidates:
             recipe_stat = recipe_stats.get(candidate.recipe_name) or {}
             history_success_rate = float(recipe_stat.get("success_rate", 0.0))
+            history_failure_rate = float(recipe_stat.get("failure_rate", 0.0))
 
             # 高频风险命中越多，说明这条路径更可能再次踩坑，排序时要适当降权
             pressure = 0.0
@@ -35,6 +36,7 @@ class CandidateRanker:
                 + 0.18 * (1.0 - candidate.expected_semantic_drift)
                 + 0.14 * (1.0 - candidate.expected_build_cost)
                 + 0.20 * history_success_rate
+                - 0.16 * history_failure_rate
                 - 0.06 * pressure
             )
 
@@ -45,6 +47,8 @@ class CandidateRanker:
             ]
             if history_success_rate > 0:
                 reasons.append(f"历史成功率 {history_success_rate:.0%}")
+            if history_failure_rate > 0:
+                reasons.append(f"历史失败率 {history_failure_rate:.0%}")
             if pressure > 0:
                 reasons.append(f"同类失败压力 {pressure:.2f}")
 
@@ -52,6 +56,7 @@ class CandidateRanker:
                 candidate.model_copy(
                     update={
                         "history_success_rate": history_success_rate,
+                        "history_failure_rate": history_failure_rate,
                         "failure_pressure": pressure,
                         "ranking_score": round(score, 4),
                         "ranking_reasons": reasons,
