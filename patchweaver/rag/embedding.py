@@ -30,6 +30,7 @@ class EmbeddingClient:
         payload: dict[str, Any] = {
             "model": self.config.embedding_model,
             "input": texts,
+            "encoding_format": "float",
         }
         if self.config.embedding_dimensions > 0:
             payload["dimensions"] = self.config.embedding_dimensions

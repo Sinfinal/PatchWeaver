@@ -300,9 +300,18 @@ class RagConfig(ConfigModel):
     embedding_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     embedding_api_key_env: str = "PATCHWEAVER_BAILIAN_API_KEY"
     embedding_api_key: str = ""
-    embedding_model: str = "text-embedding-v4"
+    embedding_model: str = "text-embedding-v3"
     embedding_dimensions: int = 1024
     embedding_timeout_sec: int = 60
+    rerank_enabled: bool = True
+    rerank_provider: Literal["bailian"] = "bailian"
+    rerank_base_url: str = "https://dashscope.aliyuncs.com/compatible-api/v1"
+    rerank_api_key_env: str = "PATCHWEAVER_BAILIAN_API_KEY"
+    rerank_api_key: str = ""
+    rerank_model: str = "qwen3-rerank"
+    rerank_timeout_sec: int = 60
+    rerank_candidate_pool: int = 12
+    rerank_top_n: int = 6
     corpus_jsonl_path: str = "rag_corpus_batch200/chunks/all_chunks.jsonl"
     import_batch_size: int = 32
 
@@ -313,6 +322,17 @@ class RagConfig(ConfigModel):
         if env_value:
             return env_value
         config_value = self.embedding_api_key.strip()
+        if config_value:
+            return config_value
+        return None
+
+    def resolve_rerank_api_key(self) -> str | None:
+        """Resolve rerank API Key."""
+
+        env_value = os.getenv(self.rerank_api_key_env, "").strip()
+        if env_value:
+            return env_value
+        config_value = self.rerank_api_key.strip()
         if config_value:
             return config_value
         return None
