@@ -62,6 +62,8 @@ class RagSearchHit(BaseModel):
     section: str
     subsystem: str | None = None
     score: float
+    vector_score: float | None = None
+    rerank_score: float | None = None
     text: str
     card_path: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -73,6 +75,8 @@ class RagSearchResponse(BaseModel):
     query: str
     limit: int
     collection: str
+    rerank_applied: bool = False
+    rerank_model: str | None = None
     items: list[RagSearchHit] = Field(default_factory=list)
 
 
@@ -90,6 +94,9 @@ class RagHealthResponse(BaseModel):
     api_key_ready: bool
     embedding_model: str
     embedding_dimensions: int
+    rerank_enabled: bool
+    rerank_model: str | None = None
+    rerank_api_key_ready: bool = False
     detail: str | None = None
 
 
@@ -108,6 +115,10 @@ class RagStatsResponse(BaseModel):
     metric_type: str
     embedding_model: str
     embedding_dimensions: int
+    rerank_enabled: bool
+    rerank_model: str | None = None
+    rerank_candidate_pool: int
+    rerank_top_n: int
     default_corpus_path: str
     status_path: str
     last_import_status: str | None = None

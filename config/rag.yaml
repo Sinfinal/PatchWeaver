@@ -1,8 +1,8 @@
-# RAG 向量检索配置
+# RAG vector retrieval configuration
 
 enabled: true
 
-# 当前仅支持 Milvus
+# Milvus backend
 vector_backend: milvus
 milvus_uri: "http://127.0.0.1:19530"
 milvus_token: ""
@@ -11,15 +11,26 @@ milvus_collection: "patchweaver_cve_chunks"
 metric_type: "COSINE"
 search_limit: 6
 
-# Embedding 模型使用百炼兼容接口
+# Embedding configuration
 embedding_provider: "bailian"
 embedding_base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
 embedding_api_key_env: "PATCHWEAVER_BAILIAN_API_KEY"
 embedding_api_key: ""
-embedding_model: "text-embedding-v4"
+embedding_model: "text-embedding-v3"
 embedding_dimensions: 1024
 embedding_timeout_sec: 60
 
-# 默认导入当前 200 条修复语料
+# Optional rerank refinement
+rerank_enabled: true
+rerank_provider: "bailian"
+rerank_base_url: "https://dashscope.aliyuncs.com/compatible-api/v1"
+rerank_api_key_env: "PATCHWEAVER_BAILIAN_API_KEY"
+rerank_api_key: ""
+rerank_model: "qwen3-rerank"
+rerank_timeout_sec: 60
+rerank_candidate_pool: 12
+rerank_top_n: 6
+
+# Default corpus
 corpus_jsonl_path: "rag_corpus_batch200/chunks/all_chunks.jsonl"
 import_batch_size: 32

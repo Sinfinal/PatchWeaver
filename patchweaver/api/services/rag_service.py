@@ -52,6 +52,9 @@ class RagApiService:
             "api_key_ready": self.config.resolve_api_key() is not None,
             "embedding_model": self.config.embedding_model,
             "embedding_dimensions": self.config.embedding_dimensions,
+            "rerank_enabled": self.config.rerank_enabled,
+            "rerank_model": self.config.rerank_model if self.config.rerank_enabled else None,
+            "rerank_api_key_ready": self.config.resolve_rerank_api_key() is not None,
             "detail": None,
         }
         if not self.config.enabled:
@@ -81,6 +84,10 @@ class RagApiService:
             "metric_type": self.config.metric_type,
             "embedding_model": self.config.embedding_model,
             "embedding_dimensions": self.config.embedding_dimensions,
+            "rerank_enabled": self.config.rerank_enabled,
+            "rerank_model": self.config.rerank_model if self.config.rerank_enabled else None,
+            "rerank_candidate_pool": self.config.rerank_candidate_pool,
+            "rerank_top_n": self.config.rerank_top_n,
             "default_corpus_path": self._to_project_path(corpus_path),
             "status_path": import_status["status_path"],
             "last_import_status": import_status.get("status"),

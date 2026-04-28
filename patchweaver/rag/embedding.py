@@ -13,6 +13,8 @@ from patchweaver.config.models import RagConfig
 class EmbeddingClient:
     """通过百炼兼容接口生成 embedding。"""
 
+    _MAX_BATCH_SIZE = 10
+
     def __init__(self, config: RagConfig) -> None:
         self.config = config
 
@@ -27,9 +29,19 @@ class EmbeddingClient:
                 f"未配置 embedding API Key，请设置环境变量 {self.config.embedding_api_key_env}。"
             )
 
+        embeddings: list[list[float]] = []
+        for start in range(0, len(texts), self._MAX_BATCH_SIZE):
+            batch = texts[start : start + self._MAX_BATCH_SIZE]
+            embeddings.extend(self._embed_batch(batch, api_key=api_key))
+        return embeddings
+
+    def _embed_batch(self, texts: list[str], *, api_key: str) -> list[list[float]]:
+        """Submit one provider-sized embedding request."""
+
         payload: dict[str, Any] = {
             "model": self.config.embedding_model,
             "input": texts,
+            "encoding_format": "float",
         }
         if self.config.embedding_dimensions > 0:
             payload["dimensions"] = self.config.embedding_dimensions
