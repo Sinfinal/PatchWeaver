@@ -1,0 +1,114 @@
+[
+  {
+    "cve_id": "CVE-2024-26642",
+    "target_modules": [
+      "net/netfilter/nf_tables.ko"
+    ],
+    "screening_result": "already_patched",
+    "next_pool": "challenge_already_patched_pool_v0427.json"
+  },
+  {
+    "cve_id": "CVE-2024-26643",
+    "target_modules": [
+      "net/netfilter/nf_tables.ko"
+    ],
+    "screening_result": "kpatch_constraint",
+    "next_pool": "challenge_kpatch_constraint_pool_v0427.json"
+  },
+  {
+    "cve_id": "CVE-2024-26644",
+    "target_modules": [
+      "fs/btrfs/btrfs.ko"
+    ],
+    "screening_result": "already_patched",
+    "next_pool": "challenge_already_patched_pool_v0427.json"
+  },
+  {
+    "cve_id": "CVE-2024-26649",
+    "target_modules": [
+      "drivers/gpu/drm/amd/amdgpu/amdgpu.ko"
+    ],
+    "screening_result": "compile_failed",
+    "next_pool": "heavy_module_compile_followup"
+  },
+  {
+    "cve_id": "CVE-2024-26656",
+    "target_modules": [
+      "drivers/gpu/drm/amd/amdgpu/amdgpu.ko"
+    ],
+    "screening_result": "kpatch_constraint",
+    "next_pool": "challenge_kpatch_constraint_pool_v0427.json"
+  },
+  {
+    "cve_id": "CVE-2024-26657",
+    "target_modules": [
+      "drivers/gpu/drm/scheduler/gpu-sched.ko"
+    ],
+    "screening_result": "patch_apply_failed",
+    "next_pool": "apply_precheck_followup"
+  },
+  {
+    "cve_id": "CVE-2024-26663",
+    "target_modules": [
+      "net/tipc/tipc.ko"
+    ],
+    "screening_result": "kpatch_constraint",
+    "next_pool": "challenge_kpatch_constraint_pool_v0427.json"
+  },
+  {
+    "cve_id": "CVE-2024-26664",
+    "target_modules": [
+      "drivers/hwmon/coretemp.ko"
+    ],
+    "screening_result": "already_patched",
+    "next_pool": "challenge_already_patched_pool_v0427.json"
+  },
+  {
+    "cve_id": "CVE-2024-26666",
+    "target_modules": [
+      "net/mac80211/mac80211.ko"
+    ],
+    "screening_result": "kpatch_constraint",
+    "next_pool": "challenge_kpatch_constraint_pool_v0427.json"
+  },
+  {
+    "cve_id": "CVE-2024-26668",
+    "target_modules": [
+      "net/netfilter/nft_limit.ko"
+    ],
+    "screening_result": "kpatch_constraint",
+    "next_pool": "challenge_kpatch_constraint_pool_v0427.json"
+  },
+  {
+    "cve_id": "CVE-2024-26672",
+    "target_modules": [
+      "drivers/gpu/drm/amd/amdgpu/amdgpu.ko"
+    ],
+    "screening_result": "patch_apply_failed",
+    "next_pool": "apply_precheck_followup"
+  },
+  {
+    "cve_id": "CVE-2024-26673",
+    "target_modules": [
+      "net/netfilter/nft_ct.ko"
+    ],
+    "screening_result": "patch_apply_failed",
+    "next_pool": "apply_precheck_followup"
+  },
+  {
+    "cve_id": "CVE-2024-26675",
+    "target_modules": [
+      "drivers/net/ppp/ppp_async.ko"
+    ],
+    "screening_result": "kpatch_constraint",
+    "next_pool": "challenge_kpatch_constraint_pool_v0427.json"
+  },
+  {
+    "cve_id": "CVE-2024-26681",
+    "target_modules": [
+      "drivers/net/netdevsim/netdevsim.ko"
+    ],
+    "screening_result": "patch_apply_failed",
+    "next_pool": "apply_precheck_followup"
+  }
+]

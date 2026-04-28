@@ -18,6 +18,7 @@ from typing import Any
 from patchweaver.models.attempt import AttemptRecord, BuildPrecheck, BuildSummary
 from patchweaver.models.rewrite import RewritePlan
 from patchweaver.models.task import TaskContext
+from patchweaver.builder.source_preparer import patch_setlocalversion_for_kpatch
 from unidiff import PatchSet
 
 
@@ -279,6 +280,61 @@ class BuildOrchestrator:
             )
 
         selected_source_dir = Path(str(probe["selected_source_dir"]))
+        mismatched_arch_files = self._collect_mismatched_arch_patch_target_files(rewritten_patch_path=rewritten_patch_path)
+        if mismatched_arch_files:
+            current_arch = self._current_kernel_arch()
+            summary_text = "补丁触达目标架构之外的源码，已跳过本机构建。"
+            lines.extend(
+                [
+                    "",
+                    "[build target coverage]",
+                    f"当前验证机内核架构: {current_arch}",
+                    "目标架构不匹配源码: " + ", ".join(mismatched_arch_files),
+                    "当前样例不会在该验证内核上形成 changed objects，已跳过 kpatch-build",
+                ]
+            )
+            precheck = self._precheck_not_run(
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                backend="local",
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=str(selected_source_dir),
+                failure_type="target_arch_mismatch",
+                summary=summary_text,
+            )
+            summary = BuildSummary(
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                backend="local",
+                builder_cmd=probe["builder_path"] or self.build_config.kpatch_build_cmd,
+                status="not_run",
+                summary=summary_text,
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=str(selected_source_dir),
+                build_log_path=build_log_path,
+                failure_type="target_arch_mismatch",
+                build_exec_status="not_run",
+            )
+            build_log = "\n".join(lines) + "\n"
+            self._persist_build_log(build_log_path=build_log_path, build_log=build_log)
+            return (
+                record.model_copy(
+                    update={
+                        "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
+                        "status": "failed",
+                        "failure_type": "target_arch_mismatch",
+                        "build_exec_status": "not_run",
+                        "build_log_path": build_log_path,
+                        "module_path": None,
+                        "rewritten_patch_path": rewritten_patch_path,
+                        "finished_at": datetime.now(timezone.utc),
+                    }
+                ),
+                build_log,
+                precheck,
+                summary,
+            )
+
         disabled_target_files = self._collect_disabled_patch_target_files(
             source_dir=selected_source_dir,
             rewritten_patch_path=rewritten_patch_path,
@@ -544,6 +600,55 @@ class BuildOrchestrator:
         command_text = " ".join(shlex.quote(part) for part in command)
         if build_targets:
             lines.extend(["", "[build targets]", ", ".join(build_targets)])
+        missing_cache_files = self._missing_module_build_cache_files(
+            source_dir=selected_source_dir,
+            build_targets=build_targets,
+        )
+        if missing_cache_files:
+            summary_text = "源码树缺少模块构建缓存，已跳过 kpatch-build。"
+            lines.extend(
+                [
+                    "",
+                    "[build cache]",
+                    summary_text,
+                    "模块构建目标需要完整 prepared source tree 缓存",
+                    "缺失文件: " + ", ".join(missing_cache_files),
+                    "处理方式: 先执行 prepare-build-tree --warm-target vmlinux 或同步已预热源码树",
+                ]
+            )
+            lines.extend(self._cleanup_generated_source_tree(generated_source_dir))
+            summary = BuildSummary(
+                task_id=task.task_id,
+                attempt_id=record.attempt_id,
+                backend="local",
+                builder_cmd=builder_cmd,
+                status="not_run",
+                summary=summary_text,
+                rewritten_patch_path=rewritten_patch_path,
+                source_dir=precheck.source_dir,
+                build_log_path=build_log_path,
+                failure_type="build_cache_incomplete",
+                build_exec_status="not_run",
+            )
+            build_log = "\n".join(lines) + "\n"
+            self._persist_build_log(build_log_path=build_log_path, build_log=build_log)
+            return (
+                record.model_copy(
+                    update={
+                        "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
+                        "status": "failed",
+                        "failure_type": "build_cache_incomplete",
+                        "build_exec_status": "not_run",
+                        "build_log_path": build_log_path,
+                        "module_path": None,
+                        "rewritten_patch_path": rewritten_patch_path,
+                        "finished_at": datetime.now(timezone.utc),
+                    }
+                ),
+                build_log,
+                precheck,
+                summary,
+            )
         lines.extend(["", "[local command]", command_text])
 
         exit_code: int | None = None
@@ -819,7 +924,7 @@ class BuildOrchestrator:
 
         expanded_module_targets = self._expand_module_dependency_targets(module_targets)
 
-        if expanded_module_targets and self._has_vmlinux_build_state(source_dir) and not built_in_needed:
+        if expanded_module_targets and not built_in_needed:
             return expanded_module_targets
 
         targets = ["vmlinux"]
@@ -841,6 +946,34 @@ class BuildOrchestrator:
             if target_state == "disabled":
                 disabled_files.append(relative_path.as_posix())
         return disabled_files
+
+    def _collect_mismatched_arch_patch_target_files(self, *, rewritten_patch_path: Path) -> list[str]:
+        """收集不属于当前目标架构的补丁源码文件"""
+
+        current_arch = self._current_kernel_arch()
+        mismatched_files: list[str] = []
+        for relative_path in self._collect_patch_target_files(rewritten_patch_path):
+            parts = relative_path.parts
+            if len(parts) >= 3 and parts[0] == "arch" and parts[1] != current_arch:
+                mismatched_files.append(relative_path.as_posix())
+        return mismatched_files
+
+    def _current_kernel_arch(self) -> str:
+        """把当前机器架构映射为内核源码 arch 目录名"""
+
+        machine = platform.machine().lower()
+        mapping = {
+            "amd64": "x86",
+            "x86_64": "x86",
+            "i386": "x86",
+            "i686": "x86",
+            "aarch64": "arm64",
+            "arm64": "arm64",
+            "loongarch64": "loongarch",
+            "ppc64le": "powerpc",
+            "s390x": "s390",
+        }
+        return mapping.get(machine, machine)
 
     def _expand_module_dependency_targets(self, module_targets: list[str]) -> list[str]:
         """按已安装模块依赖补齐 kpatch-build 目标"""
@@ -1251,6 +1384,14 @@ class BuildOrchestrator:
 
         return (source_dir / "vmlinux.o").exists() and (source_dir / "Module.symvers").exists()
 
+    def _missing_module_build_cache_files(self, *, source_dir: Path, build_targets: list[str]) -> list[str]:
+        """返回模块目标构建所需但当前源码树缺失的缓存文件"""
+
+        if not any(target.endswith(".ko") for target in build_targets):
+            return []
+        required_files = ["Module.symvers", "vmlinux.o", "vmlinux.a", ".vmlinux.objs"]
+        return [name for name in required_files if not (source_dir / name).exists()]
+
     def _prepare_reverse_source_tree(
         self,
         *,
@@ -1281,6 +1422,12 @@ class BuildOrchestrator:
             lines.append(f"反向源码树复制失败: {exc}")
             lines.extend(self._cleanup_generated_source_tree(reverse_source_dir, force=True))
             return None, lines
+
+        setlocalversion_ready = patch_setlocalversion_for_kpatch(reverse_source_dir)
+        if setlocalversion_ready:
+            lines.append("setlocalversion 兼容处理完成: 支持 kpatch-build --save-scmversion")
+        else:
+            lines.append("setlocalversion 兼容处理跳过: 未找到 scripts/setlocalversion")
 
         git_path = which("git")
         if git_path is None:
@@ -1661,14 +1808,9 @@ class BuildOrchestrator:
         """按 POSIX 进程组清理构建子进程"""
 
         lines: list[str] = []
-        try:
-            os.killpg(process.pid, signal.SIGTERM)
-            lines.append(f"已发送 SIGTERM 到构建进程组: pgid={process.pid}")
-        except ProcessLookupError:
-            lines.append(f"构建进程组已经退出: pgid={process.pid}")
-            return lines
-        except OSError as exc:
-            lines.append(f"发送 SIGTERM 失败: {exc}")
+        pgids = self._collect_posix_descendant_process_groups(process.pid)
+        pgids.add(process.pid)
+        lines.extend(self._terminate_posix_process_groups(pgids, signal.SIGTERM))
 
         try:
             process.wait(timeout=3)
@@ -1677,13 +1819,68 @@ class BuildOrchestrator:
         except subprocess.TimeoutExpired:
             lines.append(f"构建进程组 SIGTERM 后仍在运行: pgid={process.pid}")
 
+        lines.extend(self._terminate_posix_process_groups(pgids, signal.SIGKILL))
+        return lines
+
+    def _collect_posix_descendant_process_groups(self, root_pid: int) -> set[int]:
+        """收集构建命令下游子进程所在的 POSIX 进程组"""
+
         try:
-            os.killpg(process.pid, signal.SIGKILL)
-            lines.append(f"已发送 SIGKILL 到构建进程组: pgid={process.pid}")
-        except ProcessLookupError:
-            lines.append(f"构建进程组已经退出: pgid={process.pid}")
-        except OSError as exc:
-            lines.append(f"发送 SIGKILL 失败: {exc}")
+            snapshot = subprocess.run(
+                ["ps", "-eo", "pid=,ppid=,pgid="],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=False,
+            ).stdout
+        except OSError:
+            return set()
+        return self._parse_posix_descendant_process_groups(root_pid=root_pid, ps_output=snapshot)
+
+    def _parse_posix_descendant_process_groups(self, root_pid: int, ps_output: str) -> set[int]:
+        """从 ps 输出解析下游 PGID，覆盖子进程自行 setsid 的情况"""
+
+        children_by_parent: dict[int, list[tuple[int, int]]] = {}
+        for line in ps_output.splitlines():
+            parts = line.split(None, 2)
+            if len(parts) < 3:
+                continue
+            try:
+                pid = int(parts[0])
+                ppid = int(parts[1])
+                pgid = int(parts[2])
+            except ValueError:
+                continue
+            children_by_parent.setdefault(ppid, []).append((pid, pgid))
+
+        pgids: set[int] = set()
+        pending = [root_pid]
+        seen: set[int] = set()
+        while pending:
+            parent = pending.pop()
+            if parent in seen:
+                continue
+            seen.add(parent)
+            for child_pid, child_pgid in children_by_parent.get(parent, []):
+                if child_pgid > 0:
+                    pgids.add(child_pgid)
+                pending.append(child_pid)
+        return pgids
+
+    def _terminate_posix_process_groups(self, pgids: set[int], sig: signal.Signals) -> list[str]:
+        """逐个终止进程组，避免构建超时后留下孤儿进程"""
+
+        lines: list[str] = []
+        for pgid in sorted(pgids, reverse=True):
+            try:
+                os.killpg(pgid, sig)
+                lines.append(f"已发送 {sig.name} 到构建进程组: pgid={pgid}")
+            except ProcessLookupError:
+                lines.append(f"构建进程组已经退出: pgid={pgid}")
+            except OSError as exc:
+                lines.append(f"发送 {sig.name} 失败: pgid={pgid}, {exc}")
         return lines
 
     def _cleanup_windows_process_tree(self, process: subprocess.Popen[str]) -> list[str]:
@@ -1724,6 +1921,8 @@ class BuildOrchestrator:
         if "command not found" in combined:
             return "build_env_missing"
         if "unreconcilable difference" in combined or "fentry" in combined or "init section" in combined:
+            return "kpatch_constraint"
+        if "unsupported section change" in combined:
             return "kpatch_constraint"
         if "section mismatch" in combined or "unsupported" in combined and "kpatch" in combined:
             return "kpatch_constraint"

@@ -18,6 +18,8 @@ class CandidateRanker:
 
         recipe_stats = (ranking_hints or {}).get("recipe_stats") or {}
         failure_pressure = (ranking_hints or {}).get("failure_pressure") or {}
+        avoid_recipes = (ranking_hints or {}).get("avoid_recipes") or {}
+        boost_recipes = (ranking_hints or {}).get("boost_recipes") or {}
 
         scored: list[RewriteCandidate] = []
         for candidate in candidates:
@@ -39,6 +41,10 @@ class CandidateRanker:
                 - 0.16 * history_failure_rate
                 - 0.06 * pressure
             )
+            if candidate.recipe_name in avoid_recipes:
+                score -= 0.35
+            if candidate.recipe_name in boost_recipes:
+                score += 0.24
 
             reasons = [
                 f"预估风险 {candidate.expected_risk:.2f}",
@@ -51,6 +57,10 @@ class CandidateRanker:
                 reasons.append(f"历史失败率 {history_failure_rate:.0%}")
             if pressure > 0:
                 reasons.append(f"同类失败压力 {pressure:.2f}")
+            if candidate.recipe_name in avoid_recipes:
+                reasons.append(f"本任务上轮失败避让: {avoid_recipes[candidate.recipe_name]}")
+            if candidate.recipe_name in boost_recipes:
+                reasons.append(f"Agent 重试路线加权: {boost_recipes[candidate.recipe_name]}")
 
             scored.append(
                 candidate.model_copy(

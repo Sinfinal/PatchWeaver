@@ -20,6 +20,7 @@ from patchweaver.models.evidence import EvidenceBundle, EvidenceSpan
 from patchweaver.models.patch import PatchBundle
 from patchweaver.models.semantic import SemanticCard
 from patchweaver.models.task import TaskContext
+from patchweaver.rewriter.effectiveness import build_route_effectiveness_report, write_route_effectiveness_report
 from patchweaver.runtime_inspector import render_machine_profile_summary, validate_task_binding
 from patchweaver.utils.path_policy import relativize_payload, to_project_relative
 
@@ -619,6 +620,138 @@ class AttemptExecutionService(CoordinatorSupport):
             handle.write(json.dumps(failover_record.model_dump(mode="json"), ensure_ascii=False) + "\n")
         return failover_path
 
+    def _previous_attempt_dir(self, *, task_dir: Path, attempt_no: int) -> Path | None:
+        """返回上一轮 attempt 目录"""
+
+        if attempt_no <= 1:
+            return None
+        previous = task_dir / "attempts" / f"{attempt_no - 1:03d}"
+        return previous if previous.exists() else None
+
+    def _attach_attempt_diagnostics(
+        self,
+        *,
+        failure_record: FailureRecord,
+        route_effectiveness: dict[str, Any],
+        section_change_report_path: Path | None,
+    ) -> FailureRecord:
+        """把路线有效性和专项改写结果补进失败归因"""
+
+        details = dict(failure_record.diagnostic_details)
+        details["route_effectiveness"] = route_effectiveness
+        if section_change_report_path is not None and section_change_report_path.exists():
+            try:
+                details["section_change_avoidance"] = json.loads(section_change_report_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                details["section_change_avoidance"] = {"status": "unreadable"}
+
+        evidence = list(failure_record.evidence)
+        if route_effectiveness.get("status") == "ineffective_retry":
+            evidence.append("路线有效性检查: ineffective_retry，本轮补丁形态与上一轮基本一致")
+        return failure_record.model_copy(update={"diagnostic_details": details, "evidence": evidence[:6]})
+
+    def _maybe_mark_unresolved_kpatch_constraint(
+        self,
+        *,
+        task: TaskContext,
+        task_dir: Path,
+        attempt_record: Any,
+        build_summary: BuildSummary | None,
+        failure_record: FailureRecord,
+    ) -> tuple[Any, BuildSummary | None, FailureRecord]:
+        """连续多轮命中同一 section 约束时收口为未解决后端约束"""
+
+        if failure_record.failure_type != "kpatch_constraint":
+            return attempt_record, build_summary, failure_record
+        if attempt_record.attempt_no < max(1, int(task.max_attempts or 1)):
+            return attempt_record, build_summary, failure_record
+
+        history = self._load_failure_record_payloads(task_dir=task_dir, current=failure_record)
+        signatures = [self._section_constraint_signature(item) for item in history]
+        signatures = [item for item in signatures if item]
+        recipes = self._load_attempt_recipes(task_dir=task_dir, max_attempt_no=attempt_record.attempt_no)
+        if len(signatures) < 2 or len(set(signatures)) != 1 or len(set(recipes)) < 2:
+            return attempt_record, build_summary, failure_record
+
+        unresolved_summary = (
+            f"已连续 {len(signatures)} 轮不同改写路线命中同一 kpatch section 约束，"
+            "当前收口为 kpatch_constraint_unresolved"
+        )
+        details = dict(failure_record.diagnostic_details)
+        details["unresolved_decision"] = {
+            "status": "kpatch_constraint_unresolved",
+            "reason": "已连续多轮不同改写路线命中同一 kpatch section 约束",
+            "attempts_observed": len(signatures),
+            "section_signature": signatures[0],
+            "recipes_observed": recipes,
+        }
+        evidence = list(failure_record.evidence)
+        evidence.append(unresolved_summary)
+        failure_record = failure_record.model_copy(
+            update={
+                "failure_type": "kpatch_constraint_unresolved",
+                "summary": unresolved_summary,
+                "evidence": evidence[:6],
+                "diagnostic_details": details,
+            }
+        )
+        attempt_record = attempt_record.model_copy(update={"failure_type": "kpatch_constraint_unresolved"})
+        if build_summary is not None:
+            build_summary = build_summary.model_copy(
+                update={
+                    "failure_type": "kpatch_constraint_unresolved",
+                    "summary": unresolved_summary,
+                }
+            )
+        return attempt_record, build_summary, failure_record
+
+    def _load_failure_record_payloads(self, *, task_dir: Path, current: FailureRecord) -> list[dict[str, Any]]:
+        """读取历史 failure_record，加上当前轮归因"""
+
+        payloads: list[dict[str, Any]] = []
+        for path in sorted((task_dir / "attempts").glob("[0-9][0-9][0-9]/logs/failure_record.json")):
+            try:
+                payloads.append(json.loads(path.read_text(encoding="utf-8")))
+            except json.JSONDecodeError:
+                continue
+        payloads.append(current.model_dump(mode="json"))
+        return payloads
+
+    def _section_constraint_signature(self, payload: dict[str, Any]) -> str | None:
+        """抽取 section 约束签名"""
+
+        failure_type = str(payload.get("failure_type") or "")
+        if failure_type not in {"kpatch_constraint", "kpatch_constraint_unresolved"}:
+            return None
+        details = payload.get("diagnostic_details") or {}
+        if not isinstance(details, dict):
+            return None
+        constraint = details.get("kpatch_constraint") or {}
+        if not isinstance(constraint, dict):
+            return None
+        changes = constraint.get("section_changes") or []
+        if not changes or not isinstance(changes[0], dict):
+            return str(constraint.get("constraint_kind") or "kpatch_constraint")
+        first = changes[0]
+        return f"{constraint.get('constraint_kind') or 'unsupported_section_change'}:{first.get('object_file')}"
+
+    def _load_attempt_recipes(self, *, task_dir: Path, max_attempt_no: int) -> list[str]:
+        """读取截至当前轮的 recipe 序列"""
+
+        recipes: list[str] = []
+        for attempt_no in range(1, max_attempt_no + 1):
+            path = task_dir / "attempts" / f"{attempt_no:03d}" / "rewrite" / "rewrite_plan.json"
+            if not path.exists():
+                continue
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                continue
+            recipe = str(payload.get("selected_recipe") or "")
+            if recipe:
+                recipes.append(recipe)
+        return recipes
+
     def run(self, task_id: str) -> dict[str, Any]:
         """执行最小单轮尝试链路"""
 
@@ -674,6 +807,7 @@ class AttemptExecutionService(CoordinatorSupport):
         )
 
         ranking_hints = self.dual_memory.build_ranking_hints(
+            task_id=task.task_id,
             risk_types=[item.risk_type for item in constraint_report.risk_items]
         )
         planning_hints_path = attempt_dir / "rewrite" / "planning_hints.json"
@@ -711,6 +845,19 @@ class AttemptExecutionService(CoordinatorSupport):
         rewritten_patch_path = rewrite_meta["rewritten_patch"]
         apply_precheck_report = rewrite_meta["apply_precheck_report"]
         build_log_path = attempt_dir / "logs" / "build.log"
+        route_effectiveness = build_route_effectiveness_report(
+            project_root=self.runtime.project_root,
+            task_id=task.task_id,
+            attempt_no=attempt_no,
+            current_plan=plan,
+            current_patch_path=rewritten_patch_path,
+            previous_attempt_dir=self._previous_attempt_dir(task_dir=task_dir, attempt_no=attempt_no),
+        )
+        route_effectiveness_path = write_route_effectiveness_report(
+            report=route_effectiveness,
+            path=attempt_dir / "rewrite" / "route_effectiveness.json",
+            project_root=self.runtime.project_root,
+        )
 
         build_precheck_path: Path | None = None
         build_summary: BuildSummary | None = None
@@ -831,6 +978,7 @@ class AttemptExecutionService(CoordinatorSupport):
                     build_log=build_log,
                     build_exec_status=build_summary.build_exec_status if build_summary is not None else None,
                     failure_type_hint=build_summary.failure_type if build_summary is not None else attempt_record.failure_type,
+                    rewritten_patch_path=rewritten_patch_path,
                 )
             elif attempt_record.status == "target_state" and attempt_record.target_state:
                 failure_record = self._build_target_state_failure_record(
@@ -849,6 +997,19 @@ class AttemptExecutionService(CoordinatorSupport):
                     summary="构建阶段已完成。",
                     evidence=[],
                 )
+        failure_record = self._attach_attempt_diagnostics(
+            failure_record=failure_record,
+            route_effectiveness=route_effectiveness,
+            section_change_report_path=rewrite_meta.get("section_change_avoidance"),
+        )
+        attempt_record, build_summary, failure_record = self._maybe_mark_unresolved_kpatch_constraint(
+            task=task,
+            task_dir=task_dir,
+            attempt_record=attempt_record,
+            build_summary=build_summary,
+            failure_record=failure_record,
+        )
+        self.attempt_repo.save_attempt(attempt_record)
         self.attempt_repo.save_failure_record(failure_record)
         failure_record_path = self.json_writer.write_model(failure_record, attempt_dir / "logs" / "failure_record.json")
         # builder 理论上应该总能给出 build_summary
@@ -1119,6 +1280,7 @@ class AttemptExecutionService(CoordinatorSupport):
         trace_artifacts = [
             ("rewrite_plan", rewrite_plan_path, "候选改写规划"),
             ("planning_hints", planning_hints_path, "排序与经验提示"),
+            ("route_effectiveness", route_effectiveness_path, "路线有效性检查"),
             ("environment_check_log", environment_check_path, "运行前环境一致性检查"),
             ("rewritten_patch", rewritten_patch_path, "单轮改写结果"),
             ("apply_precheck", rewrite_meta["apply_precheck"], "构建前 apply 预检查"),
@@ -1133,6 +1295,10 @@ class AttemptExecutionService(CoordinatorSupport):
         ]
         if failover_record_path is not None:
             trace_artifacts.append(("failover_record", failover_record_path, "窄状态回退建议"))
+        if rewrite_meta.get("section_change_avoidance") is not None:
+            trace_artifacts.append(
+                ("section_change_avoidance", rewrite_meta["section_change_avoidance"], "section change 专项收缩改写结果")
+            )
         for artifact_type, artifact_path, summary in trace_artifacts:
             trace = self.harness.attach_artifact(
                 trace,
@@ -1151,10 +1317,12 @@ class AttemptExecutionService(CoordinatorSupport):
             ("rewrite_prompt_packet", rewrite_packet["prompt_path"]),
             ("rewrite_plan", rewrite_plan_path),
             ("planning_hints", planning_hints_path),
+            ("route_effectiveness", route_effectiveness_path),
             ("rewritten_patch", rewritten_patch_path),
             ("rewrite_reason", rewrite_meta["rewrite_reason"]),
             ("transformation_trace", rewrite_meta["transformation_trace"]),
             ("apply_precheck", rewrite_meta["apply_precheck"]),
+            ("section_change_avoidance", rewrite_meta.get("section_change_avoidance")),
             ("environment_check_log", environment_check_path),
             ("build_log", attempt_record.build_log_path),
             ("build_precheck", build_precheck_path),
@@ -1220,6 +1388,7 @@ class AttemptExecutionService(CoordinatorSupport):
             "build_log_path": to_project_relative(self.runtime.project_root, attempt_record.build_log_path),
             "trace_path": to_project_relative(self.runtime.project_root, trace_path),
             "failure_record_path": to_project_relative(self.runtime.project_root, failure_record_path),
+            "route_effectiveness_path": to_project_relative(self.runtime.project_root, route_effectiveness_path),
             "failover_record_path": to_project_relative(self.runtime.project_root, failover_record_path),
         }
 

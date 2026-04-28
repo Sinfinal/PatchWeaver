@@ -6,14 +6,17 @@ from patchweaver.builder.orchestrator import BuildOrchestrator
 from patchweaver.config.models import BuildConfig
 
 
-def _write_kernel_tree(root: Path, *, with_vmlinux_cache: bool) -> None:
+def _write_kernel_tree(root: Path, *, with_vmlinux_cache: bool, with_module_symvers: bool = True) -> None:
     (root / "net" / "netfilter").mkdir(parents=True, exist_ok=True)
     (root / "Makefile").write_text("all:\n\t@echo ok\n", encoding="utf-8")
     (root / ".config").write_text("CONFIG_NF_TABLES=m\n", encoding="utf-8")
-    (root / "Module.symvers").write_text("fake symvers\n", encoding="utf-8")
+    if with_module_symvers:
+        (root / "Module.symvers").write_text("fake symvers\n", encoding="utf-8")
     (root / "vmlinux").write_text("fake vmlinux\n", encoding="utf-8")
     if with_vmlinux_cache:
         (root / "vmlinux.o").write_text("fake vmlinux.o\n", encoding="utf-8")
+        (root / "vmlinux.a").write_text("fake vmlinux.a\n", encoding="utf-8")
+        (root / ".vmlinux.objs").write_text("fake .vmlinux.objs\n", encoding="utf-8")
     (root / "net" / "netfilter" / "Makefile").write_text(
         "\n".join(
             [
@@ -33,6 +36,23 @@ def _write_patch(path: Path) -> None:
                 "diff --git a/net/netfilter/nf_tables_api.c b/net/netfilter/nf_tables_api.c",
                 "--- a/net/netfilter/nf_tables_api.c",
                 "+++ b/net/netfilter/nf_tables_api.c",
+                "@@ -1 +1 @@",
+                "-old_line();",
+                "+new_line();",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
+def _write_arm64_patch(path: Path) -> None:
+    path.write_text(
+        "\n".join(
+            [
+                "diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c",
+                "--- a/arch/arm64/kernel/fpsimd.c",
+                "+++ b/arch/arm64/kernel/fpsimd.c",
                 "@@ -1 +1 @@",
                 "-old_line();",
                 "+new_line();",
@@ -141,7 +161,7 @@ def _write_disabled_sii902x_patch(path: Path) -> None:
     )
 
 
-def test_infer_build_targets_adds_vmlinux_for_module_patch_without_cache(tmp_path: Path) -> None:
+def test_infer_build_targets_uses_module_only_when_symvers_exists_without_vmlinux_cache(tmp_path: Path) -> None:
     source_dir = tmp_path / "kernel"
     patch_path = tmp_path / "rewritten.patch"
     _write_kernel_tree(source_dir, with_vmlinux_cache=False)
@@ -159,7 +179,72 @@ def test_infer_build_targets_adds_vmlinux_for_module_patch_without_cache(tmp_pat
 
     targets = orchestrator._infer_build_targets(source_dir=source_dir, rewritten_patch_path=patch_path)
 
-    assert targets == ["vmlinux", "net/netfilter/nf_tables.ko"]
+    assert targets == ["net/netfilter/nf_tables.ko"]
+
+
+def test_infer_build_targets_keeps_module_only_without_symvers(tmp_path: Path) -> None:
+    source_dir = tmp_path / "kernel"
+    patch_path = tmp_path / "rewritten.patch"
+    _write_kernel_tree(source_dir, with_vmlinux_cache=False, with_module_symvers=False)
+    _write_patch(patch_path)
+
+    orchestrator = BuildOrchestrator(
+        BuildConfig(
+            kernel_src_dir=str(source_dir),
+            kernel_devel_dir=str(source_dir),
+            vmlinux_path=str(source_dir / "vmlinux"),
+            auto_build_targets=True,
+            auto_expand_module_dependencies=False,
+        )
+    )
+
+    targets = orchestrator._infer_build_targets(source_dir=source_dir, rewritten_patch_path=patch_path)
+
+    assert targets == ["net/netfilter/nf_tables.ko"]
+
+
+def test_missing_module_build_cache_files_reports_required_files(tmp_path: Path) -> None:
+    source_dir = tmp_path / "kernel"
+    patch_path = tmp_path / "rewritten.patch"
+    _write_kernel_tree(source_dir, with_vmlinux_cache=False)
+    _write_patch(patch_path)
+
+    orchestrator = BuildOrchestrator(
+        BuildConfig(
+            kernel_src_dir=str(source_dir),
+            kernel_devel_dir=str(source_dir),
+            vmlinux_path=str(source_dir / "vmlinux"),
+            auto_build_targets=True,
+            auto_expand_module_dependencies=False,
+        )
+    )
+
+    targets = orchestrator._infer_build_targets(source_dir=source_dir, rewritten_patch_path=patch_path)
+    missing = orchestrator._missing_module_build_cache_files(source_dir=source_dir, build_targets=targets)
+
+    assert targets == ["net/netfilter/nf_tables.ko"]
+    assert missing == ["vmlinux.o", "vmlinux.a", ".vmlinux.objs"]
+
+
+def test_collect_mismatched_arch_patch_target_files_reports_non_native_arch(tmp_path: Path, monkeypatch) -> None:
+    source_dir = tmp_path / "kernel"
+    patch_path = tmp_path / "rewritten.patch"
+    _write_kernel_tree(source_dir, with_vmlinux_cache=True)
+    _write_arm64_patch(patch_path)
+    monkeypatch.setattr("patchweaver.builder.orchestrator.platform.machine", lambda: "x86_64")
+
+    orchestrator = BuildOrchestrator(
+        BuildConfig(
+            kernel_src_dir=str(source_dir),
+            kernel_devel_dir=str(source_dir),
+            vmlinux_path=str(source_dir / "vmlinux"),
+            auto_build_targets=True,
+        )
+    )
+
+    mismatched = orchestrator._collect_mismatched_arch_patch_target_files(rewritten_patch_path=patch_path)
+
+    assert mismatched == ["arch/arm64/kernel/fpsimd.c"]
 
 
 def test_infer_build_targets_uses_module_only_after_vmlinux_cache_is_ready(tmp_path: Path) -> None:

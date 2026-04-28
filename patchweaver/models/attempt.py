@@ -53,6 +53,7 @@ class FailureRecord(BaseModel):
     failure_type: str
     summary: str
     evidence: list[str] = Field(default_factory=list)
+    diagnostic_details: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=_utc_now)
 
 

@@ -18,6 +18,12 @@ def _write_kernel_tree(root: Path, *, file_body: str) -> None:
         "PADDING_CFLAGS := -fpatchable-function-entry=$(CONFIG_FUNCTION_PADDING_BYTES),$(CONFIG_FUNCTION_PADDING_BYTES)\n",
         encoding="utf-8",
     )
+    scripts_dir = root / "scripts"
+    scripts_dir.mkdir(parents=True, exist_ok=True)
+    (scripts_dir / "setlocalversion").write_text(
+        "#!/bin/sh\nset -e\nprintf 'local\\n'\n",
+        encoding="utf-8",
+    )
     target = root / "kernel" / "demo.c"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(file_body, encoding="utf-8")
@@ -193,6 +199,7 @@ def test_build_orchestrator_cleans_reverse_source_tree_after_build_attempt(tmp_p
     assert "临时源码树已清理" in build_log
     assert "[kpatch source normalization]" in build_log
     assert "已将 -fpatchable-function-entry 第二参数归零" in build_log
+    assert "setlocalversion 兼容处理完成" in build_log
 
 
 def test_build_orchestrator_marks_feature_not_enabled_before_running_kpatch_build(tmp_path: Path) -> None:

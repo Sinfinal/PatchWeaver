@@ -83,6 +83,95 @@ def test_joint_planner_uses_memory_hints_to_rank_candidates() -> None:
     assert plan.selected_execution_mode == "template_wrap"
 
 
+def test_joint_planner_penalizes_recently_failing_recipe() -> None:
+    semantic_card = SemanticCard(
+        root_cause="直接应用路径最近连续失败，需要验证候选排序能避开",
+        touched_functions=["kernel/livepatch/demo.c"],
+    )
+    constraint_report = ConstraintReport(
+        task_id="TASK-PLANNER-FAILURE-HINT",
+        target_files=["kernel/livepatch/demo.c"],
+        target_functions=["demo_target"],
+        dominant_risk_types=["kpatch_constraint"],
+        candidate_routes=["direct_apply_patch", "minimal_livepatch_wrap"],
+        preferred_route="direct_apply_patch",
+        high_risk_count=1,
+        direct_apply_viable=True,
+        summary="当前需要让失败记忆影响下一轮候选排序",
+    )
+    ranking_hints = {
+        "recipe_stats": {
+            "direct_apply_patch": {
+                "attempts": 2,
+                "success_rate": 0.0,
+                "failure_rate": 1.0,
+                "last_status": "failed",
+                "last_summary": "上一轮命中 kpatch_constraint",
+                "risk_types": ["kpatch_constraint"],
+            }
+        },
+        "failure_pressure": {"kpatch_constraint": 1},
+    }
+
+    plan = JointPlanner().plan(
+        task_id="TASK-PLANNER-FAILURE-HINT",
+        semantic_card=semantic_card,
+        constraint_report=constraint_report,
+        ranking_hints=ranking_hints,
+    )
+
+    assert plan.selected_recipe == "section_change_avoidance_rewrite"
+    assert plan.selected_route_family == "section_change_avoidance"
+    direct_candidate = next(item for item in plan.candidate_summaries if item.recipe_name == "direct_apply_patch")
+    assert direct_candidate.history_failure_rate == 1.0
+    assert any("历史失败率" in item for item in direct_candidate.ranking_reasons)
+
+
+def test_joint_planner_uses_agent_retry_hints_to_switch_after_kpatch_constraint() -> None:
+    semantic_card = SemanticCard(
+        root_cause="上一轮 direct apply 已触发 kpatch section 约束",
+        touched_functions=["nf_tables_commit"],
+    )
+    constraint_report = ConstraintReport(
+        task_id="TASK-PLANNER-RETRY",
+        target_files=["net/netfilter/nf_tables_api.c"],
+        target_functions=["nf_tables_commit"],
+        dominant_risk_types=["static_local_change"],
+        candidate_routes=["direct_apply_patch", "minimal_livepatch_wrap"],
+        preferred_route="direct_apply_patch",
+        high_risk_count=1,
+        direct_apply_viable=True,
+        summary="分析阶段仍保留 direct apply，但构建反馈要求下一轮避让",
+    )
+    ranking_hints = {
+        "avoid_recipes": {
+            "direct_apply_patch": "nf_tables_api.o: 1 unsupported section change(s)",
+        },
+        "boost_recipes": {
+            "section_change_avoidance_rewrite": "上一轮命中 section 变化约束，优先移除全局和初始化类高风险 hunk",
+            "smpl_primary_rewrite": "上一轮命中 section 变化约束，优先缩小结构化编辑半径",
+            "state_preserving_wrap": "上一轮命中 section 变化约束，保留状态迁移路线作为候选",
+        },
+        "extra_candidate_routes": ["section_change_avoidance_rewrite", "smpl_primary_rewrite", "state_preserving_wrap"],
+    }
+
+    plan = JointPlanner().plan(
+        task_id="TASK-PLANNER-RETRY",
+        semantic_card=semantic_card,
+        constraint_report=constraint_report,
+        ranking_hints=ranking_hints,
+    )
+
+    assert plan.selected_recipe == "section_change_avoidance_rewrite"
+    recipes = {item.recipe_name for item in plan.candidate_summaries}
+    assert "state_preserving_wrap" in recipes
+    assert "section_change_avoidance_rewrite" in recipes
+    direct_candidate = next(item for item in plan.candidate_summaries if item.recipe_name == "direct_apply_patch")
+    section_candidate = next(item for item in plan.candidate_summaries if item.recipe_name == "section_change_avoidance_rewrite")
+    assert any("本任务上轮失败避让" in item for item in direct_candidate.ranking_reasons)
+    assert any("Agent 重试路线加权" in item for item in section_candidate.ranking_reasons)
+
+
 def test_joint_planner_expands_complex_routes_into_competing_candidates() -> None:
     semantic_card = SemanticCard(
         root_cause="需要改写回调路径并补齐 shadow state",

@@ -96,7 +96,7 @@ class FailureMemory:
 
         keywords = {record.failure_type, record.stage_name}
         lowered = " ".join(record.evidence).lower()
-        for token in ["fentry", "init section", "global data", "abi", "header", "compile", "apply"]:
+        for token in ["unsupported section change", "fentry", "init section", "global data", "abi", "header", "compile", "apply"]:
             if token in lowered:
                 keywords.add(token.replace(" ", "_"))
         return sorted(keywords)

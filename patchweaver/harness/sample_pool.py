@@ -21,7 +21,7 @@ def classify_sample_pool_result(result: dict[str, Any]) -> dict[str, Any]:
     run_status = str(result.get("run_status") or result.get("status") or "").strip()
     build_status = str(result.get("build_status") or "").strip()
     validation_status = str(result.get("validation_status") or "").strip()
-    failure_type = str(result.get("failure_type") or result.get("latest_failure_type") or "").strip()
+    failure_type = str(result.get("failure_type") or result.get("run_failure_type") or result.get("latest_failure_type") or "").strip()
     low_risk_route = selected_route in LOW_RISK_ROUTES and high_risk_count == 0
 
     if build_status == "built" and validation_status == "passed":
@@ -55,12 +55,41 @@ def classify_sample_pool_result(result: dict[str, Any]) -> dict[str, Any]:
             reason="补丁命中的源码在当前验证机内核配置中未启用，适合做配置门控识别回归",
         )
 
-    if failure_type == "kpatch_constraint":
+    if failure_type == "target_arch_mismatch":
+        return _classification(
+            sample_bucket="feature_not_enabled",
+            acceptance_role="development_sample",
+            screening_tier="development_only_arch_gate",
+            reason="补丁命中的源码不属于当前验证机目标架构，适合作为架构门控识别回归",
+        )
+
+    if failure_type == "build_cache_incomplete":
+        return _classification(
+            sample_bucket=None,
+            acceptance_role="environment_sample",
+            screening_tier="environment_build_cache_incomplete",
+            reason="验证机 prepared source tree 缺少模块构建缓存，需要先预热 vmlinux 或同步完整构建缓存",
+        )
+
+    if failure_type == "run_timeout" or run_status == "timeout":
+        return _classification(
+            sample_bucket=None,
+            acceptance_role="blocked_sample",
+            screening_tier="blocked_by_run_timeout",
+            reason="外层 run 超时，构建或验证没有在时间预算内收敛，不能纳入正向成功率统计",
+        )
+
+    if failure_type in {"kpatch_constraint", "kpatch_constraint_unresolved", "unfixable_by_livepatch"}:
+        reason = "已进入真实构建，但被 kpatch 后端约束拦截，适合做约束解释回归"
+        if failure_type == "kpatch_constraint_unresolved":
+            reason = "已连续多轮不同改写路线命中同一 kpatch section 约束，当前作为未解决后端约束样例"
+        elif failure_type == "unfixable_by_livepatch":
+            reason = "当前补丁在验证机与 kpatch 后端条件下判定为不可热补丁化"
         return _classification(
             sample_bucket="kpatch_constraint",
             acceptance_role="blocked_sample",
             screening_tier="blocked_by_kpatch_constraint",
-            reason="已进入真实构建，但被 kpatch 后端约束拦截，适合做约束解释回归",
+            reason=reason,
         )
 
     if failure_type == "patch_apply_failed":
@@ -118,10 +147,5 @@ def _classification(
         "screening_tier": screening_tier,
         "reason": reason,
         "stable_bucket_ready": sample_bucket in STABLE_BUCKETS,
-        "positive_pool_candidate": screening_tier
-        in {
-            "positive_acceptance_confirmed",
-            "positive_candidate_low_risk",
-            "positive_candidate_blocked_by_target_state",
-        },
+        "positive_pool_candidate": screening_tier in {"positive_acceptance_confirmed", "positive_candidate_low_risk"},
     }

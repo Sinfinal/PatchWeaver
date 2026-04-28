@@ -53,6 +53,7 @@ class JointPlanner:
             target_functions=target_functions,
             fallback_primitives=primitives,
             high_risk=high_risk,
+            ranking_hints=ranking_hints,
         )
         ranked = self.candidate_ranker.rank(candidates, ranking_hints=ranking_hints)
         selected = ranked[0]
@@ -111,6 +112,7 @@ class JointPlanner:
         target_functions: list[str],
         fallback_primitives: list[str],
         high_risk: int,
+        ranking_hints: dict[str, object] | None = None,
     ) -> list[RewriteCandidate]:
         """根据路线提示和约束结果生成候选改写路径"""
 
@@ -136,6 +138,15 @@ class JointPlanner:
                     "route_name": route_name,
                     "preferred": route_name == constraint_report.preferred_route,
                     "blocking_risk_types": constraint_report.dominant_risk_types,
+                    "recommended_primitives": [],
+                }
+            )
+        for route_name in list((ranking_hints or {}).get("extra_candidate_routes") or []):
+            route_inputs.append(
+                {
+                    "route_name": str(route_name),
+                    "preferred": False,
+                    "blocking_risk_types": constraint_report.dominant_risk_types or ["kpatch_constraint"],
                     "recommended_primitives": [],
                 }
             )
@@ -243,6 +254,8 @@ class JointPlanner:
 
         if constraint_report.high_risk_count > 0 or constraint_report.dominant_risk_types:
             route_names.append("smpl_primary_rewrite")
+        if any(item in {"kpatch_constraint", "unsupported_section_change"} for item in constraint_report.dominant_risk_types):
+            route_names.append("section_change_avoidance_rewrite")
         route_names.append("minimal_livepatch_wrap")
 
         ordered_names: list[str] = []
@@ -339,6 +352,18 @@ class JointPlanner:
                     "优先通过结构化变换缩小编辑半径",
                 ],
             }
+        if lowered in {"section_change_avoidance_rewrite", "section_change_avoidance"}:
+            return {
+                "recipe_name": "section_change_avoidance_rewrite",
+                "route_family": "section_change_avoidance",
+                "execution_mode": "section_change_avoidance",
+                "default_primitives": ["smpl", "section_change_avoidance"],
+                "requires_kernel_scaffold": False,
+                "scaffold_notes": [
+                    "优先移除全局符号、初始化路径和 section 敏感 hunk",
+                    "保留函数局部语义修复，降低 kpatch section 变化概率",
+                ],
+            }
         return {
             "recipe_name": "minimal_livepatch_wrap",
             "route_family": "wrapper",
@@ -372,6 +397,7 @@ class JointPlanner:
             "shadow_variable": 3,
             "state_preserving": 4,
             "smpl": 5,
+            "section_change_avoidance": 6,
         }
         unique = list(dict.fromkeys(str(item) for item in primitives if str(item)))
         return sorted(unique, key=lambda item: (priority.get(item, 99), item))
@@ -416,6 +442,10 @@ class JointPlanner:
             base_risk = 0.17 + max(high_risk, blocking_risk_count) * 0.06
             base_drift = 0.12 + blocking_risk_count * 0.025
             base_build_cost = 0.24
+        elif route_family == "section_change_avoidance":
+            base_risk = 0.14 + max(high_risk, blocking_risk_count) * 0.04
+            base_drift = 0.18 + blocking_risk_count * 0.04
+            base_build_cost = 0.26
         else:
             base_risk = 0.2 + max(high_risk, blocking_risk_count) * 0.07
             base_drift = 0.1 + blocking_risk_count * 0.02
@@ -431,6 +461,9 @@ class JointPlanner:
             base_build_cost += 0.02
         if "smpl" in primitives:
             base_build_cost += 0.03
+        if "section_change_avoidance" in primitives:
+            base_risk = max(0.05, base_risk - 0.04)
+            base_drift += 0.03
         if forbidden_actions and route_family == "direct_apply":
             base_risk += 0.08
             base_drift += 0.04

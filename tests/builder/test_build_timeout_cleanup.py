@@ -81,3 +81,20 @@ def test_build_timeout_cleans_child_process_tree(tmp_path: Path) -> None:
     assert pid_file.exists()
     child_pid = int(pid_file.read_text(encoding="utf-8"))
     assert _wait_until_pid_gone(child_pid)
+
+
+def test_parse_posix_descendant_process_groups_covers_nested_sessions() -> None:
+    orchestrator = BuildOrchestrator(BuildConfig(build_timeout_sec=1))
+    ps_output = "\n".join(
+        [
+            "200 1 200",
+            "210 200 210",
+            "220 210 220",
+            "230 220 220",
+            "240 1 240",
+        ]
+    )
+
+    pgids = orchestrator._parse_posix_descendant_process_groups(root_pid=200, ps_output=ps_output)
+
+    assert pgids == {210, 220}

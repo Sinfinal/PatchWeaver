@@ -1,0 +1,86 @@
+[
+  {
+    "fixture_id": "challenge-kpatch-constraint-cve-2024-26643",
+    "cve_id": "CVE-2024-26643",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "kpatch_constraint_regression",
+    "sample_bucket": "kpatch_constraint",
+    "screening_tier": "blocked_by_kpatch_constraint",
+    "screening_round": "v0427",
+    "target_modules": [
+      "net/netfilter/nf_tables.ko"
+    ],
+    "observed_constraint": "ERROR: nf_tables_api.o: 1 unsupported section change(s)",
+    "expected_outcome": "系统应进入真实 kpatch-build，并将 unsupported section change 归因为 kpatch_constraint"
+  },
+  {
+    "fixture_id": "challenge-kpatch-constraint-cve-2024-26656",
+    "cve_id": "CVE-2024-26656",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "kpatch_constraint_regression",
+    "sample_bucket": "kpatch_constraint",
+    "screening_tier": "blocked_by_kpatch_constraint",
+    "screening_round": "v0427",
+    "target_modules": [
+      "drivers/gpu/drm/amd/amdgpu/amdgpu.ko"
+    ],
+    "observed_constraint": "ERROR: amdgpu_hmm.o: 2 unsupported section change(s)",
+    "expected_outcome": "系统应进入真实 kpatch-build，并将 unsupported section change 归因为 kpatch_constraint"
+  },
+  {
+    "fixture_id": "challenge-kpatch-constraint-cve-2024-26663",
+    "cve_id": "CVE-2024-26663",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "kpatch_constraint_regression",
+    "sample_bucket": "kpatch_constraint",
+    "screening_tier": "blocked_by_kpatch_constraint",
+    "screening_round": "v0427",
+    "target_modules": [
+      "net/tipc/tipc.ko"
+    ],
+    "observed_constraint": "ERROR: bearer.o: 2 unsupported section change(s)",
+    "expected_outcome": "系统应进入真实 kpatch-build，并将 unsupported section change 归因为 kpatch_constraint"
+  },
+  {
+    "fixture_id": "challenge-kpatch-constraint-cve-2024-26666",
+    "cve_id": "CVE-2024-26666",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "kpatch_constraint_regression",
+    "sample_bucket": "kpatch_constraint",
+    "screening_tier": "blocked_by_kpatch_constraint",
+    "screening_round": "v0427",
+    "target_modules": [
+      "net/mac80211/mac80211.ko"
+    ],
+    "observed_constraint": "ERROR: tx.o: 2 unsupported section change(s)",
+    "expected_outcome": "系统应进入真实 kpatch-build，并将 unsupported section change 归因为 kpatch_constraint"
+  },
+  {
+    "fixture_id": "challenge-kpatch-constraint-cve-2024-26668",
+    "cve_id": "CVE-2024-26668",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "kpatch_constraint_regression",
+    "sample_bucket": "kpatch_constraint",
+    "screening_tier": "blocked_by_kpatch_constraint",
+    "screening_round": "v0427",
+    "target_modules": [
+      "net/netfilter/nft_limit.ko"
+    ],
+    "observed_constraint": "ERROR: nft_limit.o: 1 unsupported section change(s)",
+    "expected_outcome": "系统应进入真实 kpatch-build，并将 unsupported section change 归因为 kpatch_constraint"
+  },
+  {
+    "fixture_id": "challenge-kpatch-constraint-cve-2024-26675",
+    "cve_id": "CVE-2024-26675",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "kpatch_constraint_regression",
+    "sample_bucket": "kpatch_constraint",
+    "screening_tier": "blocked_by_kpatch_constraint",
+    "screening_round": "v0427",
+    "target_modules": [
+      "drivers/net/ppp/ppp_async.ko"
+    ],
+    "observed_constraint": "ERROR: ppp_async.o: 1 unsupported section change(s)",
+    "expected_outcome": "系统应进入真实 kpatch-build，并将 unsupported section change 归因为 kpatch_constraint"
+  }
+]

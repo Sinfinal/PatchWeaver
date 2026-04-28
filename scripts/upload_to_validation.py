@@ -18,6 +18,10 @@ from pathlib import Path, PurePosixPath
 import paramiko
 
 
+DEFAULT_VALIDATION_TARGET_DIR = "/home/patchweaver/current"
+DEFAULT_VALIDATION_KERNEL_RELEASE = "6.6.102-5.2.an23.x86_64"
+DEFAULT_VALIDATION_BUILD_TREE_ROOT = "/home/patchweaver/kernel-src-prepared"
+
 EXCLUDED_TOP_LEVEL = {
     ".git",
     ".idea",
@@ -64,6 +68,7 @@ class UploadConfig:
     remote_venv_name: str = ".venv"
     remote_smoke_port: int = 18084
     remote_kernel_release: str = ""
+    remote_build_tree_output_dir: str = ""
     remote_build_tree_warm_targets: list[str] | None = None
     remote_build_tree_warm_jobs: int | None = None
     force_remote_build_tree_warm: bool = False
@@ -106,6 +111,7 @@ class ValidationUploader:
             print(f"[{current_step}/{step_total}] 上传完成 -> {remote_archive}")
             current_step += 1
             self._extract_archive(client, remote_archive=remote_archive)
+            self._reconcile_remote_build_config(client)
             print(f"[{current_step}/{step_total}] 验证机目录已更新 -> {self.config.remote_dir}")
             current_step += 1
             if self.config.prepare_remote_build_tree:
@@ -387,6 +393,8 @@ class ValidationUploader:
             command_parts.append("--force")
         if self.config.remote_kernel_release:
             command_parts.extend(["--kernel-release", shlex.quote(self.config.remote_kernel_release)])
+        if self.config.remote_build_tree_output_dir:
+            command_parts.extend(["--output-dir", shlex.quote(self.config.remote_build_tree_output_dir)])
         for warm_target in self.config.remote_build_tree_warm_targets or []:
             command_parts.extend(["--warm-target", shlex.quote(warm_target)])
         if self.config.remote_build_tree_warm_jobs is not None:
@@ -412,6 +420,68 @@ class ValidationUploader:
             )
         if stdout_text.strip():
             print("      验证机构建源码树输出:")
+            for line in stdout_text.strip().splitlines():
+                print(f"      {line}")
+
+    def _reconcile_remote_build_config(self, client: paramiko.SSHClient) -> None:
+        """上传后把验证机已有 prepared source tree 写回 build.yaml"""
+
+        remote_dir = self.config.remote_dir.as_posix()
+        prepared_dir = self.config.remote_build_tree_output_dir or (
+            f"{DEFAULT_VALIDATION_BUILD_TREE_ROOT}/{self.config.remote_kernel_release or DEFAULT_VALIDATION_KERNEL_RELEASE}"
+        )
+        python_snippet = """
+from pathlib import Path
+import os
+import yaml
+
+config_path = Path("config/build.yaml")
+if not config_path.exists():
+    raise SystemExit(0)
+
+payload = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+prepared_dir = Path(os.environ["PREPARED_DIR"])
+prepared_ready = (
+    prepared_dir.is_dir()
+    and (prepared_dir / "Makefile").exists()
+    and (prepared_dir / "Documentation" / "Kconfig").exists()
+    and (prepared_dir / "scripts" / "setlocalversion").exists()
+)
+if prepared_ready:
+    payload["prepared_kernel_src_dir"] = str(prepared_dir)
+    payload["build_source_priority"] = [
+        "clean_kernel_src_dir",
+        "prepared_kernel_src_dir",
+        "kernel_src_dir",
+        "kernel_devel_dir",
+        "patched_kernel_src_dir",
+    ]
+    config_path.write_text(
+        yaml.safe_dump(payload, allow_unicode=True, sort_keys=False),
+        encoding="utf-8",
+    )
+    print(f"prepared_kernel_src_dir={prepared_dir}")
+else:
+    print(f"prepared source tree not ready: {prepared_dir}")
+""".strip()
+        reconcile_script = (
+            "set -e\n"
+            f"cd {shlex.quote(remote_dir)}\n"
+            f"{self._remote_python_probe_script()}\n"
+            f"PREPARED_DIR={shlex.quote(prepared_dir)} \"$PYTHON_BIN\" - <<'PY'\n"
+            f"{python_snippet}\n"
+            "PY"
+        )
+
+        stdout_text, stderr_text, exit_code = self._run_remote_shell_script(client, reconcile_script, timeout=300)
+        if exit_code != 0:
+            raise RuntimeError(
+                "验证机 build.yaml 回写失败:\n"
+                f"stdout:\n{stdout_text}\n"
+                f"stderr:\n{stderr_text}"
+            )
+        if stdout_text.strip():
+            print("      验证机构建配置输出:")
             for line in stdout_text.strip().splitlines():
                 print(f"      {line}")
 
@@ -518,9 +588,14 @@ def build_parser() -> argparse.ArgumentParser:
     env_host = os.getenv("PATCHWEAVER_VALIDATION_HOST", "10.223.185.3")
     env_port = int(os.getenv("PATCHWEAVER_VALIDATION_PORT", "22"))
     env_user = os.getenv("PATCHWEAVER_VALIDATION_USER", "root")
+    env_kernel_release = os.getenv("PATCHWEAVER_VALIDATION_TARGET_KERNEL_RELEASE", DEFAULT_VALIDATION_KERNEL_RELEASE)
     env_remote_dir = os.getenv(
         "PATCHWEAVER_VALIDATION_TARGET_DIR",
-        os.getenv("PATCHWEAVER_VALIDATION_REMOTE_DIR", "/root/patchweaver"),
+        os.getenv("PATCHWEAVER_VALIDATION_REMOTE_DIR", DEFAULT_VALIDATION_TARGET_DIR),
+    )
+    env_build_tree_output_dir = os.getenv(
+        "PATCHWEAVER_VALIDATION_TARGET_BUILD_TREE_OUTPUT_DIR",
+        f"{DEFAULT_VALIDATION_BUILD_TREE_ROOT}/{env_kernel_release}",
     )
 
     # 默认值尽量都允许从环境变量进来
@@ -610,15 +685,22 @@ def build_parser() -> argparse.ArgumentParser:
         "--target-kernel-release",
         "--remote-kernel-release",
         dest="remote_kernel_release",
-        default=os.getenv("PATCHWEAVER_VALIDATION_TARGET_KERNEL_RELEASE", ""),
-        help="验证机准备完整源码树时使用的目标内核版本。默认让 PatchWeaver 自动解析。",
+        default=env_kernel_release,
+        help="验证机准备完整源码树时使用的目标内核版本。",
+    )
+    parser.add_argument(
+        "--target-build-tree-output-dir",
+        "--remote-build-tree-output-dir",
+        dest="remote_build_tree_output_dir",
+        default=env_build_tree_output_dir,
+        help="验证机完整源码树输出目录。默认放到 /home 大分区。",
     )
     parser.add_argument(
         "--prepare-build-tree-warm-target",
         dest="remote_build_tree_warm_targets",
         action="append",
         default=None,
-        help="验证机 prepare-build-tree 阶段额外执行的预热目标，可重复指定。",
+        help="验证机 prepare-build-tree 阶段额外执行的预热目标，可重复指定。指定输出到大分区且未显式传入时默认预热 vmlinux。",
     )
     parser.add_argument(
         "--prepare-build-tree-warm-jobs",
@@ -655,6 +737,13 @@ def main() -> int:
 
     parser = build_parser()
     args = parser.parse_args()
+    remote_build_tree_warm_targets = args.remote_build_tree_warm_targets
+    if (
+        not args.skip_remote_build_tree_prepare
+        and args.remote_build_tree_output_dir
+        and not remote_build_tree_warm_targets
+    ):
+        remote_build_tree_warm_targets = ["vmlinux"]
 
     config = UploadConfig(
         project_root=discover_project_root(),
@@ -674,7 +763,8 @@ def main() -> int:
         remote_venv_name=args.remote_venv_name,
         remote_smoke_port=args.remote_smoke_port,
         remote_kernel_release=args.remote_kernel_release,
-        remote_build_tree_warm_targets=args.remote_build_tree_warm_targets,
+        remote_build_tree_output_dir=args.remote_build_tree_output_dir,
+        remote_build_tree_warm_targets=remote_build_tree_warm_targets,
         remote_build_tree_warm_jobs=args.remote_build_tree_warm_jobs,
         force_remote_build_tree_warm=args.force_remote_build_tree_warm,
     )

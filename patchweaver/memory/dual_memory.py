@@ -30,6 +30,8 @@ class DualMemory:
         "inline_side_effect",
         "unknown_patchability",
         "kpatch_constraint",
+        "kpatch_constraint_unresolved",
+        "unfixable_by_livepatch",
         # 兼容旧口径，避免已有记忆和历史样例失联
         "missing_fentry",
         "init_section",
@@ -94,7 +96,7 @@ class DualMemory:
             return self.failure_memory.recall(keywords=keywords, limit=limit)
         return []
 
-    def build_ranking_hints(self, *, risk_types: list[str]) -> dict[str, object]:
+    def build_ranking_hints(self, *, risk_types: list[str], task_id: str | None = None) -> dict[str, object]:
         """为候选排序整理一份轻量经验提示"""
 
         normalized_risks = [item for item in dict.fromkeys(risk_types) if item]
@@ -121,17 +123,65 @@ class DualMemory:
 
         failure_pressure: dict[str, int] = {}
         recent_failures: dict[str, str] = {}
+        avoid_recipes: dict[str, str] = {}
+        boost_recipes: dict[str, str] = {}
+        extra_candidate_routes: list[str] = []
         for entry in failure_entries:
-            if normalized_risks and entry.failure_type not in normalized_risks:
+            is_task_entry = task_id is not None and entry.task_id == task_id
+            if normalized_risks and entry.failure_type not in normalized_risks and not is_task_entry:
                 continue
             failure_pressure[entry.failure_type] = failure_pressure.get(entry.failure_type, 0) + 1
             recent_failures.setdefault(entry.failure_type, entry.summary)
+            if is_task_entry and entry.recipe_name:
+                avoid_recipes.setdefault(entry.recipe_name, entry.summary)
+                retry_routes = self._retry_routes_for_failure(entry.failure_type, entry.summary, entry.evidence)
+                for route_name, reason in retry_routes.items():
+                    boost_recipes.setdefault(route_name, reason)
+                    if route_name not in extra_candidate_routes:
+                        extra_candidate_routes.append(route_name)
 
         return {
             "risk_types": normalized_risks,
             "recipe_stats": recipe_stats,
             "failure_pressure": failure_pressure,
             "recent_failures": recent_failures,
+            "avoid_recipes": avoid_recipes,
+            "boost_recipes": boost_recipes,
+            "extra_candidate_routes": extra_candidate_routes,
+        }
+
+    def _retry_routes_for_failure(
+        self,
+        failure_type: str,
+        summary: str,
+        evidence: list[str],
+    ) -> dict[str, str]:
+        """把失败归因转成下一轮规划可用的替代路线"""
+
+        if failure_type != "kpatch_constraint":
+            return {}
+
+        combined = " ".join([summary, *evidence]).lower()
+        if "unsupported section change" in combined or "section mismatch" in combined:
+            return {
+                "section_change_avoidance_rewrite": "上一轮命中 section 变化约束，优先移除全局和初始化类高风险 hunk",
+                "smpl_primary_rewrite": "上一轮命中 section 变化约束，优先缩小结构化编辑半径",
+                "state_preserving_wrap": "上一轮命中 section 变化约束，保留状态迁移路线作为候选",
+                "shadow_variable_wrap": "上一轮命中 section 变化约束，保留 shadow state 路线作为候选",
+            }
+        if "fentry" in combined:
+            return {
+                "callback_livepatch_wrap": "上一轮命中 fentry 约束，优先尝试 callback 路线",
+                "smpl_primary_rewrite": "上一轮命中 fentry 约束，保留结构化收缩路线",
+            }
+        if "unreconcilable difference" in combined or "global data" in combined:
+            return {
+                "shadow_variable_wrap": "上一轮命中全局状态差异，优先尝试 shadow state 路线",
+                "state_preserving_wrap": "上一轮命中状态差异，保留状态迁移路线",
+            }
+        return {
+            "smpl_primary_rewrite": "上一轮命中 kpatch 约束，优先尝试结构化改写",
+            "minimal_livepatch_wrap": "上一轮命中 kpatch 约束，保留最小 wrapper 对照路线",
         }
 
     def _keywords(self, evidence_bundle: EvidenceBundle) -> list[str]:

@@ -36,6 +36,8 @@ class PreparedSourceTreeResult:
     warmup_performed: bool = False
     warmup_marker_path: str | None = None
     warmup_log_path: str | None = None
+    build_cache_ready: bool = False
+    build_cache_files: dict[str, bool] | None = None
 
     def to_payload(self) -> dict[str, object]:
         """转成可直接输出的结构化结果"""
@@ -78,6 +80,7 @@ def prepare_validation_source_tree(
                 warm_jobs=warm_jobs,
                 force=force_warm,
             )
+            build_cache_files = _build_cache_snapshot(normalized_output_dir)
             return PreparedSourceTreeResult(
                 kernel_release=kernel_release,
                 kernel_devel_package=package_name,
@@ -94,6 +97,8 @@ def prepare_validation_source_tree(
                 warmup_performed=warmup_performed,
                 warmup_marker_path=str(warmup_marker_path) if normalized_warm_targets else None,
                 warmup_log_path=str(warmup_log_path) if normalized_warm_targets else None,
+                build_cache_ready=all(build_cache_files.values()),
+                build_cache_files=build_cache_files,
             )
         else:
             raise RuntimeError(f"目标目录已存在但不是可复用的源码树: {normalized_output_dir}")
@@ -163,6 +168,7 @@ def prepare_validation_source_tree(
         warm_jobs=warm_jobs,
         force=force_warm,
     )
+    build_cache_files = _build_cache_snapshot(normalized_output_dir)
 
     manifest_path = normalized_output_dir / "patchweaver_source_prepare.json"
     result = PreparedSourceTreeResult(
@@ -181,6 +187,8 @@ def prepare_validation_source_tree(
         warmup_performed=warmup_performed,
         warmup_marker_path=str(warmup_marker_path) if normalized_warm_targets else None,
         warmup_log_path=str(warmup_log_path) if normalized_warm_targets else None,
+        build_cache_ready=all(build_cache_files.values()),
+        build_cache_files=build_cache_files,
     )
     manifest_path.write_text(json.dumps(result.to_payload(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -251,7 +259,7 @@ def _overlay_tree(source_dir: Path, target_dir: Path) -> None:
     _run_shell_script(script)
 
 
-def _patch_setlocalversion(source_dir: Path) -> bool:
+def patch_setlocalversion_for_kpatch(source_dir: Path) -> bool:
     """确保 vendor kernel 的 setlocalversion 满足 PatchWeaver 运行要求"""
 
     script_path = source_dir / "scripts" / "setlocalversion"
@@ -303,10 +311,23 @@ def _patch_setlocalversion(source_dir: Path) -> bool:
     return True
 
 
+def _patch_setlocalversion(source_dir: Path) -> bool:
+    """兼容旧调用名"""
+
+    return patch_setlocalversion_for_kpatch(source_dir)
+
+
 def _warmup_marker_path(source_dir: Path) -> Path:
     """返回源码树预热状态文件路径"""
 
     return source_dir / WARMUP_MARKER_NAME
+
+
+def _build_cache_snapshot(source_dir: Path) -> dict[str, bool]:
+    """检查 prepared source tree 是否具备模块构建缓存"""
+
+    required_files = ["Module.symvers", "vmlinux.o", "vmlinux.a", ".vmlinux.objs"]
+    return {name: (source_dir / name).exists() for name in required_files}
 
 
 def _load_warmup_marker(marker_path: Path) -> dict[str, object] | None:

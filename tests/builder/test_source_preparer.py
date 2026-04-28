@@ -7,6 +7,7 @@ from pathlib import Path
 import yaml
 
 from patchweaver.builder.source_preparer import (
+    _build_cache_snapshot,
     _maybe_warm_prepared_tree,
     _patch_setlocalversion,
     _warmup_marker_path,
@@ -87,3 +88,19 @@ def test_maybe_warm_prepared_tree_reuses_marker(tmp_path: Path, monkeypatch) -> 
     assert calls == [["make", "-j12", "vmlinux"]]
     assert marker_payload["targets"] == ["vmlinux"]
     assert marker_payload["jobs"] == 12
+
+
+def test_build_cache_snapshot_requires_vmlinux_artifacts(tmp_path: Path) -> None:
+    source_dir = tmp_path / "kernel"
+    source_dir.mkdir(parents=True, exist_ok=True)
+    (source_dir / "Module.symvers").write_text("fake symvers\n", encoding="utf-8")
+    (source_dir / "vmlinux.o").write_text("fake vmlinux.o\n", encoding="utf-8")
+
+    snapshot = _build_cache_snapshot(source_dir)
+
+    assert snapshot == {
+        "Module.symvers": True,
+        "vmlinux.o": True,
+        "vmlinux.a": False,
+        ".vmlinux.objs": False,
+    }

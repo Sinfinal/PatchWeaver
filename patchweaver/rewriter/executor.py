@@ -86,6 +86,7 @@ class RewriteExecutor:
         transformation_trace_path = rewrite_dir / "transformation_trace.json"
         apply_precheck_path = rewrite_dir / "apply_precheck.json"
         kernel_adapter_plan_path = self._write_kernel_adapter_plan(plan=plan, rewrite_dir=rewrite_dir)
+        section_change_report_path = self._write_section_change_report(rewrite_dir=rewrite_dir)
 
         rewrite_reason_payload = {
             "task_id": task_id,
@@ -103,6 +104,7 @@ class RewriteExecutor:
             "source_commit": patch_bundle.stable_commit or patch_bundle.upstream_commit,
             "apply_precheck_status": apply_precheck_report.status,
             "kernel_adapter_plan_path": to_project_relative(self.project_root, kernel_adapter_plan_path),
+            "section_change_avoidance_path": to_project_relative(self.project_root, section_change_report_path),
             "notes": plan.notes,
         }
         rewrite_reason_path.write_text(
@@ -124,6 +126,7 @@ class RewriteExecutor:
             "apply_precheck": apply_precheck_path,
             "apply_precheck_report": apply_precheck_report,
             "kernel_adapter_plan": kernel_adapter_plan_path,
+            "section_change_avoidance": section_change_report_path,
         }
 
     def _route_dispatch_step(self, plan: RewritePlan) -> TransformationStep:
@@ -163,6 +166,19 @@ class RewriteExecutor:
         }
         path.write_text(
             json.dumps(relativize_payload(payload, self.project_root), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        return path
+
+    def _write_section_change_report(self, *, rewrite_dir: Path) -> Path | None:
+        """写出 section change 收缩策略报告"""
+
+        report = getattr(self.smpl_engine, "last_section_change_report", None)
+        if not report:
+            return None
+        path = rewrite_dir / "section_change_avoidance.json"
+        path.write_text(
+            json.dumps(relativize_payload(report, self.project_root), ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
         return path

@@ -1,0 +1,32 @@
+[
+  {
+    "fixture_id": "challenge-already-patched-cve-2024-26642",
+    "cve_id": "CVE-2024-26642",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "target_state_regression",
+    "sample_bucket": "already_patched",
+    "screening_tier": "positive_candidate_blocked_by_target_state",
+    "screening_round": "v0427",
+    "expected_outcome": "当前验证机源码树已包含修复，系统应识别 target_already_patched，不进入 kpatch-build"
+  },
+  {
+    "fixture_id": "challenge-already-patched-cve-2024-26644",
+    "cve_id": "CVE-2024-26644",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "target_state_regression",
+    "sample_bucket": "already_patched",
+    "screening_tier": "positive_candidate_blocked_by_target_state",
+    "screening_round": "v0427",
+    "expected_outcome": "当前验证机源码树已包含修复，系统应识别 target_already_patched，不进入 kpatch-build"
+  },
+  {
+    "fixture_id": "challenge-already-patched-cve-2024-26664",
+    "cve_id": "CVE-2024-26664",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "target_state_regression",
+    "sample_bucket": "already_patched",
+    "screening_tier": "positive_candidate_blocked_by_target_state",
+    "screening_round": "v0427",
+    "expected_outcome": "当前验证机源码树已包含修复，系统应识别 target_already_patched，不进入 kpatch-build"
+  }
+]
