@@ -61,6 +61,7 @@ class ApiContext:
             prompts_config=configs["prompts"],
             skills_config=configs["skills"],
             models_config=self.models_config,
+            rag_config=self.rag_config,
         )
 
 

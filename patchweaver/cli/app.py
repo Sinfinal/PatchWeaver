@@ -30,6 +30,7 @@ from patchweaver.config.loader import (
     load_logging_config,
     load_models_config,
     load_prompts_config,
+    load_rag_config,
     save_models_api_settings,
     load_skills_config,
     load_system_config,
@@ -784,6 +785,7 @@ def _build_task_runner(runtime: Any) -> TaskRunner:
         prompts_config=configs["prompts"],
         skills_config=configs["skills"],
         models_config=load_models_config(runtime.project_root),
+        rag_config=load_rag_config(runtime.project_root),
     )
 
 

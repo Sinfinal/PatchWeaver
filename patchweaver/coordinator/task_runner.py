@@ -28,6 +28,7 @@ from patchweaver.prompting.compiler import PromptCompiler
 from patchweaver.reporter.json_writer import JsonWriter
 from patchweaver.reporter.md_writer import MdWriter
 from patchweaver.reporter.report_builder import ReportBuilder
+from patchweaver.rag.context_injector import RagContextInjector
 from patchweaver.retriever.service import RetrieverService
 from patchweaver.rewriter.executor import RewriteExecutor
 from patchweaver.skills.router import SkillRouter
@@ -58,6 +59,7 @@ class TaskRunner:
         prompts_config: Any,
         skills_config: Any | None = None,
         models_config: Any | None = None,
+        rag_config: Any | None = None,
     ) -> None:
         """绑定运行时配置，并装配各阶段 service"""
 
@@ -107,6 +109,7 @@ class TaskRunner:
             json_writer=JsonWriter(runtime.project_root),
             md_writer=MdWriter(),
             report_builder=ReportBuilder(runtime.project_root),
+            rag_context_injector=RagContextInjector(rag_config),
         )
 
         self.services = services

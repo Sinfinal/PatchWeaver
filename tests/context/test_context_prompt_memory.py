@@ -198,3 +198,44 @@ def test_context_retriever_prefers_stage_inputs_for_analysis_stages() -> None:
     constraint_paths = [item.source_path for item in constraint_selected.spans]
     assert constraint_paths[0] == "analysis/semantic_card.json"
     assert "analysis/constraint_report.json" not in constraint_paths
+
+
+def test_context_retriever_keeps_a_rag_hit_for_stage_contexts() -> None:
+    bundle = EvidenceBundle(
+        evidence_ids=["EV-001", "EV-002", "RAG-001"],
+        spans=[
+            EvidenceSpan(
+                evidence_id="EV-001",
+                source_type="json",
+                source_path="rewrite/rewrite_plan.json",
+                excerpt="rewrite plan excerpt",
+                start_line=1,
+                end_line=3,
+                score=0.95,
+            ),
+            EvidenceSpan(
+                evidence_id="EV-002",
+                source_type="json",
+                source_path="analysis/constraint_report.json",
+                excerpt="constraint report excerpt",
+                start_line=1,
+                end_line=4,
+                score=0.90,
+            ),
+            EvidenceSpan(
+                evidence_id="RAG-001",
+                source_type="rag",
+                source_path="rag://CVE-2024-1086/overview/CVE-2024-1086#overview#001",
+                excerpt="RAG knowledge card excerpt",
+                start_line=None,
+                end_line=None,
+                score=0.52,
+            ),
+        ],
+    )
+
+    selected = ContextRetriever().select(bundle, stage_name="rewrite_recipe", max_evidence=2)
+    selected_ids = [item.evidence_id for item in selected.spans]
+
+    assert "RAG-001" in selected_ids
+    assert "EV-001" in selected_ids

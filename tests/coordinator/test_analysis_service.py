@@ -231,7 +231,7 @@ def test_analysis_service_recomputes_constraint_report_after_semantic_enrichment
         return EvidenceBundle(evidence_ids=[f"{bundle_tag}-01"])
 
     service.build_evidence_bundle = build_evidence_bundle
-    service.assemble_context = lambda *, stage_name, evidence_bundle: ContextBundle(
+    service.assemble_context = lambda *, stage_name, evidence_bundle, **_: ContextBundle(
         evidence_ids=list(evidence_bundle.evidence_ids),
         notes=[f"stage={stage_name}"],
     )

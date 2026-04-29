@@ -18,6 +18,7 @@ from patchweaver.models.constraint import ConstraintReport
 from patchweaver.models.context import BootstrapManifest, ContextBundle
 from patchweaver.models.evidence import EvidenceBundle, EvidenceSpan
 from patchweaver.models.patch import PatchBundle
+from patchweaver.models.rewrite import RewritePlan
 from patchweaver.models.semantic import SemanticCard
 from patchweaver.models.task import TaskContext
 from patchweaver.rewriter.effectiveness import build_route_effectiveness_report, write_route_effectiveness_report
@@ -64,6 +65,7 @@ class TaskRunnerServices:
     json_writer: Any
     md_writer: Any
     report_builder: Any
+    rag_context_injector: Any | None = None
 
 
 class CoordinatorSupport:
@@ -106,6 +108,7 @@ class CoordinatorSupport:
         self.json_writer = services.json_writer
         self.md_writer = services.md_writer
         self.report_builder = services.report_builder
+        self.rag_context_injector = services.rag_context_injector
 
     def build_bootstrap_manifest(self) -> BootstrapManifest:
         """按当前配置整理 bootstrap 片段"""
@@ -195,14 +198,44 @@ class CoordinatorSupport:
             )
         return EvidenceBundle(evidence_ids=evidence_ids, spans=spans, memory_hits=[])
 
-    def assemble_context(self, *, stage_name: str, evidence_bundle: EvidenceBundle) -> ContextBundle:
-        """按阶段预算生成上下文包"""
+    def assemble_context(
+        self,
+        *,
+        stage_name: str,
+        evidence_bundle: EvidenceBundle,
+        task: TaskContext | None = None,
+        patch_bundle: PatchBundle | None = None,
+        semantic_card: SemanticCard | None = None,
+        constraint_report: ConstraintReport | None = None,
+        rewrite_plan: RewritePlan | None = None,
+        failure_record: FailureRecord | None = None,
+    ) -> ContextBundle:
+        """按阶段预算生成上下文包，并在可用时注入 RAG 证据。"""
 
         prompt_profile = self.prompts_config.prompt_profiles.get(self.prompts_config.default_prompt_profile)
         max_evidence = prompt_profile.max_evidence_snippets if prompt_profile is not None else 8
         max_memory_hits = prompt_profile.max_memory_hits if prompt_profile is not None else 3
-        memory_hits = self.dual_memory.recall(stage_name=stage_name, evidence_bundle=evidence_bundle, limit=max_memory_hits)
-        enriched_bundle = evidence_bundle.model_copy(update={"memory_hits": memory_hits})
+        rag_result = (
+            self.rag_context_injector.inject(
+                stage_name=stage_name,
+                task=task,
+                evidence_bundle=evidence_bundle,
+                patch_bundle=patch_bundle,
+                semantic_card=semantic_card,
+                constraint_report=constraint_report,
+                rewrite_plan=rewrite_plan,
+                failure_record=failure_record,
+            )
+            if self.rag_context_injector is not None
+            else None
+        )
+        stage_evidence_bundle = rag_result.evidence_bundle if rag_result is not None else evidence_bundle
+        memory_hits = self.dual_memory.recall(
+            stage_name=stage_name,
+            evidence_bundle=stage_evidence_bundle,
+            limit=max_memory_hits,
+        )
+        enriched_bundle = stage_evidence_bundle.model_copy(update={"memory_hits": memory_hits})
         selected = self.context_retriever.select(
             enriched_bundle,
             stage_name=stage_name,
@@ -217,8 +250,16 @@ class CoordinatorSupport:
         notes.append(f"调度模式: {self.dispatch_mode_for(stage_name)}")
         if memory_hits:
             notes.append(f"命中经验摘要: {len(memory_hits)}")
+        if rag_result is not None:
+            if rag_result.error:
+                notes.append(f"RAG 注入跳过: {rag_result.error}")
+            elif rag_result.added_count:
+                selected_rag_hits = sum(1 for span in context_bundle.source_spans if span.source_type == "rag")
+                notes.append(f"RAG 命中注入: {rag_result.added_count}，进入上下文: {selected_rag_hits}")
+                if rag_result.subsystem:
+                    notes.append(f"RAG 子系统过滤: {rag_result.subsystem}")
         if context_bundle.token_cost > budget["token_limit"]:
-            notes.append("当前上下文已超过默认预算，后续应补充裁剪策略。")
+            notes.append("当前上下文已超过阶段预算，后续应补充裁剪策略。")
         return context_bundle.model_copy(update={"notes": notes})
 
 
@@ -270,6 +311,8 @@ class AnalysisService(CoordinatorSupport):
         retrieval_context_bundle = self.assemble_context(
             stage_name="retrieval",
             evidence_bundle=retrieval_evidence_bundle,
+            task=task,
+            patch_bundle=bundle,
         )
 
         # semantic_card 阶段的补全不能依赖旧的 constraint_report
@@ -282,6 +325,9 @@ class AnalysisService(CoordinatorSupport):
         semantic_context_bundle = self.assemble_context(
             stage_name="semantic_card",
             evidence_bundle=semantic_evidence_bundle,
+            task=task,
+            patch_bundle=bundle,
+            semantic_card=semantic_card,
         )
 
         # 这三个 stage packet 会被回放、调试页和报告复用
@@ -334,7 +380,14 @@ class AnalysisService(CoordinatorSupport):
         )
         analysis_sources = [patch_bundle_path, source_evidence_path, normalized_patch_path, semantic_card_path]
         evidence_bundle = self.build_evidence_bundle(source_paths=analysis_sources, bundle_tag="ANL")
-        context_bundle = self.assemble_context(stage_name="constraint_diagnosis", evidence_bundle=evidence_bundle)
+        context_bundle = self.assemble_context(
+            stage_name="constraint_diagnosis",
+            evidence_bundle=evidence_bundle,
+            task=task,
+            patch_bundle=bundle,
+            semantic_card=semantic_card,
+            constraint_report=constraint_report,
+        )
         evidence_bundle_path = self.json_writer.write_model(
             evidence_bundle,
             task_dir / "analysis" / "context" / "evidence_bundle.json",
@@ -794,7 +847,14 @@ class AttemptExecutionService(CoordinatorSupport):
             ],
             bundle_tag=f"RW{attempt_no:03d}",
         )
-        rewrite_context = self.assemble_context(stage_name="rewrite_recipe", evidence_bundle=rewrite_evidence)
+        rewrite_context = self.assemble_context(
+            stage_name="rewrite_recipe",
+            evidence_bundle=rewrite_evidence,
+            task=task,
+            patch_bundle=patch_bundle,
+            semantic_card=semantic_card,
+            constraint_report=constraint_report,
+        )
         rewrite_evidence_path = self.json_writer.write_model(rewrite_evidence, attempt_dir / "context" / "evidence_bundle.json")
         rewrite_context_path = self.json_writer.write_model(rewrite_context, attempt_dir / "context" / "context_bundle.json")
         rewrite_bootstrap_path = self.json_writer.write_model(bootstrap_manifest, attempt_dir / "prompt" / "bootstrap_manifest.json")
@@ -1163,7 +1223,16 @@ class AttemptExecutionService(CoordinatorSupport):
                 source_paths=[rewrite_plan_path, failure_record_path, attempt_record.build_log_path],
                 bundle_tag=f"FA{attempt_no:03d}",
             )
-            failure_context = self.assemble_context(stage_name="failure_analysis", evidence_bundle=failure_evidence)
+            failure_context = self.assemble_context(
+                stage_name="failure_analysis",
+                evidence_bundle=failure_evidence,
+                task=task,
+                patch_bundle=patch_bundle,
+                semantic_card=semantic_card,
+                constraint_report=constraint_report,
+                rewrite_plan=plan,
+                failure_record=failure_record,
+            )
             failure_evidence_path = self.json_writer.write_model(
                 failure_evidence,
                 attempt_dir / "context" / "failure_analysis_evidence_bundle.json",
