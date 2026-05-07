@@ -175,6 +175,10 @@ class BuildOrchestrator:
             "clean_kernel_src_ok": self._local_kernel_tree_ok(Path(self.build_config.clean_kernel_src_dir))
             if self.build_config.clean_kernel_src_dir
             else False,
+            "vendor_kernel_src_dir": self.build_config.vendor_kernel_src_dir,
+            "vendor_kernel_src_ok": self._local_kernel_tree_ok(Path(self.build_config.vendor_kernel_src_dir))
+            if self.build_config.vendor_kernel_src_dir
+            else False,
             "prepared_kernel_src_dir": self.build_config.prepared_kernel_src_dir,
             "prepared_kernel_src_ok": self._local_kernel_tree_ok(Path(self.build_config.prepared_kernel_src_dir))
             if self.build_config.prepared_kernel_src_dir
@@ -407,7 +411,12 @@ class BuildOrchestrator:
             and getattr(self.build_config, "auto_switch_source_tree", False)
         ):
             primary_target_state_precheck = precheck
-            fallback_source_dir, fallback_source_reason = self._select_local_source_dir(exclude={selected_source_dir})
+            fallback_source_dir, fallback_source_reason = self._select_local_source_dir(
+                exclude={selected_source_dir},
+                expected_states={"unpatched"},
+            )
+            if fallback_source_dir is None:
+                fallback_source_dir, fallback_source_reason = self._select_local_source_dir(exclude={selected_source_dir})
             if fallback_source_dir is not None:
                 lines.extend(
                     [
@@ -432,11 +441,47 @@ class BuildOrchestrator:
 
         if (
             not precheck.ok
-            and primary_target_state_precheck is not None
+            and precheck.failure_type == "patch_apply_failed"
+            and getattr(self.build_config, "auto_switch_source_tree", False)
+            and self._guess_source_expected_state(precheck.source_dir) != "unpatched"
+        ):
+            fallback_source_dir, fallback_source_reason = self._select_local_source_dir(
+                exclude={selected_source_dir},
+                expected_states={"unpatched"},
+            )
+            if fallback_source_dir is not None:
+                lines.extend(
+                    [
+                        "",
+                        f"当前源码树 apply 失败，准备切换到未修复源码基线: {fallback_source_dir}",
+                        f"未修复源码槽位: {fallback_source_reason}",
+                    ]
+                )
+                probe = self._override_selected_source(
+                    probe=probe,
+                    source_dir=fallback_source_dir,
+                    source_reason=fallback_source_reason,
+                )
+                selected_source_dir = fallback_source_dir
+                precheck = self.precheck_patch(
+                    task_id=task.task_id,
+                    attempt_id=record.attempt_id,
+                    rewritten_patch_path=rewritten_patch_path,
+                    source_dir=selected_source_dir,
+                )
+                lines.extend(self._format_precheck_lines(precheck))
+
+        reverse_candidate_precheck = primary_target_state_precheck
+        if reverse_candidate_precheck is None and self._should_try_reverse_source_for_precheck(precheck):
+            reverse_candidate_precheck = precheck
+
+        if (
+            not precheck.ok
+            and reverse_candidate_precheck is not None
             and getattr(self.build_config, "auto_reverse_source_tree", False)
         ):
             reverse_source_dir, reverse_lines = self._prepare_reverse_source_tree(
-                patched_source_dir=Path(primary_target_state_precheck.source_dir or selected_source_dir),
+                patched_source_dir=Path(reverse_candidate_precheck.source_dir or selected_source_dir),
                 rewritten_patch_path=rewritten_patch_path,
                 attempt_dir=build_log_path.parent.parent,
             )
@@ -576,6 +621,7 @@ class BuildOrchestrator:
         output_dir = build_log_path.parent.parent / "output"
         output_dir.mkdir(parents=True, exist_ok=True)
         builder_cmd = probe["builder_path"] or self.build_config.kpatch_build_cmd
+        lines.extend(self._ensure_call_sites_section_compat())
         build_targets = self._infer_build_targets(
             source_dir=selected_source_dir,
             rewritten_patch_path=rewritten_patch_path,
@@ -786,6 +832,15 @@ class BuildOrchestrator:
             return False
         return final_precheck.failure_type != "target_already_patched"
 
+    def _should_try_reverse_source_for_precheck(self, precheck: BuildPrecheck) -> bool:
+        """判断 apply 预检查失败后是否值得尝试反向源码树"""
+
+        if precheck.ok:
+            return False
+        if precheck.source_dir and self._is_safe_generated_source_dir(Path(precheck.source_dir)):
+            return False
+        return precheck.failure_type in {"target_already_patched", "patch_apply_failed"}
+
     def _target_state_summary_after_switch(
         self,
         *,
@@ -824,7 +879,12 @@ class BuildOrchestrator:
             lines.append(f"目标态结论: {precheck.target_state}")
         return lines
 
-    def _select_local_source_dir(self, *, exclude: set[Path] | None = None) -> tuple[Path | None, str | None]:
+    def _select_local_source_dir(
+        self,
+        *,
+        exclude: set[Path] | None = None,
+        expected_states: set[str] | None = None,
+    ) -> tuple[Path | None, str | None]:
         """挑选本地可用的源码目录"""
 
         excluded = {item.resolve() for item in (exclude or set())}
@@ -834,6 +894,8 @@ class BuildOrchestrator:
             except OSError:
                 resolved = path
             if resolved in excluded:
+                continue
+            if expected_states is not None and self._source_slot_expected_state(slot_name) not in expected_states:
                 continue
             if self._local_kernel_tree_ok(path):
                 return path, slot_name
@@ -880,6 +942,8 @@ class BuildOrchestrator:
             return None
         mapping = {
             "clean_kernel_src_dir": "unpatched",
+            "vendor_kernel_src_dir": "unpatched",
+            "stable_kernel_src_dir": "unpatched",
             "prepared_kernel_src_dir": "likely_patched",
             "kernel_src_dir": "likely_patched",
             "kernel_devel_dir": "unknown",
@@ -1061,6 +1125,86 @@ class BuildOrchestrator:
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
             return subprocess.CompletedProcess(command, returncode=1, stdout="", stderr=str(exc))
+
+    def _ensure_call_sites_section_compat(self) -> list[str]:
+        """安装 create-diff-object call_sites 兼容 wrapper"""
+
+        if not getattr(self.build_config, "enable_call_sites_section_compat", False):
+            return []
+        if os.name == "nt":
+            return ["[kpatch compat]", "call_sites section 兼容处理跳过: Windows 开发机不修改本地 kpatch 工具"]
+
+        tool_path = Path(str(getattr(self.build_config, "create_diff_object_path", "") or ""))
+        if not tool_path.exists():
+            return [
+                "[kpatch compat]",
+                f"call_sites section 兼容处理跳过: 未找到 create-diff-object: {tool_path}",
+            ]
+
+        marker = "PATCHWEAVER_CALL_SITES_SECTION_COMPAT"
+        try:
+            current_head = tool_path.read_bytes()[:4096]
+        except OSError as exc:
+            return ["[kpatch compat]", f"call_sites section 兼容处理跳过: 无法读取 {tool_path}: {exc}"]
+        if marker.encode("utf-8") in current_head:
+            return ["[kpatch compat]", f"call_sites section 兼容 wrapper 已存在: {tool_path}"]
+
+        real_path = tool_path.with_name(tool_path.name + ".real-patchweaver")
+        try:
+            if not real_path.exists():
+                shutil.copy2(tool_path, real_path)
+            tool_path.write_text(
+                self._render_call_sites_section_wrapper(real_path=real_path),
+                encoding="utf-8",
+            )
+            tool_path.chmod(0o755)
+        except OSError as exc:
+            return [
+                "[kpatch compat]",
+                f"call_sites section 兼容 wrapper 安装失败: {exc}",
+                "继续使用系统原始 create-diff-object",
+            ]
+
+        return [
+            "[kpatch compat]",
+            f"call_sites section 兼容 wrapper 已安装: {tool_path}",
+            f"原始 create-diff-object 备份: {real_path}",
+        ]
+
+    def _render_call_sites_section_wrapper(self, *, real_path: Path) -> str:
+        """生成 create-diff-object wrapper 脚本"""
+
+        return f"""#!/usr/bin/env bash
+# PATCHWEAVER_CALL_SITES_SECTION_COMPAT
+set -u
+REAL={shlex.quote(str(real_path))}
+args=("$@")
+nonopt=()
+for idx in "${{!args[@]}}"; do
+  case "${{args[$idx]}}" in
+    -*) ;;
+    *) nonopt+=("$idx") ;;
+  esac
+done
+if [ "${{#nonopt[@]}}" -ge 2 ]; then
+  tmp=$(mktemp -d /tmp/kpatch-cdo-callsite-XXXXXX)
+  cleanup() {{ rm -rf "$tmp"; }}
+  trap cleanup EXIT
+  orig_idx=${{nonopt[0]}}
+  patched_idx=${{nonopt[1]}}
+  cp -a "${{args[$orig_idx]}}" "$tmp/orig.o"
+  cp -a "${{args[$patched_idx]}}" "$tmp/patched.o"
+  for obj in "$tmp/orig.o" "$tmp/patched.o"; do
+    objcopy --remove-section=.rela.call_sites "$obj" 2>/dev/null || true
+    objcopy --remove-section=.call_sites "$obj" 2>/dev/null || true
+    objcopy --remove-section=.rela.static_call_sites "$obj" 2>/dev/null || true
+    objcopy --remove-section=.static_call_sites "$obj" 2>/dev/null || true
+  done
+  args[$orig_idx]="$tmp/orig.o"
+  args[$patched_idx]="$tmp/patched.o"
+fi
+exec "$REAL" "${{args[@]}}"
+"""
 
     def _target_kernel_release(self) -> str:
         """从 vmlinux 路径推导目标内核版本"""
@@ -1389,8 +1533,12 @@ class BuildOrchestrator:
 
         if not any(target.endswith(".ko") for target in build_targets):
             return []
-        required_files = ["Module.symvers", "vmlinux.o", "vmlinux.a", ".vmlinux.objs"]
-        return [name for name in required_files if not (source_dir / name).exists()]
+        missing = [name for name in ["Module.symvers", "vmlinux.o"] if not (source_dir / name).exists()]
+        has_linked_vmlinux = (source_dir / "vmlinux").exists()
+        has_legacy_vmlinux_inputs = (source_dir / "vmlinux.a").exists() and (source_dir / ".vmlinux.objs").exists()
+        if not has_linked_vmlinux and not has_legacy_vmlinux_inputs:
+            missing.append("vmlinux")
+        return missing
 
     def _prepare_reverse_source_tree(
         self,
@@ -1408,6 +1556,11 @@ class BuildOrchestrator:
             f"已修复源码树: {patched_source_dir}",
             f"反向源码树: {reverse_source_dir}",
         ]
+        reverse_baseline_patch_path = self._resolve_reverse_baseline_patch(
+            attempt_dir=attempt_dir,
+            rewritten_patch_path=rewritten_patch_path,
+        )
+        lines.append(f"反向基线补丁: {reverse_baseline_patch_path}")
 
         if not patched_source_dir.is_dir():
             lines.append("反向源码树生成失败: 已修复源码树不存在")
@@ -1434,7 +1587,7 @@ class BuildOrchestrator:
             lines.append("反向源码树生成失败: 未找到 git 命令")
             return None, lines
 
-        check_command = [git_path, "apply", "--reverse", "--check", "--verbose", str(rewritten_patch_path.resolve())]
+        check_command = [git_path, "apply", "--reverse", "--check", "--verbose", str(reverse_baseline_patch_path.resolve())]
         check_result = subprocess.run(
             check_command,
             cwd=reverse_source_dir,
@@ -1454,7 +1607,7 @@ class BuildOrchestrator:
             lines.extend(self._cleanup_generated_source_tree(reverse_source_dir))
             return None, lines
 
-        apply_command = [git_path, "apply", "--reverse", "--verbose", str(rewritten_patch_path.resolve())]
+        apply_command = [git_path, "apply", "--reverse", "--verbose", str(reverse_baseline_patch_path.resolve())]
         apply_result = subprocess.run(
             apply_command,
             cwd=reverse_source_dir,
@@ -1477,6 +1630,16 @@ class BuildOrchestrator:
         lines.extend(self._normalize_x86_function_padding(reverse_source_dir))
         lines.append("反向源码树生成完成，继续在该源码树上执行 apply precheck")
         return reverse_source_dir, lines
+
+    def _resolve_reverse_baseline_patch(self, *, attempt_dir: Path, rewritten_patch_path: Path) -> Path:
+        """选择用于生成未修复源码树的完整基线 patch"""
+
+        task_dir = attempt_dir.parent.parent
+        for relative_path in ["input/normalized.patch", "input/raw_patch.patch"]:
+            candidate = task_dir / relative_path
+            if candidate.exists():
+                return candidate
+        return rewritten_patch_path
 
     def _normalize_x86_function_padding(self, source_dir: Path) -> list[str]:
         """修正 x86 函数入口 padding，避开 kpatch diff-object offset 识别问题"""
@@ -1602,7 +1765,7 @@ class BuildOrchestrator:
 
         messages = {
             "build_env_missing": f"未找到构建命令：{self.build_config.kpatch_build_cmd}",
-            "kernel_src_missing": "找不到可用的内核源码目录，已检查 clean_kernel_src_dir、prepared_kernel_src_dir、kernel_src_dir、kernel_devel_dir 和 patched_kernel_src_dir。",
+            "kernel_src_missing": "找不到可用的内核源码目录，已检查 clean_kernel_src_dir、vendor_kernel_src_dir、prepared_kernel_src_dir、kernel_src_dir、kernel_devel_dir 和 patched_kernel_src_dir。",
             "kernel_config_missing": "源码目录中没有找到 .config，暂时无法继续构建。",
             "vmlinux_missing": "找不到可用的 vmlinux 文件，无法继续构建。",
             "target_already_patched": "目标源码已包含该补丁，无需重复应用，请更换未修复内核或切换样例。",
@@ -1920,6 +2083,8 @@ class BuildOrchestrator:
             return "patch_apply_failed"
         if "command not found" in combined:
             return "build_env_missing"
+        if "kpatch_bundle_symbols" in combined or "expected 0" in combined and "symbol" in combined:
+            return "kpatch_symbol_bundle_constraint"
         if "unreconcilable difference" in combined or "fentry" in combined or "init section" in combined:
             return "kpatch_constraint"
         if "unsupported section change" in combined:

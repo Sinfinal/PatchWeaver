@@ -162,6 +162,12 @@ class DualMemory:
             return {}
 
         combined = " ".join([summary, *evidence]).lower()
+        if "semantic_guard_rewrite" in combined or "rewritable_by_semantic_guard" in combined:
+            return {
+                "semantic_guard_rewrite": "失败归因判断该样例可做函数局部 guard 收缩，优先执行 semantic guard 改写",
+                "section_change_avoidance_rewrite": "若 guard 收缩仍命中后端约束，再移除全局和初始化类高风险 hunk",
+                "smpl_primary_rewrite": "保留结构化收缩路线作为对照",
+            }
         if "unsupported section change" in combined or "section mismatch" in combined:
             return {
                 "section_change_avoidance_rewrite": "上一轮命中 section 变化约束，优先移除全局和初始化类高风险 hunk",

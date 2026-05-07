@@ -19,6 +19,31 @@ class SemanticCard(BaseModel):
     touched_functions: list[str] = Field(default_factory=list)
 
 
+class RepairIntent(BaseModel):
+    """表示可驱动改写执行的修复意图"""
+
+    cve_id: str
+    bug_class: str = "unknown"
+    root_cause: str = ""
+    vulnerability_conditions: list[str] = Field(default_factory=list)
+    guard_conditions: list[str] = Field(default_factory=list)
+    guard_sites: list[str] = Field(default_factory=list)
+    safe_exits: list[str] = Field(default_factory=list)
+    preserved_side_effects: list[str] = Field(default_factory=list)
+    touched_files: list[str] = Field(default_factory=list)
+    touched_functions: list[str] = Field(default_factory=list)
+    touched_state: list[str] = Field(default_factory=list)
+    recommended_strategy: Literal[
+        "direct_apply",
+        "semantic_guard",
+        "smpl_template",
+        "callback_shadow",
+        "unfixable",
+    ] = "direct_apply"
+    confidence: float = 0.0
+    evidence: list[str] = Field(default_factory=list)
+
+
 class SemanticCardEnrichmentTrace(BaseModel):
     """表示语义卡片模型补全过程的留痕信息"""
 

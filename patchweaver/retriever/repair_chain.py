@@ -40,10 +40,10 @@ class RepairChainResolver:
             return None
         return deepcopy(self._fetch_trace)
 
-    def resolve(self, cve_id: str) -> dict[str, object]:
+    def resolve(self, cve_id: str, *, target_kernel: str | None = None) -> dict[str, object]:
         """解析真实的 CVE 元数据、来源链与 patch 文本"""
 
-        self._start_fetch_trace(cve_id)
+        self._start_fetch_trace(cve_id, target_kernel=target_kernel)
         # NVD 偏描述，cvelistV5 偏引用和 CNA 信息
         # 两边一起取，后面来源链更完整
         try:
@@ -75,20 +75,37 @@ class RepairChainResolver:
                     )
 
             stable_refs.extend(self._derive_stable_probe_refs(stable_refs=stable_refs, upstream_refs=upstream_refs))
+            stable_refs = self._prioritize_stable_refs_for_target(
+                stable_refs=stable_refs,
+                target_kernel=target_kernel,
+            )
 
             # 来源选择仍然保持 stable 优先
-            # 但单个 stable 引用抓取失败时，继续尝试后续 stable 或 upstream 候选
+            # 但只让目标内核系列匹配或版本未知的 stable 候选进入优先队列
+            selectable_stable_refs = self._selectable_stable_refs_for_target(
+                stable_refs=stable_refs,
+                target_kernel=target_kernel,
+            )
             candidate_refs = self._ordered_patch_candidates(stable_refs=stable_refs, upstream_refs=upstream_refs)
+            if selectable_stable_refs != stable_refs:
+                candidate_refs = self._ordered_patch_candidates(
+                    stable_refs=selectable_stable_refs,
+                    upstream_refs=upstream_refs,
+                )
             if not candidate_refs:
                 raise ValueError(f"{cve_id} 未找到可下载的 stable/upstream patch 来源。")
 
             selected_ref, patch_text, attempted_refs = self._fetch_patch_from_reference_candidates(candidate_refs)
             commit_message = self._patch_subject(patch_text) or title or f"{cve_id} kernel patch"
             selected_commit = str(selected_ref["commit_id"])
-            stable_commit = str(stable_refs[0]["commit_id"]) if stable_refs else None
+            stable_commit = selected_commit if selected_ref.get("source_name") == "linux-stable" else None
             upstream_commit = str(upstream_refs[0]["commit_id"]) if upstream_refs else None
             if upstream_commit is None:
                 upstream_commit = self._extract_upstream_commit_from_patch(patch_text)
+            stable_source_baseline_ref = self._stable_source_baseline_ref(
+                stable_commit=stable_commit,
+                upstream_commit=upstream_commit,
+            )
 
             # 这组 source_evidence 会直接进 patch_bundle 和报告
             # 这里整理好后，后面阶段都按同一份来源链复用
@@ -102,18 +119,21 @@ class RepairChainResolver:
                 stable_refs=stable_refs,
                 upstream_refs=upstream_refs,
                 selected_commit=selected_commit,
+                stable_source_baseline_ref=stable_source_baseline_ref,
             )
             affected_files = self._extract_affected_files(patch_text)
             self._finish_fetch_trace(
                 selected_ref=selected_ref,
                 stable_commit=stable_commit,
                 upstream_commit=upstream_commit,
+                stable_source_baseline_ref=stable_source_baseline_ref,
                 affected_files=affected_files,
                 attempted_refs=attempted_refs,
             )
             return {
                 "upstream_commit": upstream_commit,
                 "stable_commit": stable_commit,
+                "stable_source_baseline_ref": stable_source_baseline_ref,
                 "commit_message": commit_message,
                 "raw_patch_text": patch_text,
                 "affected_files": affected_files,
@@ -284,6 +304,7 @@ class RepairChainResolver:
         stable_refs: list[dict[str, str | None]],
         upstream_refs: list[dict[str, str | None]],
         selected_commit: str,
+        stable_source_baseline_ref: str | None = None,
     ) -> list[SourceEvidence]:
         """把来源链整理为结构化证据条目"""
 
@@ -345,6 +366,19 @@ class RepairChainResolver:
                 )
             )
 
+        if stable_source_baseline_ref:
+            evidence.append(
+                SourceEvidence(
+                    source_name="linux-stable",
+                    url="https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+                    stage="source_baseline",
+                    reference_type="unpatched_stable_baseline",
+                    commit_id=stable_source_baseline_ref,
+                    preferred=True,
+                    summary=f"建议以 {stable_source_baseline_ref} 作为未修复 stable source 基线。",
+                )
+            )
+
         for item in upstream_refs[:3]:
             commit_id = str(item["commit_id"])
             evidence.append(
@@ -360,6 +394,128 @@ class RepairChainResolver:
             )
 
         return evidence
+
+    def _stable_source_baseline_ref(self, *, stable_commit: str | None, upstream_commit: str | None) -> str | None:
+        """生成未修复 stable source 基线引用"""
+
+        selected = stable_commit or upstream_commit
+        if not selected:
+            return None
+        if selected.endswith("^"):
+            return selected
+        return f"{selected}^"
+
+    def _prioritize_stable_refs_for_target(
+        self,
+        *,
+        stable_refs: list[dict[str, str | None]],
+        target_kernel: str | None,
+    ) -> list[dict[str, str | None]]:
+        """按目标内核系列优先排序 stable backport 候选"""
+
+        target_series = self._kernel_series(target_kernel)
+        if not stable_refs or target_series is None:
+            return stable_refs
+
+        enriched: list[tuple[int, int, dict[str, str | None]]] = []
+        for index, item in enumerate(stable_refs):
+            normalized_item = dict(item)
+            commit_id = item.get("commit_id")
+            release: str | None = None
+            series: str | None = None
+            lookup_status = "skipped"
+            if commit_id:
+                try:
+                    release = self._stable_commit_kernel_release(str(commit_id))
+                    series = self._kernel_series(release)
+                    lookup_status = "matched" if series == target_series else "mismatched"
+                except ValueError as exc:
+                    lookup_status = f"unknown:{self._shorten(str(exc), limit=120)}"
+
+            normalized_item["kernel_release"] = release
+            normalized_item["kernel_series"] = series
+            normalized_item["target_kernel_series"] = target_series
+            normalized_item["target_kernel_series_match"] = "true" if series == target_series else "false"
+            normalized_item["kernel_release_lookup_status"] = lookup_status
+
+            if series == target_series:
+                priority = 0
+            elif series is None:
+                priority = 1
+            else:
+                priority = 2
+            enriched.append((priority, index, normalized_item))
+
+        return [item for _, _, item in sorted(enriched, key=lambda record: (record[0], record[1]))]
+
+    def _selectable_stable_refs_for_target(
+        self,
+        *,
+        stable_refs: list[dict[str, str | None]],
+        target_kernel: str | None,
+    ) -> list[dict[str, str | None]]:
+        """过滤掉已确认和目标内核系列不匹配的 stable 候选"""
+
+        target_series = self._kernel_series(target_kernel)
+        if not stable_refs or target_series is None:
+            return stable_refs
+
+        matching = [item for item in stable_refs if item.get("kernel_series") == target_series]
+        unknown = [item for item in stable_refs if item.get("kernel_series") is None]
+        if matching:
+            return [*matching, *unknown]
+        if unknown:
+            return unknown
+        return []
+
+    def _stable_commit_kernel_release(self, commit_id: str) -> str:
+        """读取 stable commit 所属的内核版本号"""
+
+        makefile_url = (
+            "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/"
+            f"plain/Makefile?id={commit_id}"
+        )
+        makefile_text = self._fetch_text(
+            makefile_url,
+            source_name="linux-stable",
+            stage="patch_metadata",
+            cache_key=f"stable-makefile:{commit_id}",
+            timeout_sec=self.metadata_request_timeout_sec,
+        )
+        release = self._parse_makefile_kernel_release(makefile_text)
+        if release is None:
+            raise ValueError(f"{commit_id} Makefile 中未解析到内核版本")
+        return release
+
+    def _parse_makefile_kernel_release(self, makefile_text: str) -> str | None:
+        """从 kernel Makefile 中解析 VERSION/PATCHLEVEL/SUBLEVEL"""
+
+        values: dict[str, str] = {}
+        for line in makefile_text.splitlines():
+            match = re.match(r"^(VERSION|PATCHLEVEL|SUBLEVEL|EXTRAVERSION)\s*=\s*(\S*)", line.strip())
+            if match:
+                values[match.group(1)] = match.group(2)
+
+        version = values.get("VERSION")
+        patchlevel = values.get("PATCHLEVEL")
+        sublevel = values.get("SUBLEVEL")
+        if not version or not patchlevel or not sublevel:
+            return None
+        release = f"{version}.{patchlevel}.{sublevel}"
+        extraversion = values.get("EXTRAVERSION")
+        if extraversion:
+            release += extraversion
+        return release
+
+    def _kernel_series(self, kernel_release: str | None) -> str | None:
+        """提取内核 major.minor 系列"""
+
+        if not kernel_release:
+            return None
+        match = re.search(r"(?P<major>\d+)\.(?P<minor>\d+)", kernel_release)
+        if match is None:
+            return None
+        return f"{match.group('major')}.{match.group('minor')}"
 
     def _derive_stable_probe_refs(
         self,
@@ -668,11 +824,13 @@ class RepairChainResolver:
 
         raise ValueError(last_message or f"请求来源失败：{url} (超过最大重试次数)")
 
-    def _start_fetch_trace(self, cve_id: str) -> None:
+    def _start_fetch_trace(self, cve_id: str, *, target_kernel: str | None = None) -> None:
         """初始化一次来源抓取轨迹"""
 
         self._fetch_trace = {
             "cve_id": cve_id,
+            "target_kernel": target_kernel,
+            "target_kernel_series": self._kernel_series(target_kernel),
             "status": "running",
             "request_timeout_sec": self.request_timeout_sec,
             "max_request_retries": self.max_request_retries,
@@ -738,6 +896,7 @@ class RepairChainResolver:
         selected_ref: dict[str, str | None],
         stable_commit: str | None,
         upstream_commit: str | None,
+        stable_source_baseline_ref: str | None,
         affected_files: list[str],
         attempted_refs: list[dict[str, object]],
     ) -> None:
@@ -754,6 +913,7 @@ class RepairChainResolver:
             "patch_url_candidates": list(selected_ref.get("patch_urls") or []),
             "stable_commit": stable_commit,
             "upstream_commit": upstream_commit,
+            "stable_source_baseline_ref": stable_source_baseline_ref,
         }
         summary = self._fetch_trace.setdefault("summary", {})
         summary["affected_file_count"] = len(affected_files)

@@ -27,9 +27,9 @@ class PatchBundle(BaseModel):
     cve_id: str
     upstream_commit: str | None = None
     stable_commit: str | None = None
+    stable_source_baseline_ref: str | None = None
     commit_message: str | None = None
     affected_files: list[str] = Field(default_factory=list)
     raw_patch_path: Path | None = None
     normalized_patch_path: Path | None = None
     source_evidence: list[SourceEvidence] = Field(default_factory=list)
-

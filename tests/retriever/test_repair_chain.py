@@ -221,6 +221,78 @@ def test_derive_stable_probe_refs_from_upstream_commit() -> None:
     ]
 
 
+def test_stable_source_baseline_ref_uses_stable_commit_parent() -> None:
+    resolver = RepairChainResolver()
+
+    baseline = resolver._stable_source_baseline_ref(
+        stable_commit="1234567890abcdef",
+        upstream_commit="abcdef1234567890",
+    )
+
+    assert baseline == "1234567890abcdef^"
+
+
+def test_stable_refs_are_prioritized_by_target_kernel_series(monkeypatch) -> None:
+    resolver = RepairChainResolver()
+    releases = {
+        "stable-510": "5.10.209",
+        "stable-66": "6.6.17",
+        "stable-61": "6.1.78",
+    }
+
+    monkeypatch.setattr(
+        resolver,
+        "_stable_commit_kernel_release",
+        lambda commit_id: releases[commit_id],
+    )
+
+    prioritized = resolver._prioritize_stable_refs_for_target(
+        stable_refs=[
+            {"source_name": "linux-stable", "commit_id": "stable-510", "patch_urls": ["url-510"]},
+            {"source_name": "linux-stable", "commit_id": "stable-66", "patch_urls": ["url-66"]},
+            {"source_name": "linux-stable", "commit_id": "stable-61", "patch_urls": ["url-61"]},
+        ],
+        target_kernel="6.6.102-5.2.an23.x86_64",
+    )
+
+    assert [item["commit_id"] for item in prioritized] == ["stable-66", "stable-510", "stable-61"]
+    assert prioritized[0]["kernel_release"] == "6.6.17"
+    assert prioritized[0]["target_kernel_series_match"] == "true"
+
+
+def test_known_mismatched_stable_refs_are_not_selected(monkeypatch) -> None:
+    resolver = RepairChainResolver()
+    monkeypatch.setattr(
+        resolver,
+        "_stable_commit_kernel_release",
+        lambda commit_id: {"stable-510": "5.10.209", "stable-61": "6.1.78"}[commit_id],
+    )
+
+    prioritized = resolver._prioritize_stable_refs_for_target(
+        stable_refs=[
+            {"source_name": "linux-stable", "commit_id": "stable-510", "patch_urls": ["url-510"]},
+            {"source_name": "linux-stable", "commit_id": "stable-61", "patch_urls": ["url-61"]},
+        ],
+        target_kernel="6.6.102-5.2.an23.x86_64",
+    )
+    selectable = resolver._selectable_stable_refs_for_target(
+        stable_refs=prioritized,
+        target_kernel="6.6.102-5.2.an23.x86_64",
+    )
+
+    assert selectable == []
+
+
+def test_parse_kernel_makefile_release() -> None:
+    resolver = RepairChainResolver()
+
+    release = resolver._parse_makefile_kernel_release(
+        "VERSION = 6\nPATCHLEVEL = 6\nSUBLEVEL = 17\nEXTRAVERSION =\n"
+    )
+
+    assert release == "6.6.17"
+
+
 def test_fetch_patch_reference_falls_back_from_stable_to_upstream(monkeypatch) -> None:
     resolver = RepairChainResolver()
 
@@ -264,9 +336,10 @@ def test_retriever_service_writes_source_fetch_trace(monkeypatch, tmp_path: Path
     monkeypatch.setattr(
         service.repair_chain,
         "resolve",
-        lambda cve_id: {
+        lambda cve_id, **kwargs: {
             "upstream_commit": "abcdef1",
             "stable_commit": "1234567",
+            "stable_source_baseline_ref": "1234567^",
             "commit_message": "demo patch",
             "raw_patch_text": "diff --git a/demo.c b/demo.c\n",
             "affected_files": ["demo.c"],
@@ -290,6 +363,7 @@ def test_retriever_service_writes_source_fetch_trace(monkeypatch, tmp_path: Path
 
     trace_path = task.workspace_dir / "analysis" / "trace" / "source_fetch_trace.json"
     assert bundle.stable_commit == "1234567"
+    assert bundle.stable_source_baseline_ref == "1234567^"
     assert trace_path.exists()
     trace_payload = json.loads(trace_path.read_text(encoding="utf-8"))
     assert trace_payload["status"] == "passed"

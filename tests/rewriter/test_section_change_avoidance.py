@@ -89,3 +89,24 @@ def test_section_change_avoidance_reports_no_dependency_gap_after_preserve() -> 
 
     assert report["unresolved_dependencies"] == []
     assert report["dependency_gap"] is False
+
+
+def test_section_change_avoidance_preserves_blank_context_marker_at_tail() -> None:
+    patch_text = "\n".join(
+        [
+            "diff --git a/drivers/demo/demo.c b/drivers/demo/demo.c",
+            "--- a/drivers/demo/demo.c",
+            "+++ b/drivers/demo/demo.c",
+            "@@ -10,6 +10,7 @@ int demo_probe(struct device *dev)",
+            " \tint a;",
+            " \tint b;",
+            "+\tint c;",
+            " \treturn 0;",
+            " ",
+        ]
+    ) + "\n"
+
+    rewritten, report = SectionChangeAvoidance().rewrite(patch_text)
+
+    assert report["effective"] is False
+    assert rewritten.endswith(" \n")

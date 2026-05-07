@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import tempfile
 from pathlib import Path
 from uuid import uuid4
 
@@ -16,10 +17,31 @@ def _project_root() -> Path:
 
 def _case_dir(case_name: str) -> Path:
     base_dir = _project_root() / ".pytest_tmp"
-    base_dir.mkdir(parents=True, exist_ok=True)
-    root = base_dir / f"{case_name}-{uuid4().hex[:8]}"
-    root.mkdir(parents=True, exist_ok=True)
-    return root
+    try:
+        base_dir.mkdir(parents=True, exist_ok=True)
+        root = base_dir / f"{case_name}-{uuid4().hex[:8]}"
+        root.mkdir(parents=True, exist_ok=True)
+        return root
+    except PermissionError:
+        fallback_root = Path(tempfile.mkdtemp(prefix=f"patchweaver-{case_name}-"))
+        return fallback_root
+
+
+def _write_minimal_system_config(project_root: Path) -> None:
+    """写入 skill router 需要的最小系统配置"""
+
+    (project_root / "config" / "system.yaml").write_text(
+        "\n".join(
+            [
+                "workspace_root: workspaces",
+                "database_path: data/patchweaver.db",
+                "manifest_dir: data/manifests",
+                "default_kernel: 6.6.102-5.2.an23.x86_64",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def test_skill_router_uses_project_stage_manifest_and_subagent_policy() -> None:
@@ -50,6 +72,7 @@ def test_skill_router_respects_configured_source_priority() -> None:
     (project_root / "skills" / "project" / "project_reporting").mkdir(parents=True, exist_ok=True)
     (project_root / "skills" / "builtin" / "builtin_reporting").mkdir(parents=True, exist_ok=True)
     (project_root / "pyproject.toml").write_text("[project]\nname='skill-priority-project'\nversion='0.1.0'\n", encoding="utf-8")
+    _write_minimal_system_config(project_root)
     (project_root / "config" / "skills.yaml").write_text(
         "\n".join(
             [
@@ -124,6 +147,7 @@ def test_skill_router_respects_skill_profile_subagent_and_disable_switches() -> 
     (project_root / "config").mkdir(parents=True, exist_ok=True)
     (project_root / "skills" / "project" / "project_retrieval").mkdir(parents=True, exist_ok=True)
     (project_root / "pyproject.toml").write_text("[project]\nname='skill-profile-project'\nversion='0.1.0'\n", encoding="utf-8")
+    _write_minimal_system_config(project_root)
     (project_root / "config" / "skills.yaml").write_text(
         "\n".join(
             [

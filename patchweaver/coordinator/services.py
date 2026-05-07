@@ -10,6 +10,8 @@ from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
+from patchweaver.analyzer.repair_intent_service import RepairIntentBuilder
+from patchweaver.builder.source_preparer import prepare_stable_source_baseline
 from patchweaver.context.bootstrap_registry import BootstrapRegistry
 from patchweaver.harness.attempt_engine import AttemptEngine
 from patchweaver.harness.dispatch_policy import dispatch_mode, is_write_stage
@@ -19,7 +21,7 @@ from patchweaver.models.context import BootstrapManifest, ContextBundle
 from patchweaver.models.evidence import EvidenceBundle, EvidenceSpan
 from patchweaver.models.patch import PatchBundle
 from patchweaver.models.rewrite import RewritePlan
-from patchweaver.models.semantic import SemanticCard
+from patchweaver.models.semantic import RepairIntent, SemanticCard
 from patchweaver.models.task import TaskContext
 from patchweaver.rewriter.effectiveness import build_route_effectiveness_report, write_route_effectiveness_report
 from patchweaver.runtime_inspector import render_machine_profile_summary, validate_task_binding
@@ -109,6 +111,7 @@ class CoordinatorSupport:
         self.md_writer = services.md_writer
         self.report_builder = services.report_builder
         self.rag_context_injector = services.rag_context_injector
+        self.repair_intent_builder = RepairIntentBuilder()
 
     def build_bootstrap_manifest(self) -> BootstrapManifest:
         """按当前配置整理 bootstrap 片段"""
@@ -364,6 +367,17 @@ class AnalysisService(CoordinatorSupport):
             semantic_enrichment_trace,
             task_dir / "analysis" / "trace" / "semantic_card_enrichment.json",
         )
+        repair_intent = self.repair_intent_builder.build(
+            patch_bundle=bundle,
+            semantic_card=semantic_card,
+            patch_text=normalized_patch_path.read_text(encoding="utf-8", errors="replace")
+            if normalized_patch_path.exists()
+            else raw_patch_path.read_text(encoding="utf-8", errors="replace"),
+        )
+        repair_intent_path = self.json_writer.write_model(
+            repair_intent,
+            task_dir / "analysis" / "repair_intent.json",
+        )
 
         # 语义补全一旦产生增量，约束诊断必须在同一轮重新计算
         # 下游使用的 constraint report、context bundle 和 prompt packet 都以最终语义卡片为准
@@ -378,7 +392,7 @@ class AnalysisService(CoordinatorSupport):
             constraint_report,
             task_dir / "analysis" / "constraint_report.json",
         )
-        analysis_sources = [patch_bundle_path, source_evidence_path, normalized_patch_path, semantic_card_path]
+        analysis_sources = [patch_bundle_path, source_evidence_path, normalized_patch_path, semantic_card_path, repair_intent_path]
         evidence_bundle = self.build_evidence_bundle(source_paths=analysis_sources, bundle_tag="ANL")
         context_bundle = self.assemble_context(
             stage_name="constraint_diagnosis",
@@ -474,6 +488,12 @@ class AnalysisService(CoordinatorSupport):
         )
         analysis_trace = self.harness.attach_artifact(
             analysis_trace,
+            artifact_type="repair_intent",
+            artifact_path=repair_intent_path,
+            summary="可驱动改写执行的修复意图",
+        )
+        analysis_trace = self.harness.attach_artifact(
+            analysis_trace,
             artifact_type="constraint_report",
             artifact_path=constraint_report_path,
             summary="约束诊断结果",
@@ -493,6 +513,7 @@ class AnalysisService(CoordinatorSupport):
             ("source_fetch_trace", source_fetch_trace_path),
             ("semantic_card", semantic_card_path),
             ("semantic_card_enrichment", semantic_enrichment_path),
+            ("repair_intent", repair_intent_path),
             ("constraint_report", constraint_report_path),
             ("analysis_bootstrap_manifest", bootstrap_manifest_path),
             ("analysis_evidence_bundle", evidence_bundle_path),
@@ -516,6 +537,7 @@ class AnalysisService(CoordinatorSupport):
             "source_evidence_path": to_project_relative(self.runtime.project_root, source_evidence_path),
             "semantic_card_path": to_project_relative(self.runtime.project_root, semantic_card_path),
             "semantic_card_enrichment_path": to_project_relative(self.runtime.project_root, semantic_enrichment_path),
+            "repair_intent_path": to_project_relative(self.runtime.project_root, repair_intent_path),
             "constraint_report_path": to_project_relative(self.runtime.project_root, constraint_report_path),
             "bootstrap_manifest_path": to_project_relative(self.runtime.project_root, bootstrap_manifest_path),
             "analysis_trace_path": to_project_relative(self.runtime.project_root, analysis_trace_path),
@@ -687,10 +709,13 @@ class AttemptExecutionService(CoordinatorSupport):
         failure_record: FailureRecord,
         route_effectiveness: dict[str, Any],
         section_change_report_path: Path | None,
+        build_log: str,
     ) -> FailureRecord:
         """把路线有效性和专项改写结果补进失败归因"""
 
-        details = dict(failure_record.diagnostic_details)
+        details = dict(failure_record.diagnostic_details or {})
+        if failure_record.failure_type == "patch_apply_failed" and "patch_apply" not in details:
+            details["patch_apply"] = self.failure_classifier.diagnose_patch_apply_failure(build_log=build_log)
         details["route_effectiveness"] = route_effectiveness
         if section_change_report_path is not None and section_change_report_path.exists():
             try:
@@ -701,7 +726,135 @@ class AttemptExecutionService(CoordinatorSupport):
         evidence = list(failure_record.evidence)
         if route_effectiveness.get("status") == "ineffective_retry":
             evidence.append("路线有效性检查: ineffective_retry，本轮补丁形态与上一轮基本一致")
+        details["agent_next_action"] = self._derive_agent_next_action(
+            failure_record=failure_record,
+            diagnostic_details=details,
+        )
         return failure_record.model_copy(update={"diagnostic_details": details, "evidence": evidence[:6]})
+
+    def _should_retry_apply_failure_in_builder(self, apply_precheck_report: Any) -> bool:
+        """判断 apply 预检查失败后是否交给 builder 做源码对齐"""
+
+        if getattr(apply_precheck_report, "status", None) != "failed":
+            return False
+        failure_type = (
+            getattr(apply_precheck_report, "target_state", None)
+            or getattr(apply_precheck_report, "failure_type", None)
+            or ""
+        )
+        if failure_type == "target_already_patched":
+            return bool(getattr(self.build_config, "auto_switch_source_tree", False))
+        if failure_type != "patch_apply_failed":
+            return False
+        return bool(
+            getattr(self.build_config, "auto_switch_source_tree", False)
+            or getattr(self.build_config, "auto_reverse_source_tree", False)
+        )
+
+    def _ensure_failure_specific_diagnostics(
+        self,
+        *,
+        failure_record: FailureRecord,
+        build_log: str,
+    ) -> FailureRecord:
+        """保证失败大类落盘前带上对应子诊断"""
+
+        details = dict(failure_record.diagnostic_details or {})
+        if failure_record.failure_type == "patch_apply_failed" and "patch_apply" not in details:
+            details["patch_apply"] = self.failure_classifier.diagnose_patch_apply_failure(build_log=build_log)
+        details["agent_next_action"] = self._derive_agent_next_action(
+            failure_record=failure_record,
+            diagnostic_details=details,
+        )
+        if details == (failure_record.diagnostic_details or {}):
+            return failure_record
+        return failure_record.model_copy(update={"diagnostic_details": details})
+
+    def _derive_agent_next_action(
+        self,
+        *,
+        failure_record: FailureRecord,
+        diagnostic_details: dict[str, Any],
+    ) -> dict[str, Any]:
+        """把失败归因转换成下一轮可执行动作"""
+
+        failure_type = failure_record.failure_type
+        if failure_type == "patch_apply_failed":
+            patch_apply = diagnostic_details.get("patch_apply") or {}
+            if isinstance(patch_apply, dict) and patch_apply.get("stable_source_alignment_required"):
+                return {
+                    "action": "prepare_unpatched_stable_source_baseline",
+                    "reason": "patch 上下文与当前源码树不一致，需要切换到修复提交父版本或等价未修复源码树",
+                    "retry_scope": "source_baseline",
+                    "retryable_after_environment_update": True,
+                }
+            return {
+                "action": "inspect_patch_apply_failure",
+                "reason": "apply 失败证据不足，先查看 conflict_files 和 precheck stderr",
+                "retry_scope": "diagnostics",
+            }
+        if failure_type in {
+            "kpatch_constraint",
+            "kpatch_constraint_unresolved",
+            "kpatch_symbol_bundle_constraint",
+            "kpatch_section_symbol_offset_constraint",
+        }:
+            kpatch_details = diagnostic_details.get("kpatch_constraint") or {}
+            if isinstance(kpatch_details, dict) and kpatch_details.get("constraint_kind") == "symbol_bundle_offset":
+                return {
+                    "action": "check_vendor_baseline_then_section_symbol_rewrite",
+                    "reason": "kpatch 后端在符号打包阶段发现 section 符号偏移，需先确认 vendor baseline 与目标内核完全匹配，再考虑函数入口 guard 或 section 收缩",
+                    "retry_scope": "source_baseline_then_rewrite_strategy",
+                    "retryable_after_environment_update": True,
+                }
+            rewrite_classification = (
+                kpatch_details.get("rewrite_classification") if isinstance(kpatch_details, dict) else {}
+            )
+            if isinstance(rewrite_classification, dict):
+                next_strategy = rewrite_classification.get("next_strategy")
+                if next_strategy == "semantic_guard_rewrite":
+                    return {
+                        "action": "semantic_guard_rewrite",
+                        "reason": "当前 kpatch 约束样例适合先尝试函数局部 guard 等价改写",
+                        "retry_scope": "rewrite_strategy",
+                    }
+                if next_strategy == "callback_or_shadow_state_strategy":
+                    return {
+                        "action": "callback_or_shadow_state_strategy",
+                        "reason": "补丁涉及数据状态或类型定义，需要 callback/shadow 路线而不是继续函数局部收缩",
+                        "retry_scope": "rewrite_strategy",
+                    }
+            section_report = diagnostic_details.get("section_change_avoidance") or {}
+            dependency_gap = isinstance(section_report, dict) and bool(section_report.get("dependency_gap"))
+            return {
+                "action": "section_change_avoidance" if not dependency_gap else "resolve_dependency_gap_or_mark_unfixable",
+                "reason": "kpatch 后端约束需要收缩改写半径并保持依赖" if not dependency_gap else "收缩改写存在依赖缺口，继续硬重试价值较低",
+                "retry_scope": "rewrite_strategy",
+            }
+        if failure_type == "compile_failed":
+            return {
+                "action": "adjust_build_target_or_dependencies",
+                "reason": "真实编译失败应优先检查模块目标、依赖模块和构建日志根因",
+                "retry_scope": "build_target",
+            }
+        if failure_type == "feature_not_enabled":
+            return {
+                "action": "exclude_from_positive_pool_or_enable_kernel_feature",
+                "reason": "当前验证内核未编译该子系统，不能计入正向 .ko 成功率",
+                "retry_scope": "environment_profile",
+            }
+        if failure_type == "build_cache_incomplete":
+            return {
+                "action": "prepare_stable_build_cache",
+                "reason": "当前源码基线已可应用补丁，但缺少 Module.symvers、vmlinux.o 或 vmlinux，需先预热源码树再进入 kpatch-build",
+                "retry_scope": "build_cache",
+                "retryable_after_environment_update": True,
+            }
+        return {
+            "action": "stop_or_manual_review",
+            "reason": f"{failure_type or 'unknown'} 暂无自动重试策略",
+            "retry_scope": "manual",
+        }
 
     def _maybe_mark_unresolved_kpatch_constraint(
         self,
@@ -711,12 +864,23 @@ class AttemptExecutionService(CoordinatorSupport):
         attempt_record: Any,
         build_summary: BuildSummary | None,
         failure_record: FailureRecord,
+        route_effectiveness: dict[str, Any] | None = None,
     ) -> tuple[Any, BuildSummary | None, FailureRecord]:
         """连续多轮命中同一 section 约束时收口为未解决后端约束"""
 
         if failure_record.failure_type != "kpatch_constraint":
             return attempt_record, build_summary, failure_record
         if attempt_record.attempt_no < max(1, int(task.max_attempts or 1)):
+            return attempt_record, build_summary, failure_record
+        route_effectiveness = route_effectiveness or {}
+        if route_effectiveness.get("status") == "ineffective_retry":
+            details = dict(failure_record.diagnostic_details)
+            details["unresolved_decision"] = {
+                "status": "deferred_by_ineffective_retry",
+                "reason": "本轮只是切换 recipe 名称，rewritten.patch 形态未实际变化，不计入已尝试不同改写路线",
+                "route_effectiveness": route_effectiveness,
+            }
+            failure_record = failure_record.model_copy(update={"diagnostic_details": details})
             return attempt_record, build_summary, failure_record
 
         history = self._load_failure_record_payloads(task_dir=task_dir, current=failure_record)
@@ -805,6 +969,101 @@ class AttemptExecutionService(CoordinatorSupport):
                 recipes.append(recipe)
         return recipes
 
+    def _load_task_patch_text(self, *, task_dir: Path, patch_bundle: PatchBundle) -> str:
+        """读取任务输入 patch 文本"""
+
+        candidates = [
+            patch_bundle.normalized_patch_path,
+            patch_bundle.raw_patch_path,
+            task_dir / "input" / "normalized.patch",
+            task_dir / "input" / "raw_patch.patch",
+        ]
+        for candidate in candidates:
+            if candidate is None:
+                continue
+            path = Path(candidate)
+            if path.exists():
+                return path.read_text(encoding="utf-8", errors="replace")
+        return ""
+
+    def _ensure_stable_baseline_preflight(self, *, task_dir: Path, patch_bundle: PatchBundle) -> Path | None:
+        """在 full run 前尝试准备 stable 未修复源码基线"""
+
+        preflight_path = task_dir / "input" / "stable_baseline_preflight.json"
+        baseline_ref = str(patch_bundle.stable_source_baseline_ref or "").strip()
+        payload: dict[str, object] = {
+            "status": "skipped",
+            "reason": "patch_bundle 未提供 stable_source_baseline_ref",
+            "baseline_ref": baseline_ref or None,
+            "stable_source_git_dir": self.build_config.stable_source_git_dir,
+            "stable_kernel_src_dir": self.build_config.stable_kernel_src_dir,
+        }
+        if not baseline_ref:
+            preflight_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            return preflight_path
+
+        stable_kernel_src_dir = Path(str(self.build_config.stable_kernel_src_dir or ""))
+        if self._looks_like_kernel_source(stable_kernel_src_dir):
+            payload.update(
+                {
+                    "status": "reused",
+                    "reason": "已配置可用 stable_kernel_src_dir",
+                    "stable_kernel_src_dir": str(stable_kernel_src_dir),
+                }
+            )
+            preflight_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            return preflight_path
+
+        stable_git_dir = Path(str(self.build_config.stable_source_git_dir or ""))
+        if not self.build_config.stable_source_git_dir or not stable_git_dir.exists():
+            payload.update(
+                {
+                    "status": "blocked",
+                    "reason": "未配置可用 stable_source_git_dir，无法自动准备未修复 stable source baseline",
+                    "agent_next_action": "configure_stable_source_git_dir",
+                }
+            )
+            preflight_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            return preflight_path
+
+        try:
+            result = prepare_stable_source_baseline(
+                stable_git_dir=stable_git_dir,
+                baseline_ref=baseline_ref,
+                output_root=Path(self.build_config.stable_source_cache_dir),
+                config_source=Path(self.build_config.kernel_src_dir) / ".config",
+                build_config_path=self.runtime.config_dir / "build.yaml",
+                write_build_config=True,
+            )
+        except Exception as exc:
+            payload.update(
+                {
+                    "status": "failed",
+                    "reason": f"stable baseline 准备失败: {exc}",
+                    "agent_next_action": "inspect_stable_source_baseline_failure",
+                }
+            )
+            preflight_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            return preflight_path
+
+        self.build_config.stable_kernel_src_dir = result.output_dir
+        if hasattr(self.builder, "build_config"):
+            self.builder.build_config.stable_kernel_src_dir = result.output_dir
+        payload.update(
+            {
+                "status": "prepared",
+                "reason": "已按 stable_source_baseline_ref 准备未修复源码基线",
+                **result.to_payload(),
+            }
+        )
+        preflight_path.write_text(json.dumps(relativize_payload(payload, self.runtime.project_root), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return preflight_path
+
+    def _looks_like_kernel_source(self, path: Path) -> bool:
+        """判断目录是否像可用内核源码树"""
+
+        return bool(str(path)) and path.exists() and (path / "Makefile").exists()
+
     def run(self, task_id: str) -> dict[str, Any]:
         """执行最小单轮尝试链路"""
 
@@ -814,12 +1073,29 @@ class AttemptExecutionService(CoordinatorSupport):
         if not (task_dir / "analysis" / "semantic_card.json").exists():
             AnalysisService(self.services).run(task_id)
 
+        patch_bundle = self.load_model(task_dir / "input" / "patch_bundle.json", PatchBundle)
+        semantic_card = self.load_model(task_dir / "analysis" / "semantic_card.json", SemanticCard)
+        repair_intent_path = task_dir / "analysis" / "repair_intent.json"
+        repair_intent = (
+            self.load_model(repair_intent_path, RepairIntent)
+            if repair_intent_path.exists()
+            else self.repair_intent_builder.build(
+                patch_bundle=patch_bundle,
+                semantic_card=semantic_card,
+                patch_text=self._load_task_patch_text(task_dir=task_dir, patch_bundle=patch_bundle),
+            )
+        )
+        if not repair_intent_path.exists():
+            self.json_writer.write_model(repair_intent, repair_intent_path)
+        stable_baseline_preflight_path = self._ensure_stable_baseline_preflight(
+            task_dir=task_dir,
+            patch_bundle=patch_bundle,
+        )
+
         binding_ok, binding_message, current_machine_profile = validate_task_binding(task, self.build_config)
         if not binding_ok:
             raise RuntimeError(binding_message)
 
-        patch_bundle = self.load_model(task_dir / "input" / "patch_bundle.json", PatchBundle)
-        semantic_card = self.load_model(task_dir / "analysis" / "semantic_card.json", SemanticCard)
         constraint_report = self.load_model(task_dir / "analysis" / "constraint_report.json", ConstraintReport)
         bootstrap_manifest = self.build_bootstrap_manifest()
         attempt_no = self.attempt_repo.next_attempt_no(task_id)
@@ -843,6 +1119,7 @@ class AttemptExecutionService(CoordinatorSupport):
             source_paths=[
                 task_dir / "input" / "patch_bundle.json",
                 task_dir / "analysis" / "semantic_card.json",
+                task_dir / "analysis" / "repair_intent.json",
                 task_dir / "analysis" / "constraint_report.json",
             ],
             bundle_tag=f"RW{attempt_no:03d}",
@@ -884,6 +1161,7 @@ class AttemptExecutionService(CoordinatorSupport):
                 task_id=task.task_id,
                 semantic_card=semantic_card,
                 constraint_report=constraint_report,
+                repair_intent=repair_intent,
                 ranking_hints=ranking_hints,
             )
         except TypeError:
@@ -901,6 +1179,7 @@ class AttemptExecutionService(CoordinatorSupport):
             builder=self.builder,
             task_id=task.task_id,
             attempt_no=attempt_no,
+            repair_intent=repair_intent,
         )
         rewritten_patch_path = rewrite_meta["rewritten_patch"]
         apply_precheck_report = rewrite_meta["apply_precheck_report"]
@@ -922,15 +1201,9 @@ class AttemptExecutionService(CoordinatorSupport):
         build_precheck_path: Path | None = None
         build_summary: BuildSummary | None = None
 
-        # apply 预检查失败时，大多数情况都直接停在这里
-        # 但 target_already_patched 还需要给 builder 一次源码树切换机会
-        allow_builder_retry = (
-            (
-                apply_precheck_report.target_state == "target_already_patched"
-                or apply_precheck_report.failure_type == "target_already_patched"
-            )
-            and getattr(self.build_config, "auto_switch_source_tree", False)
-        )
+        # apply 预检查失败不一定代表补丁本身不可用
+        # target_already_patched 和 context_mismatch 都可能通过切换未修复源码基线或 reverse-unpatch 继续推进
+        allow_builder_retry = self._should_retry_apply_failure_in_builder(apply_precheck_report)
         if apply_precheck_report.status == "failed" and not allow_builder_retry:
             precheck_failure_type = (
                 apply_precheck_report.target_state
@@ -1040,6 +1313,10 @@ class AttemptExecutionService(CoordinatorSupport):
                     failure_type_hint=build_summary.failure_type if build_summary is not None else attempt_record.failure_type,
                     rewritten_patch_path=rewritten_patch_path,
                 )
+                failure_record = self._ensure_failure_specific_diagnostics(
+                    failure_record=failure_record,
+                    build_log=build_log,
+                )
             elif attempt_record.status == "target_state" and attempt_record.target_state:
                 failure_record = self._build_target_state_failure_record(
                     task_id=task.task_id,
@@ -1061,6 +1338,7 @@ class AttemptExecutionService(CoordinatorSupport):
             failure_record=failure_record,
             route_effectiveness=route_effectiveness,
             section_change_report_path=rewrite_meta.get("section_change_avoidance"),
+            build_log=build_log,
         )
         attempt_record, build_summary, failure_record = self._maybe_mark_unresolved_kpatch_constraint(
             task=task,
@@ -1068,6 +1346,7 @@ class AttemptExecutionService(CoordinatorSupport):
             attempt_record=attempt_record,
             build_summary=build_summary,
             failure_record=failure_record,
+            route_effectiveness=route_effectiveness,
         )
         self.attempt_repo.save_attempt(attempt_record)
         self.attempt_repo.save_failure_record(failure_record)
@@ -1349,6 +1628,7 @@ class AttemptExecutionService(CoordinatorSupport):
         trace_artifacts = [
             ("rewrite_plan", rewrite_plan_path, "候选改写规划"),
             ("planning_hints", planning_hints_path, "排序与经验提示"),
+            ("repair_intent", repair_intent_path, "可驱动改写执行的修复意图"),
             ("route_effectiveness", route_effectiveness_path, "路线有效性检查"),
             ("environment_check_log", environment_check_path, "运行前环境一致性检查"),
             ("rewritten_patch", rewritten_patch_path, "单轮改写结果"),
@@ -1368,6 +1648,14 @@ class AttemptExecutionService(CoordinatorSupport):
             trace_artifacts.append(
                 ("section_change_avoidance", rewrite_meta["section_change_avoidance"], "section change 专项收缩改写结果")
             )
+        if rewrite_meta.get("semantic_guard_rewrite") is not None:
+            trace_artifacts.append(
+                ("semantic_guard_rewrite", rewrite_meta["semantic_guard_rewrite"], "semantic guard 专项改写结果")
+            )
+        if stable_baseline_preflight_path is not None:
+            trace_artifacts.append(
+                ("stable_baseline_preflight", stable_baseline_preflight_path, "stable source baseline 前置检查结果")
+            )
         for artifact_type, artifact_path, summary in trace_artifacts:
             trace = self.harness.attach_artifact(
                 trace,
@@ -1386,11 +1674,13 @@ class AttemptExecutionService(CoordinatorSupport):
             ("rewrite_prompt_packet", rewrite_packet["prompt_path"]),
             ("rewrite_plan", rewrite_plan_path),
             ("planning_hints", planning_hints_path),
+            ("repair_intent", repair_intent_path),
             ("route_effectiveness", route_effectiveness_path),
             ("rewritten_patch", rewritten_patch_path),
             ("rewrite_reason", rewrite_meta["rewrite_reason"]),
             ("transformation_trace", rewrite_meta["transformation_trace"]),
             ("apply_precheck", rewrite_meta["apply_precheck"]),
+            ("semantic_guard_rewrite", rewrite_meta.get("semantic_guard_rewrite")),
             ("section_change_avoidance", rewrite_meta.get("section_change_avoidance")),
             ("environment_check_log", environment_check_path),
             ("build_log", attempt_record.build_log_path),

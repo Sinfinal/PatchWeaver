@@ -7,7 +7,9 @@ from pathlib import Path
 
 from patchweaver.models.patch import PatchBundle
 from patchweaver.models.rewrite import RewritePlan, TransformationStep, TransformationTrace
+from patchweaver.models.semantic import RepairIntent
 from patchweaver.rewriter.diff_editor import DiffEditor
+from patchweaver.rewriter.semantic_guard import SemanticGuardRewriter
 from patchweaver.rewriter.smpl_engine import SmPLEngine
 from patchweaver.rewriter.template_engine import TemplateEngine
 from patchweaver.utils.path_policy import relativize_payload, to_project_relative
@@ -20,6 +22,7 @@ class RewriteExecutor:
         """初始化改写分层执行器"""
 
         self.template_engine = TemplateEngine(project_root)
+        self.semantic_guard_rewriter = SemanticGuardRewriter()
         self.smpl_engine = SmPLEngine(project_root)
         self.diff_editor = DiffEditor()
         self.project_root = project_root.resolve()
@@ -33,6 +36,7 @@ class RewriteExecutor:
         builder: object,
         task_id: str,
         attempt_no: int,
+        repair_intent: RepairIntent | None = None,
     ) -> dict[str, object]:
         """输出 rewritten.patch 及其配套元数据"""
 
@@ -48,7 +52,12 @@ class RewriteExecutor:
             patch_text=source_patch_text,
             target_files=plan.target_files,
         )
-        smpl_patch, smpl_step = self.smpl_engine.apply(plan=plan, patch_text=template_patch)
+        semantic_guard_patch, semantic_guard_step, semantic_guard_report = self._apply_semantic_guard(
+            plan=plan,
+            patch_text=template_patch,
+            repair_intent=repair_intent,
+        )
+        smpl_patch, smpl_step = self.smpl_engine.apply(plan=plan, patch_text=semantic_guard_patch)
         rewritten_patch_path, diff_step = self.diff_editor.materialize(
             plan=plan,
             patch_text=smpl_patch,
@@ -69,6 +78,7 @@ class RewriteExecutor:
             steps=[
                 dispatch_step,
                 template_step,
+                semantic_guard_step,
                 smpl_step,
                 diff_step,
                 TransformationStep(
@@ -86,6 +96,10 @@ class RewriteExecutor:
         transformation_trace_path = rewrite_dir / "transformation_trace.json"
         apply_precheck_path = rewrite_dir / "apply_precheck.json"
         kernel_adapter_plan_path = self._write_kernel_adapter_plan(plan=plan, rewrite_dir=rewrite_dir)
+        semantic_guard_rewrite_path = self._write_semantic_guard_report(
+            rewrite_dir=rewrite_dir,
+            report=semantic_guard_report,
+        )
         section_change_report_path = self._write_section_change_report(rewrite_dir=rewrite_dir)
 
         rewrite_reason_payload = {
@@ -104,7 +118,9 @@ class RewriteExecutor:
             "source_commit": patch_bundle.stable_commit or patch_bundle.upstream_commit,
             "apply_precheck_status": apply_precheck_report.status,
             "kernel_adapter_plan_path": to_project_relative(self.project_root, kernel_adapter_plan_path),
+            "semantic_guard_rewrite_path": to_project_relative(self.project_root, semantic_guard_rewrite_path),
             "section_change_avoidance_path": to_project_relative(self.project_root, section_change_report_path),
+            "repair_intent": repair_intent.model_dump(mode="json") if repair_intent is not None else None,
             "notes": plan.notes,
         }
         rewrite_reason_path.write_text(
@@ -126,8 +142,52 @@ class RewriteExecutor:
             "apply_precheck": apply_precheck_path,
             "apply_precheck_report": apply_precheck_report,
             "kernel_adapter_plan": kernel_adapter_plan_path,
+            "semantic_guard_rewrite": semantic_guard_rewrite_path,
             "section_change_avoidance": section_change_report_path,
         }
+
+    def _apply_semantic_guard(
+        self,
+        *,
+        plan: RewritePlan,
+        patch_text: str,
+        repair_intent: RepairIntent | None,
+    ) -> tuple[str, TransformationStep, dict[str, object]]:
+        """按计划执行 semantic guard 改写"""
+
+        enabled = (
+            plan.selected_recipe == "semantic_guard_rewrite"
+            or plan.selected_route_family == "semantic_guard"
+            or "semantic_guard" in plan.selected_primitives
+        )
+        if not enabled:
+            report = {
+                "strategy": "semantic_guard_rewrite",
+                "status": "skipped",
+                "effective": False,
+                "summary": "当前 recipe 未选择 semantic guard 路线",
+            }
+            return patch_text, self._semantic_guard_step(plan=plan, report=report), report
+
+        rewritten, report = self.semantic_guard_rewriter.rewrite(
+            patch_text=patch_text,
+            repair_intent=repair_intent,
+            force=enabled,
+        )
+        return rewritten, self._semantic_guard_step(plan=plan, report=report), report
+
+    def _semantic_guard_step(self, *, plan: RewritePlan, report: dict[str, object]) -> TransformationStep:
+        """把 semantic guard 执行结果写成 trace step"""
+
+        return TransformationStep(
+            step_id="semantic-guard-001",
+            engine="semantic_guard",
+            action=str(report.get("status") or "skipped"),
+            recipe_name=plan.selected_recipe,
+            primitive="semantic_guard",
+            target_files=plan.target_files,
+            summary=str(report.get("summary") or "semantic guard 未执行"),
+        )
 
     def _route_dispatch_step(self, plan: RewritePlan) -> TransformationStep:
         """把候选路线转成一条显式执行轨迹"""
@@ -166,6 +226,18 @@ class RewriteExecutor:
         }
         path.write_text(
             json.dumps(relativize_payload(payload, self.project_root), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        return path
+
+    def _write_semantic_guard_report(self, *, rewrite_dir: Path, report: dict[str, object]) -> Path | None:
+        """写出 semantic guard 改写报告"""
+
+        if not report or report.get("status") == "skipped":
+            return None
+        path = rewrite_dir / "semantic_guard_rewrite.json"
+        path.write_text(
+            json.dumps(relativize_payload(report, self.project_root), ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
         return path

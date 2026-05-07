@@ -10,22 +10,104 @@
     "expected_artifacts": [
       "build_summary.json",
       "validation_report.json",
+      "repair_intent.json",
+      "rewritten.patch",
+      "semantic_guard.json",
       "report.json",
       "patchweaver-*.ko"
     ],
     "expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检"
   },
   {
-    "fixture_id": "challenge-positive-cve-2024-26610",
-    "cve_id": "CVE-2024-26610",
+    "fixture_id": "challenge-positive-cve-2024-26675",
+    "cve_id": "CVE-2024-26675",
     "target_kernel": "6.6.102-5.2.an23.x86_64",
     "fixture_group": "regression",
     "sample_bucket": "buildable_and_should_pass",
     "screening_tier": "positive_acceptance_confirmed",
-    "screening_round": "v0427",
+    "screening_round": "v0507",
     "expected_artifacts": [
       "build_summary.json",
       "validation_report.json",
+      "repair_intent.json",
+      "rewritten.patch",
+      "semantic_guard.json",
+      "report.json",
+      "patchweaver-*.ko"
+    ],
+    "expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检"
+  },
+  {
+    "fixture_id": "challenge-positive-cve-2024-26663",
+    "cve_id": "CVE-2024-26663",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "buildable_and_should_pass",
+    "screening_tier": "positive_acceptance_confirmed",
+    "screening_round": "v0507",
+    "expected_artifacts": [
+      "build_summary.json",
+      "validation_report.json",
+      "repair_intent.json",
+      "rewritten.patch",
+      "semantic_guard.json",
+      "report.json",
+      "patchweaver-*.ko"
+    ],
+    "expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检"
+  },
+  {
+    "fixture_id": "challenge-positive-cve-2024-26668",
+    "cve_id": "CVE-2024-26668",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "buildable_and_should_pass",
+    "screening_tier": "positive_acceptance_confirmed",
+    "screening_round": "v0507",
+    "expected_artifacts": [
+      "build_summary.json",
+      "validation_report.json",
+      "repair_intent.json",
+      "rewritten.patch",
+      "semantic_guard.json",
+      "report.json",
+      "patchweaver-*.ko"
+    ],
+    "expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检"
+  },
+  {
+    "fixture_id": "challenge-positive-cve-2024-26666",
+    "cve_id": "CVE-2024-26666",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "buildable_and_should_pass",
+    "screening_tier": "positive_acceptance_confirmed",
+    "screening_round": "v0507",
+    "expected_artifacts": [
+      "build_summary.json",
+      "validation_report.json",
+      "repair_intent.json",
+      "rewritten.patch",
+      "semantic_guard.json",
+      "report.json",
+      "patchweaver-*.ko"
+    ],
+    "expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检"
+  },
+  {
+    "fixture_id": "challenge-positive-cve-2024-26656",
+    "cve_id": "CVE-2024-26656",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "regression",
+    "sample_bucket": "buildable_and_should_pass",
+    "screening_tier": "positive_acceptance_confirmed",
+    "screening_round": "v0507",
+    "expected_artifacts": [
+      "build_summary.json",
+      "validation_report.json",
+      "repair_intent.json",
+      "rewritten.patch",
+      "semantic_guard.json",
       "report.json",
       "patchweaver-*.ko"
     ],

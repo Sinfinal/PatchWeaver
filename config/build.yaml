@@ -8,6 +8,21 @@ build_backend: local
 # 验收环境若同时保留干净树和已修复树，构建阶段会先从这里选。
 clean_kernel_src_dir: ""
 
+# 与目标发行版内核完全一致的未修复 vendor source baseline。
+# 只有这类源码树才适合进入正向成功率验收。
+vendor_kernel_src_dir: ""
+
+# 按 CVE stable 修复提交父版本准备出的未修复源码树。
+# 该目录用于 patch_apply_failed/context_mismatch 时做源码状态对齐。
+stable_kernel_src_dir: ""
+
+# linux-stable git 仓库路径。
+# prepare-stable-baseline 会从这里按 stable_source_baseline_ref checkout 未修复基线。
+stable_source_git_dir: ""
+
+# stable baseline worktree 缓存根目录。
+stable_source_cache_dir: /opt/patchweaver/stable-baselines
+
 # 若验证机已经准备出完整的 vendor source tree，可在这里登记。
 # 这棵树通常来自 Anolis 对应 kernel source SRPM，比 /opt/kernel-src 更适合承接真实编译。
 prepared_kernel_src_dir: ""
@@ -25,8 +40,10 @@ patched_kernel_src_dir: ""
 # 一般优先 clean -> prepared full source -> 默认源码树 -> kernel-devel -> 已修复树。
 build_source_priority:
   - clean_kernel_src_dir
+  - vendor_kernel_src_dir
   - prepared_kernel_src_dir
   - kernel_src_dir
+  - stable_kernel_src_dir
   - kernel_devel_dir
   - patched_kernel_src_dir
 
@@ -51,6 +68,11 @@ auto_build_targets: true
 
 # 模块目标构建时，按 modinfo depends 自动补齐依赖模块目标，减少 modpost 未解析符号。
 auto_expand_module_dependencies: true
+
+# Anolis 6.6 kpatch-build 会把 .rela.call_sites 元数据变化归为 unsupported section change。
+# 启用后会给 create-diff-object 安装受控 wrapper，在差异对象比较前剥离 call_sites 元数据。
+enable_call_sites_section_compat: true
+create_diff_object_path: /usr/libexec/kpatch/create-diff-object
 
 # vmlinux 符号文件路径
 vmlinux_path: /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux

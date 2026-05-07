@@ -65,7 +65,10 @@ class SectionChangeAvoidance:
                 unresolved_dependencies,
             )
 
-        rewritten = "\n".join(item.rstrip("\n") for item in kept_sections).rstrip() + "\n"
+        # unified diff 中单独一个空格表示空白上下文行，不能被 rstrip() 当成普通尾部空白删掉
+        rewritten = "\n".join(item.rstrip("\n") for item in kept_sections)
+        if not rewritten.endswith("\n"):
+            rewritten += "\n"
         changed = self._normalized_changed_lines(rewritten) != self._normalized_changed_lines(patch_text)
         return rewritten, self._report(
             changed,

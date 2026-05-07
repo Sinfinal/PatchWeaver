@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from patchweaver.harness.livepatchability import analyze_patch_shape, classify_kpatch_constraint_rewrite
 from patchweaver.models.attempt import FailureRecord
 from unidiff import PatchSet
 
@@ -71,6 +72,10 @@ class FailureClassifier:
             failure_type = "patch_apply_failed"
         elif not executed_build and ("can't find file to patch" in lowered_log or "patch failed" in lowered_log):
             failure_type = "patch_apply_failed"
+        elif "kpatch_bundle_symbols" in lowered_relevant or "symbol" in lowered_relevant and "expected 0" in lowered_relevant:
+            failure_type = "kpatch_symbol_bundle_constraint"
+        elif ".rela.call_sites" in lowered_relevant:
+            failure_type = "kpatch_constraint"
         elif "unreconcilable difference" in lowered_relevant:
             failure_type = "kpatch_constraint"
         elif "fentry" in lowered_relevant or "init section" in lowered_relevant or "section mismatch" in lowered_relevant:
@@ -123,7 +128,7 @@ class FailureClassifier:
                 for line in lines
                 if "源码树缺少模块构建缓存" in line or "缺失文件" in line or "prepare-build-tree" in line
             ][:3] or evidence
-        elif failure_type == "kpatch_constraint":
+        elif failure_type in {"kpatch_constraint", "kpatch_symbol_bundle_constraint", "kpatch_section_symbol_offset_constraint"}:
             evidence = [
                 line
                 for line in lines
@@ -131,6 +136,8 @@ class FailureClassifier:
                 or "init section" in line.lower()
                 or "section mismatch" in line.lower()
                 or "unsupported section change" in line.lower()
+                or "kpatch_bundle_symbols" in line.lower()
+                or ("symbol" in line.lower() and "expected 0" in line.lower())
                 or "unsupported" in line.lower()
             ][:3] or evidence
         elif executed_build and failure_type in {"compile_failed", "build_env_missing"}:
@@ -145,7 +152,7 @@ class FailureClassifier:
             ][:3] or evidence
 
         diagnostic_details: dict[str, object] = {}
-        if failure_type == "kpatch_constraint":
+        if failure_type in {"kpatch_constraint", "kpatch_symbol_bundle_constraint", "kpatch_section_symbol_offset_constraint"}:
             diagnostic_details["kpatch_constraint"] = self._diagnose_kpatch_constraint(
                 lines=lines,
                 rewritten_patch_path=rewritten_patch_path,
@@ -162,6 +169,12 @@ class FailureClassifier:
             evidence=evidence,
             diagnostic_details=diagnostic_details,
         )
+
+    def diagnose_patch_apply_failure(self, *, build_log: str) -> dict[str, object]:
+        """从完整 build log 中抽取 patch apply 诊断"""
+
+        lines = [line.strip() for line in build_log.strip().splitlines() if line.strip()]
+        return self._diagnose_patch_apply_failure(lines=lines)
 
     def _relevant_lines(self, *, build_log: str, executed_build: bool) -> list[str]:
         """抽取本轮真正需要参与归因的日志片段"""
@@ -200,6 +213,8 @@ class FailureClassifier:
         if executed_build:
             if failure_type == "kpatch_constraint":
                 for marker in [
+                    "kpatch_bundle_symbols",
+                    "expected 0",
                     "unsupported section change",
                     "unreconcilable difference",
                     "section mismatch",
@@ -253,7 +268,25 @@ class FailureClassifier:
 
         constraint_kind = "kpatch_constraint"
         lowered = combined.lower()
-        if section_changes:
+        symbol_bundle = self._parse_symbol_bundle_constraint(lines)
+        if symbol_bundle is not None:
+            source_matches = self._match_sources_for_object(
+                object_file=str(symbol_bundle["object_file"]),
+                patch_index=patch_index,
+            )
+            symbol_bundle["source_files"] = [match["source_file"] for match in source_matches]
+            symbol_bundle["functions"] = list(
+                dict.fromkeys(
+                    function
+                    for match in source_matches
+                    for function in list(match.get("functions") or [])
+                    if function
+                )
+            )
+
+        if symbol_bundle is not None:
+            constraint_kind = "symbol_bundle_offset"
+        elif section_changes:
             constraint_kind = "unsupported_section_change"
         elif ".rela.call_sites" in lowered:
             constraint_kind = "rela_call_sites"
@@ -261,13 +294,33 @@ class FailureClassifier:
             constraint_kind = "fentry_constraint"
         elif "init section" in lowered or "section mismatch" in lowered:
             constraint_kind = "section_mismatch"
+        patch_shape = self._patch_shape(rewritten_patch_path)
+        rewrite_class = classify_kpatch_constraint_rewrite({"patch_shape": patch_shape})
+        primary_constraint = symbol_bundle or (section_changes[0] if section_changes else {})
 
         return {
             "constraint_kind": constraint_kind,
+            "object_file": primary_constraint.get("object_file"),
+            "source_files": primary_constraint.get("source_files") or [],
+            "functions": primary_constraint.get("functions") or [],
+            "section_change_count": primary_constraint.get("section_change_count"),
+            "symbol_bundle": symbol_bundle,
             "section_changes": section_changes,
             "patch_files": patch_index["files"],
+            "patch_shape": patch_shape,
+            "rewrite_classification": rewrite_class,
             "trigger_reason": self._trigger_reason(constraint_kind),
         }
+
+    def _patch_shape(self, rewritten_patch_path: Path | None) -> dict[str, object]:
+        """Return patch shape for failure diagnosis"""
+
+        if rewritten_patch_path is None or not rewritten_patch_path.exists():
+            return {}
+        try:
+            return analyze_patch_shape(rewritten_patch_path.read_text(encoding="utf-8", errors="replace"))
+        except OSError:
+            return {}
 
     def _parse_unsupported_section_changes(self, lines: list[str]) -> list[dict[str, object]]:
         """解析 unsupported section change 形式的后端约束"""
@@ -289,6 +342,30 @@ class FailureClassifier:
                 }
             )
         return matches
+
+    def _parse_symbol_bundle_constraint(self, lines: list[str]) -> dict[str, object] | None:
+        """Parse kpatch_bundle_symbols offset failures"""
+
+        pattern = re.compile(
+            r"(?P<object>[A-Za-z0-9_./+-]+\.o):\s*kpatch_bundle_symbols:\s*(?P<line>\d+):\s*"
+            r"symbol\s+(?P<symbol>[A-Za-z0-9_.$+-]+)\s+at\s+offset\s+(?P<offset>\d+)\s+within\s+section\s+"
+            r"(?P<section>[A-Za-z0-9_.$+-]+),\s*expected\s+(?P<expected>\d+)",
+            re.IGNORECASE,
+        )
+        for line in lines:
+            match = pattern.search(line)
+            if not match:
+                continue
+            return {
+                "object_file": Path(match.group("object")).name,
+                "source_object_path": match.group("object"),
+                "symbol": match.group("symbol"),
+                "offset": int(match.group("offset")),
+                "section": match.group("section"),
+                "expected_offset": int(match.group("expected")),
+                "raw_line": line,
+            }
+        return None
 
     def _index_patch(self, rewritten_patch_path: Path | None) -> dict[str, object]:
         """索引 rewritten.patch 中的文件和 hunk 函数上下文"""
@@ -407,6 +484,8 @@ class FailureClassifier:
 
         if constraint_kind == "unsupported_section_change":
             return "kpatch-build 检测到目标对象文件 section 变化超出热补丁后端可接受范围"
+        if constraint_kind == "symbol_bundle_offset":
+            return "kpatch-build 在差异对象符号打包阶段发现函数入口或 section 符号偏移不符合后端预期"
         if constraint_kind == "rela_call_sites":
             return "补丁触发 .rela.call_sites 相关重定位变化，当前 kpatch 后端无法安全合成 livepatch"
         if constraint_kind == "fentry_constraint":
@@ -422,6 +501,9 @@ class FailureClassifier:
         lowered = combined.lower()
         conflict_files = self._parse_apply_conflict_files(lines)
         source_state = self._parse_source_state(lines)
+        reverse_attempted = "反向源码树:" in combined or "reverse source tree" in lowered
+        reverse_failed = "反向源码树生成失败" in combined
+        reverse_succeeded = "反向源码树生成完成" in combined
         if "can't find file to patch" in lowered or "no such file" in lowered:
             subtype = "missing_file"
             reason = "patch 触达文件在当前源码树中不存在"
@@ -443,9 +525,26 @@ class FailureClassifier:
             "conflict_files": conflict_files,
             "conflict_hunks": self._parse_apply_conflict_hunks(lines),
             "reverse_unpatch_recommended": subtype in {"source_too_new_or_already_patched", "context_mismatch"},
-            "stable_source_alignment_required": subtype in {"context_mismatch", "missing_file"},
+            "reverse_unpatch_attempted": reverse_attempted,
+            "reverse_unpatch_status": "succeeded" if reverse_succeeded else "failed" if reverse_failed else "not_attempted",
+            "stable_source_alignment_required": subtype in {"context_mismatch", "missing_file"} or reverse_failed,
+            "stable_source_baseline_action": self._source_baseline_action(
+                subtype=subtype,
+                reverse_failed=reverse_failed,
+            ),
             "reason": reason,
         }
+
+    def _source_baseline_action(self, *, subtype: str, reverse_failed: bool) -> str | None:
+        """给 patch apply 失败生成源码基线动作"""
+
+        if reverse_failed:
+            return "prepare_unpatched_stable_source_baseline"
+        if subtype in {"context_mismatch", "missing_file"}:
+            return "align_to_stable_source_baseline"
+        if subtype == "source_too_new_or_already_patched":
+            return "try_reverse_unpatch_or_switch_unpatched_source"
+        return None
 
     def _parse_apply_conflict_files(self, lines: list[str]) -> list[str]:
         """从 git apply 输出里提取冲突文件"""

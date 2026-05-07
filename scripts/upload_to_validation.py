@@ -59,6 +59,7 @@ class UploadConfig:
     remote_dir: PurePosixPath
     keep_remote_archive: bool = False
     clean_remote_dir: bool = True
+    clean_runtime_state: bool = False
     build_frontend: bool = True
     prepare_remote_build_tree: bool = True
     force_remote_build_tree: bool = False
@@ -255,16 +256,11 @@ class ValidationUploader:
         """在验证机上清理并展开上传包"""
 
         remote_dir = self.config.remote_dir
-        commands: list[str] = []
-
-        if self.config.clean_remote_dir:
-            # 这里直接清目标目录，避免旧版本残留文件混进这次部署
-            # 尤其是前端 dist 和旧脚本最容易因为缓存目录造成假问题
-            commands.append(f"rm -rf {shlex.quote(remote_dir.as_posix())}")
-
+        commands: list[str] = self._remote_cleanup_commands(remote_dir)
         commands.extend(
             [
                 f"mkdir -p {shlex.quote(remote_dir.as_posix())}",
+                f"mkdir -p {shlex.quote((remote_dir / 'data' / 'validation').as_posix())} {shlex.quote((remote_dir / 'workspaces').as_posix())}",
                 (
                     f"tar -xzf {shlex.quote(remote_archive.as_posix())} "
                     f"-C {shlex.quote(remote_dir.as_posix())} --strip-components=1"
@@ -297,6 +293,22 @@ class ValidationUploader:
                     for line in stdout_text.strip().splitlines():
                         print(f"      {line}")
 
+    def _remote_cleanup_commands(self, remote_dir: PurePosixPath) -> list[str]:
+        """生成验证机清理命令，默认保留运行证据"""
+
+        if not self.config.clean_remote_dir:
+            return []
+        quoted_remote_dir = shlex.quote(remote_dir.as_posix())
+        if self.config.clean_runtime_state:
+            return [f"rm -rf {quoted_remote_dir}"]
+        return [
+            f"mkdir -p {quoted_remote_dir}",
+            (
+                f"find {quoted_remote_dir} -mindepth 1 -maxdepth 1 "
+                r"\( -name data -o -name workspaces \) -prune -o -exec rm -rf {} +"
+            ),
+        ]
+
     def _install_remote_runtime(self, client: paramiko.SSHClient) -> None:
         """在验证机上安装 Python 运行时依赖，并初始化最小环境"""
 
@@ -309,12 +321,14 @@ class ValidationUploader:
         remote_cli_conda_wrapper = PurePosixPath("/root/miniconda3/bin/patchweaver").as_posix()
         remote_cli_launcher = (self.config.remote_dir / "scripts" / "run_validation_cli.sh").as_posix()
         remote_api_launcher = (self.config.remote_dir / "scripts" / "run_validation_api.sh").as_posix()
+        cli_wrapper_text = self._render_remote_cli_wrapper().rstrip()
+        api_launcher_text = self._render_remote_api_launcher(api_port=api_port).rstrip()
 
         install_script = textwrap.dedent(
             f"""
             set -e
             cd {shlex.quote(remote_dir)}
-            mkdir -p data/cache data/logs data/manifests
+            mkdir -p data/cache data/logs data/manifests scripts
 
             # 优先复用验证机上已经装好依赖的解释器
             # 这样可以避开现场再联网装包，部署会稳很多
@@ -327,29 +341,19 @@ class ValidationUploader:
             write_cli_wrapper() {{
               target="$1"
               tmp_file="$target.tmp.$$"
-              printf '%s\n' \
-                '#!/usr/bin/env bash' \
-                'set -e' \
-                'exec "{remote_cli_launcher}" "$@"' \
-                > "$tmp_file"
+              cat > "$tmp_file" <<'PATCHWEAVER_CLI_WRAPPER'
+{cli_wrapper_text}
+PATCHWEAVER_CLI_WRAPPER
               chmod +x "$tmp_file"
               mv -f "$tmp_file" "$target"
             }}
-            printf '%s\n' \
-              '#!/usr/bin/env bash' \
-              'set -e' \
-              'ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"' \
-              'exec "$ROOT_DIR/.venv/bin/python" -m patchweaver "$@"' \
-              > {shlex.quote(remote_cli_launcher)}
+            cat > {shlex.quote(remote_cli_launcher)} <<'PATCHWEAVER_CLI_LAUNCHER'
+{cli_wrapper_text}
+PATCHWEAVER_CLI_LAUNCHER
             chmod +x {shlex.quote(remote_cli_launcher)}
-            printf '%s\n' \
-              '#!/usr/bin/env bash' \
-              'set -e' \
-              'ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"' \
-              'export PATCHWEAVER_API_HOST="${{PATCHWEAVER_API_HOST:-0.0.0.0}}"' \
-              'export PATCHWEAVER_API_PORT="${{PATCHWEAVER_API_PORT:-{api_port}}}"' \
-              'exec "$ROOT_DIR/.venv/bin/python" -m patchweaver.api' \
-              > {shlex.quote(remote_api_launcher)}
+            cat > {shlex.quote(remote_api_launcher)} <<'PATCHWEAVER_API_LAUNCHER'
+{api_launcher_text}
+PATCHWEAVER_API_LAUNCHER
             chmod +x {shlex.quote(remote_api_launcher)}
 
             # 统一改写几个常见入口
@@ -363,6 +367,7 @@ class ValidationUploader:
             if [ -d /root/miniconda3/bin ]; then
               write_cli_wrapper {shlex.quote(remote_cli_conda_wrapper)}
             fi
+            {shlex.quote(remote_cli_wrapper)} --help >/dev/null
 
             # 初始化数据库并直接把 API 服务装成 systemd
             # 这样验证机侧既能跑 CLI，也能直接起 Web 控制台
@@ -383,6 +388,36 @@ class ValidationUploader:
             print("      验证机安装输出:")
             for line in stdout_text.strip().splitlines():
                 print(f"      {line}")
+
+    def _render_remote_cli_wrapper(self) -> str:
+        """生成验证机 CLI 包装脚本"""
+
+        remote_dir = self.config.remote_dir.as_posix()
+        remote_python = (self._remote_venv_dir() / "bin" / "python").as_posix()
+        return textwrap.dedent(
+            f"""\
+            #!/usr/bin/env bash
+            set -e
+            ROOT_DIR={shlex.quote(remote_dir)}
+            cd "$ROOT_DIR"
+            exec {shlex.quote(remote_python)} -m patchweaver "$@"
+            """
+        )
+
+    def _render_remote_api_launcher(self, *, api_port: int) -> str:
+        """生成验证机 API 启动脚本"""
+
+        return textwrap.dedent(
+            f"""\
+            #!/usr/bin/env bash
+            set -e
+            ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+            cd "$ROOT_DIR"
+            export PATCHWEAVER_API_HOST="${{PATCHWEAVER_API_HOST:-0.0.0.0}}"
+            export PATCHWEAVER_API_PORT="${{PATCHWEAVER_API_PORT:-{api_port}}}"
+            exec "$ROOT_DIR/.venv/bin/python" -m patchweaver.api
+            """
+        )
 
     def _prepare_remote_build_tree(self, client: paramiko.SSHClient) -> None:
         """在验证机上自动准备完整源码树并回写 build.yaml"""
@@ -448,11 +483,17 @@ prepared_ready = (
     and (prepared_dir / "scripts" / "setlocalversion").exists()
 )
 if prepared_ready:
+    payload.setdefault("vendor_kernel_src_dir", "")
+    payload.setdefault("stable_kernel_src_dir", "")
+    payload.setdefault("stable_source_git_dir", "")
+    payload.setdefault("stable_source_cache_dir", "/opt/patchweaver/stable-baselines")
     payload["prepared_kernel_src_dir"] = str(prepared_dir)
     payload["build_source_priority"] = [
         "clean_kernel_src_dir",
+        "vendor_kernel_src_dir",
         "prepared_kernel_src_dir",
         "kernel_src_dir",
+        "stable_kernel_src_dir",
         "kernel_devel_dir",
         "patched_kernel_src_dir",
     ]
@@ -624,7 +665,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--no-clean",
         action="store_true",
-        help="解压前不清空验证机目录。",
+        help="解压前不清理验证机代码目录。默认会清理代码文件，但保留 data 和 workspaces 验证产物。",
+    )
+    parser.add_argument(
+        "--clean-runtime-state",
+        action="store_true",
+        help="连同 data 和 workspaces 一起清空。仅在明确要重置验证机状态时使用。",
     )
     parser.add_argument(
         "--skip-frontend-build",
@@ -754,6 +800,7 @@ def main() -> int:
         remote_dir=PurePosixPath(args.remote_dir),
         keep_remote_archive=args.keep_remote_archive,
         clean_remote_dir=not args.no_clean,
+        clean_runtime_state=args.clean_runtime_state,
         build_frontend=not args.skip_frontend_build,
         prepare_remote_build_tree=not args.skip_remote_build_tree_prepare,
         force_remote_build_tree=args.force_remote_build_tree_prepare,

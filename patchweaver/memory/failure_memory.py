@@ -33,6 +33,7 @@ class FailureMemory:
             return None
 
         entries = self.repository.load_failure_entries()
+        evidence = self._evidence_with_diagnostics(failure_record)
         entry = FailureMemoryEntry(
             entry_id=f"FM-{uuid4().hex[:10]}",
             task_id=task_id,
@@ -43,7 +44,7 @@ class FailureMemory:
             summary=failure_record.summary,
             recipe_name=recipe_name,
             candidate_id=candidate_id,
-            evidence=list(failure_record.evidence),
+            evidence=evidence,
             keywords=self._keywords(failure_record),
         )
         entries.append(entry)
@@ -91,12 +92,51 @@ class FailureMemory:
         recipe = f"，最近关联 recipe: {entry.recipe_name}" if entry.recipe_name else ""
         return f"[FailureMemory] {entry.failure_type}: {entry.summary}{recipe}"
 
+    def _evidence_with_diagnostics(self, record: FailureRecord) -> list[str]:
+        """把 Agent 下一步动作和改写分类写进失败记忆"""
+
+        evidence = list(record.evidence)
+        details = record.diagnostic_details or {}
+        next_action = details.get("agent_next_action")
+        if isinstance(next_action, dict) and next_action.get("action"):
+            evidence.append(
+                "agent_next_action="
+                + str(next_action.get("action"))
+                + "; retry_scope="
+                + str(next_action.get("retry_scope") or "")
+            )
+        constraint = details.get("kpatch_constraint")
+        if isinstance(constraint, dict):
+            rewrite_class = constraint.get("rewrite_classification")
+            if isinstance(rewrite_class, dict):
+                evidence.append(
+                    "rewrite_classification="
+                    + str(rewrite_class.get("class") or "")
+                    + "; next_strategy="
+                    + str(rewrite_class.get("next_strategy") or "")
+                )
+        route_effectiveness = details.get("route_effectiveness")
+        if isinstance(route_effectiveness, dict) and route_effectiveness.get("status"):
+            evidence.append("route_effectiveness=" + str(route_effectiveness.get("status")))
+        return evidence[:8]
+
     def _keywords(self, record: FailureRecord) -> list[str]:
         """从失败记录中提取最小关键字"""
 
         keywords = {record.failure_type, record.stage_name}
-        lowered = " ".join(record.evidence).lower()
-        for token in ["unsupported section change", "fentry", "init section", "global data", "abi", "header", "compile", "apply"]:
+        lowered = " ".join(self._evidence_with_diagnostics(record)).lower()
+        for token in [
+            "unsupported section change",
+            "fentry",
+            "init section",
+            "global data",
+            "abi",
+            "header",
+            "compile",
+            "apply",
+            "semantic_guard_rewrite",
+            "ineffective_retry",
+        ]:
             if token in lowered:
                 keywords.add(token.replace(" ", "_"))
         return sorted(keywords)

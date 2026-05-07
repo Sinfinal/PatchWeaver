@@ -64,6 +64,10 @@ class BuildConfig(ConfigModel):
     # 开发机与验证机之间只做代码同步，不再把验证机抽象成单独的构建后端
     build_backend: Literal["local"] = "local"
     clean_kernel_src_dir: str = ""
+    vendor_kernel_src_dir: str = ""
+    stable_kernel_src_dir: str = ""
+    stable_source_git_dir: str = ""
+    stable_source_cache_dir: str = "/opt/patchweaver/stable-baselines"
     prepared_kernel_src_dir: str = ""
     kernel_src_dir: str = "/opt/kernel-src"
     kernel_devel_dir: str = "/usr/src/kernels/6.6.102-5.2.an23.x86_64"
@@ -71,8 +75,10 @@ class BuildConfig(ConfigModel):
     build_source_priority: list[str] = Field(
         default_factory=lambda: [
             "clean_kernel_src_dir",
+            "vendor_kernel_src_dir",
             "prepared_kernel_src_dir",
             "kernel_src_dir",
+            "stable_kernel_src_dir",
             "kernel_devel_dir",
             "patched_kernel_src_dir",
         ]
@@ -83,6 +89,8 @@ class BuildConfig(ConfigModel):
     normalize_x86_function_padding_for_kpatch: bool = True
     auto_build_targets: bool = True
     auto_expand_module_dependencies: bool = True
+    enable_call_sites_section_compat: bool = True
+    create_diff_object_path: str = "/usr/libexec/kpatch/create-diff-object"
     vmlinux_path: str = "/usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux"
     kpatch_build_cmd: str = "kpatch-build"
     build_timeout_sec: int = 3600

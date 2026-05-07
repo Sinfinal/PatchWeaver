@@ -25,6 +25,14 @@ def classify_sample_pool_result(result: dict[str, Any]) -> dict[str, Any]:
     low_risk_route = selected_route in LOW_RISK_ROUTES and high_risk_count == 0
 
     if build_status == "built" and validation_status == "passed":
+        evidence_ok, evidence_reason, evidence_tier = _positive_acceptance_evidence(result)
+        if not evidence_ok:
+            return _classification(
+                sample_bucket=None,
+                acceptance_role="environment_sample",
+                screening_tier=evidence_tier,
+                reason=evidence_reason,
+            )
         return _classification(
             sample_bucket="buildable_and_should_pass",
             acceptance_role="positive_acceptance_sample",
@@ -129,7 +137,37 @@ def classify_sample_pool_result(result: dict[str, Any]) -> dict[str, Any]:
         acceptance_role="development_sample",
         screening_tier="development_only_high_risk",
         reason="分析结果显示改写风险偏高，暂不作为正向验收样例",
-    )
+        )
+
+
+def _positive_acceptance_evidence(result: dict[str, Any]) -> tuple[bool, str, str]:
+    """检查正向验收必须具备的模块证据"""
+
+    module_path = str(result.get("module_path") or "").strip()
+    if not module_path or result.get("module_exists") is False:
+        return (
+            False,
+            "构建和验证状态显示通过，但缺少可确认的 .ko 模块产物，不纳入正向池",
+            "positive_acceptance_evidence_incomplete",
+        )
+
+    module_vermagic = str(result.get("module_vermagic") or "").strip()
+    if not module_vermagic:
+        return (
+            False,
+            "构建和验证状态显示通过，但缺少 modinfo vermagic 证据，不纳入正向池",
+            "positive_acceptance_evidence_incomplete",
+        )
+
+    target_kernel = str(result.get("target_kernel_release") or result.get("target_kernel") or "").strip()
+    if target_kernel and target_kernel not in module_vermagic:
+        return (
+            False,
+            f"模块 vermagic 与目标内核不一致，module_vermagic={module_vermagic} target_kernel={target_kernel}",
+            "environment_vermagic_mismatch",
+        )
+
+    return True, "", "positive_acceptance_confirmed"
 
 
 def _classification(

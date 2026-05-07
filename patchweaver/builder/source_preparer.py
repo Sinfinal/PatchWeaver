@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import re
 import shutil
 import subprocess
 import tarfile
@@ -10,6 +12,7 @@ import tempfile
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.request import Request, urlopen
 
 import yaml
 
@@ -43,6 +46,245 @@ class PreparedSourceTreeResult:
         """转成可直接输出的结构化结果"""
 
         return asdict(self)
+
+
+@dataclass(slots=True)
+class StableBaselineTreeResult:
+    """Record one stable source baseline preparation result"""
+
+    stable_git_dir: str
+    baseline_ref: str
+    output_dir: str
+    config_path: str | None
+    setlocalversion_patched: bool
+    reused_existing: bool = False
+    build_config_path: str | None = None
+    git_head: str | None = None
+    build_cache_source: str | None = None
+    build_cache_files: dict[str, bool] | None = None
+    build_cache_ready: bool = False
+
+    def to_payload(self) -> dict[str, object]:
+        """Convert to serializable payload"""
+
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class VendorBaselineReadiness:
+    """Record whether a vendor source baseline can support positive acceptance"""
+
+    source_dir: str
+    target_kernel: str
+    path_exists: bool
+    tree_ok: bool
+    config_ok: bool
+    kernel_release: str | None
+    kernel_release_matches: bool
+    required_cache_files: dict[str, bool]
+    build_cache_ready: bool
+    vmlinux_path: str | None = None
+    vmlinux_ok: bool | None = None
+    patch_path: str | None = None
+    patch_apply_check_run: bool = False
+    patch_apply_ok: bool | None = None
+    patch_apply_stdout: str = ""
+    patch_apply_stderr: str = ""
+    unpatched_state_verified: bool = False
+    vendor_baseline_ready: bool = False
+    problems: list[str] | None = None
+
+    def to_payload(self) -> dict[str, object]:
+        """Convert to serializable payload"""
+
+        return asdict(self)
+
+
+def check_vendor_source_baseline(
+    *,
+    source_dir: Path,
+    target_kernel: str,
+    patch_path: Path | None = None,
+    vmlinux_path: Path | None = None,
+) -> VendorBaselineReadiness:
+    """Check whether a vendor source tree is exact enough for acceptance runs"""
+
+    normalized_source_dir = source_dir.resolve()
+    problems: list[str] = []
+    path_exists = normalized_source_dir.exists()
+    tree_ok = _looks_like_prepared_tree(normalized_source_dir) if path_exists else False
+    config_ok = (normalized_source_dir / ".config").exists() if path_exists else False
+    kernel_release = _read_kernel_release(normalized_source_dir) if path_exists else None
+    kernel_release_matches = kernel_release == target_kernel
+    required_cache_files = _strict_vendor_cache_snapshot(normalized_source_dir) if path_exists else {
+        name: False for name in _strict_vendor_cache_file_names()
+    }
+    build_cache_ready = all(required_cache_files.values())
+    vmlinux_ok = vmlinux_path.exists() if vmlinux_path is not None else None
+    patch_apply_check_run = patch_path is not None
+    patch_apply_ok: bool | None = None
+    patch_apply_stdout = ""
+    patch_apply_stderr = ""
+
+    if not path_exists:
+        problems.append("source_dir_missing")
+    if path_exists and not tree_ok:
+        problems.append("source_tree_incomplete")
+    if path_exists and not config_ok:
+        problems.append("kernel_config_missing")
+    if path_exists and kernel_release is None:
+        problems.append("kernel_release_missing")
+    if path_exists and kernel_release is not None and not kernel_release_matches:
+        problems.append("kernel_release_mismatch")
+    for name, exists in required_cache_files.items():
+        if not exists:
+            problems.append(f"cache_missing:{name}")
+    if vmlinux_path is not None and not vmlinux_ok:
+        problems.append("debug_vmlinux_missing")
+
+    if patch_path is not None:
+        patch_apply_ok, patch_apply_stdout, patch_apply_stderr = _check_patch_applies(
+            source_dir=normalized_source_dir,
+            patch_path=patch_path,
+        )
+        if not patch_apply_ok:
+            problems.append("patch_apply_check_failed")
+    else:
+        problems.append("patch_not_provided_unpatched_state_unknown")
+
+    unpatched_state_verified = patch_apply_check_run and bool(patch_apply_ok)
+    vendor_baseline_ready = (
+        path_exists
+        and tree_ok
+        and config_ok
+        and kernel_release_matches
+        and build_cache_ready
+        and (vmlinux_ok is not False)
+        and unpatched_state_verified
+    )
+
+    return VendorBaselineReadiness(
+        source_dir=str(normalized_source_dir),
+        target_kernel=target_kernel,
+        path_exists=path_exists,
+        tree_ok=tree_ok,
+        config_ok=config_ok,
+        kernel_release=kernel_release,
+        kernel_release_matches=kernel_release_matches,
+        required_cache_files=required_cache_files,
+        build_cache_ready=build_cache_ready,
+        vmlinux_path=str(vmlinux_path) if vmlinux_path is not None else None,
+        vmlinux_ok=vmlinux_ok,
+        patch_path=str(patch_path.resolve()) if patch_path is not None else None,
+        patch_apply_check_run=patch_apply_check_run,
+        patch_apply_ok=patch_apply_ok,
+        patch_apply_stdout=patch_apply_stdout[:2000],
+        patch_apply_stderr=patch_apply_stderr[:2000],
+        unpatched_state_verified=unpatched_state_verified,
+        vendor_baseline_ready=vendor_baseline_ready,
+        problems=problems,
+    )
+
+
+def prepare_stable_source_baseline(
+    *,
+    stable_git_dir: Path,
+    baseline_ref: str,
+    output_root: Path,
+    output_dir: Path | None = None,
+    force: bool = False,
+    config_source: Path | None = None,
+    build_config_path: Path | None = None,
+    write_build_config: bool = False,
+) -> StableBaselineTreeResult:
+    """Prepare a cached source tree at the stable fix commit parent"""
+
+    normalized_ref = baseline_ref.strip()
+    if not normalized_ref:
+        raise ValueError("stable baseline ref 不能为空")
+    git_repo_ready = stable_git_dir.exists() and _is_git_repository(stable_git_dir)
+
+    final_output_dir = output_dir or output_root / _baseline_cache_name(normalized_ref)
+    final_output_dir = final_output_dir.resolve()
+    if final_output_dir.exists():
+        if force:
+            shutil.rmtree(final_output_dir)
+        elif _looks_like_prepared_tree(final_output_dir):
+            patched = _patch_setlocalversion(final_output_dir)
+            if config_source is not None and config_source.exists() and not (final_output_dir / ".config").exists():
+                shutil.copy2(config_source, final_output_dir / ".config")
+            cache_source = _build_cache_source_from_config(config_source)
+            _copy_stable_baseline_build_cache(cache_source=cache_source, output_dir=final_output_dir)
+            build_cache_files = _build_cache_snapshot(final_output_dir)
+            if write_build_config and build_config_path is not None:
+                _write_stable_path_to_build_config(build_config_path, final_output_dir)
+            return StableBaselineTreeResult(
+                stable_git_dir=str(stable_git_dir.resolve()),
+                baseline_ref=normalized_ref,
+                output_dir=str(final_output_dir),
+                config_path=str(_resolve_config_path(final_output_dir)) if _resolve_config_path(final_output_dir) else None,
+                setlocalversion_patched=patched,
+                reused_existing=True,
+                build_config_path=str(build_config_path.resolve()) if write_build_config and build_config_path is not None else None,
+                git_head=_git_rev_parse(final_output_dir, "HEAD"),
+                build_cache_source=str(cache_source.resolve()) if cache_source is not None else None,
+                build_cache_files=build_cache_files,
+                build_cache_ready=_build_cache_ready(build_cache_files),
+            )
+        raise RuntimeError(f"目标目录已存在但不是可复用源码树: {final_output_dir}")
+
+    final_output_dir.parent.mkdir(parents=True, exist_ok=True)
+    worktree_cmd = [
+        "git",
+        "-C",
+        str(stable_git_dir),
+        "worktree",
+        "add",
+        "--detach",
+        str(final_output_dir),
+        normalized_ref,
+    ]
+    if git_repo_ready:
+        try:
+            _run_command(worktree_cmd)
+        except RuntimeError as exc:
+            _prepare_stable_snapshot_fallback(
+                baseline_ref=normalized_ref,
+                output_dir=final_output_dir,
+                original_error=exc,
+            )
+    else:
+        _prepare_stable_snapshot_fallback(
+            baseline_ref=normalized_ref,
+            output_dir=final_output_dir,
+            original_error=RuntimeError(f"stable git repo 不可用: {stable_git_dir}"),
+        )
+    if config_source is not None and config_source.exists():
+        shutil.copy2(config_source, final_output_dir / ".config")
+    cache_source = _build_cache_source_from_config(config_source)
+    _copy_stable_baseline_build_cache(cache_source=cache_source, output_dir=final_output_dir)
+
+    patched = _patch_setlocalversion(final_output_dir)
+    if write_build_config and build_config_path is not None:
+        _write_stable_path_to_build_config(build_config_path, final_output_dir)
+    build_cache_files = _build_cache_snapshot(final_output_dir)
+
+    manifest_path = final_output_dir / "patchweaver_stable_baseline.json"
+    result = StableBaselineTreeResult(
+        stable_git_dir=str(stable_git_dir.resolve()),
+        baseline_ref=normalized_ref,
+        output_dir=str(final_output_dir),
+        config_path=str(_resolve_config_path(final_output_dir)) if _resolve_config_path(final_output_dir) else None,
+        setlocalversion_patched=patched,
+        reused_existing=False,
+        build_config_path=str(build_config_path.resolve()) if write_build_config and build_config_path is not None else None,
+        git_head=_git_rev_parse(final_output_dir, "HEAD"),
+        build_cache_source=str(cache_source.resolve()) if cache_source is not None else None,
+        build_cache_files=build_cache_files,
+        build_cache_ready=_build_cache_ready(build_cache_files),
+    )
+    manifest_path.write_text(json.dumps(result.to_payload(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return result
 
 
 def prepare_validation_source_tree(
@@ -97,7 +339,7 @@ def prepare_validation_source_tree(
                 warmup_performed=warmup_performed,
                 warmup_marker_path=str(warmup_marker_path) if normalized_warm_targets else None,
                 warmup_log_path=str(warmup_log_path) if normalized_warm_targets else None,
-                build_cache_ready=all(build_cache_files.values()),
+                build_cache_ready=_build_cache_ready(build_cache_files),
                 build_cache_files=build_cache_files,
             )
         else:
@@ -187,7 +429,7 @@ def prepare_validation_source_tree(
         warmup_performed=warmup_performed,
         warmup_marker_path=str(warmup_marker_path) if normalized_warm_targets else None,
         warmup_log_path=str(warmup_log_path) if normalized_warm_targets else None,
-        build_cache_ready=all(build_cache_files.values()),
+        build_cache_ready=_build_cache_ready(build_cache_files),
         build_cache_files=build_cache_files,
     )
     manifest_path.write_text(json.dumps(result.to_payload(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -222,6 +464,127 @@ def _run_shell_script(script: str) -> None:
     """通过 bash 执行一段脚本"""
 
     _run_command(["bash", "-lc", script])
+
+
+def _prepare_stable_snapshot_fallback(
+    *,
+    baseline_ref: str,
+    output_dir: Path,
+    original_error: RuntimeError,
+) -> None:
+    """在 git worktree 不可用时改用 git.kernel snapshot"""
+
+    snapshot_commit = _resolve_stable_snapshot_commit(baseline_ref)
+    if snapshot_commit is None:
+        raise original_error
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    _download_and_extract_stable_snapshot(commit_id=snapshot_commit, output_dir=output_dir)
+
+
+def _resolve_stable_snapshot_commit(baseline_ref: str) -> str | None:
+    """把 stable baseline ref 转成可下载 snapshot 的 commit"""
+
+    normalized_ref = baseline_ref.strip()
+    if re.fullmatch(r"[0-9a-fA-F]{40}", normalized_ref):
+        return normalized_ref.lower()
+    if normalized_ref.endswith("^"):
+        commit_id = normalized_ref[:-1].strip()
+        if re.fullmatch(r"[0-9a-fA-F]{40}", commit_id):
+            return _fetch_stable_parent_commit(commit_id)
+    return None
+
+
+def _fetch_stable_parent_commit(commit_id: str) -> str | None:
+    """从 git.kernel commit 页面解析父提交"""
+
+    url = f"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?id={commit_id}"
+    request = Request(url, headers={"User-Agent": "PatchWeaver/0.1"})
+    try:
+        with urlopen(request, timeout=20) as response:
+            html = response.read().decode("utf-8", errors="replace")
+    except OSError:
+        return None
+    match = re.search(
+        r"<tr><th>parent</th>.*?/commit/\?id=([0-9a-fA-F]{40})",
+        html,
+        flags=re.DOTALL,
+    )
+    return match.group(1).lower() if match else None
+
+
+def _download_and_extract_stable_snapshot(*, commit_id: str, output_dir: Path) -> None:
+    """下载并展开 git.kernel stable snapshot"""
+
+    url = f"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/snapshot/linux-{commit_id}.tar.gz"
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="patchweaver-stable-snapshot-") as temp_root:
+        temp_root_path = Path(temp_root)
+        archive_path = temp_root_path / "stable-snapshot.tar.gz"
+        request = Request(url, headers={"User-Agent": "PatchWeaver/0.1"})
+        with urlopen(request, timeout=120) as response:
+            with archive_path.open("wb") as archive_handle:
+                shutil.copyfileobj(response, archive_handle)
+        with tarfile.open(archive_path, mode="r:gz") as archive:
+            _safe_extract_tar(archive, temp_root_path)
+        extracted_roots = [path for path in temp_root_path.iterdir() if path.is_dir()]
+        if not extracted_roots:
+            raise RuntimeError(f"stable snapshot 解压后没有源码目录: {url}")
+        shutil.move(str(extracted_roots[0]), str(output_dir))
+
+
+def _build_cache_source_from_config(config_source: Path | None) -> Path | None:
+    """Resolve the prepared tree that owns the copied .config"""
+
+    if config_source is None or not config_source.exists():
+        return None
+    source_dir = config_source.parent
+    if _build_cache_ready(_build_cache_snapshot(source_dir)):
+        return source_dir
+    return None
+
+
+def _copy_stable_baseline_build_cache(*, cache_source: Path | None, output_dir: Path) -> dict[str, bool]:
+    """Copy kpatch build cache from a prepared tree into a stable baseline"""
+
+    if cache_source is None:
+        return _build_cache_snapshot(output_dir)
+
+    for name in _strict_vendor_cache_file_names():
+        source_path = cache_source / name
+        if source_path.exists():
+            shutil.copy2(source_path, output_dir / name)
+
+    for relative_dir in [
+        Path("include") / "config",
+        Path("include") / "generated",
+    ]:
+        source_dir = cache_source / relative_dir
+        if source_dir.exists():
+            shutil.copytree(source_dir, output_dir / relative_dir, dirs_exist_ok=True)
+
+    for relative_file in [
+        Path("include") / "linux" / "compile.h",
+        Path("include") / "generated" / "utsrelease.h",
+    ]:
+        source_file = cache_source / relative_file
+        if source_file.exists():
+            target_file = output_dir / relative_file
+            target_file.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source_file, target_file)
+
+    return _build_cache_snapshot(output_dir)
+
+
+def _safe_extract_tar(archive: tarfile.TarFile, target_dir: Path) -> None:
+    """安全展开 tar 内容到目标目录"""
+
+    target_root = target_dir.resolve()
+    for member in archive.getmembers():
+        member_path = (target_root / member.name).resolve()
+        if target_root not in [member_path, *member_path.parents]:
+            raise RuntimeError(f"snapshot 中存在越界路径: {member.name}")
+    archive.extractall(target_root)
 
 
 def _looks_like_prepared_tree(path: Path) -> bool:
@@ -326,8 +689,30 @@ def _warmup_marker_path(source_dir: Path) -> Path:
 def _build_cache_snapshot(source_dir: Path) -> dict[str, bool]:
     """检查 prepared source tree 是否具备模块构建缓存"""
 
-    required_files = ["Module.symvers", "vmlinux.o", "vmlinux.a", ".vmlinux.objs"]
-    return {name: (source_dir / name).exists() for name in required_files}
+    cache_files = ["Module.symvers", "vmlinux.o", "vmlinux", "vmlinux.a", ".vmlinux.objs"]
+    return {name: (source_dir / name).exists() for name in cache_files}
+
+
+def _strict_vendor_cache_file_names() -> list[str]:
+    """Return strict cache files required for vendor acceptance"""
+
+    return ["Module.symvers", "vmlinux", "vmlinux.o", "vmlinux.a", ".vmlinux.objs"]
+
+
+def _strict_vendor_cache_snapshot(source_dir: Path) -> dict[str, bool]:
+    """Check exact vendor baseline cache files"""
+
+    return {name: (source_dir / name).exists() for name in _strict_vendor_cache_file_names()}
+
+
+def _build_cache_ready(snapshot: dict[str, bool]) -> bool:
+    """判断当前缓存是否足够让模块类 kpatch-build 进入后端"""
+
+    has_core = bool(snapshot.get("Module.symvers")) and bool(snapshot.get("vmlinux.o"))
+    has_vmlinux_link_state = bool(snapshot.get("vmlinux")) or (
+        bool(snapshot.get("vmlinux.a")) and bool(snapshot.get(".vmlinux.objs"))
+    )
+    return has_core and has_vmlinux_link_state
 
 
 def _load_warmup_marker(marker_path: Path) -> dict[str, object] | None:
@@ -429,6 +814,118 @@ def _write_prepared_path_to_build_config(build_config_path: Path, prepared_path:
         yaml.safe_dump(payload, allow_unicode=True, sort_keys=False),
         encoding="utf-8",
     )
+
+
+def _write_vendor_path_to_build_config(build_config_path: Path, vendor_path: Path) -> None:
+    """Write vendor_kernel_src_dir into build.yaml"""
+
+    payload = yaml.safe_load(build_config_path.read_text(encoding="utf-8")) or {}
+    payload["vendor_kernel_src_dir"] = str(vendor_path)
+
+    priority = list(payload.get("build_source_priority") or [])
+    if "vendor_kernel_src_dir" not in priority:
+        if "clean_kernel_src_dir" in priority:
+            insert_at = priority.index("clean_kernel_src_dir") + 1
+            priority.insert(insert_at, "vendor_kernel_src_dir")
+        else:
+            priority.insert(0, "vendor_kernel_src_dir")
+    payload["build_source_priority"] = priority
+
+    build_config_path.write_text(
+        yaml.safe_dump(payload, allow_unicode=True, sort_keys=False),
+        encoding="utf-8",
+    )
+
+
+def _write_stable_path_to_build_config(build_config_path: Path, stable_path: Path) -> None:
+    """Write stable_kernel_src_dir into build.yaml"""
+
+    payload = yaml.safe_load(build_config_path.read_text(encoding="utf-8")) or {}
+    payload["stable_kernel_src_dir"] = str(stable_path)
+
+    priority = list(payload.get("build_source_priority") or [])
+    if "stable_kernel_src_dir" not in priority:
+        anchors = ["kernel_src_dir", "prepared_kernel_src_dir", "vendor_kernel_src_dir", "clean_kernel_src_dir"]
+        insert_at = 0
+        for anchor in anchors:
+            if anchor in priority:
+                insert_at = priority.index(anchor) + 1
+                break
+        priority.insert(insert_at, "stable_kernel_src_dir")
+    payload["build_source_priority"] = priority
+
+    build_config_path.write_text(
+        yaml.safe_dump(payload, allow_unicode=True, sort_keys=False),
+        encoding="utf-8",
+    )
+
+
+def _is_git_repository(path: Path) -> bool:
+    """Check whether path can be used as a git repository"""
+
+    result = subprocess.run(
+        ["git", "-C", str(path), "rev-parse", "--git-dir"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def _git_rev_parse(path: Path, ref: str) -> str | None:
+    """Resolve a git ref if possible"""
+
+    if not (path / ".git").exists():
+        return None
+    result = subprocess.run(
+        ["git", "-C", str(path), "rev-parse", ref],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def _read_kernel_release(source_dir: Path) -> str | None:
+    """Read include/config/kernel.release from source tree"""
+
+    release_path = source_dir / "include" / "config" / "kernel.release"
+    if not release_path.exists():
+        return None
+    value = release_path.read_text(encoding="utf-8", errors="replace").strip()
+    return value or None
+
+
+def _check_patch_applies(*, source_dir: Path, patch_path: Path) -> tuple[bool, str, str]:
+    """Run git apply --check to prove the baseline is still unpatched"""
+
+    if not source_dir.exists() or not patch_path.exists():
+        return False, "", "source_dir or patch_path missing"
+    git_path = shutil.which("git")
+    if git_path is None:
+        return False, "", "git command missing"
+    result = subprocess.run(
+        [git_path, "apply", "--check", "--verbose", str(patch_path.resolve())],
+        cwd=source_dir,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    return result.returncode == 0, result.stdout.strip(), result.stderr.strip()
+
+
+def _baseline_cache_name(baseline_ref: str) -> str:
+    """Build a safe cache directory name for a baseline ref"""
+
+    digest = hashlib.sha1(baseline_ref.encode("utf-8")).hexdigest()[:12]
+    safe_ref = "".join(char if char.isalnum() else "-" for char in baseline_ref)[:40].strip("-")
+    return f"{safe_ref or 'baseline'}-{digest}"
 
 
 def shlex_quote(value: str) -> str:

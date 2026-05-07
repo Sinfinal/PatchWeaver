@@ -63,6 +63,19 @@ def _write_arm64_patch(path: Path) -> None:
     )
 
 
+def test_call_sites_section_wrapper_script_strips_callsite_sections(tmp_path: Path) -> None:
+    orchestrator = BuildOrchestrator(BuildConfig())
+    real_path = tmp_path / "create-diff-object.real"
+
+    script = orchestrator._render_call_sites_section_wrapper(real_path=real_path)
+
+    assert "PATCHWEAVER_CALL_SITES_SECTION_COMPAT" in script
+    assert "--remove-section=.rela.call_sites" in script
+    assert "--remove-section=.call_sites" in script
+    assert "--remove-section=.rela.static_call_sites" in script
+    assert str(real_path) in script
+
+
 def _write_disabled_tomoyo_tree(root: Path) -> None:
     (root / "security" / "tomoyo").mkdir(parents=True, exist_ok=True)
     (root / "Makefile").write_text("all:\n\t@echo ok\n", encoding="utf-8")
@@ -223,7 +236,31 @@ def test_missing_module_build_cache_files_reports_required_files(tmp_path: Path)
     missing = orchestrator._missing_module_build_cache_files(source_dir=source_dir, build_targets=targets)
 
     assert targets == ["net/netfilter/nf_tables.ko"]
-    assert missing == ["vmlinux.o", "vmlinux.a", ".vmlinux.objs"]
+    assert missing == ["vmlinux.o"]
+
+
+def test_missing_module_build_cache_accepts_linked_vmlinux_without_legacy_files(tmp_path: Path) -> None:
+    source_dir = tmp_path / "kernel"
+    patch_path = tmp_path / "rewritten.patch"
+    _write_kernel_tree(source_dir, with_vmlinux_cache=False)
+    (source_dir / "vmlinux.o").write_text("fake vmlinux.o\n", encoding="utf-8")
+    _write_patch(patch_path)
+
+    orchestrator = BuildOrchestrator(
+        BuildConfig(
+            kernel_src_dir=str(source_dir),
+            kernel_devel_dir=str(source_dir),
+            vmlinux_path=str(source_dir / "vmlinux"),
+            auto_build_targets=True,
+            auto_expand_module_dependencies=False,
+        )
+    )
+
+    targets = orchestrator._infer_build_targets(source_dir=source_dir, rewritten_patch_path=patch_path)
+    missing = orchestrator._missing_module_build_cache_files(source_dir=source_dir, build_targets=targets)
+
+    assert targets == ["net/netfilter/nf_tables.ko"]
+    assert missing == []
 
 
 def test_collect_mismatched_arch_patch_target_files_reports_non_native_arch(tmp_path: Path, monkeypatch) -> None:

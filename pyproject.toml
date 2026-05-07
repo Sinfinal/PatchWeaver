@@ -46,4 +46,6 @@ include = ["patchweaver*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 cache_dir = "data/cache/pytest-cache"
-addopts = "--basetemp=data/cache/pytest-tmp"
+pythonpath = ["."]
+norecursedirs = ["tests/_tmp", ".pytest_tmp", "data/cache"]
+addopts = "--basetemp=data/cache/pytest-tmp --ignore=tests/_tmp"

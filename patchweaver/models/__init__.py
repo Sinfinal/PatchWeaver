@@ -19,7 +19,7 @@ from patchweaver.models.rewrite import (
     TransformationStep,
     TransformationTrace,
 )
-from patchweaver.models.semantic import SemanticCard, SemanticCardEnrichmentTrace
+from patchweaver.models.semantic import RepairIntent, SemanticCard, SemanticCardEnrichmentTrace
 from patchweaver.models.skill import SkillManifest, SkillRouteDecision
 from patchweaver.models.task import TaskContext
 from patchweaver.models.validation import ValidationItem, ValidationReport
@@ -48,6 +48,7 @@ __all__ = [
     "RewriteCandidate",
     "RewritePlan",
     "RecipeMemoryEntry",
+    "RepairIntent",
     "RiskItem",
     "SemanticCard",
     "SemanticCardEnrichmentTrace",

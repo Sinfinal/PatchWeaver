@@ -24,7 +24,11 @@ from patchweaver.api.service_manager import (
     wait_for_api_ready,
 )
 from patchweaver.builder.orchestrator import BuildOrchestrator
-from patchweaver.builder.source_preparer import prepare_validation_source_tree
+from patchweaver.builder.source_preparer import (
+    check_vendor_source_baseline,
+    prepare_stable_source_baseline,
+    prepare_validation_source_tree,
+)
 from patchweaver.config.loader import (
     load_build_config,
     load_logging_config,
@@ -445,6 +449,18 @@ def _command_examples(command_path: str) -> list[tuple[str, str]]:
                 "准备完整源码树，并预热 vmlinux 构建缓存。",
             ),
         ],
+        "patchweaver prepare-stable-baseline": [
+            (
+                f"{command_path} --baseline-ref abcdef1^",
+                "按 stable 修复提交父版本准备未修复源码基线。",
+            ),
+        ],
+        "patchweaver check-vendor-baseline": [
+            (
+                f"{command_path} --source-dir /home/patchweaver/vendor-baselines/6.6.102-5.2.an23.x86_64 --patch workspaces/task/input/raw_patch.patch",
+                "检查 vendor 未修复源码树是否可进入正向验收。",
+            ),
+        ],
         "patchweaver db init": [
             (f"{command_path}", "初始化 SQLite 数据库并写入基础 schema。"),
         ],
@@ -467,6 +483,8 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
         "models",
         "install-api-service",
         "prepare-build-tree",
+        "prepare-stable-baseline",
+        "check-vendor-baseline",
         "finalize",
         "gate",
         "init-db",
@@ -522,6 +540,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
         ("patchweaver serve-api --reload", "启动 FastAPI 接口，供 Web 控制台开发调试。"),
         ("patchweaver install-api-service", "在 Linux 验证机上安装并启动 Web/API 的 systemd 服务。"),
         ("patchweaver prepare-build-tree --warm-target vmlinux", "在 Linux 验证机上准备并预热完整源码树。"),
+        ("patchweaver check-vendor-baseline --json", "检查 vendor baseline 是否满足正向验收门禁。"),
         ("patchweaver db path", "查看当前配置解析出来的数据库路径。"),
         ("patchweaver evaluate --fixture contest_samples", "按固定样例集输出阶段评测汇总。"),
         ("patchweaver models --json", "查看当前模型分工和 API Key 来源。"),
@@ -1755,7 +1774,8 @@ def run(
     typer.echo(f"执行结果: {payload['status']}")
     typer.echo(f"失败类型: {payload['failure_type']}")
     typer.echo(f"构建日志: {payload['build_log_path']}")
-    typer.echo(f"Trace 路径: {payload['trace_path']}")
+    if payload.get("trace_path"):
+        typer.echo(f"Trace 路径: {payload['trace_path']}")
 
 
 @app.command("status", cls=PatchWeaverHelpCommand)
@@ -1835,6 +1855,8 @@ def analyze(
     typer.echo(f"SemanticCard: {payload['semantic_card_path']}")
     if payload.get("semantic_card_enrichment_path"):
         typer.echo(f"SemanticEnrichment: {payload['semantic_card_enrichment_path']}")
+    if payload.get("repair_intent_path"):
+        typer.echo(f"RepairIntent: {payload['repair_intent_path']}")
     typer.echo(f"ConstraintReport: {payload['constraint_report_path']}")
     typer.echo(f"Bootstrap Manifest: {payload['bootstrap_manifest_path']}")
 
@@ -2183,6 +2205,102 @@ def prepare_build_tree_command(
     typer.echo(f"overlay dirs: {', '.join(payload['overlay_dirs']) if payload['overlay_dirs'] else '<none>'}")
     typer.echo(f"setlocalversion patched: {payload['setlocalversion_patched']}")
     typer.echo(f"build config: {payload['build_config_path'] or '<not written>'}")
+
+
+@app.command("prepare-stable-baseline", cls=PatchWeaverHelpCommand)
+def prepare_stable_baseline_command(
+    baseline_ref: Annotated[str, typer.Option("--baseline-ref", help="stable 修复提交父版本，例如 <stable_commit>^。")],
+    stable_git_dir: Annotated[str | None, typer.Option("--stable-git-dir", help="linux-stable git 仓库路径。")] = None,
+    output_root: Annotated[str | None, typer.Option("--output-root", help="stable baseline 缓存根目录。")] = None,
+    output_dir: Annotated[str | None, typer.Option("--output-dir", help="指定本次 baseline 输出目录。")] = None,
+    config_source: Annotated[str | None, typer.Option("--config-source", help="复制到 baseline 的 .config 来源。")] = None,
+    force: Annotated[bool, typer.Option("--force", help="输出目录存在时强制重建。")] = False,
+    write_build_config: Annotated[bool, typer.Option("--write-build-config/--no-write-build-config", help="是否把 stable_kernel_src_dir 写回 build.yaml。")] = False,
+    build_config_path: Annotated[str | None, typer.Option("--build-config", help="build.yaml 路径。")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """按 stable 修复提交父版本准备未修复源码基线"""
+
+    runtime = _load_runtime()
+    build_config = load_build_config(runtime.project_root)
+    final_stable_git_dir = Path(stable_git_dir or build_config.stable_source_git_dir)
+    final_output_root = Path(output_root or build_config.stable_source_cache_dir)
+    final_output_dir = Path(output_dir) if output_dir else None
+    if config_source:
+        final_config_source = Path(config_source)
+    else:
+        prepared_config = Path(build_config.prepared_kernel_src_dir) / ".config" if build_config.prepared_kernel_src_dir else None
+        kernel_config = Path(build_config.kernel_src_dir) / ".config"
+        final_config_source = prepared_config if prepared_config is not None and prepared_config.exists() else kernel_config
+    final_build_config_path = Path(build_config_path) if build_config_path else runtime.config_dir / "build.yaml"
+
+    try:
+        result = prepare_stable_source_baseline(
+            stable_git_dir=final_stable_git_dir,
+            baseline_ref=baseline_ref,
+            output_root=final_output_root,
+            output_dir=final_output_dir,
+            force=force,
+            config_source=final_config_source,
+            build_config_path=final_build_config_path,
+            write_build_config=write_build_config,
+        )
+    except Exception as exc:
+        typer.secho(f"错误: stable baseline 准备失败: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
+
+    payload = _project_payload(runtime.project_root, {"command": "prepare-stable-baseline", **result.to_payload()})
+    if json_output:
+        _emit_json(payload)
+        return
+
+    typer.echo(f"已准备 stable baseline: {payload['output_dir']}")
+    typer.echo(f"baseline ref: {payload['baseline_ref']}")
+    typer.echo(f"git head: {payload['git_head'] or '<unknown>'}")
+    typer.echo(f"config: {payload['config_path'] or '<missing>'}")
+    typer.echo(f"build config: {payload['build_config_path'] or '<not written>'}")
+
+
+@app.command("check-vendor-baseline", cls=PatchWeaverHelpCommand)
+def check_vendor_baseline_command(
+    source_dir: Annotated[str | None, typer.Option("--source-dir", help="vendor 未修复源码树路径。")] = None,
+    target_kernel: Annotated[str | None, typer.Option("--target-kernel", help="目标内核版本。")] = None,
+    patch_path: Annotated[str | None, typer.Option("--patch", help="用于验证未修复态的 patch 路径。")] = None,
+    vmlinux_path: Annotated[str | None, typer.Option("--vmlinux", help="目标内核 debug vmlinux 路径。")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
+) -> None:
+    """检查 vendor baseline 是否可进入正向验收"""
+
+    runtime = _load_runtime()
+    build_config = load_build_config(runtime.project_root)
+    final_source_dir = Path(source_dir or build_config.vendor_kernel_src_dir or build_config.prepared_kernel_src_dir)
+    final_target_kernel = target_kernel or runtime.default_kernel
+    final_patch_path = Path(patch_path) if patch_path else None
+    final_vmlinux_path = Path(vmlinux_path or build_config.vmlinux_path) if (vmlinux_path or build_config.vmlinux_path) else None
+
+    result = check_vendor_source_baseline(
+        source_dir=final_source_dir,
+        target_kernel=final_target_kernel,
+        patch_path=final_patch_path,
+        vmlinux_path=final_vmlinux_path,
+    )
+    payload = {"command": "check-vendor-baseline", **result.to_payload()}
+    if json_output:
+        _emit_json(payload)
+        return
+
+    typer.echo(f"vendor baseline: {payload['source_dir']}")
+    typer.echo(f"target kernel: {payload['target_kernel']}")
+    typer.echo(f"kernel release: {payload['kernel_release'] or '<missing>'}")
+    typer.echo(f"kernel release matches: {payload['kernel_release_matches']}")
+    typer.echo(f"build cache ready: {payload['build_cache_ready']}")
+    typer.echo(f"patch apply ok: {payload['patch_apply_ok']}")
+    typer.echo(f"vendor_baseline_ready: {payload['vendor_baseline_ready']}")
+    problems = payload.get("problems") or []
+    if problems:
+        typer.echo("problems:")
+        for problem in problems:
+            typer.echo(f"  - {problem}")
 
 
 @app.command("serve-api", cls=PatchWeaverHelpCommand)

@@ -27,7 +27,7 @@ class RetrieverService:
         self.last_fetch_trace_path = None
 
         try:
-            chain = self.repair_chain.resolve(task.cve_id)
+            chain = self.repair_chain.resolve(task.cve_id, target_kernel=task.target_kernel)
         except Exception as exc:
             self._write_fetch_trace(trace_path, self.repair_chain.latest_fetch_trace())
             if self.last_fetch_trace_path is not None:
@@ -44,6 +44,11 @@ class RetrieverService:
             cve_id=task.cve_id,
             upstream_commit=str(chain["upstream_commit"]) if chain["upstream_commit"] is not None else None,
             stable_commit=str(chain["stable_commit"]) if chain["stable_commit"] is not None else None,
+            stable_source_baseline_ref=(
+                str(chain["stable_source_baseline_ref"])
+                if chain.get("stable_source_baseline_ref") is not None
+                else None
+            ),
             commit_message=str(chain["commit_message"]),
             affected_files=list(chain["affected_files"]),
             raw_patch_path=raw_patch_path,

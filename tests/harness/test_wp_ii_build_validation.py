@@ -54,6 +54,24 @@ def _write_kernel_tree(root: Path) -> None:
     (root / "vmlinux").write_text("fake-vmlinux\n", encoding="utf-8")
 
 
+def _fake_build_command_result(*, module_name: str = "livepatch.ko", stdout: str = "kpatch build ok\n"):
+    """生成当前构建执行封装可直接消费的假结果"""
+
+    def fake_run_build_command(*, command: list[str], cwd: Path, timeout_sec: int) -> dict[str, object]:
+        output_dir = Path(command[command.index("-o") + 1])
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / module_name).write_text("fake ko\n", encoding="utf-8")
+        return {
+            "stdout": stdout,
+            "stderr": "",
+            "exit_code": 0,
+            "timed_out": False,
+            "cleanup_lines": [],
+        }
+
+    return fake_run_build_command
+
+
 def _write_disabled_sii902x_tree(root: Path) -> None:
     root.mkdir(parents=True, exist_ok=True)
     (root / "Makefile").write_text("all:\n\t@echo ok\n", encoding="utf-8")
@@ -189,13 +207,11 @@ def test_local_build_executes_real_local_flow(monkeypatch) -> None:
         if "apply" in command:
             return subprocess.CompletedProcess(command, 0, "", "")
 
-        output_dir = Path(command[command.index("-o") + 1])
-        output_dir.mkdir(parents=True, exist_ok=True)
-        (output_dir / "demo_patch.ko").write_text("fake ko\n", encoding="utf-8")
         return subprocess.CompletedProcess(command, 0, "kpatch build ok\n", "")
 
     monkeypatch.setattr("patchweaver.builder.orchestrator.which", fake_which)
     monkeypatch.setattr("patchweaver.builder.orchestrator.subprocess.run", fake_run)
+    monkeypatch.setattr(orchestrator, "_run_build_command", _fake_build_command_result(module_name="demo_patch.ko"))
 
     task = TaskContext(
         task_id="TASK-TEST-LOCAL-BUILD",
@@ -488,11 +504,6 @@ def test_local_build_uses_reverse_tree_when_primary_is_already_patched(monkeypat
         return None
 
     def fake_run(command, cwd=None, capture_output=None, text=None, encoding=None, errors=None, check=None, timeout=None):
-        if command and "kpatch-build" in str(command[0]):
-            output_dir = Path(command[command.index("-o") + 1])
-            output_dir.mkdir(parents=True, exist_ok=True)
-            (output_dir / "reverse_patch.ko").write_text("fake ko\n", encoding="utf-8")
-            return subprocess.CompletedProcess(command, 0, "kpatch build ok\n", "")
         return real_run(
             command,
             cwd=cwd,
@@ -506,6 +517,7 @@ def test_local_build_uses_reverse_tree_when_primary_is_already_patched(monkeypat
 
     monkeypatch.setattr("patchweaver.builder.orchestrator.which", fake_which)
     monkeypatch.setattr("patchweaver.builder.orchestrator.subprocess.run", fake_run)
+    monkeypatch.setattr(orchestrator, "_run_build_command", _fake_build_command_result(module_name="reverse_patch.ko"))
 
     attempt, build_log, precheck, summary = orchestrator.execute_build(
         task=task,
@@ -523,7 +535,8 @@ def test_local_build_uses_reverse_tree_when_primary_is_already_patched(monkeypat
     assert summary.source_dir.endswith("reverse_unpatched")
     assert "反向源码树生成完成" in build_log
     assert "源码期望状态: unpatched" in build_log
-    assert (Path(summary.source_dir) / "foo.c").read_text(encoding="utf-8") == "int value = 1;\n"
+    assert "临时源码树已清理" in build_log
+    assert not Path(summary.source_dir).exists()
 
 
 def test_diff_editor_apply_precheck_marks_target_already_patched() -> None:
@@ -901,7 +914,7 @@ def test_attempt_service_uses_builder_summary_and_validator_outputs(monkeypatch)
     def fake_build_bootstrap_manifest() -> BootstrapManifest:
         return BootstrapManifest(fragment_ids=["boot-001"], total_token_cost=1)
 
-    def fake_assemble_context(*, stage_name: str, evidence_bundle: object) -> ContextBundle:
+    def fake_assemble_context(*, stage_name: str, evidence_bundle: object, **kwargs: object) -> ContextBundle:
         evidence_ids = list(getattr(evidence_bundle, "evidence_ids", []))
         return ContextBundle(evidence_ids=evidence_ids, token_cost=len(evidence_ids), notes=[f"stage={stage_name}"])
 
@@ -942,7 +955,13 @@ def test_attempt_service_uses_builder_summary_and_validator_outputs(monkeypatch)
             "prompt_path": prompt_path,
         }
 
-    def fake_plan(*, task_id: str, semantic_card: SemanticCard, constraint_report: ConstraintReport) -> RewritePlan:
+    def fake_plan(
+        *,
+        task_id: str,
+        semantic_card: SemanticCard,
+        constraint_report: ConstraintReport,
+        **kwargs: object,
+    ) -> RewritePlan:
         return RewritePlan(
             task_id=task_id,
             plan_id=f"{task_id}-plan-001",
@@ -961,6 +980,7 @@ def test_attempt_service_uses_builder_summary_and_validator_outputs(monkeypatch)
         builder: object,
         task_id: str,
         attempt_no: int,
+        **kwargs: object,
     ) -> dict[str, object]:
         rewrite_dir.mkdir(parents=True, exist_ok=True)
         rewritten_patch_path = rewrite_dir / "rewritten.patch"
@@ -1206,7 +1226,7 @@ def test_attempt_service_normalizes_target_state_across_build_artifacts(monkeypa
     def fake_build_bootstrap_manifest() -> BootstrapManifest:
         return BootstrapManifest(fragment_ids=["boot-001"], total_token_cost=1)
 
-    def fake_assemble_context(*, stage_name: str, evidence_bundle: object) -> ContextBundle:
+    def fake_assemble_context(*, stage_name: str, evidence_bundle: object, **kwargs: object) -> ContextBundle:
         evidence_ids = list(getattr(evidence_bundle, "evidence_ids", []))
         return ContextBundle(evidence_ids=evidence_ids, token_cost=len(evidence_ids), notes=[f"stage={stage_name}"])
 
@@ -1247,7 +1267,13 @@ def test_attempt_service_normalizes_target_state_across_build_artifacts(monkeypa
             "prompt_path": prompt_path,
         }
 
-    def fake_plan(*, task_id: str, semantic_card: SemanticCard, constraint_report: ConstraintReport) -> RewritePlan:
+    def fake_plan(
+        *,
+        task_id: str,
+        semantic_card: SemanticCard,
+        constraint_report: ConstraintReport,
+        **kwargs: object,
+    ) -> RewritePlan:
         return RewritePlan(
             task_id=task_id,
             plan_id=f"{task_id}-plan-001",
@@ -1266,6 +1292,7 @@ def test_attempt_service_normalizes_target_state_across_build_artifacts(monkeypa
         builder: object,
         task_id: str,
         attempt_no: int,
+        **kwargs: object,
     ) -> dict[str, object]:
         rewrite_dir.mkdir(parents=True, exist_ok=True)
         rewritten_patch_path = rewrite_dir / "rewritten.patch"
@@ -1518,7 +1545,7 @@ def test_attempt_service_normalizes_target_state_when_apply_precheck_type_is_sta
     def fake_build_bootstrap_manifest() -> BootstrapManifest:
         return BootstrapManifest(fragment_ids=["boot-001"], total_token_cost=1)
 
-    def fake_assemble_context(*, stage_name: str, evidence_bundle: object) -> ContextBundle:
+    def fake_assemble_context(*, stage_name: str, evidence_bundle: object, **kwargs: object) -> ContextBundle:
         evidence_ids = list(getattr(evidence_bundle, "evidence_ids", []))
         return ContextBundle(evidence_ids=evidence_ids, token_cost=len(evidence_ids), notes=[f"stage={stage_name}"])
 
@@ -1559,7 +1586,13 @@ def test_attempt_service_normalizes_target_state_when_apply_precheck_type_is_sta
             "prompt_path": prompt_path,
         }
 
-    def fake_plan(*, task_id: str, semantic_card: SemanticCard, constraint_report: ConstraintReport) -> RewritePlan:
+    def fake_plan(
+        *,
+        task_id: str,
+        semantic_card: SemanticCard,
+        constraint_report: ConstraintReport,
+        **kwargs: object,
+    ) -> RewritePlan:
         return RewritePlan(
             task_id=task_id,
             plan_id=f"{task_id}-plan-001",
@@ -1578,6 +1611,7 @@ def test_attempt_service_normalizes_target_state_when_apply_precheck_type_is_sta
         builder: object,
         task_id: str,
         attempt_no: int,
+        **kwargs: object,
     ) -> dict[str, object]:
         rewrite_dir.mkdir(parents=True, exist_ok=True)
         rewritten_patch_path = rewrite_dir / "rewritten.patch"
@@ -1768,7 +1802,7 @@ def test_attempt_service_records_narrow_failover_when_failure_occurs(monkeypatch
     def fake_build_bootstrap_manifest() -> BootstrapManifest:
         return BootstrapManifest(fragment_ids=["boot-001"], total_token_cost=1)
 
-    def fake_assemble_context(*, stage_name: str, evidence_bundle: object) -> ContextBundle:
+    def fake_assemble_context(*, stage_name: str, evidence_bundle: object, **kwargs: object) -> ContextBundle:
         evidence_ids = list(getattr(evidence_bundle, "evidence_ids", []))
         return ContextBundle(evidence_ids=evidence_ids, token_cost=len(evidence_ids), notes=[f"stage={stage_name}"])
 
@@ -1809,7 +1843,13 @@ def test_attempt_service_records_narrow_failover_when_failure_occurs(monkeypatch
             "prompt_path": prompt_path,
         }
 
-    def fake_plan(*, task_id: str, semantic_card: SemanticCard, constraint_report: ConstraintReport) -> RewritePlan:
+    def fake_plan(
+        *,
+        task_id: str,
+        semantic_card: SemanticCard,
+        constraint_report: ConstraintReport,
+        **kwargs: object,
+    ) -> RewritePlan:
         return RewritePlan(
             task_id=task_id,
             plan_id=f"{task_id}-plan-001",
@@ -1828,6 +1868,7 @@ def test_attempt_service_records_narrow_failover_when_failure_occurs(monkeypatch
         builder: object,
         task_id: str,
         attempt_no: int,
+        **kwargs: object,
     ) -> dict[str, object]:
         rewrite_dir.mkdir(parents=True, exist_ok=True)
         rewritten_patch_path = rewrite_dir / "rewritten.patch"

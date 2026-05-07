@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from patchweaver.models.constraint import ConstraintReport
 from patchweaver.models.rewrite import RewriteCandidate, RewritePlan
-from patchweaver.models.semantic import SemanticCard
+from patchweaver.models.semantic import RepairIntent, SemanticCard
 from patchweaver.planner.candidate_ranker import CandidateRanker
 from patchweaver.planner.primitive_selector import PrimitiveSelector
 
@@ -25,6 +25,7 @@ class JointPlanner:
         semantic_card: SemanticCard,
         constraint_report: ConstraintReport,
         ranking_hints: dict[str, object] | None = None,
+        repair_intent: RepairIntent | None = None,
     ) -> RewritePlan:
         """根据语义卡片、约束结果和经验提示生成本轮规划"""
 
@@ -54,6 +55,7 @@ class JointPlanner:
             fallback_primitives=primitives,
             high_risk=high_risk,
             ranking_hints=ranking_hints,
+            repair_intent=repair_intent,
         )
         ranked = self.candidate_ranker.rank(candidates, ranking_hints=ranking_hints)
         selected = ranked[0]
@@ -74,6 +76,10 @@ class JointPlanner:
             selection_notes.append("关键调用: " + "，".join(semantic_card.critical_calls[:3]))
         if constraint_report.route_hints:
             selection_notes.append("路线提示: " + "；".join(item.summary for item in constraint_report.route_hints[:2]))
+        if repair_intent is not None:
+            selection_notes.append("修复意图策略: " + repair_intent.recommended_strategy)
+            if repair_intent.guard_conditions:
+                selection_notes.append("guard 条件: " + "；".join(repair_intent.guard_conditions[:2]))
         if constraint_report.preferred_route:
             selection_notes.append("约束首选路线: " + constraint_report.preferred_route)
         if constraint_report.candidate_routes:
@@ -113,6 +119,7 @@ class JointPlanner:
         fallback_primitives: list[str],
         high_risk: int,
         ranking_hints: dict[str, object] | None = None,
+        repair_intent: RepairIntent | None = None,
     ) -> list[RewriteCandidate]:
         """根据路线提示和约束结果生成候选改写路径"""
 
@@ -132,11 +139,16 @@ class JointPlanner:
                 }
             )
 
-        for route_name in self._derive_candidate_route_names(constraint_report):
+        for route_name in self._derive_candidate_route_names(constraint_report, repair_intent=repair_intent):
             route_inputs.append(
                 {
                     "route_name": route_name,
-                    "preferred": route_name == constraint_report.preferred_route,
+                    "preferred": route_name == constraint_report.preferred_route
+                    or (
+                        repair_intent is not None
+                        and repair_intent.recommended_strategy == "semantic_guard"
+                        and route_name == "semantic_guard_rewrite"
+                    ),
                     "blocking_risk_types": constraint_report.dominant_risk_types,
                     "recommended_primitives": [],
                 }
@@ -233,7 +245,12 @@ class JointPlanner:
             )
         ]
 
-    def _derive_candidate_route_names(self, constraint_report: ConstraintReport) -> list[str]:
+    def _derive_candidate_route_names(
+        self,
+        constraint_report: ConstraintReport,
+        *,
+        repair_intent: RepairIntent | None = None,
+    ) -> list[str]:
         """把约束结果扩展成一组可竞争候选"""
 
         route_names: list[str] = []
@@ -241,6 +258,8 @@ class JointPlanner:
             route_names.append(constraint_report.preferred_route)
         route_names.extend(constraint_report.candidate_routes)
 
+        if repair_intent is not None and repair_intent.recommended_strategy == "semantic_guard":
+            route_names.append("semantic_guard_rewrite")
         if constraint_report.direct_apply_viable:
             route_names.append("direct_apply_patch")
         else:
@@ -284,6 +303,18 @@ class JointPlanner:
         """把路线名折叠成当前工程可执行的 recipe 定义"""
 
         lowered = route_name.lower()
+        if lowered in {"semantic_guard_rewrite", "semantic_guard"}:
+            return {
+                "recipe_name": "semantic_guard_rewrite",
+                "route_family": "semantic_guard",
+                "execution_mode": "semantic_guard",
+                "default_primitives": ["semantic_guard"],
+                "requires_kernel_scaffold": False,
+                "scaffold_notes": [
+                    "优先把官方 patch 收缩为函数局部 guard",
+                    "进入构建前需要确认 guard 条件和安全退出路径保留了修复语义",
+                ],
+            }
         if lowered in {"direct_apply_patch", "direct_apply"} or "direct" in lowered:
             return {
                 "recipe_name": "direct_apply_patch",
@@ -398,6 +429,7 @@ class JointPlanner:
             "state_preserving": 4,
             "smpl": 5,
             "section_change_avoidance": 6,
+            "semantic_guard": 7,
         }
         unique = list(dict.fromkeys(str(item) for item in primitives if str(item)))
         return sorted(unique, key=lambda item: (priority.get(item, 99), item))
@@ -418,7 +450,11 @@ class JointPlanner:
     ) -> dict[str, float]:
         """把路线提示折叠成候选评分输入"""
 
-        if route_family == "direct_apply":
+        if route_family == "semantic_guard":
+            base_risk = 0.03 if preferred else 0.12
+            base_drift = 0.04 if preferred else 0.08
+            base_build_cost = 0.06 if preferred else 0.12
+        elif route_family == "direct_apply":
             base_risk = 0.08 if preferred and blocking_risk_count == 0 else 0.32 + blocking_risk_count * 0.05
             base_drift = 0.04 if preferred else 0.1
             base_build_cost = 0.08

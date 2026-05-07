@@ -16,8 +16,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from patchweaver.builder.config_repair import infer_minimal_config_delta, render_config_fragment
 from patchweaver.builder.orchestrator import BuildOrchestrator
 from patchweaver.config.loader import load_build_config
+from patchweaver.harness.livepatchability import apply_livepatchability_gate, load_patch_shape
 from patchweaver.harness.sample_pool import classify_sample_pool_result
 
 
@@ -34,14 +36,34 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cve", action="append", dest="cves", help="直接指定 CVE，可重复传入")
     parser.add_argument("--start-index", type=int, default=0, help="从 fixture 去重后的第几条开始筛选，适合分批扫描")
     parser.add_argument("--max-cases", type=int, help="最多筛选多少条 CVE，适合验证机分批执行")
-    parser.add_argument("--max-attempts", type=int, default=1, help="create 时写入的最大尝试次数")
+    parser.add_argument("--max-attempts", type=int, help="create 时写入的最大尝试次数，未指定时沿用 profile 默认值")
     parser.add_argument("--max-run-attempts", type=int, help="full 模式下每条 CVE 最多执行多少轮 run")
     parser.add_argument("--python", default=sys.executable, help="调用 patchweaver CLI 的 Python 解释器")
     parser.add_argument("--create-timeout-sec", type=int, default=120, help="单条 create 命令的外层超时时间")
     parser.add_argument("--analyze-timeout-sec", type=int, default=600, help="单条 analyze 命令的外层超时时间")
     parser.add_argument("--run-timeout-sec", type=int, default=900, help="单条 run 命令的外层超时时间")
+    parser.add_argument(
+        "--stable-baseline-timeout-sec",
+        type=int,
+        default=600,
+        help="单条 prepare-stable-baseline 命令的外层超时时间",
+    )
+    parser.add_argument("--stable-source-git-dir", type=Path, help="显式指定 linux-stable git 仓库路径")
+    parser.add_argument("--stable-source-cache-dir", type=Path, help="显式指定 stable baseline 缓存根目录")
+    parser.add_argument("--stable-config-source", type=Path, help="显式指定 stable baseline 使用的 .config 来源")
     parser.add_argument("--screening-round", default=datetime.now().strftime("v%m%d"), help="写入 fixture 时使用的筛选轮次")
     parser.add_argument("--positive-pool-target", type=int, default=10, help="正向池阶段目标数量，用于输出缺口")
+    parser.add_argument(
+        "--prepare-stable-baseline",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="full 模式下按 stable_source_baseline_ref 自动准备未修复 stable source baseline",
+    )
+    parser.add_argument(
+        "--config-fragment-dir",
+        type=Path,
+        help="写出 minimal config repair 的 .config.fragment 目录，默认跟随 output 生成",
+    )
     parser.add_argument(
         "--rag-seed-fixture",
         type=Path,
@@ -53,6 +75,17 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=PROJECT_ROOT / "evaluations" / "fixtures" / "challenge_positive_pool_confirmed_v0426.json",
         help="正向样例池 fixture 路径",
+    )
+    parser.add_argument(
+        "--known-kpatch-constraint-fixture",
+        type=Path,
+        default=PROJECT_ROOT / "evaluations" / "fixtures" / "challenge_kpatch_constraint_pool_v0427.json",
+        help="已知 kpatch_constraint 专项池 fixture 路径，正向池扩展时用于排除专项样例",
+    )
+    parser.add_argument(
+        "--include-known-pool-cases",
+        action="store_true",
+        help="正向池扩展时仍保留已确认正向样例和已知 kpatch_constraint 样例，默认会过滤",
     )
     parser.add_argument(
         "--update-positive-pool",
@@ -68,6 +101,17 @@ def parse_args() -> argparse.Namespace:
         "--only-module-target-candidates",
         action="store_true",
         help="只让能推导到具体 .ko 模块目标的候选进入快速正向池筛选",
+    )
+    parser.add_argument(
+        "--min-livepatchability-score",
+        type=int,
+        default=75,
+        help="livepatchability-first 筛选进入 full run 的最低分",
+    )
+    parser.add_argument(
+        "--only-high-livepatchability",
+        action="store_true",
+        help="只让 livepatchability 高分候选进入 full run",
     )
     return parser.parse_args()
 
@@ -275,9 +319,11 @@ def build_task_id(prefix: str, cve_id: str) -> str:
 def load_analysis_artifacts(*, workspace_root: Path, task_id: str) -> dict[str, Any]:
     """读取 analyze 阶段产物"""
 
+    task_dir = workspace_root / task_id
     analysis_dir = workspace_root / task_id / "analysis"
     constraint = json.loads((analysis_dir / "constraint_report.json").read_text(encoding="utf-8"))
     semantic = json.loads((analysis_dir / "semantic_card.json").read_text(encoding="utf-8"))
+    patch_bundle = read_json_if_exists(task_dir / "input" / "patch_bundle.json") or {}
     return {
         "selected_route": constraint.get("preferred_route"),
         "preferred_route": constraint.get("preferred_route"),
@@ -291,6 +337,9 @@ def load_analysis_artifacts(*, workspace_root: Path, task_id: str) -> dict[str, 
         "critical_calls_count": len(semantic.get("critical_calls") or []),
         "key_conditions_count": len(semantic.get("must_keep_conditions") or []),
         "key_side_effects_count": len(semantic.get("must_keep_side_effects") or []),
+        "target_function_count": len(semantic.get("touched_functions") or []),
+        "stable_source_baseline_ref": patch_bundle.get("stable_source_baseline_ref"),
+        "patch_shape": load_patch_shape(task_dir / "normalized" / "normalized.patch"),
     }
 
 
@@ -327,6 +376,63 @@ def annotate_with_rag_seed(records: list[dict[str, Any]], seed_index: dict[str, 
     return records
 
 
+def load_known_pool_cves(path: Path | None) -> set[str]:
+    """读取已知池中的 CVE 编号"""
+
+    if path is None or not path.exists():
+        return set()
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, list):
+        return set()
+    return {
+        str(item.get("cve_id") or "").strip()
+        for item in payload
+        if isinstance(item, dict) and str(item.get("cve_id") or "").strip()
+    }
+
+
+def apply_known_pool_gate(
+    records: list[dict[str, Any]],
+    *,
+    positive_pool_fixture: Path,
+    known_kpatch_constraint_fixture: Path,
+) -> list[dict[str, Any]]:
+    """正向池扩展时过滤已经有明确归属的样例"""
+
+    known_positive = load_known_pool_cves(positive_pool_fixture)
+    known_kpatch_constraints = load_known_pool_cves(known_kpatch_constraint_fixture)
+    for record in records:
+        cve_id = str(record.get("cve_id") or "").strip()
+        if not cve_id:
+            continue
+        if cve_id in known_positive:
+            record.update(
+                {
+                    "known_pool_hit": "positive_pool",
+                    "sample_bucket": "buildable_and_should_pass",
+                    "acceptance_role": "positive_acceptance_sample",
+                    "screening_tier": "positive_candidate_already_confirmed",
+                    "reason": "该 CVE 已在 confirmed 正向池中，本轮扩池不重复执行",
+                    "stable_bucket_ready": True,
+                    "positive_pool_candidate": False,
+                }
+            )
+            continue
+        if cve_id in known_kpatch_constraints:
+            record.update(
+                {
+                    "known_pool_hit": "kpatch_constraint_pool",
+                    "sample_bucket": "kpatch_constraint",
+                    "acceptance_role": "blocked_sample",
+                    "screening_tier": "blocked_by_known_kpatch_constraint",
+                    "reason": "该 CVE 已在 kpatch_constraint 专项池中，扩正向池时不混入成功率统计",
+                    "stable_bucket_ready": True,
+                    "positive_pool_candidate": False,
+                }
+            )
+    return records
+
+
 def load_full_artifacts(*, workspace_root: Path, task_id: str) -> dict[str, Any]:
     """读取 run 之后的产物"""
 
@@ -334,16 +440,39 @@ def load_full_artifacts(*, workspace_root: Path, task_id: str) -> dict[str, Any]
     build_summary = read_json_if_exists(attempt_dir / "artifacts" / "build_summary.json")
     validation_report = read_json_if_exists(attempt_dir / "artifacts" / "validation_report.json")
     failure_record = read_json_if_exists(attempt_dir / "logs" / "failure_record.json")
-    return {
+    patch_apply_details = (
+        ((failure_record or {}).get("diagnostic_details") or {}).get("patch_apply") or {}
+        if isinstance((failure_record or {}).get("diagnostic_details"), dict)
+        else {}
+    )
+    agent_next_action = (
+        ((failure_record or {}).get("diagnostic_details") or {}).get("agent_next_action") or {}
+        if isinstance((failure_record or {}).get("diagnostic_details"), dict)
+        else {}
+    )
+    module_file = resolve_module_path((build_summary or {}).get("module_path"), attempt_dir=attempt_dir)
+    module_vermagic = read_module_vermagic(module_file)
+    payload = {
         "latest_attempt_dir": str(attempt_dir),
         "build_summary": build_summary,
         "validation_report": validation_report,
         "failure_record": failure_record,
         "build_status": str((build_summary or {}).get("status") or ""),
         "validation_status": str((validation_report or {}).get("status") or ""),
-        "failure_type": str((failure_record or {}).get("failure_type") or (build_summary or {}).get("failure_type") or ""),
-        "module_path": (build_summary or {}).get("module_path"),
+        "module_path": str(module_file) if module_file is not None else (build_summary or {}).get("module_path"),
+        "module_exists": bool(module_file is not None and module_file.exists()),
+        "module_vermagic": module_vermagic,
+        "target_kernel_release": platform.release(),
+        "patch_apply_subtype": patch_apply_details.get("subtype"),
+        "reverse_unpatch_status": patch_apply_details.get("reverse_unpatch_status"),
+        "stable_source_alignment_required": bool(patch_apply_details.get("stable_source_alignment_required")),
+        "stable_source_baseline_action": patch_apply_details.get("stable_source_baseline_action"),
+        "agent_next_action": agent_next_action.get("action") if isinstance(agent_next_action, dict) else None,
     }
+    failure_type = str((failure_record or {}).get("failure_type") or (build_summary or {}).get("failure_type") or "")
+    if failure_type:
+        payload["failure_type"] = failure_type
+    return payload
 
 
 def apply_module_target_gate(records: list[dict[str, Any]], *, project_root: Path) -> list[dict[str, Any]]:
@@ -363,10 +492,16 @@ def apply_module_target_gate(records: list[dict[str, Any]], *, project_root: Pat
         )
         record["inferred_build_targets"] = [item["target"] for item in target_infos]
         record["build_target_states"] = [item["state"] for item in target_infos]
+        record["inferred_build_target_details"] = target_infos
         record["module_target_candidate"] = any(
             str(item["target"]).endswith(".ko") and item["state"] == "module" for item in target_infos
         )
         record["vmlinux_target_candidate"] = any(item["target"] == "vmlinux" for item in target_infos)
+        minimal_config_repair = infer_minimal_config_delta(source_dir=source_dir, target_files=target_files)
+        record["minimal_config_repair"] = minimal_config_repair
+        record["minimal_config_fragment"] = render_config_fragment(
+            dict(minimal_config_repair.get("config_delta") or {})
+        )
 
         if not record.get("positive_pool_candidate"):
             continue
@@ -397,10 +532,127 @@ def apply_module_target_gate(records: list[dict[str, Any]], *, project_root: Pat
     return records
 
 
+def write_minimal_config_fragments(*, records: list[dict[str, Any]], fragment_dir: Path) -> list[str]:
+    """把可修复 CONFIG delta 写成可复测 .config.fragment"""
+
+    written: list[str] = []
+    for record in records:
+        repair = record.get("minimal_config_repair")
+        if not isinstance(repair, dict) or repair.get("status") != "repairable":
+            continue
+        fragment = str(record.get("minimal_config_fragment") or "")
+        if not fragment.strip():
+            continue
+        cve_id = str(record.get("cve_id") or "unknown").strip() or "unknown"
+        fragment_dir.mkdir(parents=True, exist_ok=True)
+        fragment_path = fragment_dir / f"{_safe_file_stem(cve_id)}.config.fragment"
+        fragment_path.write_text(fragment, encoding="utf-8")
+        record["minimal_config_fragment_path"] = str(fragment_path)
+        record["minimal_config_profile"] = {
+            "status": "fragment_ready",
+            "fragment_path": str(fragment_path),
+            "merge_config_cmd": f"./scripts/kconfig/merge_config.sh .config {fragment_path}",
+            "olddefconfig_cmd": "make olddefconfig",
+            "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile",
+        }
+        written.append(cve_id)
+    return written
+
+
+def prepare_stable_baselines_for_records(*, records: list[dict[str, Any]], args: argparse.Namespace) -> list[dict[str, Any]]:
+    """full run 前按 stable_source_baseline_ref 显式准备未修复源码基线"""
+
+    if not args.prepare_stable_baseline:
+        for record in records:
+            record["stable_baseline_preparation"] = {
+                "status": "disabled",
+                "reason": "已通过 --no-prepare-stable-baseline 关闭自动准备",
+            }
+        return records
+
+    for record in records:
+        baseline_ref = str(record.get("stable_source_baseline_ref") or "").strip()
+        if not baseline_ref:
+            record["stable_baseline_preparation"] = {
+                "status": "skipped",
+                "reason": "分析产物未提供 stable_source_baseline_ref",
+            }
+            continue
+        if args.only_positive_candidates and not record.get("positive_pool_candidate"):
+            record["stable_baseline_preparation"] = {
+                "status": "skipped",
+                "baseline_ref": baseline_ref,
+                "reason": "当前样例未进入 positive_pool_candidate，本轮不消耗 baseline 准备时间",
+            }
+            continue
+        try:
+            prepare_args = ["prepare-stable-baseline", "--baseline-ref", baseline_ref]
+            stable_source_git_dir = getattr(args, "stable_source_git_dir", None)
+            stable_source_cache_dir = getattr(args, "stable_source_cache_dir", None)
+            stable_config_source = getattr(args, "stable_config_source", None)
+            if stable_source_git_dir is not None:
+                prepare_args.extend(["--stable-git-dir", str(stable_source_git_dir)])
+            if stable_source_cache_dir is not None:
+                prepare_args.extend(["--output-root", str(stable_source_cache_dir)])
+            if stable_config_source is not None:
+                prepare_args.extend(["--config-source", str(stable_config_source)])
+            prepare_args.extend(["--no-write-build-config", "--json"])
+            payload = run_cli_json(
+                python_bin=args.python,
+                cwd=PROJECT_ROOT,
+                cli_args=prepare_args,
+                timeout_sec=args.stable_baseline_timeout_sec,
+            )
+        except Exception as exc:
+            record.update(
+                {
+                    "stable_baseline_preparation": {
+                        "status": "failed",
+                        "baseline_ref": baseline_ref,
+                        "error": str(exc)[:2000],
+                    },
+                    "stable_baseline_ready": False,
+                    "stable_bucket_ready": False,
+                    "positive_pool_candidate": False,
+                    "sample_bucket": None,
+                    "acceptance_role": "development_sample",
+                    "screening_tier": "blocked_by_stable_baseline_prepare_failed",
+                    "reason": "stable source baseline 自动准备失败，先处理源码基线环境",
+                    "agent_next_action": "inspect_stable_source_baseline_failure",
+                }
+            )
+            continue
+        record["stable_baseline_preparation"] = {
+            "status": "prepared",
+            "baseline_ref": baseline_ref,
+            "output_dir": payload.get("output_dir"),
+            "reused_existing": payload.get("reused_existing", False),
+            "git_head": payload.get("git_head"),
+            "config_path": payload.get("config_path"),
+        }
+        record["stable_kernel_src_dir"] = payload.get("output_dir")
+        record["stable_baseline_ready"] = True
+    return records
+
+
+def _safe_file_stem(value: str) -> str:
+    """生成跨平台安全文件名"""
+
+    safe = "".join(char if char.isalnum() or char in {"-", "_"} else "_" for char in value)
+    return safe.strip("_") or "unknown"
+
+
 def _select_target_inference_source(build_config: Any) -> Path | None:
     """选择用于构建目标推导的源码树"""
 
-    for attr in ["clean_kernel_src_dir", "prepared_kernel_src_dir", "kernel_src_dir", "kernel_devel_dir"]:
+    for attr in [
+        "clean_kernel_src_dir",
+        "vendor_kernel_src_dir",
+        "prepared_kernel_src_dir",
+        "kernel_src_dir",
+        "stable_kernel_src_dir",
+        "kernel_devel_dir",
+    ]:
         raw_path = str(getattr(build_config, attr, "") or "").strip()
         if not raw_path:
             continue
@@ -459,6 +711,63 @@ def read_json_if_exists(path: Path) -> dict[str, Any] | None:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def resolve_module_path(raw_path: str | None, *, attempt_dir: Path) -> Path | None:
+    """解析 build_summary 中记录的模块路径，缺失时在 attempt 目录兜底查找"""
+
+    if raw_path:
+        path = Path(raw_path)
+        if not path.is_absolute():
+            path = PROJECT_ROOT / path
+        return path
+
+    candidates = sorted(attempt_dir.rglob("*.ko"))
+    return candidates[0] if candidates else None
+
+
+def read_module_vermagic(module_path: Path | None) -> str | None:
+    """读取 livepatch 模块的 vermagic，作为正向验收的内核版本证据"""
+
+    if module_path is None or not module_path.exists():
+        return None
+    try:
+        proc = subprocess.run(
+            ["modinfo", "-F", "vermagic", str(module_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    return proc.stdout.strip() or None
+
+
+def positive_acceptance_evidence_ok(item: dict[str, Any]) -> bool:
+    """判断一条结果是否满足正向池写入门槛"""
+
+    if item.get("screening_tier") != "positive_acceptance_confirmed":
+        return False
+    if item.get("sample_bucket") == "kpatch_constraint" or item.get("known_pool_hit") == "kpatch_constraint_pool":
+        return False
+    blocked_failures = {"kpatch_constraint", "kpatch_constraint_unresolved", "unfixable_by_livepatch"}
+    if str(item.get("failure_type") or item.get("run_failure_type") or "") in blocked_failures:
+        return False
+    if item.get("build_status") != "built" or item.get("validation_status") != "passed":
+        return False
+    if not item.get("module_path") or item.get("module_exists") is False:
+        return False
+    module_vermagic = str(item.get("module_vermagic") or "").strip()
+    target_kernel = str(item.get("target_kernel_release") or item.get("target_kernel") or "").strip()
+    if not module_vermagic:
+        return False
+    return not target_kernel or target_kernel in module_vermagic
+
+
 def count_existing_positive_pool(fixture_path: Path) -> int:
     """统计当前正向池已有样例数"""
 
@@ -477,9 +786,7 @@ def summarize(results: list[dict[str, Any]], *, positive_pool_fixture: Path, pos
     tier_counter = Counter(item.get("screening_tier") or "unknown" for item in results)
     role_counter = Counter(item.get("acceptance_role") or "unknown" for item in results)
     current_positive_pool_size = count_existing_positive_pool(positive_pool_fixture)
-    confirmed_positive = [
-        item["cve_id"] for item in results if item.get("screening_tier") == "positive_acceptance_confirmed"
-    ]
+    confirmed_positive = [item["cve_id"] for item in results if positive_acceptance_evidence_ok(item)]
     projected_positive_pool_size = current_positive_pool_size + len(
         {cve for cve in confirmed_positive if cve not in {item.get("cve_id") for item in _read_positive_pool_items(positive_pool_fixture)}}
     )
@@ -488,6 +795,12 @@ def summarize(results: list[dict[str, Any]], *, positive_pool_fixture: Path, pos
         "bucket_counts": dict(bucket_counter),
         "tier_counts": dict(tier_counter),
         "role_counts": dict(role_counter),
+        "livepatchability_tier_counts": dict(
+            Counter(str(item.get("livepatchability_tier") or "unknown") for item in results)
+        ),
+        "livepatchability_high": [
+            item["cve_id"] for item in results if item.get("livepatchability_tier") == "high"
+        ],
         "confirmed_positive_acceptance": confirmed_positive,
         "positive_pool_candidates": [
             item["cve_id"] for item in results if item.get("positive_pool_candidate")
@@ -497,6 +810,20 @@ def summarize(results: list[dict[str, Any]], *, positive_pool_fixture: Path, pos
         ],
         "rag_seed_hits": [
             item["cve_id"] for item in results if item.get("rag_seed_hit")
+        ],
+        "known_pool_skipped": [
+            item["cve_id"] for item in results if item.get("known_pool_hit")
+        ],
+        "stable_source_alignment_required": [
+            item["cve_id"] for item in results if item.get("stable_source_alignment_required")
+        ],
+        "stable_baseline_prepared": [
+            item["cve_id"]
+            for item in results
+            if (item.get("stable_baseline_preparation") or {}).get("status") == "prepared"
+        ],
+        "minimal_config_fragments": [
+            item["cve_id"] for item in results if item.get("minimal_config_fragment_path")
         ],
         "rag_subsystem_counts": dict(Counter(str(item.get("rag_subsystem") or "unknown") for item in results if item.get("rag_seed_hit"))),
         "positive_pool_target": positive_pool_target,
@@ -605,22 +932,23 @@ def run_create_analyze_phase(
             "profile": args.profile,
         }
         try:
+            create_args = [
+                "create",
+                "--cve",
+                cve_id,
+                "--profile",
+                args.profile,
+                "--task-id",
+                task_id,
+                "--force-new",
+                "--json",
+            ]
+            if args.max_attempts is not None:
+                create_args[5:5] = ["--max-attempts", str(args.max_attempts)]
             create_payload = run_cli_json(
                 python_bin=args.python,
                 cwd=PROJECT_ROOT,
-                cli_args=[
-                    "create",
-                    "--cve",
-                    cve_id,
-                    "--profile",
-                    args.profile,
-                    "--max-attempts",
-                    str(args.max_attempts),
-                    "--task-id",
-                    task_id,
-                    "--force-new",
-                    "--json",
-                ],
+                cli_args=create_args,
                 timeout_sec=args.create_timeout_sec,
             )
             analyze_payload = run_cli_json(
@@ -760,7 +1088,7 @@ def should_continue_run(*, record: dict[str, Any], run_index: int, max_run_attem
 def update_positive_pool_fixture(*, fixture_path: Path, results: list[dict[str, Any]], screening_round: str) -> list[str]:
     """把确认成功的样例写入正向池 fixture"""
 
-    confirmed = [item for item in results if item.get("screening_tier") == "positive_acceptance_confirmed"]
+    confirmed = [item for item in results if positive_acceptance_evidence_ok(item)]
     if not confirmed:
         return []
     fixture_path.parent.mkdir(parents=True, exist_ok=True)
@@ -813,6 +1141,8 @@ def write_markdown_report(*, report_path: Path, payload: dict[str, Any]) -> None
         f"- task_prefix: `{payload['task_prefix']}`",
         f"- run_timeout_sec: `{payload['run_timeout_sec']}`",
         f"- only_positive_candidates: `{payload['only_positive_candidates']}`",
+        f"- min_livepatchability_score: `{payload.get('min_livepatchability_score', 75)}`",
+        f"- only_high_livepatchability: `{payload.get('only_high_livepatchability', False)}`",
         f"- workspace_root: `{payload['workspace_root']}`",
         "",
         "## 2. 汇总",
@@ -825,10 +1155,19 @@ def write_markdown_report(*, report_path: Path, payload: dict[str, Any]) -> None
         f"- positive_pool_target: `{summary['positive_pool_target']}`",
         f"- positive_pool_gap: `{summary['positive_pool_gap']}`",
         f"- rag_seed_hits: `{len(summary['rag_seed_hits'])}`",
+        f"- known_pool_skipped: `{len(summary['known_pool_skipped'])}`",
+        f"- stable_source_alignment_required: `{len(summary['stable_source_alignment_required'])}`",
+        f"- stable_baseline_prepared: `{len(summary.get('stable_baseline_prepared') or [])}`",
+        f"- minimal_config_fragments: `{len(summary.get('minimal_config_fragments') or [])}`",
+        f"- livepatchability_high: `{len(summary.get('livepatchability_high') or [])}`",
         "",
         "### bucket_counts",
         "",
         *[f"- `{key}`: `{value}`" for key, value in sorted(summary["bucket_counts"].items())],
+        "",
+        "### livepatchability_tier_counts",
+        "",
+        *[f"- `{key}`: `{value}`" for key, value in sorted((summary.get("livepatchability_tier_counts") or {}).items())],
         "",
         "### rag_subsystem_counts",
         "",
@@ -836,18 +1175,21 @@ def write_markdown_report(*, report_path: Path, payload: dict[str, Any]) -> None
         "",
         "## 3. 逐样例结果",
         "",
-        "| CVE | task_id | bucket | tier | rag_subsystem | failure_type | build | validation | reason |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| CVE | task_id | livepatchability | bucket | tier | rag_subsystem | failure_type | source_alignment | agent_next_action | build | validation | reason |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for item in payload["results"]:
         lines.append(
-            "| {cve} | `{task}` | `{bucket}` | `{tier}` | `{rag_subsystem}` | `{failure}` | `{build}` | `{validation}` | {reason} |".format(
+            "| {cve} | `{task}` | `{livepatchability}` | `{bucket}` | `{tier}` | `{rag_subsystem}` | `{failure}` | `{source_alignment}` | `{agent_next_action}` | `{build}` | `{validation}` | {reason} |".format(
                 cve=item.get("cve_id"),
                 task=item.get("task_id"),
+                livepatchability=f"{item.get('livepatchability_score', '')}/{item.get('livepatchability_tier', '')}".strip("/"),
                 bucket=item.get("sample_bucket") or "",
                 tier=item.get("screening_tier") or "",
                 rag_subsystem=item.get("rag_subsystem") or "",
                 failure=item.get("failure_type") or item.get("run_failure_type") or "",
+                source_alignment="required" if item.get("stable_source_alignment_required") else "",
+                agent_next_action=item.get("agent_next_action") or item.get("stable_source_baseline_action") or "",
                 build=item.get("build_status") or "",
                 validation=item.get("validation_status") or "",
                 reason=str(item.get("reason") or "").replace("|", "/"),
@@ -876,11 +1218,37 @@ def main() -> int:
     rag_seed_index = load_rag_seed_index(args.rag_seed_fixture)
     results = run_create_analyze_phase(cves=cves, args=args, paths=paths)
     results = annotate_with_rag_seed(results, rag_seed_index)
+    should_gate_known_pools = (
+        not args.include_known_pool_cases
+        and (args.only_positive_candidates or args.only_module_target_candidates or args.update_positive_pool)
+    )
+    if should_gate_known_pools:
+        results = apply_known_pool_gate(
+            results,
+            positive_pool_fixture=args.positive_pool_fixture,
+            known_kpatch_constraint_fixture=args.known_kpatch_constraint_fixture,
+        )
     if args.only_module_target_candidates:
         results = apply_module_target_gate(results, project_root=PROJECT_ROOT)
+    config_fragment_dir = args.config_fragment_dir or args.output.parent / f"{args.output.stem}_config_fragments"
+    minimal_config_fragments_written = write_minimal_config_fragments(
+        records=results,
+        fragment_dir=config_fragment_dir,
+    )
+    results = apply_livepatchability_gate(
+        results,
+        min_score=args.min_livepatchability_score,
+        only_high=args.only_high_livepatchability or args.only_positive_candidates,
+    )
     if args.mode == "full":
+        results = prepare_stable_baselines_for_records(records=results, args=args)
         results = run_full_phase(records=results, args=args, paths=paths)
         results = annotate_with_rag_seed(results, rag_seed_index)
+        results = apply_livepatchability_gate(
+            results,
+            min_score=args.min_livepatchability_score,
+            only_high=False,
+        )
     positive_pool_added: list[str] = []
     if args.update_positive_pool and args.mode == "full":
         positive_pool_added = update_positive_pool_fixture(
@@ -895,10 +1263,18 @@ def main() -> int:
         "task_prefix": args.task_prefix,
         "max_run_attempts": args.max_run_attempts,
         "run_timeout_sec": args.run_timeout_sec,
+        "stable_baseline_timeout_sec": args.stable_baseline_timeout_sec,
+        "prepare_stable_baseline": args.prepare_stable_baseline,
         "only_positive_candidates": args.only_positive_candidates,
         "positive_pool_fixture": str(args.positive_pool_fixture),
+        "known_kpatch_constraint_fixture": str(args.known_kpatch_constraint_fixture),
+        "include_known_pool_cases": args.include_known_pool_cases,
         "positive_pool_target": args.positive_pool_target,
+        "min_livepatchability_score": args.min_livepatchability_score,
+        "only_high_livepatchability": args.only_high_livepatchability,
         "rag_seed_fixture": str(args.rag_seed_fixture),
+        "config_fragment_dir": str(config_fragment_dir),
+        "minimal_config_fragments_written": minimal_config_fragments_written,
         "positive_pool_added": positive_pool_added,
         "project_root": str(paths["project_root"]),
         "workspace_root": str(paths["workspace_root"]),

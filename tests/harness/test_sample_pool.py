@@ -10,6 +10,10 @@ def test_classify_confirmed_positive_acceptance() -> None:
             "high_risk_count": 0,
             "build_status": "built",
             "validation_status": "passed",
+            "module_path": "/tmp/patchweaver.ko",
+            "module_exists": True,
+            "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+            "target_kernel_release": "6.6.102-5.2.an23.x86_64",
         }
     )
 
@@ -17,6 +21,42 @@ def test_classify_confirmed_positive_acceptance() -> None:
     assert result["acceptance_role"] == "positive_acceptance_sample"
     assert result["screening_tier"] == "positive_acceptance_confirmed"
     assert result["positive_pool_candidate"] is True
+
+
+def test_classify_rejects_positive_acceptance_without_vermagic() -> None:
+    result = classify_sample_pool_result(
+        {
+            "selected_route": "minimal_livepatch_wrap",
+            "high_risk_count": 0,
+            "build_status": "built",
+            "validation_status": "passed",
+            "module_path": "/tmp/patchweaver.ko",
+            "module_exists": True,
+        }
+    )
+
+    assert result["sample_bucket"] is None
+    assert result["screening_tier"] == "positive_acceptance_evidence_incomplete"
+    assert result["positive_pool_candidate"] is False
+
+
+def test_classify_rejects_positive_acceptance_on_vermagic_mismatch() -> None:
+    result = classify_sample_pool_result(
+        {
+            "selected_route": "minimal_livepatch_wrap",
+            "high_risk_count": 0,
+            "build_status": "built",
+            "validation_status": "passed",
+            "module_path": "/tmp/patchweaver.ko",
+            "module_exists": True,
+            "module_vermagic": "6.6.18 SMP preempt mod_unload modversions",
+            "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+        }
+    )
+
+    assert result["sample_bucket"] is None
+    assert result["screening_tier"] == "environment_vermagic_mismatch"
+    assert result["positive_pool_candidate"] is False
 
 
 def test_classify_low_risk_analyze_candidate() -> None:

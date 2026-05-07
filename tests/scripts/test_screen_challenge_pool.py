@@ -1,21 +1,28 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
 
 from scripts.screen_challenge_pool import (
     apply_module_target_gate,
+    apply_known_pool_gate,
     annotate_with_rag_seed,
     count_existing_positive_pool,
     infer_build_targets_for_record,
     load_cves,
+    load_full_artifacts,
     load_rag_seed_index,
     parse_posix_descendant_process_groups,
     parse_args,
+    prepare_stable_baselines_for_records,
+    positive_acceptance_evidence_ok,
     should_continue_run,
     summarize,
     update_positive_pool_fixture,
+    write_minimal_config_fragments,
+    write_markdown_report,
 )
 
 
@@ -40,6 +47,23 @@ def test_screen_challenge_pool_help_runs() -> None:
     assert "--update-positive-pool" in proc.stdout
     assert "--positive-pool-target" in proc.stdout
     assert "--rag-seed-fixture" in proc.stdout
+    assert "--known-kpatch-constraint-fixture" in proc.stdout
+    assert "--include-known-pool-cases" in proc.stdout
+    assert "--min-livepatchability-score" in proc.stdout
+    assert "--only-high-livepatchability" in proc.stdout
+    assert "--prepare-stable-baseline" in proc.stdout
+    assert "--stable-source-git-dir" in proc.stdout
+    assert "--stable-source-cache-dir" in proc.stdout
+    assert "--stable-config-source" in proc.stdout
+    assert "--config-fragment-dir" in proc.stdout
+    assert "check-vendor-baseline" in subprocess.run(
+        [sys.executable, "-m", "patchweaver", "--help"],
+        cwd=PROJECT_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    ).stdout
 
 
 def test_should_continue_run_for_recoverable_failures() -> None:
@@ -231,11 +255,191 @@ def test_apply_module_target_gate_keeps_module_candidate(tmp_path: Path, monkeyp
     assert gated[0]["module_target_candidate"] is True
 
 
+def test_write_minimal_config_fragments_materializes_profile(tmp_path: Path) -> None:
+    records = [
+        {
+            "cve_id": "CVE-2024-29996",
+            "minimal_config_repair": {
+                "status": "repairable",
+                "config_delta": {"CONFIG_DEMO": "m"},
+            },
+            "minimal_config_fragment": "CONFIG_DEMO=m\n",
+        }
+    ]
+
+    written = write_minimal_config_fragments(records=records, fragment_dir=tmp_path / "fragments")
+
+    assert written == ["CVE-2024-29996"]
+    fragment_path = Path(records[0]["minimal_config_fragment_path"])
+    assert fragment_path.name == "CVE-2024-29996.config.fragment"
+    assert fragment_path.read_text(encoding="utf-8") == "CONFIG_DEMO=m\n"
+    assert records[0]["minimal_config_profile"]["status"] == "fragment_ready"
+    assert "merge_config.sh" in records[0]["minimal_config_profile"]["merge_config_cmd"]
+
+
+def test_prepare_stable_baselines_for_records_calls_cli_for_positive_candidate(monkeypatch) -> None:
+    calls: list[list[str]] = []
+
+    class Args:
+        prepare_stable_baseline = True
+        only_positive_candidates = True
+        python = sys.executable
+        stable_baseline_timeout_sec = 321
+
+    def fake_run_cli_json(*, python_bin, cwd, cli_args, timeout_sec=None):
+        calls.append(cli_args)
+        assert timeout_sec == 321
+        return {
+            "output_dir": "/tmp/stable-baselines/demo",
+            "reused_existing": False,
+            "git_head": "abc123",
+            "config_path": "/tmp/stable-baselines/demo/.config",
+        }
+
+    monkeypatch.setattr("scripts.screen_challenge_pool.run_cli_json", fake_run_cli_json)
+    records = [
+        {
+            "cve_id": "CVE-2024-29995",
+            "positive_pool_candidate": True,
+            "stable_source_baseline_ref": "abc123^",
+        }
+    ]
+
+    prepared = prepare_stable_baselines_for_records(records=records, args=Args())
+
+    assert calls == [["prepare-stable-baseline", "--baseline-ref", "abc123^", "--no-write-build-config", "--json"]]
+    assert prepared[0]["stable_baseline_preparation"]["status"] == "prepared"
+    assert prepared[0]["stable_kernel_src_dir"] == "/tmp/stable-baselines/demo"
+    assert prepared[0]["stable_baseline_ready"] is True
+
+
+def test_prepare_stable_baselines_blocks_positive_candidate_on_prepare_failure(monkeypatch) -> None:
+    class Args:
+        prepare_stable_baseline = True
+        only_positive_candidates = True
+        python = sys.executable
+        stable_baseline_timeout_sec = 321
+
+    def fake_run_cli_json(*, python_bin, cwd, cli_args, timeout_sec=None):
+        raise RuntimeError("stable repo missing")
+
+    monkeypatch.setattr("scripts.screen_challenge_pool.run_cli_json", fake_run_cli_json)
+    records = [
+        {
+            "cve_id": "CVE-2024-29994",
+            "positive_pool_candidate": True,
+            "stable_source_baseline_ref": "abc123^",
+        }
+    ]
+
+    prepared = prepare_stable_baselines_for_records(records=records, args=Args())
+
+    assert prepared[0]["stable_baseline_preparation"]["status"] == "failed"
+    assert prepared[0]["positive_pool_candidate"] is False
+    assert prepared[0]["screening_tier"] == "blocked_by_stable_baseline_prepare_failed"
+    assert prepared[0]["agent_next_action"] == "inspect_stable_source_baseline_failure"
+
+
+def test_apply_known_pool_gate_skips_confirmed_positive_case(tmp_path: Path) -> None:
+    positive_fixture = tmp_path / "positive.json"
+    kpatch_fixture = tmp_path / "kpatch.json"
+    positive_fixture.write_text('[{"cve_id":"CVE-2024-26742"}]\n', encoding="utf-8")
+    kpatch_fixture.write_text("[]\n", encoding="utf-8")
+    records = [
+        {
+            "cve_id": "CVE-2024-26742",
+            "positive_pool_candidate": True,
+            "screening_tier": "positive_candidate_low_risk",
+        }
+    ]
+
+    gated = apply_known_pool_gate(
+        records,
+        positive_pool_fixture=positive_fixture,
+        known_kpatch_constraint_fixture=kpatch_fixture,
+    )
+
+    assert gated[0]["known_pool_hit"] == "positive_pool"
+    assert gated[0]["sample_bucket"] == "buildable_and_should_pass"
+    assert gated[0]["screening_tier"] == "positive_candidate_already_confirmed"
+
+
+def test_load_full_artifacts_does_not_emit_empty_failure_type(tmp_path: Path) -> None:
+    workspace_root = tmp_path / "workspaces"
+    attempt_dir = workspace_root / "task-001" / "attempts" / "002"
+    (attempt_dir / "artifacts").mkdir(parents=True)
+    (attempt_dir / "logs").mkdir(parents=True)
+
+    payload = load_full_artifacts(workspace_root=workspace_root, task_id="task-001")
+
+    assert "failure_type" not in payload
+
+
+def test_load_full_artifacts_reads_module_vermagic(tmp_path: Path, monkeypatch) -> None:
+    task_id = "poolscan-29997"
+    attempt_dir = tmp_path / task_id / "attempts" / "001"
+    (attempt_dir / "artifacts").mkdir(parents=True)
+    (attempt_dir / "output").mkdir()
+    module_path = attempt_dir / "output" / "patchweaver.ko"
+    module_path.write_text("fake module\n", encoding="utf-8")
+    (attempt_dir / "artifacts" / "build_summary.json").write_text(
+        json.dumps({"status": "built", "module_path": str(module_path)}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    (attempt_dir / "artifacts" / "validation_report.json").write_text(
+        json.dumps({"status": "passed"}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "scripts.screen_challenge_pool.read_module_vermagic",
+        lambda path: "6.6.102-5.2.an23.x86_64 SMP",
+    )
+    monkeypatch.setattr("scripts.screen_challenge_pool.platform.release", lambda: "6.6.102-5.2.an23.x86_64")
+
+    payload = load_full_artifacts(workspace_root=tmp_path, task_id=task_id)
+
+    assert payload["module_exists"] is True
+    assert payload["module_vermagic"] == "6.6.102-5.2.an23.x86_64 SMP"
+    assert payload["target_kernel_release"] == "6.6.102-5.2.an23.x86_64"
+
+
+def test_apply_known_pool_gate_skips_known_kpatch_constraint_case(tmp_path: Path) -> None:
+    positive_fixture = tmp_path / "positive.json"
+    kpatch_fixture = tmp_path / "kpatch.json"
+    positive_fixture.write_text("[]\n", encoding="utf-8")
+    kpatch_fixture.write_text('[{"cve_id":"CVE-2024-26643"}]\n', encoding="utf-8")
+    records = [
+        {
+            "cve_id": "CVE-2024-26643",
+            "positive_pool_candidate": True,
+            "screening_tier": "positive_candidate_low_risk",
+        }
+    ]
+
+    gated = apply_known_pool_gate(
+        records,
+        positive_pool_fixture=positive_fixture,
+        known_kpatch_constraint_fixture=kpatch_fixture,
+    )
+
+    assert gated[0]["known_pool_hit"] == "kpatch_constraint_pool"
+    assert gated[0]["sample_bucket"] == "kpatch_constraint"
+    assert gated[0]["screening_tier"] == "blocked_by_known_kpatch_constraint"
+    assert gated[0]["positive_pool_candidate"] is False
+
+
 def test_update_positive_pool_fixture_appends_confirmed_cases(tmp_path: Path) -> None:
     fixture_path = tmp_path / "positive.json"
     results = [
         {
             "cve_id": "CVE-2024-29999",
+            "build_status": "built",
+            "validation_status": "passed",
+            "module_path": "/tmp/patchweaver.ko",
+            "module_exists": True,
+            "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+            "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+            "sample_bucket": "buildable_and_should_pass",
             "screening_tier": "positive_acceptance_confirmed",
         }
     ]
@@ -248,6 +452,68 @@ def test_update_positive_pool_fixture_appends_confirmed_cases(tmp_path: Path) ->
 
     assert added == ["CVE-2024-29999"]
     assert "CVE-2024-29999" in fixture_path.read_text(encoding="utf-8")
+
+
+def test_update_positive_pool_fixture_rejects_missing_vermagic(tmp_path: Path) -> None:
+    fixture_path = tmp_path / "positive.json"
+    results = [
+        {
+            "cve_id": "CVE-2024-29998",
+            "build_status": "built",
+            "validation_status": "passed",
+            "module_path": "/tmp/patchweaver.ko",
+            "module_exists": True,
+            "sample_bucket": "buildable_and_should_pass",
+            "screening_tier": "positive_acceptance_confirmed",
+        }
+    ]
+
+    added = update_positive_pool_fixture(
+        fixture_path=fixture_path,
+        results=results,
+        screening_round="vtest",
+    )
+
+    assert added == []
+    assert not fixture_path.exists()
+
+
+def test_positive_acceptance_evidence_rejects_vermagic_mismatch() -> None:
+    ok = positive_acceptance_evidence_ok(
+        {
+            "build_status": "built",
+            "validation_status": "passed",
+            "module_path": "/tmp/patchweaver.ko",
+            "module_exists": True,
+            "module_vermagic": "6.6.18 SMP preempt mod_unload modversions",
+            "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+            "sample_bucket": "buildable_and_should_pass",
+            "screening_tier": "positive_acceptance_confirmed",
+        }
+    )
+
+    assert ok is False
+
+
+def test_update_positive_pool_fixture_excludes_kpatch_constraint_cases(tmp_path: Path) -> None:
+    fixture_path = tmp_path / "positive.json"
+    results = [
+        {
+            "cve_id": "CVE-2024-26643",
+            "screening_tier": "positive_acceptance_confirmed",
+            "sample_bucket": "kpatch_constraint",
+            "failure_type": "kpatch_constraint_unresolved",
+        }
+    ]
+
+    added = update_positive_pool_fixture(
+        fixture_path=fixture_path,
+        results=results,
+        screening_round="vtest",
+    )
+
+    assert added == []
+    assert not fixture_path.exists()
 
 
 def test_rag_seed_index_annotates_screening_records(tmp_path: Path) -> None:
@@ -274,10 +540,17 @@ def test_summarize_reports_positive_pool_gap(tmp_path: Path) -> None:
             "sample_bucket": "buildable_and_should_pass",
             "acceptance_role": "positive_acceptance_sample",
             "screening_tier": "positive_acceptance_confirmed",
+            "build_status": "built",
+            "validation_status": "passed",
+            "module_path": "/tmp/patchweaver.ko",
+            "module_exists": True,
+            "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+            "target_kernel_release": "6.6.102-5.2.an23.x86_64",
             "stable_bucket_ready": True,
             "positive_pool_candidate": True,
             "rag_seed_hit": True,
             "rag_subsystem": "net/demo",
+            "stable_source_alignment_required": True,
         }
     ]
 
@@ -287,3 +560,83 @@ def test_summarize_reports_positive_pool_gap(tmp_path: Path) -> None:
     assert summary["projected_positive_pool_size"] == 2
     assert summary["positive_pool_gap"] == 8
     assert summary["rag_subsystem_counts"] == {"net/demo": 1}
+    assert summary["stable_source_alignment_required"] == ["CVE-2024-29999"]
+
+
+def test_load_full_artifacts_exposes_patch_apply_source_alignment(tmp_path: Path) -> None:
+    task_id = "poolscan-29999"
+    attempt_dir = tmp_path / task_id / "attempts" / "001"
+    (attempt_dir / "logs").mkdir(parents=True)
+    (attempt_dir / "artifacts").mkdir()
+    (attempt_dir / "logs" / "failure_record.json").write_text(
+        """
+        {
+          "failure_type": "patch_apply_failed",
+            "diagnostic_details": {
+            "patch_apply": {
+              "subtype": "source_too_new_or_already_patched",
+              "reverse_unpatch_status": "failed",
+              "stable_source_alignment_required": true,
+              "stable_source_baseline_action": "prepare_unpatched_stable_source_baseline"
+            },
+            "agent_next_action": {
+              "action": "prepare_unpatched_stable_source_baseline"
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    artifacts = load_full_artifacts(workspace_root=tmp_path, task_id=task_id)
+
+    assert artifacts["failure_type"] == "patch_apply_failed"
+    assert artifacts["patch_apply_subtype"] == "source_too_new_or_already_patched"
+    assert artifacts["reverse_unpatch_status"] == "failed"
+    assert artifacts["stable_source_alignment_required"] is True
+    assert artifacts["stable_source_baseline_action"] == "prepare_unpatched_stable_source_baseline"
+    assert artifacts["agent_next_action"] == "prepare_unpatched_stable_source_baseline"
+
+
+def test_write_markdown_report_marks_source_alignment_required(tmp_path: Path) -> None:
+    report_path = tmp_path / "screening.md"
+    payload = {
+        "mode": "full",
+        "profile": "dev",
+        "task_prefix": "poolscan",
+        "run_timeout_sec": 900,
+        "only_positive_candidates": True,
+        "workspace_root": str(tmp_path / "workspaces"),
+        "summary": {
+            "total_cases": 1,
+            "confirmed_positive_acceptance": [],
+            "positive_pool_candidates": [],
+            "stable_bucket_ready": [],
+            "current_positive_pool_size": 2,
+            "positive_pool_target": 10,
+            "positive_pool_gap": 8,
+            "rag_seed_hits": [],
+            "known_pool_skipped": [],
+            "stable_source_alignment_required": ["CVE-2024-29999"],
+            "bucket_counts": {"unbucketed": 1},
+            "rag_subsystem_counts": {},
+        },
+        "results": [
+            {
+                "cve_id": "CVE-2024-29999",
+                "task_id": "poolscan-29999",
+                "failure_type": "patch_apply_failed",
+                "stable_source_alignment_required": True,
+                "agent_next_action": "prepare_unpatched_stable_source_baseline",
+                "reason": "需要准备未修复 stable source 基线",
+            }
+        ],
+    }
+
+    write_markdown_report(report_path=report_path, payload=payload)
+
+    text = report_path.read_text(encoding="utf-8")
+    assert "stable_source_alignment_required: `1`" in text
+    assert "| CVE-2024-29999 | `poolscan-29999` |" in text
+    assert "`required`" in text
+    assert "`prepare_unpatched_stable_source_baseline`" in text

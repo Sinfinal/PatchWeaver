@@ -54,7 +54,7 @@ class TransformationStep(BaseModel):
     """记录单个改写步骤的执行轨迹"""
 
     step_id: str
-    engine: Literal["route_dispatch", "template", "smpl", "diff_editor", "apply_precheck"]
+    engine: Literal["route_dispatch", "template", "semantic_guard", "smpl", "diff_editor", "apply_precheck"]
     action: str
     recipe_name: str | None = None
     primitive: str | None = None
