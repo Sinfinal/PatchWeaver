@@ -1,4 +1,4 @@
-# PatchWeaver
+
 
 <p align="center">
   <a href="LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/license-MIT-111827?style=flat-square&labelColor=374151&color=10b981"></a>
@@ -15,6 +15,7 @@
   <img alt="Bailian FC MCP" src="https://img.shields.io/badge/Bailian-FC%20%2F%20MCP-111827?style=flat-square&labelColor=374151&color=8b5cf6">
 </p>
 
+# PatchWeaver
 面向 Anolis OS ANCK 内核 CVE 的热补丁自动生成 Agent。
 
 PatchWeaver 的目标是让评委输入一个内核 CVE 后，系统能够自动获取修复补丁、理解修复意图、选择适合 `kpatch` 的改写策略、生成 livepatch `.ko`，并完成加载、卸载、冒烟测试、自测和结构化报告输出。
