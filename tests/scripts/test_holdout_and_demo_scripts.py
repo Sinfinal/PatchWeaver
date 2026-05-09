@@ -160,3 +160,58 @@ def test_generate_demo_report_writes_manifest_and_markdown(tmp_path: Path) -> No
     markdown = output_md.read_text(encoding="utf-8")
     assert "CVE-2099-3001" in markdown
     assert "Agent Decision Evidence" in markdown
+
+
+def test_generate_representative_metrics_report_script_writes_outputs(tmp_path: Path) -> None:
+    holdout_path = tmp_path / "holdout.json"
+    output_json = tmp_path / "representative_metrics.json"
+    output_md = tmp_path / "representative_metrics.md"
+    holdout_path.write_text(
+        json.dumps(
+            {
+                "results": [
+                    {
+                        "cve_id": "CVE-2099-4001",
+                        "task_id": "holdout-4001",
+                        "run_status": "built",
+                        "validation_status": "passed",
+                        "run_attempts": [{"run_index": 1}],
+                        "validation_report": {
+                            "load_result": {"status": "passed", "log_path": "load.log"},
+                            "unload_result": {"status": "passed", "log_path": "unload.log"},
+                            "smoke_result": {"status": "passed", "log_path": "smoke.log"},
+                            "selftest_result": {"status": "passed", "log_path": "selftest.log"},
+                        },
+                    }
+                ]
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "scripts/generate_representative_metrics_report.py",
+            "--holdout",
+            str(holdout_path),
+            "--output-json",
+            str(output_json),
+            "--output-md",
+            str(output_md),
+        ],
+        cwd=PROJECT_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+    assert proc.returncode == 0, proc.stderr
+    assert "representative_success_rate: 100.00%" in proc.stdout
+    payload = json.loads(output_json.read_text(encoding="utf-8"))
+    markdown = output_md.read_text(encoding="utf-8")
+    assert payload["metrics"]["representative_total"] == 1
+    assert payload["target_gap"]["status"] == "meets_target"
+    assert ".ko/load/unload/smoke/selftest" in markdown

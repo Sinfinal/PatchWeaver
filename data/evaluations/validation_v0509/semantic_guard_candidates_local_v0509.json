@@ -1,0 +1,582 @@
+{
+  "generated_at": "2026-05-09T07:08:03.532301+00:00",
+  "artifact_roots": [
+    "D:\\spaces\\ai\\PatchWeaver\\workspaces",
+    "D:\\spaces\\ai\\PatchWeaver\\data\\cache\\5newcve_round0426d_artifacts",
+    "D:\\spaces\\ai\\PatchWeaver\\data\\cache\\5newcve_round0426c_artifacts"
+  ],
+  "rag_seed_fixture": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+  "summary": {
+    "total_records": 210,
+    "candidate_count": 30,
+    "guard_category_counts": {
+      "bounds": 5,
+      "invalid_state": 5,
+      "null": 16,
+      "overflow": 1,
+      "size_len": 3
+    }
+  },
+  "candidates": [
+    {
+      "cve_id": "CVE-2024-26726",
+      "guard_category": "null",
+      "confidence": 0.83,
+      "affected_files": [
+        "fs/btrfs/inode.c"
+      ],
+      "reason": "命中 null guard 语义；semantic_card 含必须保留条件；RAG seed 摘要直接命中 guard 语义；触达函数数量较少；触达文件数量较少；约束诊断当前为低风险 direct apply",
+      "suggested_validation_mode": "analyze",
+      "task_id": "core-round0426c-26726",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\data\\cache\\5newcve_round0426c_artifacts\\core-round0426c-26726",
+      "guard_signals": [
+        "\\bnull\\b",
+        "!\\s*[A-Za-z_][A-Za-z0-9_]*(?:->|\\b)"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "fs/btrfs",
+      "rag_summary": "btrfs: don't drop extent_map for free space inode on write error"
+    },
+    {
+      "cve_id": "CVE-2024-26736",
+      "guard_category": "size_len",
+      "confidence": 0.83,
+      "affected_files": [
+        "fs/afs/volume.c"
+      ],
+      "reason": "命中 size_len guard 语义；semantic_card 含必须保留条件；RAG seed 摘要直接命中 guard 语义；触达函数数量较少；触达文件数量较少；约束诊断当前为低风险 direct apply",
+      "suggested_validation_mode": "analyze",
+      "task_id": "core-round0426c-26736",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\data\\cache\\5newcve_round0426c_artifacts\\core-round0426c-26736",
+      "guard_signals": [
+        "\\bsize\\b",
+        "\\bsizeof\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "fs/afs",
+      "rag_summary": "afs: Increase buffer size in afs_update_volume_status()"
+    },
+    {
+      "cve_id": "CVE-2024-26607",
+      "guard_category": "invalid_state",
+      "confidence": 0.8,
+      "affected_files": [
+        "drivers/gpu/drm/bridge/sii902x.c"
+      ],
+      "reason": "命中 invalid_state guard 语义；semantic_card 含必须保留条件；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少；约束诊断当前为低风险 direct apply",
+      "suggested_validation_mode": "analyze",
+      "task_id": "core-round0426c-26607",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\data\\cache\\5newcve_round0426c_artifacts\\core-round0426c-26607",
+      "guard_signals": [
+        "\\brace\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/gpu",
+      "rag_summary": "drm/bridge: sii902x: Fix probing race issue"
+    },
+    {
+      "cve_id": "CVE-2024-1086",
+      "guard_category": "size_len",
+      "confidence": 0.61,
+      "affected_files": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "reason": "命中 size_len guard 语义；触达函数数量较少；触达文件数量较少；新增分支含安全退出路径",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "TASK-SEED-20260420-1086",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\workspaces\\TASK-SEED-20260420-1086",
+      "guard_signals": [
+        "\\blen(?:gth)?\\b",
+        "\\bsizeof\\b",
+        "safe_exit"
+      ]
+    },
+    {
+      "cve_id": "CVE-2024-26600",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/phy"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b",
+        "null pointer"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/phy",
+      "rag_summary": "phy: ti: phy-omap-usb2: Fix NULL pointer dereference for SRP"
+    },
+    {
+      "cve_id": "CVE-2024-26608",
+      "guard_category": "bounds",
+      "confidence": 0.61,
+      "affected_files": [
+        "fs/smb"
+      ],
+      "reason": "命中 bounds guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\boob\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "fs/smb",
+      "rag_summary": "ksmbd: fix global oob in ksmbd_nl_policy"
+    },
+    {
+      "cve_id": "CVE-2024-26623",
+      "guard_category": "invalid_state",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/net"
+      ],
+      "reason": "命中 invalid_state guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\brace\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "pds_core: Prevent race issues involving the adminq"
+    },
+    {
+      "cve_id": "CVE-2024-26631",
+      "guard_category": "invalid_state",
+      "confidence": 0.61,
+      "affected_files": [
+        "net/ipv6"
+      ],
+      "reason": "命中 invalid_state guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\brace\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "net/ipv6",
+      "rag_summary": "ipv6: mcast: fix data-race in ipv6_mc_down / mld_ifc_work"
+    },
+    {
+      "cve_id": "CVE-2024-26648",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/gpu"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/gpu",
+      "rag_summary": "drm/amd/display: Fix variable deferencing before NULL check in"
+    },
+    {
+      "cve_id": "CVE-2024-26649",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/gpu"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b",
+        "null pointer"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/gpu",
+      "rag_summary": "drm/amdgpu: Fix the null pointer when load rlc firmware"
+    },
+    {
+      "cve_id": "CVE-2024-26657",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/gpu"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/gpu",
+      "rag_summary": "drm/sched: fix null-ptr-deref in init entity"
+    },
+    {
+      "cve_id": "CVE-2024-26660",
+      "guard_category": "bounds",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/gpu"
+      ],
+      "reason": "命中 bounds guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bbounds?\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/gpu",
+      "rag_summary": "drm/amd/display: Implement bounds check for stream encoder creation"
+    },
+    {
+      "cve_id": "CVE-2024-26662",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/gpu"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/gpu",
+      "rag_summary": "drm/amd/display: Fix 'panel_cntl' could be null in"
+    },
+    {
+      "cve_id": "CVE-2024-26664",
+      "guard_category": "bounds",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/hwmon"
+      ],
+      "reason": "命中 bounds guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bbounds?\\b",
+        "out[- ]of[- ]bounds"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/hwmon",
+      "rag_summary": "hwmon: (coretemp) Fix out-of-bounds memory access"
+    },
+    {
+      "cve_id": "CVE-2024-26665",
+      "guard_category": "bounds",
+      "confidence": 0.61,
+      "affected_files": [
+        "net/ipv4"
+      ],
+      "reason": "命中 bounds guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bbounds?\\b",
+        "out[- ]of[- ]bounds"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "net/ipv4",
+      "rag_summary": "tunnels: fix out of bounds access when building IPv6 PMTU error"
+    },
+    {
+      "cve_id": "CVE-2024-26671",
+      "guard_category": "invalid_state",
+      "confidence": 0.61,
+      "affected_files": [
+        "block/blk-mq.c"
+      ],
+      "reason": "命中 invalid_state guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\brace\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "block/blk-mq.c",
+      "rag_summary": "blk-mq: fix IO hang from sbitmap wakeup race"
+    },
+    {
+      "cve_id": "CVE-2024-26672",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/gpu"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/gpu",
+      "rag_summary": "drm/amdgpu: Fix variable 'mca_funcs' dereferenced before NULL check"
+    },
+    {
+      "cve_id": "CVE-2024-26688",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "fs/hugetlbfs"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b",
+        "null pointer"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "fs/hugetlbfs",
+      "rag_summary": "fs,hugetlb: fix NULL pointer dereference in hugetlbs_fill_super"
+    },
+    {
+      "cve_id": "CVE-2024-26692",
+      "guard_category": "size_len",
+      "confidence": 0.61,
+      "affected_files": [
+        "fs/smb"
+      ],
+      "reason": "命中 size_len guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bsize\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "fs/smb",
+      "rag_summary": "smb: Fix regression in writes when non-standard maximum write size"
+    },
+    {
+      "cve_id": "CVE-2024-26695",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/crypto"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b",
+        "null pointer"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/crypto",
+      "rag_summary": "crypto: ccp - Fix null pointer dereference in"
+    },
+    {
+      "cve_id": "CVE-2024-26698",
+      "guard_category": "invalid_state",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/net"
+      ],
+      "reason": "命中 invalid_state guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\brace\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "hv_netvsc: Fix race condition between netvsc_probe and netvsc_remove"
+    },
+    {
+      "cve_id": "CVE-2024-26699",
+      "guard_category": "bounds",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/gpu"
+      ],
+      "reason": "命中 bounds guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bbounds?\\b",
+        "out[- ]of[- ]bounds",
+        "\\bindex\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/gpu",
+      "rag_summary": "drm/amd/display: Fix array-index-out-of-bounds in dcn35_clkmgr"
+    },
+    {
+      "cve_id": "CVE-2024-26700",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/gpu"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/gpu",
+      "rag_summary": "drm/amd/display: Fix MST Null Ptr for RV"
+    },
+    {
+      "cve_id": "CVE-2024-26715",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/usb"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b",
+        "null pointer"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/usb",
+      "rag_summary": "usb: dwc3: gadget: Fix NULL pointer dereference in"
+    },
+    {
+      "cve_id": "CVE-2024-26716",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/usb"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b",
+        "null pointer"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/usb",
+      "rag_summary": "usb: core: Prevent null pointer dereference in"
+    },
+    {
+      "cve_id": "CVE-2024-26717",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/hid"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/hid",
+      "rag_summary": "HID: i2c-hid-of: fix NULL-deref on failed power up"
+    },
+    {
+      "cve_id": "CVE-2024-26728",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/gpu"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/gpu",
+      "rag_summary": "drm/amd/display: fix null-pointer dereference on edid reading"
+    },
+    {
+      "cve_id": "CVE-2024-26729",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "drivers/gpu"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b",
+        "null pointer"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "drivers/gpu",
+      "rag_summary": "drm/amd/display: Fix potential null pointer dereference in"
+    },
+    {
+      "cve_id": "CVE-2024-26731",
+      "guard_category": "null",
+      "confidence": 0.61,
+      "affected_files": [
+        "net/core"
+      ],
+      "reason": "命中 null guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\bnull\\b",
+        "null pointer"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "net/core",
+      "rag_summary": "bpf, sockmap: Fix NULL pointer dereference in"
+    },
+    {
+      "cve_id": "CVE-2024-26733",
+      "guard_category": "overflow",
+      "confidence": 0.61,
+      "affected_files": [
+        "net/ipv4"
+      ],
+      "reason": "命中 overflow guard 语义；RAG seed 摘要直接命中 guard 语义；RAG seed 摘要包含修复/检查动词；触达文件数量较少",
+      "suggested_validation_mode": "dry-run",
+      "task_id": "rag-seed-only",
+      "artifact_dir": "D:\\spaces\\ai\\PatchWeaver\\evaluations\\fixtures\\rag_seed_linux_kernel_2024_batch200.json",
+      "guard_signals": [
+        "\\boverflow\\b"
+      ],
+      "rag_seed_hit": true,
+      "rag_subsystem": "net/ipv4",
+      "rag_summary": "arp: Prevent overflow in arp_req_get()."
+    }
+  ],
+  "validation": {
+    "mode": "none",
+    "selected_cves": [],
+    "commands": [],
+    "executed": false,
+    "results": []
+  }
+}

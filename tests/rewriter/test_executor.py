@@ -7,6 +7,7 @@ import pytest
 
 from patchweaver.models.patch import PatchBundle
 from patchweaver.models.rewrite import RewritePlan
+from patchweaver.models.semantic import RepairIntent
 from patchweaver.rewriter.executor import RewriteExecutor
 
 
@@ -52,6 +53,14 @@ def _make_bundle(tmp_path: Path, *, task_id: str, relative_file: str) -> PatchBu
         affected_files=[relative_file],
         normalized_patch_path=_write_patch(tmp_path, relative_file=relative_file),
     )
+
+
+def _write_text_patch(tmp_path: Path, *, patch_text: str) -> Path:
+    """写入调用方指定的 patch 文本。"""
+
+    patch_path = tmp_path / "normalized.patch"
+    patch_path.write_text(patch_text, encoding="utf-8")
+    return patch_path
 
 
 @pytest.mark.parametrize(
@@ -183,3 +192,78 @@ def test_rewrite_executor_records_smpl_primary_route_without_kernel_scaffold(tmp
     assert rewrite_reason["selected_execution_mode"] == "smpl_primary"
     assert "smpl_primary_rewrite.cocci" in step_map["smpl"]["summary"]
     assert step_map["template"]["summary"].startswith("命中模板")
+
+
+def test_rewrite_executor_materializes_active_semantic_guard_rewrite(tmp_path: Path) -> None:
+    rewrite_dir = tmp_path / "semantic-guard-active"
+    source_patch = "\n".join(
+        [
+            "diff --git a/net/netfilter/nf_tables_api.c b/net/netfilter/nf_tables_api.c",
+            "--- a/net/netfilter/nf_tables_api.c",
+            "+++ b/net/netfilter/nf_tables_api.c",
+            "@@ -100,6 +100,9 @@ static int nf_tables_newrule(struct nft_ctx *ctx)",
+            "+if (WARN_ON_ONCE(!ctx->table))",
+            "+    return -EINVAL;",
+            " return 0;",
+            "",
+        ]
+    )
+    plan = RewritePlan(
+        task_id="TASK-CVE-2024-1086-SEMANTIC-GUARD",
+        plan_id="TASK-CVE-2024-1086-SEMANTIC-GUARD-plan-001",
+        selected_recipe="semantic_guard_rewrite",
+        selected_route_family="semantic_guard",
+        selected_execution_mode="semantic_guard_rewrite",
+        selected_primitives=["semantic_guard"],
+        target_files=["net/netfilter/nf_tables_api.c"],
+        rule_hits=["repair_intent_semantic_guard"],
+        requires_kernel_scaffold=False,
+        selection_reason="CVE-2024-1086 语义 guard 路线需要消除诊断宏调用站点变化",
+    )
+    bundle = PatchBundle(
+        task_id=plan.task_id,
+        cve_id="CVE-2024-1086",
+        affected_files=["net/netfilter/nf_tables_api.c"],
+        normalized_patch_path=_write_text_patch(tmp_path, patch_text=source_patch),
+    )
+    repair_intent = RepairIntent(
+        cve_id="CVE-2024-1086",
+        bug_class="use_after_free",
+        guard_conditions=["!ctx->table"],
+        guard_sites=["nf_tables_newrule"],
+        safe_exits=["return -EINVAL;"],
+        touched_files=["net/netfilter/nf_tables_api.c"],
+        touched_functions=["nf_tables_newrule"],
+        recommended_strategy="semantic_guard",
+        confidence=0.8,
+        evidence=["新增 guard 和安全退出；livepatch 改写需避免 WARN_ON_ONCE 调用站点漂移"],
+    )
+
+    outputs = RewriteExecutor(PROJECT_ROOT).execute(
+        plan=plan,
+        patch_bundle=bundle,
+        rewrite_dir=rewrite_dir,
+        builder=_BuilderStub(),
+        task_id=plan.task_id,
+        attempt_no=1,
+        repair_intent=repair_intent,
+    )
+
+    rewritten_patch = outputs["rewritten_patch"].read_text(encoding="utf-8")
+    semantic_report = json.loads(outputs["semantic_guard_rewrite"].read_text(encoding="utf-8"))
+    rewrite_reason = json.loads(outputs["rewrite_reason"].read_text(encoding="utf-8"))
+    trace_payload = json.loads(outputs["transformation_trace"].read_text(encoding="utf-8"))
+    step_map = {step["engine"]: step for step in trace_payload["steps"]}
+
+    assert rewritten_patch != source_patch
+    assert "WARN_ON_ONCE" not in rewritten_patch
+    assert "if (unlikely(!ctx->table))" in rewritten_patch
+    assert "return -EINVAL" in rewritten_patch
+    assert semantic_report["status"] == "applied"
+    assert semantic_report["effective"] is True
+    assert semantic_report["call_elision_count"] == 1
+    assert "WARN_ON guard -> unlikely guard" in semantic_report["transformations"]
+    assert rewrite_reason["repair_intent"]["cve_id"] == "CVE-2024-1086"
+    assert rewrite_reason["semantic_guard_rewrite_path"].endswith("semantic_guard_rewrite.json")
+    assert step_map["semantic_guard"]["action"] == "applied"
+    assert outputs["apply_precheck_report"].status == "skipped"

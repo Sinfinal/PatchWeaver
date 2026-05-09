@@ -39,3 +39,10 @@ def test_complex_route_validation_smoke_runs_one_round(tmp_path: Path) -> None:
         "smpl_primary",
     }
     assert all(item["validation_status"] == "passed" for item in payload["results"])
+    scaffold_results = [item for item in payload["results"] if item["case"] != "smpl_primary"]
+    assert all(item["kernel_adapter_plan"] is True for item in scaffold_results)
+    assert all(item["kernel_adapter_scaffold"] is True for item in scaffold_results)
+    assert all(item["kernel_adapter_scaffold_path"].endswith("kernel_adapter_scaffold.c") for item in scaffold_results)
+    smpl_result = next(item for item in payload["results"] if item["case"] == "smpl_primary")
+    assert smpl_result["kernel_adapter_plan"] is False
+    assert smpl_result["kernel_adapter_scaffold"] is False

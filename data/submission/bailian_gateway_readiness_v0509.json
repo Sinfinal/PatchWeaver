@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "component": "patchweaver-bailian-gateway",
+  "status": "fc_default_domain_ready",
+  "public_url": "https://patchwe-gateway-ffapnhavuo.cn-beijing.fcapp.run",
+  "mcp_service": {
+    "name": "patchweaver-bailian-gateway",
+    "id": "mcp-ODEwY2JkM2Q0MTU2",
+    "tool_name": "patchweaver_gateway",
+    "tool_path": "POST /gateway",
+    "compat_tool_path": "POST /api/v1/integrations/bailian/gateway"
+  },
+  "smoke_contract": {
+    "healthz": "https://patchwe-gateway-ffapnhavuo.cn-beijing.fcapp.run/healthz",
+    "gateway": "https://patchwe-gateway-ffapnhavuo.cn-beijing.fcapp.run/gateway",
+    "compat_gateway": "https://patchwe-gateway-ffapnhavuo.cn-beijing.fcapp.run/api/v1/integrations/bailian/gateway",
+    "required_initial_mode": "dry_run=true",
+    "verified_actions": [
+      "status",
+      "agent_decision"
+    ]
+  },
+  "secret_policy": {
+    "secrets_written_to_manifest": false,
+    "required_secret_storage": "Function Compute protected environment variables or secret manager",
+    "forbidden_fields": [
+      "api_key",
+      "password",
+      "cookie",
+      "token"
+    ]
+  },
+  "delivery_boundary": [
+    "The fcapp.run default HTTPS domain is acceptable for controlled smoke tests.",
+    "Bind a custom domain, API Gateway, or ALB if the final judge-facing delivery requires production-grade exposure.",
+    "Real task execution must stay behind authentication and timeout controls; first-party smoke tests should keep dry_run=true."
+  ],
+  "generated_at": "2026-05-09T07:14:22.799060+00:00"
+}

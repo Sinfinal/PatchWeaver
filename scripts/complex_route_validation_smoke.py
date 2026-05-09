@@ -360,6 +360,17 @@ def run_case(case: ComplexRouteCase, *, round_no: int, workspace_root: Path) -> 
 
     kernel_adapter_path = rewrite_outputs.get("kernel_adapter_plan")
     has_kernel_adapter = kernel_adapter_path is not None and Path(kernel_adapter_path).exists()
+    kernel_adapter_scaffold_path: Path | None = None
+    has_kernel_adapter_scaffold = False
+    if has_kernel_adapter:
+        kernel_adapter_payload = json.loads(Path(kernel_adapter_path).read_text(encoding="utf-8"))
+        scaffold_files = kernel_adapter_payload.get("scaffold_files") or []
+        for scaffold_file in scaffold_files:
+            candidate_path = PROJECT_ROOT / scaffold_file
+            if candidate_path.name == "kernel_adapter_scaffold.c" and candidate_path.exists():
+                kernel_adapter_scaffold_path = candidate_path
+                has_kernel_adapter_scaffold = True
+                break
     candidate_recipes = [item.recipe_name for item in plan.candidate_summaries]
 
     if plan.selected_recipe != case.expected_recipe:
@@ -370,6 +381,8 @@ def run_case(case: ComplexRouteCase, *, round_no: int, workspace_root: Path) -> 
         raise RuntimeError(f"{case.name} execution_mode 异常: {plan.selected_execution_mode}")
     if has_kernel_adapter != case.expect_kernel_adapter:
         raise RuntimeError(f"{case.name} kernel_adapter_plan 异常: {has_kernel_adapter}")
+    if has_kernel_adapter_scaffold != case.expect_kernel_adapter:
+        raise RuntimeError(f"{case.name} kernel_adapter_scaffold 异常: {has_kernel_adapter_scaffold}")
     if report.status != "passed":
         raise RuntimeError(f"{case.name} validation 未通过: {report.status}")
     if not report.load_result.ok or not report.unload_result.ok or not report.smoke_result.ok:
@@ -388,6 +401,8 @@ def run_case(case: ComplexRouteCase, *, round_no: int, workspace_root: Path) -> 
         "selected_execution_mode": plan.selected_execution_mode,
         "candidate_recipes": candidate_recipes,
         "kernel_adapter_plan": has_kernel_adapter,
+        "kernel_adapter_scaffold": has_kernel_adapter_scaffold,
+        "kernel_adapter_scaffold_path": str(kernel_adapter_scaffold_path) if kernel_adapter_scaffold_path else None,
         "module_path": str(module_path),
         "validation_status": report.status,
         "load_status": report.load_result.status,

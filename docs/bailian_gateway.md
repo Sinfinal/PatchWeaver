@@ -36,7 +36,7 @@ python scripts/run_bailian_gateway.py --action status --payload-json "{\"task_id
 
 ## Function Compute Package
 
-Build a small deployable package:
+Build an event-style package:
 
 ```bash
 python scripts/package_bailian_gateway.py \
@@ -44,14 +44,50 @@ python scripts/package_bailian_gateway.py \
   --manifest-output data/submission/bailian_gateway_fc_package_v0509.json
 ```
 
-Upload the generated zip to Function Compute with:
+Upload the event-style zip to Function Compute with:
 
 - Entrypoint: `index.handler`
 - Runtime: Python 3
 - Required environment: `PATCHWEAVER_API_BASE_URL`
 - Optional secret: `PATCHWEAVER_BAILIAN_API_KEY`
 
+For a Bailian MCP plugin that needs a stable HTTPS base URL, build the web-function package instead:
+
+```bash
+python scripts/package_bailian_gateway.py \
+  --package-type web \
+  --output-zip data/submission/bailian_gateway_fc_web_package_v0509.zip \
+  --manifest-output data/submission/bailian_gateway_fc_web_package_v0509.json
+```
+
+Upload the web-function zip to Function Compute with:
+
+- Runtime: custom runtime Debian 10 / Python 3.10
+- Startup command: `python3 server.py`
+- Listen port: `9000`
+- Public health check: `GET /healthz`
+- Plugin paths: `POST /gateway` and `POST /api/v1/integrations/bailian/gateway`
+
 The first platform-side smoke test should use `dry_run: true`.
+
+For submission/readiness evidence, emit a non-secret manifest alongside the
+web-function package:
+
+```bash
+python scripts/package_bailian_gateway.py \
+  --package-type web \
+  --output-zip data/submission/bailian_gateway_fc_web_package_v0509.zip \
+  --manifest-output data/submission/bailian_gateway_fc_web_package_v0509.json \
+  --readiness-output data/submission/bailian_gateway_readiness_v0509.json \
+  --public-url https://patchwe-gateway-ffapnhavuo.cn-beijing.fcapp.run \
+  --mcp-service-id mcp-ODEwY2JkM2Q0MTU2
+```
+
+The readiness manifest records only non-sensitive delivery facts: FC public
+base URL, MCP service/tool identifiers, public paths, required
+`dry_run=true` smoke mode, and the delivery boundary for the default
+`fcapp.run` domain. It must not contain API keys, passwords, cookies, tokens,
+or protected environment values.
 
 ## FC/MCP Contract
 
@@ -128,6 +164,11 @@ Additional `2026-05-09` verification:
 - The regenerated FC package is:
   - `data/submission/bailian_gateway_fc_package_v0509.zip`
   - `data/submission/bailian_gateway_fc_package_v0509.json`
+- The generated FC web-function package is:
+  - `data/submission/bailian_gateway_fc_web_package_v0509.zip`
+  - `data/submission/bailian_gateway_fc_web_package_v0509.json`
+  - Startup command: `python3 server.py`
+  - Listen port: `9000`
 - Focused local verification:
 
 ```bash
@@ -144,11 +185,23 @@ Result: `26 passed, 2 warnings in 3.53s`.
 
 Result: `26 passed in 1.39s`.
 
+Additional platform smoke on `2026-05-09`:
+
+- Function Compute public URL: `https://patchwe-gateway-ffapnhavuo.cn-beijing.fcapp.run`
+- Trigger auth mode observed in the console: `无需认证`
+- FC smoke passed:
+  - `GET /healthz`
+  - `POST /gateway` with `action=status`, `task_id=flat-demo`, `dry_run=true`
+  - `POST /api/v1/integrations/bailian/gateway` with `action=agent_decision`, `task_id=flat-demo`, `dry_run=true`
+- Bailian MCP service `patchweaver-bailian-gateway` now uses the FC public URL instead of the previous temporary localtunnel URL.
+- Bailian app-side dry-run smoke test passed after the URL switch. The app invoked `patchweaver-bailian-gateway / patchweaver_gateway` and returned the expected warning that this is platform/tool integration dry-run only, not real `kpatch-build`, `.ko`, or dynamic validation success.
+
 Current delivery boundary:
 
-- The current public gateway used for the smoke test is a temporary localtunnel URL. It proves the Bailian tool binding and request shape, but it is not a durable judge-facing endpoint.
+- The temporary localtunnel dependency has been removed from the MCP service configuration.
+- The current public gateway is an Aliyun Function Compute default `fcapp.run` HTTPS URL. It is stable enough for controlled contest smoke tests, but Aliyun warns that default shared public domains are not recommended for production-grade exposure.
 - The published channel currently visible in the console is API/SDK based. A direct public Web/share link was not observed on the `发布渠道` page.
-- Final delivery should replace the temporary tunnel with Function Compute, a stable HTTPS domain, or another durable public endpoint reachable by Bailian and judges.
-- Real task execution must remain disabled or guarded until the durable endpoint, authentication, timeout policy, and PatchWeaver API reachability are confirmed.
+- If the final submission requires a judge-facing production endpoint, bind a custom domain or API Gateway/ALB in front of the FC function.
+- Real task execution must remain disabled or guarded until authentication, timeout policy, and PatchWeaver API reachability are confirmed.
 
 Do not place API keys, server passwords, platform tokens, or private cookies in this document.

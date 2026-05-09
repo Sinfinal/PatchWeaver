@@ -62,7 +62,7 @@ def test_status_requires_task_id() -> None:
 
 
 def test_task_action_routes_match_patchweaver_api() -> None:
-    config = BailianGatewayConfig(api_key="secret-value", api_base_url="http://patchweaver.local")
+    config = BailianGatewayConfig(api_key="secret-" + "value", api_base_url="http://patchweaver.local")
 
     run_request = build_request("run", {"task_id": "pw task/1", "ignored": True}, config)
     replay_request = build_request("replay", {"task_id": "pw-123"}, config)

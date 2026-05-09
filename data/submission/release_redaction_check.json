@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-05-09T08:31:49.427140+00:00",
+  "status": "passed",
+  "scan_roots": [
+    "README.md",
+    "config",
+    "docs",
+    "submission/docs",
+    "patchweaver",
+    "scripts",
+    "tests"
+  ],
+  "required_env": [
+    {
+      "name": "PATCHWEAVER_BAILIAN_API_KEY",
+      "present": true,
+      "status": "present"
+    },
+    {
+      "name": "PATCHWEAVER_API_BASE_URL",
+      "present": true,
+      "status": "present"
+    }
+  ],
+  "summary": {
+    "findings": 0,
+    "missing_env": 0
+  },
+  "findings": []
+}

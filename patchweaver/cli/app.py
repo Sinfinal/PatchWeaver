@@ -195,6 +195,18 @@ def _api_key_source_label(source: str) -> str:
     return labels.get(source, source)
 
 
+def _api_key_doctor_detail(api_key_status: dict[str, str | bool | None]) -> str:
+    """Describe API key readiness without exposing any key material."""
+
+    env_name = str(api_key_status["api_key_env"])
+    source = str(api_key_status["api_key_source"])
+    if source == "env":
+        return f"环境变量 `{env_name}` 已配置，值已隐藏"
+    if source == "config":
+        return f"config/models.yaml 存在明文 api_key 回退，请迁移到环境变量 `{env_name}`"
+    return f"缺少环境变量 `{env_name}`，config/models.yaml api_key 也为空"
+
+
 def _models_payload(models_config: Any) -> dict[str, Any]:
     """整理模型配置输出，并隐藏敏感字段"""
 
@@ -408,9 +420,10 @@ def _command_examples(command_path: str) -> list[tuple[str, str]]:
     examples: dict[str, list[tuple[str, str]]] = {
         "patchweaver models": [
             (f"{command_path} --json", "查看当前模型配置、API Key 来源和脱敏状态"),
-            ("patchweaver models set-api-key --value sk-xxxx", "把 API Key 写入 config/models.yaml"),
-            ("patchweaver models set-api-key-env --name PATCHWEAVER_BAILIAN_API_KEY", "修改优先读取的环境变量名"),
-            ("patchweaver models clear-api-key", "清空 config/models.yaml 里的明文 API Key"),
+            ("$env:PATCHWEAVER_BAILIAN_API_KEY='***'", "Windows PowerShell 中通过环境变量注入密钥"),
+            ("export PATCHWEAVER_BAILIAN_API_KEY='***'", "Linux shell 中通过环境变量注入密钥"),
+            ("patchweaver models set-api-key-env --name PATCHWEAVER_BAILIAN_API_KEY", "修改运行时读取的环境变量名"),
+            ("patchweaver models clear-api-key", "清空 config/models.yaml 里的历史兼容 api_key 字段"),
         ],
         "patchweaver serve-api": [
             (f"{command_path} --foreground", "以前台方式启动后端接口，便于本地联调。"),
@@ -544,7 +557,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
         ("patchweaver db path", "查看当前配置解析出来的数据库路径。"),
         ("patchweaver evaluate --fixture contest_samples", "按固定样例集输出阶段评测汇总。"),
         ("patchweaver models --json", "查看当前模型分工和 API Key 来源。"),
-        ("patchweaver models set-api-key --value sk-xxxx", "把 API Key 写入 config/models.yaml。"),
+        ("export PATCHWEAVER_BAILIAN_API_KEY='***'", "正式交付时通过环境变量或平台 Secret 注入 API Key。"),
         ("patchweaver finalize", "生成 submission 目录和 final_manifest。"),
         ("patchweaver gate", "执行第四阶段最终门禁检查。"),
     ]
@@ -1120,11 +1133,8 @@ def _doctor_payload(
                 category="models",
                 name="api_key",
                 label="百炼 API Key",
-                ok=bool(api_key_status["api_key_ready"]),
-                detail=(
-                    f"{_api_key_source_label(str(api_key_status['api_key_source']))}"
-                    f" / {api_key_status['api_key_masked'] or models_config.api_key_env}"
-                ),
+                ok=bool(api_key_status["api_key_ready"]) and api_key_status["api_key_source"] != "config",
+                detail=_api_key_doctor_detail(api_key_status),
             ),
             _check_item(
                 category="models",
@@ -1548,9 +1558,9 @@ def models(
 
 @models_app.command("set-api-key", cls=PatchWeaverHelpCommand)
 def models_set_api_key(
-    value: Annotated[str, typer.Option("--value", help="写入 config/models.yaml 的 API Key。")] = ...,
+    value: Annotated[str, typer.Option("--value", help="写入历史兼容 api_key 字段；封版交付不建议使用。")] = ...,
 ) -> None:
-    """写入配置文件中的百炼 API Key"""
+    """写入历史兼容字段中的百炼 API Key，正式交付请改用环境变量"""
 
     runtime = _load_runtime()
     normalized_value = value.strip()
@@ -1582,7 +1592,7 @@ def models_set_api_key_env(
     path = save_models_api_settings(runtime.project_root, api_key_env=env_name)
     typer.echo(f"已更新: {_project_path(runtime.project_root, path)}")
     typer.echo(f"新的环境变量名: {env_name}")
-    typer.echo("说明: 运行时会先读取这个环境变量，没有命中时才回退到 config/models.yaml 中的 api_key")
+    typer.echo("说明: 封版交付只认可环境变量或平台 Secret 注入；config/models.yaml 的 api_key 应保持为空")
 
 
 @models_app.command("clear-api-key", cls=PatchWeaverHelpCommand)
@@ -1593,7 +1603,7 @@ def models_clear_api_key() -> None:
     path = save_models_api_settings(runtime.project_root, api_key="")
     typer.echo(f"已更新: {_project_path(runtime.project_root, path)}")
     typer.echo("config/models.yaml 中的 api_key 已清空")
-    typer.echo("说明: 如果仍需调用模型，请继续使用环境变量或重新写入新的 api_key")
+    typer.echo("说明: 如果仍需调用模型，请使用环境变量或平台 Secret 注入 API Key")
 
 
 @app.command("create", cls=PatchWeaverHelpCommand)

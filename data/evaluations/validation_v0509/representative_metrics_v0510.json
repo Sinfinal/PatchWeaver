@@ -1,0 +1,771 @@
+{
+  "source": {
+    "holdout_path": "data\\evaluations\\validation_v0509\\final_holdout10_full_run_v0509.json",
+    "evidence_manifest_path": "data\\evaluations\\validation_v0509\\final_holdout10_evidence_manifest_v0509.json"
+  },
+  "metrics": {
+    "representative_total": 10,
+    "representative_success_count": 10,
+    "representative_success_rate": 1.0,
+    "average_attempts": 1.0,
+    "success_gap_to_60_percent": 0.0,
+    "target_success_rate": 0.6
+  },
+  "evidence_summary": {
+    "ko": {
+      "present": 10,
+      "passed": 10,
+      "total": 10
+    },
+    "load": {
+      "present": 10,
+      "passed": 10,
+      "total": 10
+    },
+    "unload": {
+      "present": 10,
+      "passed": 10,
+      "total": 10
+    },
+    "smoke": {
+      "present": 10,
+      "passed": 10,
+      "total": 10
+    },
+    "selftest": {
+      "present": 10,
+      "passed": 10,
+      "total": 10
+    }
+  },
+  "failure_buckets": {
+    "success": 10
+  },
+  "model_rag_summary": {
+    "rag_seed_hits": 10,
+    "rag_subsystem_counts": {
+      "drivers/scsi": 1,
+      "drivers/net": 4,
+      "net/tipc": 1,
+      "net/netfilter": 1,
+      "net/mac80211": 1,
+      "drivers/gpu": 1,
+      "fs/btrfs": 1
+    },
+    "selected_route_counts": {
+      "minimal_livepatch_wrap": 4,
+      "direct_apply_patch": 6
+    },
+    "model_counts": {},
+    "model_recorded": 0,
+    "model_missing": 10
+  },
+  "target_gap": {
+    "status": "meets_target",
+    "explanation": "代表集 10/10 成功，成功率 100.0%，已达到赛题 60%+ 目标；平均尝试轮次为 1.0。"
+  },
+  "cases": [
+    {
+      "cve_id": "CVE-2024-26742",
+      "task_id": "finalholdout10v0509-26742",
+      "success": true,
+      "run_status": "built",
+      "validation_status": "passed",
+      "attempt_count": 1,
+      "failure_bucket": "success",
+      "sample_bucket": "buildable_and_should_pass",
+      "model_rag": {
+        "model_name": null,
+        "selected_route": "minimal_livepatch_wrap",
+        "preferred_route": "minimal_livepatch_wrap",
+        "rag_seed_hit": true,
+        "rag_seed_group": "rag-linux-kernel-2024-batch200",
+        "rag_subsystem": "drivers/scsi",
+        "rag_summary": "scsi: smartpqi: Fix disable_managed_interrupts"
+      },
+      "evidence": {
+        "ko": {
+          "present": true,
+          "status": "present",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26742/attempts/001/output/patchweaver-finalholdout10v0509-26742-001.ko",
+          "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+        },
+        "load": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26742/attempts/001/logs/load.log",
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout10v0509-26742/attempts/001/output/patchweaver-finalholdout10v0509-26742-001.ko"
+        },
+        "unload": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26742/attempts/001/logs/unload.log",
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout10v0509_26742_001"
+        },
+        "smoke": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26742/attempts/001/logs/smoke.log",
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh"
+        },
+        "selftest": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26742/attempts/001/logs/selftest.log",
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null
+        }
+      },
+      "evidence_paths": {
+        "build_summary.json": "workspaces/finalholdout10v0509-26742/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "workspaces/finalholdout10v0509-26742/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "workspaces/finalholdout10v0509-26742/analysis/repair_intent.json",
+        "rewritten.patch": "workspaces/finalholdout10v0509-26742/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "workspaces/finalholdout10v0509-26742/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "workspaces/finalholdout10v0509-26742/reports/report.json",
+        "patchweaver-*.ko": [
+          "workspaces/finalholdout10v0509-26742/attempts/001/output/patchweaver-finalholdout10v0509-26742-001.ko",
+          "workspaces/p0-gate-fg-20260506210801-26742/attempts/001/output/patchweaver-p0-gate-fg-20260506210801-26742-001.ko",
+          "workspaces/p0-vendorrev-20260506203124-26742/attempts/001/output/patchweaver-p0-vendorrev-20260506203124-26742-001.ko"
+        ],
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26742/attempts/001/diagnostics/process_snapshot.txt"
+      },
+      "manifest_status": "complete"
+    },
+    {
+      "cve_id": "CVE-2024-26675",
+      "task_id": "finalholdout10v0509-26675",
+      "success": true,
+      "run_status": "built",
+      "validation_status": "passed",
+      "attempt_count": 1,
+      "failure_bucket": "success",
+      "sample_bucket": "buildable_and_should_pass",
+      "model_rag": {
+        "model_name": null,
+        "selected_route": "minimal_livepatch_wrap",
+        "preferred_route": "minimal_livepatch_wrap",
+        "rag_seed_hit": true,
+        "rag_seed_group": "rag-linux-kernel-2024-batch100",
+        "rag_subsystem": "drivers/net",
+        "rag_summary": "ppp_async: limit MRU to 64K"
+      },
+      "evidence": {
+        "ko": {
+          "present": true,
+          "status": "present",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26675/attempts/001/output/patchweaver-finalholdout10v0509-26675-001.ko",
+          "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+        },
+        "load": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26675/attempts/001/logs/load.log",
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout10v0509-26675/attempts/001/output/patchweaver-finalholdout10v0509-26675-001.ko"
+        },
+        "unload": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26675/attempts/001/logs/unload.log",
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout10v0509_26675_001"
+        },
+        "smoke": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26675/attempts/001/logs/smoke.log",
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh"
+        },
+        "selftest": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26675/attempts/001/logs/selftest.log",
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null
+        }
+      },
+      "evidence_paths": {
+        "build_summary.json": "workspaces/finalholdout10v0509-26675/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "workspaces/finalholdout10v0509-26675/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "workspaces/finalholdout10v0509-26675/analysis/repair_intent.json",
+        "rewritten.patch": "workspaces/finalholdout10v0509-26675/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "workspaces/finalholdout10v0509-26675/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "workspaces/finalholdout10v0509-26675/reports/report.json",
+        "patchweaver-*.ko": [
+          "workspaces/finalholdout10v0509-26675/attempts/001/output/patchweaver-finalholdout10v0509-26675-001.ko",
+          "workspaces/p1-smoke-20260507160113-26675/attempts/001/output/patchweaver-p1-smoke-20260507160113-26675-001.ko",
+          "workspaces/p0-confirm-20260507151120-26675/attempts/001/output/patchweaver-p0-confirm-20260507151120-26675-001.ko",
+          "workspaces/p0-callsite-20260507144934-26675/attempts/001/output/patchweaver-p0-callsite-20260507144934-26675-001.ko",
+          "workspaces/p0-wrapperprobe-20260507144255-26675/attempts/001/output/patchweaver-p0-wrapperprobe-20260507144255-26675-001.ko"
+        ],
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26675/attempts/001/diagnostics/process_snapshot.txt"
+      },
+      "manifest_status": "complete"
+    },
+    {
+      "cve_id": "CVE-2024-26663",
+      "task_id": "finalholdout10v0509-26663",
+      "success": true,
+      "run_status": "built",
+      "validation_status": "passed",
+      "attempt_count": 1,
+      "failure_bucket": "success",
+      "sample_bucket": "buildable_and_should_pass",
+      "model_rag": {
+        "model_name": null,
+        "selected_route": "minimal_livepatch_wrap",
+        "preferred_route": "minimal_livepatch_wrap",
+        "rag_seed_hit": true,
+        "rag_seed_group": "rag-linux-kernel-2024-batch100",
+        "rag_subsystem": "net/tipc",
+        "rag_summary": "tipc: Check the bearer type before calling tipc_udp_nl_bearer_add()"
+      },
+      "evidence": {
+        "ko": {
+          "present": true,
+          "status": "present",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26663/attempts/001/output/patchweaver-finalholdout10v0509-26663-001.ko",
+          "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+        },
+        "load": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26663/attempts/001/logs/load.log",
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout10v0509-26663/attempts/001/output/patchweaver-finalholdout10v0509-26663-001.ko"
+        },
+        "unload": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26663/attempts/001/logs/unload.log",
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout10v0509_26663_001"
+        },
+        "smoke": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26663/attempts/001/logs/smoke.log",
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh"
+        },
+        "selftest": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26663/attempts/001/logs/selftest.log",
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null
+        }
+      },
+      "evidence_paths": {
+        "build_summary.json": "workspaces/finalholdout10v0509-26663/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "workspaces/finalholdout10v0509-26663/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "workspaces/finalholdout10v0509-26663/analysis/repair_intent.json",
+        "rewritten.patch": "workspaces/finalholdout10v0509-26663/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "workspaces/finalholdout10v0509-26663/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "workspaces/finalholdout10v0509-26663/reports/report.json",
+        "patchweaver-*.ko": [
+          "workspaces/finalholdout10v0509-26663/attempts/001/output/patchweaver-finalholdout10v0509-26663-001.ko",
+          "workspaces/p0-callsite-20260507144934-26663/attempts/001/output/patchweaver-p0-callsite-20260507144934-26663-001.ko",
+          "workspaces/p0-guardfix-20260507135326-26663/attempts/001/sources/reverse_unpatched/net/tipc/tipc.ko",
+          "workspaces/p0-guardfix-20260507135326-26663/attempts/001/sources/reverse_unpatched/net/ipv4/udp_tunnel.ko",
+          "workspaces/p0-guardfix-20260507135326-26663/attempts/001/sources/reverse_unpatched/net/ipv6/ip6_udp_tunnel.ko"
+        ],
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26663/attempts/001/diagnostics/process_snapshot.txt"
+      },
+      "manifest_status": "complete"
+    },
+    {
+      "cve_id": "CVE-2024-26668",
+      "task_id": "finalholdout10v0509-26668",
+      "success": true,
+      "run_status": "built",
+      "validation_status": "passed",
+      "attempt_count": 1,
+      "failure_bucket": "success",
+      "sample_bucket": "buildable_and_should_pass",
+      "model_rag": {
+        "model_name": null,
+        "selected_route": "minimal_livepatch_wrap",
+        "preferred_route": "minimal_livepatch_wrap",
+        "rag_seed_hit": true,
+        "rag_seed_group": "rag-linux-kernel-2024-batch100",
+        "rag_subsystem": "net/netfilter",
+        "rag_summary": "netfilter: nft_limit: reject configurations that cause integer"
+      },
+      "evidence": {
+        "ko": {
+          "present": true,
+          "status": "present",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26668/attempts/001/output/patchweaver-finalholdout10v0509-26668-001.ko",
+          "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+        },
+        "load": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26668/attempts/001/logs/load.log",
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout10v0509-26668/attempts/001/output/patchweaver-finalholdout10v0509-26668-001.ko"
+        },
+        "unload": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26668/attempts/001/logs/unload.log",
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout10v0509_26668_001"
+        },
+        "smoke": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26668/attempts/001/logs/smoke.log",
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh"
+        },
+        "selftest": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26668/attempts/001/logs/selftest.log",
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null
+        }
+      },
+      "evidence_paths": {
+        "build_summary.json": "workspaces/finalholdout10v0509-26668/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "workspaces/finalholdout10v0509-26668/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "workspaces/finalholdout10v0509-26668/analysis/repair_intent.json",
+        "rewritten.patch": "workspaces/finalholdout10v0509-26668/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "workspaces/finalholdout10v0509-26668/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "workspaces/finalholdout10v0509-26668/reports/report.json",
+        "patchweaver-*.ko": [
+          "workspaces/finalholdout10v0509-26668/attempts/001/output/patchweaver-finalholdout10v0509-26668-001.ko",
+          "workspaces/p0-callsite-20260507144934-26668/attempts/001/output/patchweaver-p0-callsite-20260507144934-26668-001.ko"
+        ],
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26668/attempts/001/diagnostics/process_snapshot.txt"
+      },
+      "manifest_status": "complete"
+    },
+    {
+      "cve_id": "CVE-2024-26666",
+      "task_id": "finalholdout10v0509-26666",
+      "success": true,
+      "run_status": "built",
+      "validation_status": "passed",
+      "attempt_count": 1,
+      "failure_bucket": "success",
+      "sample_bucket": "buildable_and_should_pass",
+      "model_rag": {
+        "model_name": null,
+        "selected_route": "direct_apply_patch",
+        "preferred_route": "direct_apply_patch",
+        "rag_seed_hit": true,
+        "rag_seed_group": "rag-linux-kernel-2024-batch100",
+        "rag_subsystem": "net/mac80211",
+        "rag_summary": "wifi: mac80211: fix RCU use in TDLS fast-xmit"
+      },
+      "evidence": {
+        "ko": {
+          "present": true,
+          "status": "present",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26666/attempts/001/output/patchweaver-finalholdout10v0509-26666-001.ko",
+          "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+        },
+        "load": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26666/attempts/001/logs/load.log",
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout10v0509-26666/attempts/001/output/patchweaver-finalholdout10v0509-26666-001.ko"
+        },
+        "unload": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26666/attempts/001/logs/unload.log",
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout10v0509_26666_001"
+        },
+        "smoke": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26666/attempts/001/logs/smoke.log",
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh"
+        },
+        "selftest": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26666/attempts/001/logs/selftest.log",
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null
+        }
+      },
+      "evidence_paths": {
+        "build_summary.json": "workspaces/finalholdout10v0509-26666/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "workspaces/finalholdout10v0509-26666/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "workspaces/finalholdout10v0509-26666/analysis/repair_intent.json",
+        "rewritten.patch": "workspaces/finalholdout10v0509-26666/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "workspaces/finalholdout10v0509-26666/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "workspaces/finalholdout10v0509-26666/reports/report.json",
+        "patchweaver-*.ko": [
+          "workspaces/finalholdout10v0509-26666/attempts/001/output/patchweaver-finalholdout10v0509-26666-001.ko",
+          "workspaces/p0-callsite-20260507144934-26666/attempts/001/output/patchweaver-p0-callsite-20260507144934-26666-001.ko"
+        ],
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26666/attempts/001/diagnostics/process_snapshot.txt"
+      },
+      "manifest_status": "complete"
+    },
+    {
+      "cve_id": "CVE-2024-26656",
+      "task_id": "finalholdout10v0509-26656",
+      "success": true,
+      "run_status": "built",
+      "validation_status": "passed",
+      "attempt_count": 1,
+      "failure_bucket": "success",
+      "sample_bucket": "buildable_and_should_pass",
+      "model_rag": {
+        "model_name": null,
+        "selected_route": "direct_apply_patch",
+        "preferred_route": "direct_apply_patch",
+        "rag_seed_hit": true,
+        "rag_seed_group": "rag-linux-kernel-2024-batch100",
+        "rag_subsystem": "drivers/gpu",
+        "rag_summary": "drm/amdgpu: fix use-after-free bug"
+      },
+      "evidence": {
+        "ko": {
+          "present": true,
+          "status": "present",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26656/attempts/001/output/patchweaver-finalholdout10v0509-26656-001.ko",
+          "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+        },
+        "load": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26656/attempts/001/logs/load.log",
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout10v0509-26656/attempts/001/output/patchweaver-finalholdout10v0509-26656-001.ko"
+        },
+        "unload": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26656/attempts/001/logs/unload.log",
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout10v0509_26656_001"
+        },
+        "smoke": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26656/attempts/001/logs/smoke.log",
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh"
+        },
+        "selftest": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26656/attempts/001/logs/selftest.log",
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null
+        }
+      },
+      "evidence_paths": {
+        "build_summary.json": "workspaces/finalholdout10v0509-26656/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "workspaces/finalholdout10v0509-26656/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "workspaces/finalholdout10v0509-26656/analysis/repair_intent.json",
+        "rewritten.patch": "workspaces/finalholdout10v0509-26656/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "workspaces/finalholdout10v0509-26656/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "workspaces/finalholdout10v0509-26656/reports/report.json",
+        "patchweaver-*.ko": [
+          "workspaces/finalholdout10v0509-26656/attempts/001/output/patchweaver-finalholdout10v0509-26656-001.ko",
+          "workspaces/p0-callsite-20260507144934-26656/attempts/001/output/patchweaver-p0-callsite-20260507144934-26656-001.ko"
+        ],
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26656/attempts/001/diagnostics/process_snapshot.txt"
+      },
+      "manifest_status": "complete"
+    },
+    {
+      "cve_id": "CVE-2024-26726",
+      "task_id": "finalholdout10v0509-26726",
+      "success": true,
+      "run_status": "built",
+      "validation_status": "passed",
+      "attempt_count": 1,
+      "failure_bucket": "success",
+      "sample_bucket": "buildable_and_should_pass",
+      "model_rag": {
+        "model_name": null,
+        "selected_route": "direct_apply_patch",
+        "preferred_route": "direct_apply_patch",
+        "rag_seed_hit": true,
+        "rag_seed_group": "rag-linux-kernel-2024-batch200",
+        "rag_subsystem": "fs/btrfs",
+        "rag_summary": "btrfs: don't drop extent_map for free space inode on write error"
+      },
+      "evidence": {
+        "ko": {
+          "present": true,
+          "status": "present",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26726/attempts/001/output/patchweaver-finalholdout10v0509-26726-001.ko",
+          "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+        },
+        "load": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26726/attempts/001/logs/load.log",
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout10v0509-26726/attempts/001/output/patchweaver-finalholdout10v0509-26726-001.ko"
+        },
+        "unload": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26726/attempts/001/logs/unload.log",
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout10v0509_26726_001"
+        },
+        "smoke": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26726/attempts/001/logs/smoke.log",
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh"
+        },
+        "selftest": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26726/attempts/001/logs/selftest.log",
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null
+        }
+      },
+      "evidence_paths": {
+        "build_summary.json": "workspaces/finalholdout10v0509-26726/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "workspaces/finalholdout10v0509-26726/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "workspaces/finalholdout10v0509-26726/analysis/repair_intent.json",
+        "rewritten.patch": "workspaces/finalholdout10v0509-26726/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "workspaces/finalholdout10v0509-26726/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "workspaces/finalholdout10v0509-26726/reports/report.json",
+        "patchweaver-*.ko": [
+          "workspaces/finalholdout10v0509-26726/attempts/001/output/patchweaver-finalholdout10v0509-26726-001.ko",
+          "workspaces/s3sgpoolrerun0507-26726/attempts/001/output/patchweaver-s3sgpoolrerun0507-26726-001.ko",
+          "workspaces/s3sg0507-26726/attempts/001/output/patchweaver-s3sg0507-26726-001.ko"
+        ],
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26726/attempts/001/diagnostics/process_snapshot.txt"
+      },
+      "manifest_status": "complete"
+    },
+    {
+      "cve_id": "CVE-2024-26698",
+      "task_id": "finalholdout10v0509-26698",
+      "success": true,
+      "run_status": "built",
+      "validation_status": "passed",
+      "attempt_count": 1,
+      "failure_bucket": "success",
+      "sample_bucket": "buildable_and_should_pass",
+      "model_rag": {
+        "model_name": null,
+        "selected_route": "direct_apply_patch",
+        "preferred_route": "direct_apply_patch",
+        "rag_seed_hit": true,
+        "rag_seed_group": "rag-linux-kernel-2024-batch100",
+        "rag_subsystem": "drivers/net",
+        "rag_summary": "hv_netvsc: Fix race condition between netvsc_probe and netvsc_remove"
+      },
+      "evidence": {
+        "ko": {
+          "present": true,
+          "status": "present",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26698/attempts/001/output/patchweaver-finalholdout10v0509-26698-001.ko",
+          "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+        },
+        "load": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26698/attempts/001/logs/load.log",
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout10v0509-26698/attempts/001/output/patchweaver-finalholdout10v0509-26698-001.ko"
+        },
+        "unload": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26698/attempts/001/logs/unload.log",
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout10v0509_26698_001"
+        },
+        "smoke": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26698/attempts/001/logs/smoke.log",
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh"
+        },
+        "selftest": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26698/attempts/001/logs/selftest.log",
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null
+        }
+      },
+      "evidence_paths": {
+        "build_summary.json": "workspaces/finalholdout10v0509-26698/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "workspaces/finalholdout10v0509-26698/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "workspaces/finalholdout10v0509-26698/analysis/repair_intent.json",
+        "rewritten.patch": "workspaces/finalholdout10v0509-26698/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "workspaces/finalholdout10v0509-26698/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "workspaces/finalholdout10v0509-26698/reports/report.json",
+        "patchweaver-*.ko": [
+          "workspaces/finalholdout10v0509-26698/attempts/001/output/patchweaver-finalholdout10v0509-26698-001.ko",
+          "workspaces/finalholdout0509c-26698/attempts/001/output/patchweaver-finalholdout0509c-26698-001.ko",
+          "workspaces/s1full0507-26698/attempts/001/output/patchweaver-s1full0507-26698-001.ko"
+        ],
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26698/attempts/001/diagnostics/process_snapshot.txt"
+      },
+      "manifest_status": "complete"
+    },
+    {
+      "cve_id": "CVE-2024-26693",
+      "task_id": "finalholdout10v0509-26693",
+      "success": true,
+      "run_status": "built",
+      "validation_status": "passed",
+      "attempt_count": 1,
+      "failure_bucket": "success",
+      "sample_bucket": "buildable_and_should_pass",
+      "model_rag": {
+        "model_name": null,
+        "selected_route": "direct_apply_patch",
+        "preferred_route": "direct_apply_patch",
+        "rag_seed_hit": true,
+        "rag_seed_group": "rag-linux-kernel-2024-batch100",
+        "rag_subsystem": "drivers/net",
+        "rag_summary": "wifi: iwlwifi: mvm: fix a crash when we run out of stations"
+      },
+      "evidence": {
+        "ko": {
+          "present": true,
+          "status": "present",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26693/attempts/001/output/patchweaver-finalholdout10v0509-26693-001.ko",
+          "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+        },
+        "load": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26693/attempts/001/logs/load.log",
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout10v0509-26693/attempts/001/output/patchweaver-finalholdout10v0509-26693-001.ko"
+        },
+        "unload": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26693/attempts/001/logs/unload.log",
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout10v0509_26693_001"
+        },
+        "smoke": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26693/attempts/001/logs/smoke.log",
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh"
+        },
+        "selftest": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26693/attempts/001/logs/selftest.log",
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null
+        }
+      },
+      "evidence_paths": {
+        "build_summary.json": "workspaces/finalholdout10v0509-26693/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "workspaces/finalholdout10v0509-26693/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "workspaces/finalholdout10v0509-26693/analysis/repair_intent.json",
+        "rewritten.patch": "workspaces/finalholdout10v0509-26693/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "workspaces/finalholdout10v0509-26693/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "workspaces/finalholdout10v0509-26693/reports/report.json",
+        "patchweaver-*.ko": [
+          "workspaces/finalholdout10v0509-26693/attempts/001/output/patchweaver-finalholdout10v0509-26693-001.ko",
+          "workspaces/finalholdout0509c-26693/attempts/001/output/patchweaver-finalholdout0509c-26693-001.ko",
+          "workspaces/s1full0507-26693/attempts/001/output/patchweaver-s1full0507-26693-001.ko"
+        ],
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26693/attempts/001/diagnostics/process_snapshot.txt"
+      },
+      "manifest_status": "complete"
+    },
+    {
+      "cve_id": "CVE-2024-26694",
+      "task_id": "finalholdout10v0509-26694",
+      "success": true,
+      "run_status": "built",
+      "validation_status": "passed",
+      "attempt_count": 1,
+      "failure_bucket": "success",
+      "sample_bucket": "buildable_and_should_pass",
+      "model_rag": {
+        "model_name": null,
+        "selected_route": "direct_apply_patch",
+        "preferred_route": "direct_apply_patch",
+        "rag_seed_hit": true,
+        "rag_seed_group": "rag-linux-kernel-2024-batch100",
+        "rag_subsystem": "drivers/net",
+        "rag_summary": "wifi: iwlwifi: fix double-free bug"
+      },
+      "evidence": {
+        "ko": {
+          "present": true,
+          "status": "present",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26694/attempts/001/output/patchweaver-finalholdout10v0509-26694-001.ko",
+          "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+        },
+        "load": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26694/attempts/001/logs/load.log",
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout10v0509-26694/attempts/001/output/patchweaver-finalholdout10v0509-26694-001.ko"
+        },
+        "unload": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26694/attempts/001/logs/unload.log",
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout10v0509_26694_001"
+        },
+        "smoke": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26694/attempts/001/logs/smoke.log",
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh"
+        },
+        "selftest": {
+          "present": true,
+          "status": "passed",
+          "path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26694/attempts/001/logs/selftest.log",
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null
+        }
+      },
+      "evidence_paths": {
+        "build_summary.json": "workspaces/finalholdout10v0509-26694/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "workspaces/finalholdout10v0509-26694/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "workspaces/finalholdout10v0509-26694/analysis/repair_intent.json",
+        "rewritten.patch": "workspaces/finalholdout10v0509-26694/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "workspaces/finalholdout10v0509-26694/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "workspaces/finalholdout10v0509-26694/reports/report.json",
+        "patchweaver-*.ko": [
+          "workspaces/finalholdout10v0509-26694/attempts/001/output/patchweaver-finalholdout10v0509-26694-001.ko",
+          "workspaces/finalholdout0509c-26694/attempts/001/output/patchweaver-finalholdout0509c-26694-001.ko",
+          "workspaces/s1full0507-26694/attempts/001/output/patchweaver-s1full0507-26694-001.ko"
+        ],
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout10v0509-26694/attempts/001/diagnostics/process_snapshot.txt"
+      },
+      "manifest_status": "complete"
+    }
+  ],
+  "generated_at": "2026-05-09T08:49:12.161801+00:00"
+}
