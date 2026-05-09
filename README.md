@@ -1,5 +1,20 @@
 # PatchWeaver
 
+<p align="center">
+  <a href="LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/license-MIT-111827?style=flat-square&labelColor=374151&color=10b981"></a>
+  <img alt="AI Agent" src="https://img.shields.io/badge/AI%20Agent-PatchWeaver-0f172a?style=flat-square&labelColor=020617&color=06b6d4">
+  <img alt="Anolis OS" src="https://img.shields.io/badge/Anolis%20OS-ANCK%206.6-1f2937?style=flat-square&labelColor=111827&color=f59e0b">
+  <img alt="kpatch livepatch" src="https://img.shields.io/badge/kpatch-livepatch-1f2937?style=flat-square&labelColor=111827&color=22c55e">
+  <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-1f2937?style=flat-square&labelColor=111827&color=3b82f6">
+</p>
+
+<p align="center">
+  <img alt="Holdout 10/10" src="https://img.shields.io/badge/holdout-10%2F10%20.ko%20built-111827?style=flat-square&labelColor=374151&color=10b981">
+  <img alt="Validation 10/10" src="https://img.shields.io/badge/validation-10%2F10%20passed-111827?style=flat-square&labelColor=374151&color=14b8a6">
+  <img alt="Evidence JSON" src="https://img.shields.io/badge/evidence-JSON%20%2B%20logs-111827?style=flat-square&labelColor=374151&color=64748b">
+  <img alt="Bailian FC MCP" src="https://img.shields.io/badge/Bailian-FC%20%2F%20MCP-111827?style=flat-square&labelColor=374151&color=8b5cf6">
+</p>
+
 面向 Anolis OS ANCK 内核 CVE 的热补丁自动生成 Agent。
 
 PatchWeaver 的目标是让评委输入一个内核 CVE 后，系统能够自动获取修复补丁、理解修复意图、选择适合 `kpatch` 的改写策略、生成 livepatch `.ko`，并完成加载、卸载、冒烟测试、自测和结构化报告输出。
@@ -81,12 +96,7 @@ python -m patchweaver serve-api --host 0.0.0.0 --port 18084
 | 平均尝试轮次 | `1.0` |
 | 赛题目标参考 | `60%+` 成功率 |
 
-主要证据文件：
 
-- `data/evaluations/validation_v0509/final_holdout10_full_run_v0509.json`
-- `data/evaluations/validation_v0509/final_holdout10_evidence_manifest_v0509.json`
-- `data/evaluations/validation_v0509/representative_metrics_v0510.md`
-- `submission/evidence/patchweaver_review_v0510_evidence.zip`
 
 单个成功样例会保留以下关键产物：
 
