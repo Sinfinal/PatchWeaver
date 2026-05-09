@@ -1,0 +1,16 @@
+{
+  "command": "paths",
+  "project_root": ".",
+  "config_dir": "config",
+  "workspace_root": "workspaces",
+  "database_path": "data/patchweaver.db",
+  "manifest_dir": "data/manifests",
+  "default_kernel": "6.6.102-5.2.an23.x86_64",
+  "max_attempts": 5,
+  "parallel_read_limit": 3,
+  "write_lock_scope": "task",
+  "trace_mode": "full",
+  "profile_name": null,
+  "enable_narrow_failover": false,
+  "enable_read_parallel": false
+}

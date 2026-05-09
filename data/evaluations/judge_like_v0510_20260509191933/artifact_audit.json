@@ -1,0 +1,195 @@
+{
+  "result_path": "/home/patchweaver/current/data/evaluations/judge_like_v0510_20260509191933/judge_like_full5.json",
+  "tasks": [
+    {
+      "cve": "CVE-2024-26698",
+      "task_id": "judge-like-v0510-20260509191933-26698",
+      "workspace_exists": true,
+      "ko_files": [
+        "attempts/001/output/patchweaver-judge-like-v0510-20260509191933-26698-001.ko"
+      ],
+      "repair_intent.json": [
+        "analysis/repair_intent.json"
+      ],
+      "semantic_card.json": [
+        "analysis/semantic_card.json"
+      ],
+      "constraint_report.json": [
+        "analysis/constraint_report.json"
+      ],
+      "rewritten.patch": [
+        "attempts/001/rewrite/rewritten.patch"
+      ],
+      "build_summary.json": [
+        "attempts/001/artifacts/build_summary.json",
+        "attempts/001/diagnostics/build_summary.json"
+      ],
+      "validation_report.json": [
+        "attempts/001/artifacts/validation_report.json",
+        "attempts/001/diagnostics/validation_report.json"
+      ],
+      "failure_record.json": [
+        "attempts/001/logs/failure_record.json",
+        "attempts/001/diagnostics/failure_record.json"
+      ],
+      "report.json": [
+        "reports/report.json"
+      ],
+      "report.md": [
+        "reports/report.md"
+      ]
+    },
+    {
+      "cve": "CVE-2024-26693",
+      "task_id": "judge-like-v0510-20260509191933-26693",
+      "workspace_exists": true,
+      "ko_files": [
+        "attempts/001/output/patchweaver-judge-like-v0510-20260509191933-26693-001.ko"
+      ],
+      "repair_intent.json": [
+        "analysis/repair_intent.json"
+      ],
+      "semantic_card.json": [
+        "analysis/semantic_card.json"
+      ],
+      "constraint_report.json": [
+        "analysis/constraint_report.json"
+      ],
+      "rewritten.patch": [
+        "attempts/001/rewrite/rewritten.patch"
+      ],
+      "build_summary.json": [
+        "attempts/001/artifacts/build_summary.json",
+        "attempts/001/diagnostics/build_summary.json"
+      ],
+      "validation_report.json": [
+        "attempts/001/artifacts/validation_report.json",
+        "attempts/001/diagnostics/validation_report.json"
+      ],
+      "failure_record.json": [
+        "attempts/001/logs/failure_record.json",
+        "attempts/001/diagnostics/failure_record.json"
+      ],
+      "report.json": [
+        "reports/report.json"
+      ],
+      "report.md": [
+        "reports/report.md"
+      ]
+    },
+    {
+      "cve": "CVE-2024-26694",
+      "task_id": "judge-like-v0510-20260509191933-26694",
+      "workspace_exists": true,
+      "ko_files": [
+        "attempts/001/output/patchweaver-judge-like-v0510-20260509191933-26694-001.ko"
+      ],
+      "repair_intent.json": [
+        "analysis/repair_intent.json"
+      ],
+      "semantic_card.json": [
+        "analysis/semantic_card.json"
+      ],
+      "constraint_report.json": [
+        "analysis/constraint_report.json"
+      ],
+      "rewritten.patch": [
+        "attempts/001/rewrite/rewritten.patch"
+      ],
+      "build_summary.json": [
+        "attempts/001/artifacts/build_summary.json",
+        "attempts/001/diagnostics/build_summary.json"
+      ],
+      "validation_report.json": [
+        "attempts/001/artifacts/validation_report.json",
+        "attempts/001/diagnostics/validation_report.json"
+      ],
+      "failure_record.json": [
+        "attempts/001/logs/failure_record.json",
+        "attempts/001/diagnostics/failure_record.json"
+      ],
+      "report.json": [
+        "reports/report.json"
+      ],
+      "report.md": [
+        "reports/report.md"
+      ]
+    },
+    {
+      "cve": "CVE-2024-26615",
+      "task_id": "judge-like-v0510-20260509191933-26615",
+      "workspace_exists": true,
+      "ko_files": [
+        "attempts/001/output/patchweaver-judge-like-v0510-20260509191933-26615-001.ko"
+      ],
+      "repair_intent.json": [
+        "analysis/repair_intent.json"
+      ],
+      "semantic_card.json": [
+        "analysis/semantic_card.json"
+      ],
+      "constraint_report.json": [
+        "analysis/constraint_report.json"
+      ],
+      "rewritten.patch": [
+        "attempts/001/rewrite/rewritten.patch"
+      ],
+      "build_summary.json": [
+        "attempts/001/artifacts/build_summary.json",
+        "attempts/001/diagnostics/build_summary.json"
+      ],
+      "validation_report.json": [
+        "attempts/001/artifacts/validation_report.json",
+        "attempts/001/diagnostics/validation_report.json"
+      ],
+      "failure_record.json": [
+        "attempts/001/logs/failure_record.json",
+        "attempts/001/diagnostics/failure_record.json"
+      ],
+      "report.json": [
+        "reports/report.json"
+      ],
+      "report.md": [
+        "reports/report.md"
+      ]
+    },
+    {
+      "cve": "CVE-2024-26791",
+      "task_id": "judge-like-v0510-20260509191933-26791",
+      "workspace_exists": true,
+      "ko_files": [
+        "attempts/001/output/patchweaver-judge-like-v0510-20260509191933-26791-001.ko"
+      ],
+      "repair_intent.json": [
+        "analysis/repair_intent.json"
+      ],
+      "semantic_card.json": [
+        "analysis/semantic_card.json"
+      ],
+      "constraint_report.json": [
+        "analysis/constraint_report.json"
+      ],
+      "rewritten.patch": [
+        "attempts/001/rewrite/rewritten.patch"
+      ],
+      "build_summary.json": [
+        "attempts/001/artifacts/build_summary.json",
+        "attempts/001/diagnostics/build_summary.json"
+      ],
+      "validation_report.json": [
+        "attempts/001/artifacts/validation_report.json",
+        "attempts/001/diagnostics/validation_report.json"
+      ],
+      "failure_record.json": [
+        "attempts/001/logs/failure_record.json",
+        "attempts/001/diagnostics/failure_record.json"
+      ],
+      "report.json": [
+        "reports/report.json"
+      ],
+      "report.md": [
+        "reports/report.md"
+      ]
+    }
+  ]
+}

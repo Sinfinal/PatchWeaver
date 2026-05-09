@@ -1,0 +1,4736 @@
+{
+  "mode": "full",
+  "profile": "demo",
+  "task_prefix": "judge-like-challenge14final-2026050920",
+  "max_run_attempts": 2,
+  "run_timeout_sec": 900,
+  "stable_baseline_timeout_sec": 300,
+  "prepare_stable_baseline": true,
+  "only_positive_candidates": false,
+  "positive_pool_fixture": "evaluations/fixtures/challenge_positive_pool_confirmed_v0426.json",
+  "known_kpatch_constraint_fixture": "evaluations/fixtures/challenge_kpatch_constraint_pool_v0427.json",
+  "include_known_pool_cases": false,
+  "positive_pool_target": 10,
+  "min_livepatchability_score": 75,
+  "only_high_livepatchability": false,
+  "rag_seed_fixture": "evaluations/fixtures/rag_seed_linux_kernel_2024_batch200.json",
+  "config_fragment_dir": "data/evaluations/judge_like_optimized_v0510_final/challenge14final_config_fragments",
+  "minimal_config_fragments_written": [],
+  "positive_pool_added": [],
+  "project_root": "/home/patchweaver/current",
+  "workspace_root": "/home/patchweaver/current/workspaces",
+  "summary": {
+    "total_cases": 14,
+    "representative_total": 14,
+    "representative_success_rate": 0.3571,
+    "average_attempts": 1.0,
+    "bucket_counts": {
+      "buildable_and_should_pass": 5,
+      "already_patched": 4,
+      "feature_not_enabled": 5
+    },
+    "tier_counts": {
+      "positive_acceptance_confirmed": 5,
+      "positive_candidate_blocked_by_target_state": 4,
+      "development_only_arch_gate": 1,
+      "development_only_feature_gate": 4
+    },
+    "role_counts": {
+      "positive_acceptance_sample": 5,
+      "screening_candidate": 4,
+      "development_sample": 5
+    },
+    "livepatchability_tier_counts": {
+      "high": 2,
+      "medium": 9,
+      "low": 3
+    },
+    "livepatchability_high": [
+      "CVE-2024-26742",
+      "CVE-2024-26642"
+    ],
+    "confirmed_positive_acceptance": [
+      "CVE-2024-26742",
+      "CVE-2024-26633",
+      "CVE-2024-26643",
+      "CVE-2024-26726",
+      "CVE-2024-26760"
+    ],
+    "positive_pool_candidates": [
+      "CVE-2024-26742",
+      "CVE-2024-26633",
+      "CVE-2024-26643",
+      "CVE-2024-26726",
+      "CVE-2024-26760"
+    ],
+    "stable_bucket_ready": [
+      "CVE-2024-26742",
+      "CVE-2024-26631",
+      "CVE-2024-26633",
+      "CVE-2024-26642",
+      "CVE-2024-26706",
+      "CVE-2024-26740",
+      "CVE-2024-26752",
+      "CVE-2024-26607",
+      "CVE-2024-26622",
+      "CVE-2024-26625",
+      "CVE-2024-26736",
+      "CVE-2024-26643",
+      "CVE-2024-26726",
+      "CVE-2024-26760"
+    ],
+    "rag_seed_hits": [
+      "CVE-2024-26742",
+      "CVE-2024-26631",
+      "CVE-2024-26633",
+      "CVE-2024-26642",
+      "CVE-2024-26706",
+      "CVE-2024-26740",
+      "CVE-2024-26752",
+      "CVE-2024-26607",
+      "CVE-2024-26622",
+      "CVE-2024-26625",
+      "CVE-2024-26736",
+      "CVE-2024-26643",
+      "CVE-2024-26726",
+      "CVE-2024-26760"
+    ],
+    "known_pool_skipped": [],
+    "stable_source_alignment_required": [],
+    "stable_baseline_prepared": [
+      "CVE-2024-26742",
+      "CVE-2024-26643",
+      "CVE-2024-26726",
+      "CVE-2024-26760"
+    ],
+    "minimal_config_fragments": [],
+    "rag_subsystem_counts": {
+      "drivers/scsi": 1,
+      "net/ipv6": 2,
+      "net/netfilter": 2,
+      "arch/parisc": 1,
+      "net/sched": 1,
+      "net/l2tp": 1,
+      "drivers/gpu": 1,
+      "security/tomoyo": 1,
+      "net/llc": 1,
+      "fs/afs": 1,
+      "fs/btrfs": 1,
+      "drivers/target": 1
+    },
+    "positive_pool_target": 10,
+    "current_positive_pool_size": 12,
+    "projected_positive_pool_size": 15,
+    "positive_pool_gap": 0
+  },
+  "results": [
+    {
+      "cve_id": "CVE-2024-26742",
+      "task_id": "judge-like-challenge14final-2026050920-26742",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "minimal_livepatch_wrap",
+      "preferred_route": "minimal_livepatch_wrap",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [
+        "inline_side_effect"
+      ],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "命中 1 类热补丁约束：inline_side_effect，涉及函数 pqi_map_queues，建议原语 direct_apply, wrapper，direct apply 仅保留为对照或回退路线",
+      "target_files": [
+        "drivers/scsi/smartpqi/smartpqi_init.c"
+      ],
+      "critical_calls_count": 4,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 4,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "4f5b15c15e6016efb3e14582d02cc4ddf57227df^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/scsi/smartpqi/smartpqi_init.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "pqi_map_queues"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 6,
+        "added_line_count": 4,
+        "removed_line_count": 2,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "fixture_sample_bucket": "buildable_and_should_pass",
+      "fixture_screening_tier": "positive_acceptance_confirmed",
+      "fixture_expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检",
+      "fixture_id": "challenge-pass-cve-2024-26742",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/scsi",
+      "rag_summary": "scsi: smartpqi: Fix disable_managed_interrupts",
+      "livepatchability": {
+        "score": 77,
+        "tier": "high",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/scsi/smartpqi/smartpqi_init.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "pqi_map_queues"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 6,
+          "added_line_count": 4,
+          "removed_line_count": 2,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 77,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "4f5b15c15e6016efb3e14582d02cc4ddf57227df^",
+        "output_dir": "/home/patchweaver/stable-baselines/4f5b15c15e6016efb3e14582d02cc4ddf57227df-0056ecd0d15a",
+        "reused_existing": true,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/4f5b15c15e6016efb3e14582d02cc4ddf57227df-0056ecd0d15a/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/4f5b15c15e6016efb3e14582d02cc4ddf57227df-0056ecd0d15a",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26742",
+        "attempt_id": "judge-like-challenge14final-2026050920-26742-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/logs/build.log",
+        "module_path": "workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2674.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-09T12:27:26.641788Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2674.ko",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_judge_like_challenge14final_2026050920_2674",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "standard",
+        "status": "passed",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26742",
+          "构建状态: built",
+          "风险等级: medium",
+          "验证档位: standard",
+          "验证强度: standard",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26742",
+        "attempt_id": "judge-like-challenge14final-2026050920-26742-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26742",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "81c5b53831c02d4cfa7b28855a173094acff535051d8f12f3fc3da60a4be541d",
+            "current_changed_line_count": 6,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T12:27:26.662597Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2674.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:27:30.678013+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26742/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26631",
+      "task_id": "judge-like-challenge14final-2026050920-26631",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "minimal_livepatch_wrap",
+      "preferred_route": "minimal_livepatch_wrap",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [
+        "inline_side_effect"
+      ],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "命中 1 类热补丁约束：inline_side_effect，涉及函数 ipv6_mc_down，建议原语 direct_apply, wrapper，direct apply 仅保留为对照或回退路线",
+      "target_files": [
+        "net/ipv6/mcast.c"
+      ],
+      "critical_calls_count": 8,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 2,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "3cc283fd16fba72e2cefe3a6f48d7a36b0438900^",
+      "patch_shape": {
+        "touched_files": [
+          "net/ipv6/mcast.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "ipv6_mc_down"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 3,
+        "added_line_count": 2,
+        "removed_line_count": 1,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "already_patched",
+      "acceptance_role": "screening_candidate",
+      "screening_tier": "positive_candidate_blocked_by_target_state",
+      "reason": "路线低风险，但当前验证机源码树已包含修复，无法用于正向 .ko 成功率统计",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "fixture_sample_bucket": "already_patched",
+      "fixture_screening_tier": "positive_candidate_blocked_by_target_state",
+      "fixture_expected_outcome": "当前验证机源码树应稳定识别为 target_already_patched，不进入真实构建",
+      "fixture_id": "challenge-target-state-cve-2024-26631",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "net/ipv6",
+      "rag_summary": "ipv6: mcast: fix data-race in ipv6_mc_down / mld_ifc_work",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "net/ipv6/mcast.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "ipv6_mc_down"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 3,
+          "added_line_count": 2,
+          "removed_line_count": 1,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "skipped",
+        "baseline_ref": "3cc283fd16fba72e2cefe3a6f48d7a36b0438900^",
+        "reason": "当前样例不属于正向候选或 kpatch 约束专项，混合评测中不提前准备 stable baseline"
+      },
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "target_state",
+          "run_failure_type": "target_already_patched",
+          "build_exec_status": "not_run",
+          "target_state": "target_already_patched",
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26631/attempts/001",
+          "failure_type": "target_already_patched",
+          "build_status": "not_run",
+          "validation_status": "pending",
+          "screening_tier": "positive_candidate_blocked_by_target_state",
+          "sample_bucket": "already_patched"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "target_state",
+      "run_failure_type": "target_already_patched",
+      "build_exec_status": "not_run",
+      "target_state": "target_already_patched",
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26631/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26631",
+        "attempt_id": "judge-like-challenge14final-2026050920-26631-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "not_run",
+        "summary": "首选源码树已包含该补丁，备用源码树未能提供可继续构建的落点，本轮按目标态已修复收口",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26631/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/opt/kernel-src",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26631/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "target_already_patched",
+        "build_exec_status": "not_run",
+        "target_state": "target_already_patched",
+        "exit_code": null,
+        "created_at": "2026-05-09T12:27:47.260463Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行冒烟测试。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行自检。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26631/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行自检。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行冒烟测试。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "medium",
+            "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26631/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "standard",
+        "status": "pending",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26631",
+          "构建状态: target_state",
+          "风险等级: medium",
+          "验证档位: standard",
+          "验证强度: standard",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False",
+          "本轮目标源码已包含修复，真实构建未执行，动态验证阶段不执行。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26631",
+        "attempt_id": "judge-like-challenge14final-2026050920-26631-A001",
+        "stage_name": "build",
+        "failure_type": "target_already_patched",
+        "summary": "首选源码树已包含该补丁，备用源码树未能提供可继续构建的落点，本轮按目标态已修复收口",
+        "evidence": [
+          "目标源码已包含该补丁，apply 预检查判定无需重复应用。",
+          "目标态结论: target_already_patched",
+          "当前源码树已命中 target_already_patched，准备切换到备用源码树: /opt/kernel-src"
+        ],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26631",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "minimal_livepatch_wrap",
+            "current_patch_hash": "01f26294e9772ee03b6f15c379cc6c6570c26a461cb4a0fc7e40a7d725ef40c3",
+            "current_changed_line_count": 5,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "target_already_patched 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T12:27:47.287693Z"
+      },
+      "build_status": "not_run",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "target_already_patched",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:27:48.607847+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26631/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26631/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26631/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26631/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26631/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26631/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26631/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26633",
+      "task_id": "judge-like-challenge14final-2026050920-26633",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "minimal_livepatch_wrap",
+      "preferred_route": "minimal_livepatch_wrap",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [
+        "inline_side_effect"
+      ],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "命中 1 类热补丁约束：inline_side_effect，涉及函数 ip6_tnl_parse_tlv_enc_lim，建议原语 direct_apply, wrapper，direct apply 仅保留为对照或回退路线",
+      "target_files": [
+        "net/ipv6/ip6_tunnel.c"
+      ],
+      "critical_calls_count": 6,
+      "key_conditions_count": 4,
+      "key_side_effects_count": 4,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "687c5d52fe53e602e76826dbd4d7af412747e183^",
+      "patch_shape": {
+        "touched_files": [
+          "net/ipv6/ip6_tunnel.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "ip6_tnl_parse_tlv_enc_lim"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 25,
+        "added_line_count": 11,
+        "removed_line_count": 14,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": true,
+        "risk_markers": [
+          "struct_or_type_definition_change"
+        ]
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "fixture_sample_bucket": "already_patched",
+      "fixture_screening_tier": "positive_candidate_blocked_by_target_state",
+      "fixture_expected_outcome": "当前验证机源码树应稳定识别为 target_already_patched，不进入真实构建",
+      "fixture_id": "challenge-target-state-cve-2024-26633",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "net/ipv6",
+      "rag_summary": "ip6_tunnel: fix NEXTHDR_FRAGMENT handling in",
+      "livepatchability": {
+        "score": 27,
+        "tier": "low",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数仍处于中等范围",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "修改结构体或类型定义"
+        ],
+        "shape": {
+          "touched_files": [
+            "net/ipv6/ip6_tunnel.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "ip6_tnl_parse_tlv_enc_lim"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 25,
+          "added_line_count": 11,
+          "removed_line_count": 14,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": true,
+          "risk_markers": [
+            "struct_or_type_definition_change"
+          ]
+        }
+      },
+      "livepatchability_score": 27,
+      "livepatchability_tier": "low",
+      "stable_baseline_preparation": {
+        "status": "skipped",
+        "baseline_ref": "687c5d52fe53e602e76826dbd4d7af412747e183^",
+        "reason": "当前样例不属于正向候选或 kpatch 约束专项，混合评测中不提前准备 stable baseline"
+      },
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26633",
+        "attempt_id": "judge-like-challenge14final-2026050920-26633-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/logs/build.log",
+        "module_path": "workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2663.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-09T12:29:29.222468Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2663.ko",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_judge_like_challenge14final_2026050920_2663",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "standard",
+        "status": "passed",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26633",
+          "构建状态: built",
+          "风险等级: medium",
+          "验证档位: standard",
+          "验证强度: standard",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26633",
+        "attempt_id": "judge-like-challenge14final-2026050920-26633-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26633",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "minimal_livepatch_wrap",
+            "current_patch_hash": "a9891049896678b4633857524fdee0da9ddc5350117e803e89605a20c6b1f999",
+            "current_changed_line_count": 27,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T12:29:29.244261Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2663.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:29:32.710184+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26633/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26642",
+      "task_id": "judge-like-challenge14final-2026050920-26642",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "critical_calls_count": 0,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 2,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "c0c2176d1814b92ea4c8e7eb7c9cd94cd99c1b12^",
+      "patch_shape": {
+        "touched_files": [
+          "net/netfilter/nf_tables_api.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "nf_tables_newset"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 4,
+        "added_line_count": 3,
+        "removed_line_count": 1,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "already_patched",
+      "acceptance_role": "screening_candidate",
+      "screening_tier": "positive_candidate_blocked_by_target_state",
+      "reason": "路线低风险，但当前验证机源码树已包含修复，无法用于正向 .ko 成功率统计",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "fixture_sample_bucket": "already_patched",
+      "fixture_screening_tier": "positive_candidate_blocked_by_target_state",
+      "fixture_expected_outcome": "当前验证机源码树应稳定识别为 target_already_patched，不进入真实构建",
+      "fixture_id": "challenge-target-state-cve-2024-26642",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "net/netfilter",
+      "rag_summary": "netfilter: nf_tables: disallow anonymous set with timeout flag",
+      "livepatchability": {
+        "score": 77,
+        "tier": "high",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "net/netfilter/nf_tables_api.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "nf_tables_newset"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 4,
+          "added_line_count": 3,
+          "removed_line_count": 1,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 77,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "skipped",
+        "baseline_ref": "c0c2176d1814b92ea4c8e7eb7c9cd94cd99c1b12^",
+        "reason": "当前样例不属于正向候选或 kpatch 约束专项，混合评测中不提前准备 stable baseline"
+      },
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "target_state",
+          "run_failure_type": "target_already_patched",
+          "build_exec_status": "not_run",
+          "target_state": "target_already_patched",
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26642/attempts/001",
+          "failure_type": "target_already_patched",
+          "build_status": "not_run",
+          "validation_status": "pending",
+          "screening_tier": "positive_candidate_blocked_by_target_state",
+          "sample_bucket": "already_patched"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "target_state",
+      "run_failure_type": "target_already_patched",
+      "build_exec_status": "not_run",
+      "target_state": "target_already_patched",
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26642/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26642",
+        "attempt_id": "judge-like-challenge14final-2026050920-26642-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "not_run",
+        "summary": "首选源码树已包含该补丁，备用源码树未能提供可继续构建的落点，本轮按目标态已修复收口",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26642/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/opt/kernel-src",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26642/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "target_already_patched",
+        "build_exec_status": "not_run",
+        "target_state": "target_already_patched",
+        "exit_code": null,
+        "created_at": "2026-05-09T12:29:49.519306Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行冒烟测试。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行自检。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26642/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行自检。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行冒烟测试。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26642/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "pending",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26642",
+          "构建状态: target_state",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False",
+          "本轮目标源码已包含修复，真实构建未执行，动态验证阶段不执行。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26642",
+        "attempt_id": "judge-like-challenge14final-2026050920-26642-A001",
+        "stage_name": "build",
+        "failure_type": "target_already_patched",
+        "summary": "首选源码树已包含该补丁，备用源码树未能提供可继续构建的落点，本轮按目标态已修复收口",
+        "evidence": [
+          "目标源码已包含该补丁，apply 预检查判定无需重复应用。",
+          "目标态结论: target_already_patched",
+          "当前源码树已命中 target_already_patched，准备切换到备用源码树: /opt/kernel-src"
+        ],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26642",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "bda6740ba423f96f2f269d3b0dca59139150497e9d8998dec99bc2419c424442",
+            "current_changed_line_count": 4,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "target_already_patched 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T12:29:49.550250Z"
+      },
+      "build_status": "not_run",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "target_already_patched",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:29:50.953352+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26642/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26642/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26642/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26642/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26642/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26642/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26642/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26706",
+      "task_id": "judge-like-challenge14final-2026050920-26706",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "state_preserving_wrap",
+      "preferred_route": "state_preserving_wrap",
+      "direct_apply_viable": true,
+      "high_risk_count": 2,
+      "dominant_risk_types": [
+        "header_abi_change",
+        "inline_side_effect",
+        "struct_layout_change"
+      ],
+      "requires_callback": false,
+      "requires_shadow_variable": true,
+      "summary": "命中 3 类热补丁约束：header_abi_change, inline_side_effect, struct_layout_change，涉及函数 raw_copy_from_user, SYSCALL_DEFINE3，建议原语 direct_apply, shadow_variable, wrapper，direct apply 仅保留为对照或回退路线",
+      "target_files": [
+        "arch/parisc/Kconfig",
+        "arch/parisc/include/asm/assembly.h",
+        "arch/parisc/include/asm/extable.h",
+        "arch/parisc/include/asm/special_insns.h",
+        "arch/parisc/include/asm/uaccess.h",
+        "arch/parisc/kernel/cache.c",
+        "arch/parisc/kernel/unaligned.c",
+        "arch/parisc/mm/fault.c"
+      ],
+      "critical_calls_count": 23,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 15,
+      "target_function_count": 9,
+      "stable_source_baseline_ref": "fa69a8063f8b27f3c7434a0d4f464a76a62f24d2^",
+      "patch_shape": {
+        "touched_files": [
+          "arch/parisc/Kconfig",
+          "arch/parisc/include/asm/assembly.h",
+          "arch/parisc/include/asm/extable.h",
+          "arch/parisc/include/asm/special_insns.h",
+          "arch/parisc/include/asm/uaccess.h",
+          "arch/parisc/kernel/cache.c",
+          "arch/parisc/kernel/unaligned.c",
+          "arch/parisc/mm/fault.c"
+        ],
+        "touched_file_count": 8,
+        "touched_functions": [
+          "config PARISC",
+          "struct exception_table_entry {",
+          "raw_copy_from_user",
+          "SYSCALL_DEFINE3",
+          "emulate_ldh",
+          "emulate_ldw",
+          "emulate_ldd",
+          "emulate_sth",
+          "emulate_stw",
+          "emulate_std",
+          "fixup_exception"
+        ],
+        "touched_function_count": 11,
+        "changed_line_count": 166,
+        "added_line_count": 100,
+        "removed_line_count": 66,
+        "guard_like": true,
+        "touches_kbuild": true,
+        "touches_header": true,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": true,
+        "risk_markers": [
+          "kbuild_or_makefile_change",
+          "module_export_or_section_marker",
+          "struct_or_type_definition_change",
+          "header_change"
+        ]
+      },
+      "sample_bucket": "feature_not_enabled",
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_arch_gate",
+      "reason": "补丁命中的源码不属于当前验证机目标架构，适合作为架构门控识别回归",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "fixture_sample_bucket": "already_patched",
+      "fixture_screening_tier": "development_only_target_state",
+      "fixture_expected_outcome": "当前验证机源码树应稳定识别为 target_already_patched，不进入真实构建",
+      "fixture_id": "challenge-target-state-cve-2024-26706",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "arch/parisc",
+      "rag_summary": "parisc: Fix random data corruption from exception handler",
+      "livepatchability": {
+        "score": 0,
+        "tier": "low",
+        "full_run_recommended": false,
+        "boosts": [],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "patch 变更行数偏多",
+          "触达 8 个源码文件",
+          "触达 11 个函数",
+          "约束诊断不是纯低风险路线",
+          "修改 Kconfig/Makefile/Kbuild",
+          "修改结构体或类型定义",
+          "修改头文件",
+          "修改导出符号或 section 相关宏"
+        ],
+        "shape": {
+          "touched_files": [
+            "arch/parisc/Kconfig",
+            "arch/parisc/include/asm/assembly.h",
+            "arch/parisc/include/asm/extable.h",
+            "arch/parisc/include/asm/special_insns.h",
+            "arch/parisc/include/asm/uaccess.h",
+            "arch/parisc/kernel/cache.c",
+            "arch/parisc/kernel/unaligned.c",
+            "arch/parisc/mm/fault.c"
+          ],
+          "touched_file_count": 8,
+          "touched_functions": [
+            "config PARISC",
+            "struct exception_table_entry {",
+            "raw_copy_from_user",
+            "SYSCALL_DEFINE3",
+            "emulate_ldh",
+            "emulate_ldw",
+            "emulate_ldd",
+            "emulate_sth",
+            "emulate_stw",
+            "emulate_std",
+            "fixup_exception"
+          ],
+          "touched_function_count": 11,
+          "changed_line_count": 166,
+          "added_line_count": 100,
+          "removed_line_count": 66,
+          "guard_like": true,
+          "touches_kbuild": true,
+          "touches_header": true,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": true,
+          "risk_markers": [
+            "kbuild_or_makefile_change",
+            "module_export_or_section_marker",
+            "struct_or_type_definition_change",
+            "header_change"
+          ]
+        }
+      },
+      "livepatchability_score": 0,
+      "livepatchability_tier": "low",
+      "stable_baseline_preparation": {
+        "status": "skipped",
+        "baseline_ref": "fa69a8063f8b27f3c7434a0d4f464a76a62f24d2^",
+        "reason": "当前样例不属于正向候选或 kpatch 约束专项，混合评测中不提前准备 stable baseline"
+      },
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "failed",
+          "run_failure_type": "target_arch_mismatch",
+          "build_exec_status": "not_run",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26706/attempts/001",
+          "failure_type": "target_arch_mismatch",
+          "build_status": "not_run",
+          "validation_status": "pending",
+          "screening_tier": "development_only_arch_gate",
+          "sample_bucket": "feature_not_enabled"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "failed",
+      "run_failure_type": "target_arch_mismatch",
+      "build_exec_status": "not_run",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26706/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26706",
+        "attempt_id": "judge-like-challenge14final-2026050920-26706-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "not_run",
+        "summary": "补丁触达目标架构之外的源码，已跳过本机构建。",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26706/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26706/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "target_arch_mismatch",
+        "build_exec_status": "not_run",
+        "target_state": null,
+        "exit_code": null,
+        "created_at": "2026-05-09T12:29:51.495480Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未执行加载测试，暂不执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未满足冒烟测试前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "当前轮尚未满足自检前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26706/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "high",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "pending",
+            "risk_level": "high",
+            "detail": "当前轮尚未满足自检前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "high",
+            "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "high",
+            "detail": "尚未执行加载测试，暂不执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "high",
+            "detail": "尚未满足冒烟测试前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "high",
+            "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "high",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26706/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "strict",
+        "status": "pending",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26706",
+          "构建状态: failed",
+          "风险等级: high",
+          "验证档位: standard",
+          "验证强度: strict",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False",
+          "本轮未构建出模块产物，动态验证阶段维持待执行状态。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26706",
+        "attempt_id": "judge-like-challenge14final-2026050920-26706-A001",
+        "stage_name": "build",
+        "failure_type": "target_arch_mismatch",
+        "summary": "目标架构不匹配源码: arch/parisc/Kconfig, arch/parisc/include/asm/assembly.h, arch/parisc/include/asm/extable.h, arch/parisc/include/asm/special_insns.h, arch/parisc/include/asm/uaccess.h, arch/parisc/kernel/cache.c, arch/parisc/kernel/unaligned.c, arch/parisc/mm/fault.c",
+        "evidence": [
+          "当前验证机内核架构: x86",
+          "目标架构不匹配源码: arch/parisc/Kconfig, arch/parisc/include/asm/assembly.h, arch/parisc/include/asm/extable.h, arch/parisc/include/asm/special_insns.h, arch/parisc/include/asm/uaccess.h, arch/parisc/kernel/cache.c, arch/parisc/kernel/unaligned.c, arch/parisc/mm/fault.c",
+          "当前样例不会在该验证内核上形成 changed objects，已跳过 kpatch-build"
+        ],
+        "diagnostic_details": {
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "target_arch_mismatch 暂无自动重试策略",
+            "retry_scope": "manual"
+          },
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26706",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "state_preserving_wrap",
+            "current_patch_hash": "a1c66c52d213070c73f37f6b138c00f0503f17c06e2e0231e18000fee313b24b",
+            "current_changed_line_count": 180,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          }
+        },
+        "created_at": "2026-05-09T12:29:51.501863Z"
+      },
+      "build_status": "not_run",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "target_arch_mismatch",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:29:52.853648+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26706/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26706/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26706/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26706/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26706/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26706/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26706/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26740",
+      "task_id": "judge-like-challenge14final-2026050920-26740",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "minimal_livepatch_wrap",
+      "preferred_route": "minimal_livepatch_wrap",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [
+        "inline_side_effect"
+      ],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "命中 1 类热补丁约束：inline_side_effect，涉及函数 tcf_mirred_to_dev, mirred_egress_to_ingress_tcp_test，建议原语 direct_apply, wrapper，direct apply 仅保留为对照或回退路线",
+      "target_files": [
+        "net/sched/act_mirred.c",
+        "tools/testing/selftests/net/forwarding/tc_actions.sh"
+      ],
+      "critical_calls_count": 10,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 4,
+      "target_function_count": 2,
+      "stable_source_baseline_ref": "7c787888d164689da8b1b115f3ef562c1e843af4^",
+      "patch_shape": {
+        "touched_files": [
+          "net/sched/act_mirred.c",
+          "tools/testing/selftests/net/forwarding/tc_actions.sh"
+        ],
+        "touched_file_count": 2,
+        "touched_functions": [
+          "release_idr:",
+          "tcf_mirred_to_dev",
+          "mirred_egress_to_ingress_tcp_test"
+        ],
+        "touched_function_count": 3,
+        "changed_line_count": 17,
+        "added_line_count": 5,
+        "removed_line_count": 12,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "already_patched",
+      "acceptance_role": "screening_candidate",
+      "screening_tier": "positive_candidate_blocked_by_target_state",
+      "reason": "路线低风险，但当前验证机源码树已包含修复，无法用于正向 .ko 成功率统计",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "fixture_sample_bucket": "already_patched",
+      "fixture_screening_tier": "positive_candidate_blocked_by_target_state",
+      "fixture_expected_outcome": "当前验证机源码树应稳定识别为 target_already_patched，不进入真实构建",
+      "fixture_id": "challenge-target-state-cve-2024-26740",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "net/sched",
+      "rag_summary": "net/sched: act_mirred: use the backlog for mirred ingress",
+      "livepatchability": {
+        "score": 31,
+        "tier": "low",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "触达 2 个源码文件",
+          "触达 3 个函数"
+        ],
+        "shape": {
+          "touched_files": [
+            "net/sched/act_mirred.c",
+            "tools/testing/selftests/net/forwarding/tc_actions.sh"
+          ],
+          "touched_file_count": 2,
+          "touched_functions": [
+            "release_idr:",
+            "tcf_mirred_to_dev",
+            "mirred_egress_to_ingress_tcp_test"
+          ],
+          "touched_function_count": 3,
+          "changed_line_count": 17,
+          "added_line_count": 5,
+          "removed_line_count": 12,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 31,
+      "livepatchability_tier": "low",
+      "stable_baseline_preparation": {
+        "status": "skipped",
+        "baseline_ref": "7c787888d164689da8b1b115f3ef562c1e843af4^",
+        "reason": "当前样例不属于正向候选或 kpatch 约束专项，混合评测中不提前准备 stable baseline"
+      },
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "target_state",
+          "run_failure_type": "target_already_patched",
+          "build_exec_status": "not_run",
+          "target_state": "target_already_patched",
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26740/attempts/001",
+          "failure_type": "target_already_patched",
+          "build_status": "not_run",
+          "validation_status": "pending",
+          "screening_tier": "positive_candidate_blocked_by_target_state",
+          "sample_bucket": "already_patched"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "target_state",
+      "run_failure_type": "target_already_patched",
+      "build_exec_status": "not_run",
+      "target_state": "target_already_patched",
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26740/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26740",
+        "attempt_id": "judge-like-challenge14final-2026050920-26740-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "not_run",
+        "summary": "首选源码树已包含该补丁，备用源码树未能提供可继续构建的落点，本轮按目标态已修复收口",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26740/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/opt/kernel-src",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26740/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "target_already_patched",
+        "build_exec_status": "not_run",
+        "target_state": "target_already_patched",
+        "exit_code": null,
+        "created_at": "2026-05-09T12:30:09.236426Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行冒烟测试。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行自检。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26740/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行自检。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行冒烟测试。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "medium",
+            "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26740/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "standard",
+        "status": "pending",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26740",
+          "构建状态: target_state",
+          "风险等级: medium",
+          "验证档位: standard",
+          "验证强度: standard",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False",
+          "本轮目标源码已包含修复，真实构建未执行，动态验证阶段不执行。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26740",
+        "attempt_id": "judge-like-challenge14final-2026050920-26740-A001",
+        "stage_name": "build",
+        "failure_type": "target_already_patched",
+        "summary": "首选源码树已包含该补丁，备用源码树未能提供可继续构建的落点，本轮按目标态已修复收口",
+        "evidence": [
+          "目标源码已包含该补丁，apply 预检查判定无需重复应用。",
+          "目标态结论: target_already_patched",
+          "当前源码树已命中 target_already_patched，准备切换到备用源码树: /opt/kernel-src"
+        ],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26740",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "83af7817b085c8d591376cacb7b404a06815c27f3eae843fc085f6f08c19d0ee",
+            "current_changed_line_count": 10,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "target_already_patched 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T12:30:09.254075Z"
+      },
+      "build_status": "not_run",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "target_already_patched",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:30:10.597006+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26740/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26740/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26740/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26740/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26740/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26740/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26740/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26752",
+      "task_id": "judge-like-challenge14final-2026050920-26752",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "net/l2tp/l2tp_ip6.c"
+      ],
+      "critical_calls_count": 3,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 1,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "804bd8650a3a2bf3432375f8c97d5049d845ce56^",
+      "patch_shape": {
+        "touched_files": [
+          "net/l2tp/l2tp_ip6.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "l2tp_ip6_sendmsg"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 3,
+        "added_line_count": 1,
+        "removed_line_count": 2,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "already_patched",
+      "acceptance_role": "screening_candidate",
+      "screening_tier": "positive_candidate_blocked_by_target_state",
+      "reason": "路线低风险，但当前验证机源码树已包含修复，无法用于正向 .ko 成功率统计",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "fixture_sample_bucket": "already_patched",
+      "fixture_screening_tier": "positive_candidate_blocked_by_target_state",
+      "fixture_expected_outcome": "当前验证机源码树应稳定识别为 target_already_patched，不进入真实构建",
+      "fixture_id": "challenge-target-state-cve-2024-26752",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "net/l2tp",
+      "rag_summary": "l2tp: pass correct message length to ip6_append_data",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "net/l2tp/l2tp_ip6.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "l2tp_ip6_sendmsg"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 3,
+          "added_line_count": 1,
+          "removed_line_count": 2,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "skipped",
+        "baseline_ref": "804bd8650a3a2bf3432375f8c97d5049d845ce56^",
+        "reason": "当前样例不属于正向候选或 kpatch 约束专项，混合评测中不提前准备 stable baseline"
+      },
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "target_state",
+          "run_failure_type": "target_already_patched",
+          "build_exec_status": "not_run",
+          "target_state": "target_already_patched",
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26752/attempts/001",
+          "failure_type": "target_already_patched",
+          "build_status": "not_run",
+          "validation_status": "pending",
+          "screening_tier": "positive_candidate_blocked_by_target_state",
+          "sample_bucket": "already_patched"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "target_state",
+      "run_failure_type": "target_already_patched",
+      "build_exec_status": "not_run",
+      "target_state": "target_already_patched",
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26752/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26752",
+        "attempt_id": "judge-like-challenge14final-2026050920-26752-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "not_run",
+        "summary": "首选源码树已包含该补丁，备用源码树未能提供可继续构建的落点，本轮按目标态已修复收口",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26752/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/opt/kernel-src",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26752/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "target_already_patched",
+        "build_exec_status": "not_run",
+        "target_state": "target_already_patched",
+        "exit_code": null,
+        "created_at": "2026-05-09T12:30:29.056024Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行冒烟测试。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行自检。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26752/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行自检。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行冒烟测试。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26752/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "pending",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26752",
+          "构建状态: target_state",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False",
+          "本轮目标源码已包含修复，真实构建未执行，动态验证阶段不执行。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26752",
+        "attempt_id": "judge-like-challenge14final-2026050920-26752-A001",
+        "stage_name": "build",
+        "failure_type": "target_already_patched",
+        "summary": "首选源码树已包含该补丁，备用源码树未能提供可继续构建的落点，本轮按目标态已修复收口",
+        "evidence": [
+          "目标源码已包含该补丁，apply 预检查判定无需重复应用。",
+          "目标态结论: target_already_patched",
+          "当前源码树已命中 target_already_patched，准备切换到备用源码树: /opt/kernel-src"
+        ],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26752",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "direct_apply_patch",
+            "current_patch_hash": "970f4ce49cde52fa62e426491df3e2875dce7a4d652ab6d66694887647ec3022",
+            "current_changed_line_count": 3,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "target_already_patched 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T12:30:29.090546Z"
+      },
+      "build_status": "not_run",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "target_already_patched",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:30:30.474169+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26752/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26752/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26752/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26752/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26752/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26752/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26752/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26607",
+      "task_id": "judge-like-challenge14final-2026050920-26607",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/gpu/drm/bridge/sii902x.c"
+      ],
+      "critical_calls_count": 12,
+      "key_conditions_count": 2,
+      "key_side_effects_count": 12,
+      "target_function_count": 2,
+      "stable_source_baseline_ref": "56f96cf6eb11a1c2d594367c3becbfb06a855ec1^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/gpu/drm/bridge/sii902x.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "sii902x_init",
+          "sii902x_probe"
+        ],
+        "touched_function_count": 2,
+        "changed_line_count": 29,
+        "added_line_count": 12,
+        "removed_line_count": 17,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "feature_not_enabled",
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_feature_gate",
+      "reason": "补丁命中的源码在当前验证机内核配置中未启用，适合做配置门控识别回归",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "fixture_sample_bucket": "feature_not_enabled",
+      "fixture_screening_tier": "development_only_feature_gate",
+      "fixture_expected_outcome": "应稳定识别为 feature_not_enabled，不再误记成 patch_apply_failed",
+      "fixture_id": "challenge-feature-gate-cve-2024-26607",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "drivers/gpu",
+      "rag_summary": "drm/bridge: sii902x: Fix probing race issue",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数仍处于中等范围",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/gpu/drm/bridge/sii902x.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "sii902x_init",
+            "sii902x_probe"
+          ],
+          "touched_function_count": 2,
+          "changed_line_count": 29,
+          "added_line_count": 12,
+          "removed_line_count": 17,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "skipped",
+        "baseline_ref": "56f96cf6eb11a1c2d594367c3becbfb06a855ec1^",
+        "reason": "当前样例不属于正向候选或 kpatch 约束专项，混合评测中不提前准备 stable baseline"
+      },
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "failed",
+          "run_failure_type": "feature_not_enabled",
+          "build_exec_status": "not_run",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26607/attempts/001",
+          "failure_type": "feature_not_enabled",
+          "build_status": "not_run",
+          "validation_status": "pending",
+          "screening_tier": "development_only_feature_gate",
+          "sample_bucket": "feature_not_enabled"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "failed",
+      "run_failure_type": "feature_not_enabled",
+      "build_exec_status": "not_run",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26607/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26607",
+        "attempt_id": "judge-like-challenge14final-2026050920-26607-A001",
+        "backend": "local",
+        "builder_cmd": "kpatch-build",
+        "status": "not_run",
+        "summary": "目标内核配置未启用补丁涉及源码，已在 apply 预检查阶段提前识别",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "feature_not_enabled",
+        "build_exec_status": "not_run",
+        "target_state": null,
+        "exit_code": null,
+        "created_at": "2026-05-09T12:30:31.017421Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未执行加载测试，暂不执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未满足冒烟测试前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "当前轮尚未满足自检前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "当前轮尚未满足自检前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未执行加载测试，暂不执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未满足冒烟测试前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "pending",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26607",
+          "构建状态: failed",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False",
+          "本轮未构建出模块产物，动态验证阶段维持待执行状态。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26607",
+        "attempt_id": "judge-like-challenge14final-2026050920-26607-A001",
+        "stage_name": "build",
+        "failure_type": "feature_not_enabled",
+        "summary": "目标内核配置未启用补丁涉及源码，已在 apply 预检查阶段提前识别",
+        "evidence": [
+          "目标内核配置未启用以下源码: drivers/gpu/drm/bridge/sii902x.c"
+        ],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26607",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "47e092abef99f9f42256dae417dd6d9b1d87cf6cbe6ae5e9915b113bb795039b",
+            "current_changed_line_count": 16,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "exclude_from_positive_pool_or_enable_kernel_feature",
+            "reason": "当前验证内核未编译该子系统，不能计入正向 .ko 成功率",
+            "retry_scope": "environment_profile"
+          }
+        },
+        "created_at": "2026-05-09T12:30:31.023797Z"
+      },
+      "build_status": "not_run",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "exclude_from_positive_pool_or_enable_kernel_feature",
+      "failure_type": "feature_not_enabled",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:30:32.471702+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26622",
+      "task_id": "judge-like-challenge14final-2026050920-26622",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "security/tomoyo/common.c"
+      ],
+      "critical_calls_count": 3,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 1,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "2caa605079488da9601099fbda460cfc1702839f^",
+      "patch_shape": {
+        "touched_files": [
+          "security/tomoyo/common.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "tomoyo_write_control"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 4,
+        "added_line_count": 2,
+        "removed_line_count": 2,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "feature_not_enabled",
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_feature_gate",
+      "reason": "补丁命中的源码在当前验证机内核配置中未启用，适合做配置门控识别回归",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "fixture_sample_bucket": "feature_not_enabled",
+      "fixture_screening_tier": "development_only_feature_gate",
+      "fixture_expected_outcome": "应稳定识别为 feature_not_enabled，不再误记成 compile_failed",
+      "fixture_id": "challenge-feature-gate-cve-2024-26622",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "security/tomoyo",
+      "rag_summary": "tomoyo: fix UAF write bug in tomoyo_write_control()",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "security/tomoyo/common.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "tomoyo_write_control"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 4,
+          "added_line_count": 2,
+          "removed_line_count": 2,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "skipped",
+        "baseline_ref": "2caa605079488da9601099fbda460cfc1702839f^",
+        "reason": "当前样例不属于正向候选或 kpatch 约束专项，混合评测中不提前准备 stable baseline"
+      },
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "failed",
+          "run_failure_type": "feature_not_enabled",
+          "build_exec_status": "not_run",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26622/attempts/001",
+          "failure_type": "feature_not_enabled",
+          "build_status": "not_run",
+          "validation_status": "pending",
+          "screening_tier": "development_only_feature_gate",
+          "sample_bucket": "feature_not_enabled"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "failed",
+      "run_failure_type": "feature_not_enabled",
+      "build_exec_status": "not_run",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26622/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26622",
+        "attempt_id": "judge-like-challenge14final-2026050920-26622-A001",
+        "backend": "local",
+        "builder_cmd": "kpatch-build",
+        "status": "not_run",
+        "summary": "目标内核配置未启用补丁涉及源码，已在 apply 预检查阶段提前识别",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26622/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26622/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "feature_not_enabled",
+        "build_exec_status": "not_run",
+        "target_state": null,
+        "exit_code": null,
+        "created_at": "2026-05-09T12:30:33.035905Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未执行加载测试，暂不执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未满足冒烟测试前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "当前轮尚未满足自检前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26622/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "当前轮尚未满足自检前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未执行加载测试，暂不执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未满足冒烟测试前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26622/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "pending",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26622",
+          "构建状态: failed",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False",
+          "本轮未构建出模块产物，动态验证阶段维持待执行状态。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26622",
+        "attempt_id": "judge-like-challenge14final-2026050920-26622-A001",
+        "stage_name": "build",
+        "failure_type": "feature_not_enabled",
+        "summary": "目标内核配置未启用补丁涉及源码，已在 apply 预检查阶段提前识别",
+        "evidence": [
+          "目标内核配置未启用以下源码: security/tomoyo/common.c"
+        ],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26622",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "direct_apply_patch",
+            "current_patch_hash": "5a05f5d3a78aaec72b02f17f0c03d4f2c67b8615c55ad5c8ccc85eaacd094db4",
+            "current_changed_line_count": 4,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "exclude_from_positive_pool_or_enable_kernel_feature",
+            "reason": "当前验证内核未编译该子系统，不能计入正向 .ko 成功率",
+            "retry_scope": "environment_profile"
+          }
+        },
+        "created_at": "2026-05-09T12:30:33.041621Z"
+      },
+      "build_status": "not_run",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "exclude_from_positive_pool_or_enable_kernel_feature",
+      "failure_type": "feature_not_enabled",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:30:34.411197+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26622/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26622/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26622/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26622/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26622/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26622/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26622/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26625",
+      "task_id": "judge-like-challenge14final-2026050920-26625",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "minimal_livepatch_wrap",
+      "preferred_route": "minimal_livepatch_wrap",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [
+        "inline_side_effect"
+      ],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "命中 1 类热补丁约束：inline_side_effect，涉及函数 llc_ui_release，建议原语 direct_apply, wrapper，direct apply 仅保留为对照或回退路线",
+      "target_files": [
+        "net/llc/af_llc.c"
+      ],
+      "critical_calls_count": 4,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 2,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "3151051b787f7cd7e3329ea0016eb9113c248812^",
+      "patch_shape": {
+        "touched_files": [
+          "net/llc/af_llc.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "llc_ui_release"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 3,
+        "added_line_count": 2,
+        "removed_line_count": 1,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "feature_not_enabled",
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_feature_gate",
+      "reason": "补丁命中的源码在当前验证机内核配置中未启用，适合做配置门控识别回归",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "fixture_sample_bucket": "feature_not_enabled",
+      "fixture_screening_tier": "development_only_feature_gate",
+      "fixture_expected_outcome": "应稳定识别为 feature_not_enabled，不进入真实构建",
+      "fixture_id": "challenge-feature-gate-cve-2024-26625",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "net/llc",
+      "rag_summary": "llc: call sock_orphan() at release time",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "net/llc/af_llc.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "llc_ui_release"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 3,
+          "added_line_count": 2,
+          "removed_line_count": 1,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "skipped",
+        "baseline_ref": "3151051b787f7cd7e3329ea0016eb9113c248812^",
+        "reason": "当前样例不属于正向候选或 kpatch 约束专项，混合评测中不提前准备 stable baseline"
+      },
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "failed",
+          "run_failure_type": "feature_not_enabled",
+          "build_exec_status": "not_run",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26625/attempts/001",
+          "failure_type": "feature_not_enabled",
+          "build_status": "not_run",
+          "validation_status": "pending",
+          "screening_tier": "development_only_feature_gate",
+          "sample_bucket": "feature_not_enabled"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "failed",
+      "run_failure_type": "feature_not_enabled",
+      "build_exec_status": "not_run",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26625/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26625",
+        "attempt_id": "judge-like-challenge14final-2026050920-26625-A001",
+        "backend": "local",
+        "builder_cmd": "kpatch-build",
+        "status": "not_run",
+        "summary": "目标内核配置未启用补丁涉及源码，已在 apply 预检查阶段提前识别",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26625/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26625/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "feature_not_enabled",
+        "build_exec_status": "not_run",
+        "target_state": null,
+        "exit_code": null,
+        "created_at": "2026-05-09T12:30:34.931539Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未执行加载测试，暂不执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未满足冒烟测试前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "当前轮尚未满足自检前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26625/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "pending",
+            "risk_level": "medium",
+            "detail": "当前轮尚未满足自检前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "medium",
+            "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "medium",
+            "detail": "尚未执行加载测试，暂不执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "medium",
+            "detail": "尚未满足冒烟测试前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "medium",
+            "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26625/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "standard",
+        "status": "pending",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26625",
+          "构建状态: failed",
+          "风险等级: medium",
+          "验证档位: standard",
+          "验证强度: standard",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False",
+          "本轮未构建出模块产物，动态验证阶段维持待执行状态。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26625",
+        "attempt_id": "judge-like-challenge14final-2026050920-26625-A001",
+        "stage_name": "build",
+        "failure_type": "feature_not_enabled",
+        "summary": "目标内核配置未启用补丁涉及源码，已在 apply 预检查阶段提前识别",
+        "evidence": [
+          "目标内核配置未启用以下源码: net/llc/af_llc.c"
+        ],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26625",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "minimal_livepatch_wrap",
+            "current_patch_hash": "e4be95457aebe2614140db12d6e7167e535f452b7343ff21d4fd25ab2cdee5ad",
+            "current_changed_line_count": 3,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "exclude_from_positive_pool_or_enable_kernel_feature",
+            "reason": "当前验证内核未编译该子系统，不能计入正向 .ko 成功率",
+            "retry_scope": "environment_profile"
+          }
+        },
+        "created_at": "2026-05-09T12:30:34.937423Z"
+      },
+      "build_status": "not_run",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "exclude_from_positive_pool_or_enable_kernel_feature",
+      "failure_type": "feature_not_enabled",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:30:36.350223+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26625/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26625/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26625/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26625/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26625/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26625/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26625/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26736",
+      "task_id": "judge-like-challenge14final-2026050920-26736",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "fs/afs/volume.c"
+      ],
+      "critical_calls_count": 4,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 1,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "6e6065dd25b661420fac19c34282b6c626fcd35e^",
+      "patch_shape": {
+        "touched_files": [
+          "fs/afs/volume.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "afs_update_volume_status"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 5,
+        "added_line_count": 2,
+        "removed_line_count": 3,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "feature_not_enabled",
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_feature_gate",
+      "reason": "补丁命中的源码在当前验证机内核配置中未启用，适合做配置门控识别回归",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "fixture_sample_bucket": "feature_not_enabled",
+      "fixture_screening_tier": "development_only_feature_gate",
+      "fixture_expected_outcome": "应稳定识别为 feature_not_enabled，不进入真实构建",
+      "fixture_id": "challenge-feature-gate-cve-2024-26736",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "fs/afs",
+      "rag_summary": "afs: Increase buffer size in afs_update_volume_status()",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "fs/afs/volume.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "afs_update_volume_status"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 5,
+          "added_line_count": 2,
+          "removed_line_count": 3,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "skipped",
+        "baseline_ref": "6e6065dd25b661420fac19c34282b6c626fcd35e^",
+        "reason": "当前样例不属于正向候选或 kpatch 约束专项，混合评测中不提前准备 stable baseline"
+      },
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "failed",
+          "run_failure_type": "feature_not_enabled",
+          "build_exec_status": "not_run",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26736/attempts/001",
+          "failure_type": "feature_not_enabled",
+          "build_status": "not_run",
+          "validation_status": "pending",
+          "screening_tier": "development_only_feature_gate",
+          "sample_bucket": "feature_not_enabled"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "failed",
+      "run_failure_type": "feature_not_enabled",
+      "build_exec_status": "not_run",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26736/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26736",
+        "attempt_id": "judge-like-challenge14final-2026050920-26736-A001",
+        "backend": "local",
+        "builder_cmd": "kpatch-build",
+        "status": "not_run",
+        "summary": "目标内核配置未启用补丁涉及源码，已在 apply 预检查阶段提前识别",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26736/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26736/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "feature_not_enabled",
+        "build_exec_status": "not_run",
+        "target_state": null,
+        "exit_code": null,
+        "created_at": "2026-05-09T12:30:36.943172Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未执行加载测试，暂不执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未满足冒烟测试前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "当前轮尚未满足自检前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26736/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "当前轮尚未满足自检前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未执行加载测试，暂不执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未满足冒烟测试前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26736/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "pending",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26736",
+          "构建状态: failed",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False",
+          "本轮未构建出模块产物，动态验证阶段维持待执行状态。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26736",
+        "attempt_id": "judge-like-challenge14final-2026050920-26736-A001",
+        "stage_name": "build",
+        "failure_type": "feature_not_enabled",
+        "summary": "目标内核配置未启用补丁涉及源码，已在 apply 预检查阶段提前识别",
+        "evidence": [
+          "目标内核配置未启用以下源码: fs/afs/volume.c"
+        ],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26736",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "direct_apply_patch",
+            "current_patch_hash": "e57e0a79018498f61e9ce2c35b3495ae59c790717cfffde45dc60f807c5bc0a0",
+            "current_changed_line_count": 5,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "exclude_from_positive_pool_or_enable_kernel_feature",
+            "reason": "当前验证内核未编译该子系统，不能计入正向 .ko 成功率",
+            "retry_scope": "environment_profile"
+          }
+        },
+        "created_at": "2026-05-09T12:30:36.948692Z"
+      },
+      "build_status": "not_run",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "exclude_from_positive_pool_or_enable_kernel_feature",
+      "failure_type": "feature_not_enabled",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:30:38.370502+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26736/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26736/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26736/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26736/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26736/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26736/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26736/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26643",
+      "task_id": "judge-like-challenge14final-2026050920-26643",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "critical_calls_count": 4,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 1,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "b2d6f9a5b1cf968f1eaa71085ceeb09c2cb276b1^",
+      "patch_shape": {
+        "touched_files": [
+          "net/netfilter/nf_tables_api.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "nf_tables_unbind_set"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 2,
+        "added_line_count": 1,
+        "removed_line_count": 1,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "fixture_sample_bucket": "kpatch_constraint",
+      "fixture_screening_tier": "blocked_by_kpatch_constraint",
+      "fixture_expected_outcome": "应进入真实构建，并稳定收口为 kpatch_constraint",
+      "fixture_id": "challenge-kpatch-cve-2024-26643",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "net/netfilter",
+      "rag_summary": "netfilter: nf_tables: mark set as dead when unbinding anonymous set",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "net/netfilter/nf_tables_api.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "nf_tables_unbind_set"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 2,
+          "added_line_count": 1,
+          "removed_line_count": 1,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "b2d6f9a5b1cf968f1eaa71085ceeb09c2cb276b1^",
+        "output_dir": "/home/patchweaver/stable-baselines/b2d6f9a5b1cf968f1eaa71085ceeb09c2cb276b1-ed00a40623c8",
+        "reused_existing": false,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/b2d6f9a5b1cf968f1eaa71085ceeb09c2cb276b1-ed00a40623c8/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/b2d6f9a5b1cf968f1eaa71085ceeb09c2cb276b1-ed00a40623c8",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26643",
+        "attempt_id": "judge-like-challenge14final-2026050920-26643-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/logs/build.log",
+        "module_path": "workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2664.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-09T12:32:34.305035Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2664.ko",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_judge_like_challenge14final_2026050920_2664",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26643",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26643",
+        "attempt_id": "judge-like-challenge14final-2026050920-26643-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26643",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "direct_apply_patch",
+            "current_patch_hash": "640f4536bbfb762d9ec4c52d86f0e62b5c641328eeb18723e84060e1997947ec",
+            "current_changed_line_count": 2,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T12:32:34.328821Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2664.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:32:37.820879+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26726",
+      "task_id": "judge-like-challenge14final-2026050920-26726",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "fs/btrfs/inode.c"
+      ],
+      "critical_calls_count": 4,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 3,
+      "target_function_count": 0,
+      "stable_source_baseline_ref": "7bddf18f474f166c19f91b2baf67bf7c5eda03f7^",
+      "patch_shape": {
+        "touched_files": [
+          "fs/btrfs/inode.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "out:"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 20,
+        "added_line_count": 17,
+        "removed_line_count": 3,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "fixture_sample_bucket": "kpatch_constraint",
+      "fixture_screening_tier": "blocked_by_kpatch_constraint",
+      "fixture_expected_outcome": "应进入真实构建，并稳定收口为 kpatch_constraint",
+      "fixture_id": "challenge-kpatch-cve-2024-26726",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "fs/btrfs",
+      "rag_summary": "btrfs: don't drop extent_map for free space inode on write error",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "fs/btrfs/inode.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "out:"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 20,
+          "added_line_count": 17,
+          "removed_line_count": 3,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "7bddf18f474f166c19f91b2baf67bf7c5eda03f7^",
+        "output_dir": "/home/patchweaver/stable-baselines/7bddf18f474f166c19f91b2baf67bf7c5eda03f7-6e79c2d70a15",
+        "reused_existing": true,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/7bddf18f474f166c19f91b2baf67bf7c5eda03f7-6e79c2d70a15/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/7bddf18f474f166c19f91b2baf67bf7c5eda03f7-6e79c2d70a15",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26726",
+        "attempt_id": "judge-like-challenge14final-2026050920-26726-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/logs/build.log",
+        "module_path": "workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2672.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-09T12:34:42.792173Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2672.ko",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_judge_like_challenge14final_2026050920_2672",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26726",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26726",
+        "attempt_id": "judge-like-challenge14final-2026050920-26726-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26726",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "c5b895d1562b022a940d7fcbfaefe75bdcf04da692ee10205a16c44039eb61e5",
+            "current_changed_line_count": 20,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T12:34:42.816906Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2672.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:34:45.802218+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26760",
+      "task_id": "judge-like-challenge14final-2026050920-26760",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/target/target_core_pscsi.c"
+      ],
+      "critical_calls_count": 3,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 4,
+      "target_function_count": 0,
+      "stable_source_baseline_ref": "4ebc079f0c7dcda1270843ab0f38ab4edb8f7921^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/target/target_core_pscsi.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "new_bio:"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 10,
+        "added_line_count": 6,
+        "removed_line_count": 4,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "fixture_sample_bucket": "kpatch_constraint",
+      "fixture_screening_tier": "blocked_by_kpatch_constraint",
+      "fixture_expected_outcome": "应进入真实构建，并稳定收口为 kpatch_constraint",
+      "fixture_id": "challenge-kpatch-cve-2024-26760",
+      "fixture_group": "regression",
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/target",
+      "rag_summary": "scsi: target: pscsi: Fix bio_put() for error case",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/target/target_core_pscsi.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "new_bio:"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 10,
+          "added_line_count": 6,
+          "removed_line_count": 4,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "4ebc079f0c7dcda1270843ab0f38ab4edb8f7921^",
+        "output_dir": "/home/patchweaver/stable-baselines/4ebc079f0c7dcda1270843ab0f38ab4edb8f7921-f7c3e6180d93",
+        "reused_existing": false,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/4ebc079f0c7dcda1270843ab0f38ab4edb8f7921-f7c3e6180d93/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/4ebc079f0c7dcda1270843ab0f38ab4edb8f7921-f7c3e6180d93",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001",
+      "build_summary": {
+        "task_id": "judge-like-challenge14final-2026050920-26760",
+        "attempt_id": "judge-like-challenge14final-2026050920-26760-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/logs/build.log",
+        "module_path": "workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2676.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-09T12:36:28.146155Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2676.ko",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_judge_like_challenge14final_2026050920_2676",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: judge-like-challenge14final-2026050920-26760",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "judge-like-challenge14final-2026050920-26760",
+        "attempt_id": "judge-like-challenge14final-2026050920-26760-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "judge-like-challenge14final-2026050920-26760",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "8713990491debb26ac7246ec6c7e36f54a1399a43f64e3f98f87125a1110f605",
+            "current_changed_line_count": 10,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T12:36:28.164365Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2676.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-09T12:36:31.775971+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    }
+  ]
+}

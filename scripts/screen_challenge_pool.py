@@ -23,6 +23,13 @@ from patchweaver.harness.livepatchability import apply_livepatchability_gate, lo
 from patchweaver.harness.sample_pool import classify_sample_pool_result
 
 
+def log_progress(message: str) -> None:
+    """Write human-visible progress to stderr without polluting JSON stdout."""
+
+    timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    print(f"[screen_challenge_pool {timestamp}] {message}", file=sys.stderr, flush=True)
+
+
 def parse_args() -> argparse.Namespace:
     """解析命令行参数"""
 
@@ -142,9 +149,49 @@ def load_cves(args: argparse.Namespace) -> list[str]:
     return deduped
 
 
+def load_fixture_metadata(path: Path | None) -> dict[str, dict[str, Any]]:
+    """Load optional fixture annotations keyed by CVE id."""
+
+    if path is None or not path.exists():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, list):
+        return {}
+    metadata: dict[str, dict[str, Any]] = {}
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        cve_id = str(item.get("cve_id") or "").strip()
+        if not cve_id:
+            continue
+        metadata[cve_id] = {
+            "fixture_sample_bucket": item.get("sample_bucket"),
+            "fixture_screening_tier": item.get("screening_tier"),
+            "fixture_expected_outcome": item.get("expected_outcome"),
+            "fixture_id": item.get("fixture_id"),
+            "fixture_group": item.get("fixture_group"),
+        }
+    return metadata
+
+
+def annotate_with_fixture_metadata(
+    records: list[dict[str, Any]],
+    fixture_metadata: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Attach fixture-level expectations without overwriting measured results."""
+
+    for record in records:
+        cve_id = str(record.get("cve_id") or "").strip()
+        metadata = fixture_metadata.get(cve_id)
+        if metadata:
+            record.update({key: value for key, value in metadata.items() if value is not None})
+    return records
+
+
 def run_cli_json(*, python_bin: str, cwd: Path, cli_args: list[str], timeout_sec: int | None = None) -> dict[str, Any]:
     """执行 CLI 并读取 JSON 输出"""
 
+    log_progress(f"START {' '.join(cli_args)} timeout={timeout_sec or 'none'}s")
     try:
         proc = run_command_with_process_group(
             [python_bin, "-m", "patchweaver", *cli_args],
@@ -163,6 +210,7 @@ def run_cli_json(*, python_bin: str, cwd: Path, cli_args: list[str], timeout_sec
     payload = extract_json_payload(proc.stdout)
     if not isinstance(payload, dict):
         raise RuntimeError(f"命令未返回 JSON 对象: {' '.join(cli_args)}\n{proc.stdout}")
+    log_progress(f"DONE {' '.join(cli_args)} status={payload.get('status') or payload.get('command') or 'ok'}")
     return payload
 
 
@@ -572,6 +620,7 @@ def prepare_stable_baselines_for_records(*, records: list[dict[str, Any]], args:
 
     for record in records:
         baseline_ref = str(record.get("stable_source_baseline_ref") or "").strip()
+        cve_id = str(record.get("cve_id") or "")
         if not baseline_ref:
             record["stable_baseline_preparation"] = {
                 "status": "skipped",
@@ -583,6 +632,13 @@ def prepare_stable_baselines_for_records(*, records: list[dict[str, Any]], args:
                 "status": "skipped",
                 "baseline_ref": baseline_ref,
                 "reason": "当前样例未进入 positive_pool_candidate，本轮不消耗 baseline 准备时间",
+            }
+            continue
+        if not should_prepare_stable_baseline_for_record(record):
+            record["stable_baseline_preparation"] = {
+                "status": "skipped",
+                "baseline_ref": baseline_ref,
+                "reason": "当前样例不属于正向候选或 kpatch 约束专项，混合评测中不提前准备 stable baseline",
             }
             continue
         try:
@@ -597,12 +653,14 @@ def prepare_stable_baselines_for_records(*, records: list[dict[str, Any]], args:
             if stable_config_source is not None:
                 prepare_args.extend(["--config-source", str(stable_config_source)])
             prepare_args.extend(["--no-write-build-config", "--json"])
+            log_progress(f"PREPARE_BASELINE cve={cve_id} baseline_ref={baseline_ref}")
             payload = run_cli_json(
                 python_bin=args.python,
                 cwd=PROJECT_ROOT,
                 cli_args=prepare_args,
                 timeout_sec=args.stable_baseline_timeout_sec,
             )
+            log_progress(f"PREPARE_BASELINE_DONE cve={cve_id} baseline_ref={baseline_ref}")
         except Exception as exc:
             record.update(
                 {
@@ -633,6 +691,24 @@ def prepare_stable_baselines_for_records(*, records: list[dict[str, Any]], args:
         record["stable_kernel_src_dir"] = payload.get("output_dir")
         record["stable_baseline_ready"] = True
     return records
+
+
+def should_prepare_stable_baseline_for_record(record: dict[str, Any]) -> bool:
+    """Only spend baseline-preparation time on cases that may need real build attempts."""
+
+    fixture_sample_bucket = str(record.get("fixture_sample_bucket") or "")
+    if fixture_sample_bucket in {"already_patched", "feature_not_enabled"}:
+        return False
+    if record.get("positive_pool_candidate"):
+        return True
+    sample_bucket = str(record.get("sample_bucket") or "")
+    if sample_bucket in {"buildable_and_should_pass", "kpatch_constraint"}:
+        return True
+    known_pool_hit = str(record.get("known_pool_hit") or "")
+    if known_pool_hit in {"positive_pool", "kpatch_constraint_pool"}:
+        return True
+    screening_tier = str(record.get("screening_tier") or "")
+    return screening_tier in {"positive_acceptance_confirmed", "blocked_by_known_kpatch_constraint"}
 
 
 def _safe_file_stem(value: str) -> str:
@@ -942,8 +1018,10 @@ def run_create_analyze_phase(
     """批量执行 create/analyze 并返回分析记录"""
 
     records: list[dict[str, Any]] = []
-    for cve_id in cves:
+    total = len(cves)
+    for index, cve_id in enumerate(cves, start=1):
         task_id = build_task_id(args.task_prefix, cve_id)
+        log_progress(f"ANALYZE_CASE {index}/{total} cve={cve_id} task={task_id}")
         record: dict[str, Any] = {
             "cve_id": cve_id,
             "task_id": task_id,
@@ -1002,14 +1080,18 @@ def run_full_phase(*, records: list[dict[str, Any]], args: argparse.Namespace, p
 
     max_run_attempts = args.max_run_attempts if args.max_run_attempts is not None else args.max_attempts
     max_run_attempts = max(1, int(max_run_attempts or 1))
-    for record in records:
+    total = len(records)
+    for case_index, record in enumerate(records, start=1):
         if args.only_positive_candidates and not record.get("positive_pool_candidate"):
             record["run_skipped"] = "not_positive_candidate"
             continue
 
         task_id = str(record["task_id"])
+        cve_id = str(record.get("cve_id") or "")
+        log_progress(f"FULL_CASE {case_index}/{total} cve={cve_id} task={task_id}")
         record["run_attempts"] = []
         for run_index in range(1, max_run_attempts + 1):
+            log_progress(f"RUN_ATTEMPT cve={cve_id} task={task_id} attempt={run_index}/{max_run_attempts}")
             run_snapshot: dict[str, Any] = {"run_index": run_index}
             try:
                 run_payload = run_cli_json(
@@ -1238,9 +1320,11 @@ def main() -> int:
 
     args = parse_args()
     cves = load_cves(args)
+    fixture_metadata = load_fixture_metadata(args.fixture)
     paths = runtime_paths(python_bin=args.python, cwd=PROJECT_ROOT)
     rag_seed_index = load_rag_seed_index(args.rag_seed_fixture)
     results = run_create_analyze_phase(cves=cves, args=args, paths=paths)
+    results = annotate_with_fixture_metadata(results, fixture_metadata)
     results = annotate_with_rag_seed(results, rag_seed_index)
     should_gate_known_pools = (
         not args.include_known_pool_cases

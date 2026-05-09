@@ -1,0 +1,30 @@
+{
+  "command": "check-vendor-baseline",
+  "source_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+  "target_kernel": "6.6.102-5.2.an23.x86_64",
+  "path_exists": true,
+  "tree_ok": true,
+  "config_ok": true,
+  "kernel_release": "6.6.102-5.2.an23.x86_64",
+  "kernel_release_matches": true,
+  "required_cache_files": {
+    "Module.symvers": true,
+    "vmlinux": true,
+    "vmlinux.o": true,
+    "vmlinux.a": true,
+    ".vmlinux.objs": true
+  },
+  "build_cache_ready": true,
+  "vmlinux_path": "/usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux",
+  "vmlinux_ok": true,
+  "patch_path": null,
+  "patch_apply_check_run": false,
+  "patch_apply_ok": null,
+  "patch_apply_stdout": "",
+  "patch_apply_stderr": "",
+  "unpatched_state_verified": false,
+  "vendor_baseline_ready": false,
+  "problems": [
+    "patch_not_provided_unpatched_state_unknown"
+  ]
+}

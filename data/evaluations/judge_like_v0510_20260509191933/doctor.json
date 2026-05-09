@@ -1,0 +1,503 @@
+{
+  "command": "doctor",
+  "runtime": {
+    "project_root": ".",
+    "config_dir": "config",
+    "workspace_root": "workspaces",
+    "database_path": "data/patchweaver.db",
+    "manifest_dir": "data/manifests",
+    "default_kernel": "6.6.102-5.2.an23.x86_64",
+    "max_attempts": 5,
+    "parallel_read_limit": 3,
+    "write_lock_scope": "task",
+    "trace_mode": "full",
+    "profile_name": null,
+    "enable_narrow_failover": false,
+    "enable_read_parallel": false,
+    "configured_default_kernel": "6.6.102-5.2.an23.x86_64",
+    "detected_target_kernel": "6.6.102-5.2.an23.x86_64",
+    "detected_target_kernel_source": "vmlinux_path",
+    "machine_kernel": "6.6.102-5.2.an23.x86_64",
+    "machine_arch": "x86_64",
+    "python_version": "3.11.6",
+    "skill_source_priority": [
+      "workspace",
+      "project",
+      "shared",
+      "builtin"
+    ]
+  },
+  "machine_profile": {
+    "machine_system": "Linux",
+    "machine_kernel": "6.6.102-5.2.an23.x86_64",
+    "machine_arch": "x86_64",
+    "hostname": "anolis",
+    "build_target_kernel": "6.6.102-5.2.an23.x86_64",
+    "build_target_kernel_source": "vmlinux_path",
+    "build_backend": "local",
+    "builder_cmd": "kpatch-build",
+    "builder_path": "/usr/bin/kpatch-build",
+    "selected_source_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+    "selected_source_reason": "prepared_kernel_src_dir",
+    "config_path": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64/.config",
+    "vmlinux_path": "/usr/lib/debug/usr/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux",
+    "detected_at": "2026-05-09T11:19:34.339079Z"
+  },
+  "skill_roots": {
+    "project": "skills/project",
+    "shared": "skills/shared",
+    "builtin": "skills/builtin"
+  },
+  "bootstrap_dirs": [
+    "prompts/system",
+    "prompts/bootstrap"
+  ],
+  "build_env": {
+    "backend": "local",
+    "builder_cmd": "kpatch-build",
+    "builder_path": "/usr/bin/kpatch-build",
+    "builder_ok": true,
+    "running_kernel": "6.6.102-5.2.an23.x86_64",
+    "clean_kernel_src_dir": ".",
+    "clean_kernel_src_ok": false,
+    "vendor_kernel_src_dir": ".",
+    "vendor_kernel_src_ok": false,
+    "prepared_kernel_src_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+    "prepared_kernel_src_ok": true,
+    "kernel_src_dir": "/opt/kernel-src",
+    "kernel_src_ok": true,
+    "kernel_devel_dir": "/usr/src/kernels/6.6.102-5.2.an23.x86_64",
+    "kernel_devel_ok": true,
+    "patched_kernel_src_dir": ".",
+    "patched_kernel_src_ok": false,
+    "source_candidates": [
+      {
+        "slot": "prepared_kernel_src_dir",
+        "path": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+        "ok": true,
+        "expected_state": "likely_patched"
+      },
+      {
+        "slot": "kernel_src_dir",
+        "path": "/opt/kernel-src",
+        "ok": true,
+        "expected_state": "likely_patched"
+      },
+      {
+        "slot": "kernel_devel_dir",
+        "path": "/usr/src/kernels/6.6.102-5.2.an23.x86_64",
+        "ok": true,
+        "expected_state": "unknown"
+      }
+    ],
+    "selected_source_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+    "selected_source_ok": true,
+    "selected_source_reason": "prepared_kernel_src_dir",
+    "selected_source_expected_state": "likely_patched",
+    "config_path": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64/.config",
+    "config_ok": true,
+    "vmlinux_path": "/usr/lib/debug/usr/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux",
+    "vmlinux_ok": true,
+    "default_kernel": "6.6.102-5.2.an23.x86_64"
+  },
+  "checks": [
+    {
+      "category": "python_module",
+      "name": "typer",
+      "label": "Python 模块 `typer`",
+      "ok": true,
+      "status": "ok",
+      "detail": "命令行框架"
+    },
+    {
+      "category": "python_module",
+      "name": "pydantic",
+      "label": "Python 模块 `pydantic`",
+      "ok": true,
+      "status": "ok",
+      "detail": "配置与模型校验"
+    },
+    {
+      "category": "python_module",
+      "name": "yaml",
+      "label": "Python 模块 `yaml`",
+      "ok": true,
+      "status": "ok",
+      "detail": "YAML 解析"
+    },
+    {
+      "category": "python_module",
+      "name": "jinja2",
+      "label": "Python 模块 `jinja2`",
+      "ok": true,
+      "status": "ok",
+      "detail": "模板渲染"
+    },
+    {
+      "category": "python_module",
+      "name": "unidiff",
+      "label": "Python 模块 `unidiff`",
+      "ok": true,
+      "status": "ok",
+      "detail": "补丁解析"
+    },
+    {
+      "category": "python_module",
+      "name": "rich",
+      "label": "Python 模块 `rich`",
+      "ok": true,
+      "status": "ok",
+      "detail": "终端输出"
+    },
+    {
+      "category": "python_module",
+      "name": "fastapi",
+      "label": "Python 模块 `fastapi`",
+      "ok": true,
+      "status": "ok",
+      "detail": "Web API"
+    },
+    {
+      "category": "python_module",
+      "name": "uvicorn",
+      "label": "Python 模块 `uvicorn`",
+      "ok": true,
+      "status": "ok",
+      "detail": "API 启动器"
+    },
+    {
+      "category": "config_file",
+      "name": "system.yaml",
+      "label": "配置文件 `system.yaml`",
+      "ok": true,
+      "status": "ok",
+      "detail": "config/system.yaml"
+    },
+    {
+      "category": "config_file",
+      "name": "profiles.yaml",
+      "label": "配置文件 `profiles.yaml`",
+      "ok": true,
+      "status": "ok",
+      "detail": "config/profiles.yaml"
+    },
+    {
+      "category": "config_file",
+      "name": "build.yaml",
+      "label": "配置文件 `build.yaml`",
+      "ok": true,
+      "status": "ok",
+      "detail": "config/build.yaml"
+    },
+    {
+      "category": "config_file",
+      "name": "verify.yaml",
+      "label": "配置文件 `verify.yaml`",
+      "ok": true,
+      "status": "ok",
+      "detail": "config/verify.yaml"
+    },
+    {
+      "category": "config_file",
+      "name": "skills.yaml",
+      "label": "配置文件 `skills.yaml`",
+      "ok": true,
+      "status": "ok",
+      "detail": "config/skills.yaml"
+    },
+    {
+      "category": "config_file",
+      "name": "prompts.yaml",
+      "label": "配置文件 `prompts.yaml`",
+      "ok": true,
+      "status": "ok",
+      "detail": "config/prompts.yaml"
+    },
+    {
+      "category": "config_file",
+      "name": "rules.yaml",
+      "label": "配置文件 `rules.yaml`",
+      "ok": true,
+      "status": "ok",
+      "detail": "config/rules.yaml"
+    },
+    {
+      "category": "config_file",
+      "name": "logging.yaml",
+      "label": "配置文件 `logging.yaml`",
+      "ok": true,
+      "status": "ok",
+      "detail": "config/logging.yaml"
+    },
+    {
+      "category": "config_file",
+      "name": "models.yaml",
+      "label": "配置文件 `models.yaml`",
+      "ok": true,
+      "status": "ok",
+      "detail": "config/models.yaml"
+    },
+    {
+      "category": "models",
+      "name": "model_topology",
+      "label": "模型拓扑",
+      "ok": true,
+      "status": "ok",
+      "detail": "single_primary_with_optional_helpers"
+    },
+    {
+      "category": "models",
+      "name": "default_model",
+      "label": "主模型",
+      "ok": true,
+      "status": "ok",
+      "detail": "qwen-plus-2025-07-28"
+    },
+    {
+      "category": "models",
+      "name": "delivery_model",
+      "label": "正式交付模型",
+      "ok": true,
+      "status": "ok",
+      "detail": "qwen-plus-2025-07-28"
+    },
+    {
+      "category": "models",
+      "name": "api_key",
+      "label": "百炼 API Key",
+      "ok": false,
+      "status": "warn",
+      "detail": "未配置 / PATCHWEAVER_BAILIAN_API_KEY"
+    },
+    {
+      "category": "models",
+      "name": "interaction_record_mode",
+      "label": "模型交互记录模式",
+      "ok": true,
+      "status": "ok",
+      "detail": "full"
+    },
+    {
+      "category": "delivery",
+      "name": "submission_root",
+      "label": "submission 根目录",
+      "ok": true,
+      "status": "ok",
+      "detail": "submission"
+    },
+    {
+      "category": "build_backend",
+      "name": "build_backend",
+      "label": "构建后端",
+      "ok": true,
+      "status": "ok",
+      "detail": "local"
+    },
+    {
+      "category": "external_command",
+      "name": "kpatch-build",
+      "label": "本机构建命令 `kpatch-build`",
+      "ok": true,
+      "status": "ok",
+      "detail": "/usr/bin/kpatch-build"
+    },
+    {
+      "category": "build_env",
+      "name": "selected_source_dir",
+      "label": "当前运行机内核源码目录",
+      "ok": true,
+      "status": "ok",
+      "detail": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64"
+    },
+    {
+      "category": "build_env",
+      "name": "config_path",
+      "label": "当前运行机内核 .config",
+      "ok": true,
+      "status": "ok",
+      "detail": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64/.config"
+    },
+    {
+      "category": "build_env",
+      "name": "vmlinux_path",
+      "label": "当前运行机 vmlinux 路径",
+      "ok": true,
+      "status": "ok",
+      "detail": "/usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux"
+    },
+    {
+      "category": "skill_root",
+      "name": "project",
+      "label": "Skill 根目录 `project`",
+      "ok": true,
+      "status": "ok",
+      "detail": "skills/project"
+    },
+    {
+      "category": "skill_root",
+      "name": "shared",
+      "label": "Skill 根目录 `shared`",
+      "ok": true,
+      "status": "ok",
+      "detail": "skills/shared"
+    },
+    {
+      "category": "skill_root",
+      "name": "builtin",
+      "label": "Skill 根目录 `builtin`",
+      "ok": true,
+      "status": "ok",
+      "detail": "skills/builtin"
+    },
+    {
+      "category": "skill_manifest",
+      "name": "retrieval",
+      "label": "Skill Manifest `retrieval`",
+      "ok": true,
+      "status": "ok",
+      "detail": "skills/project/retrieval/manifest.yaml"
+    },
+    {
+      "category": "skill_manifest",
+      "name": "semantic_card",
+      "label": "Skill Manifest `semantic_card`",
+      "ok": true,
+      "status": "ok",
+      "detail": "skills/project/semantic_card/manifest.yaml"
+    },
+    {
+      "category": "skill_manifest",
+      "name": "constraint_diagnosis",
+      "label": "Skill Manifest `constraint_diagnosis`",
+      "ok": true,
+      "status": "ok",
+      "detail": "skills/project/constraint_diagnosis/manifest.yaml"
+    },
+    {
+      "category": "skill_manifest",
+      "name": "rewrite_recipe",
+      "label": "Skill Manifest `rewrite_recipe`",
+      "ok": true,
+      "status": "ok",
+      "detail": "skills/project/rewrite_recipe/manifest.yaml"
+    },
+    {
+      "category": "skill_manifest",
+      "name": "failure_analysis",
+      "label": "Skill Manifest `failure_analysis`",
+      "ok": true,
+      "status": "ok",
+      "detail": "skills/project/failure_analysis/manifest.yaml"
+    },
+    {
+      "category": "skill_manifest",
+      "name": "validation",
+      "label": "Skill Manifest `validation`",
+      "ok": true,
+      "status": "ok",
+      "detail": "skills/project/validation/manifest.yaml"
+    },
+    {
+      "category": "skill_manifest",
+      "name": "reporting",
+      "label": "Skill Manifest `reporting`",
+      "ok": true,
+      "status": "ok",
+      "detail": "skills/project/reporting/manifest.yaml"
+    },
+    {
+      "category": "bootstrap_dir",
+      "name": "system",
+      "label": "Bootstrap 目录 `system`",
+      "ok": true,
+      "status": "ok",
+      "detail": "prompts/system"
+    },
+    {
+      "category": "bootstrap_dir",
+      "name": "bootstrap",
+      "label": "Bootstrap 目录 `bootstrap`",
+      "ok": true,
+      "status": "ok",
+      "detail": "prompts/bootstrap"
+    },
+    {
+      "category": "prompt_contract",
+      "name": "contracts",
+      "label": "Prompt Contracts 目录",
+      "ok": true,
+      "status": "ok",
+      "detail": "prompts/contracts"
+    },
+    {
+      "category": "filesystem",
+      "name": "manifest_dir",
+      "label": "Manifest 目录",
+      "ok": true,
+      "status": "ok",
+      "detail": "data/manifests"
+    },
+    {
+      "category": "manifest_template",
+      "name": "bootstrap_manifest.template.json",
+      "label": "Manifest 模板 `bootstrap_manifest.template.json`",
+      "ok": false,
+      "status": "warn",
+      "detail": "data/manifests/bootstrap_manifest.template.json"
+    },
+    {
+      "category": "manifest_template",
+      "name": "failover_record.template.json",
+      "label": "Manifest 模板 `failover_record.template.json`",
+      "ok": false,
+      "status": "warn",
+      "detail": "data/manifests/failover_record.template.json"
+    },
+    {
+      "category": "filesystem",
+      "name": "log_dir",
+      "label": "日志目录",
+      "ok": true,
+      "status": "ok",
+      "detail": "data/logs"
+    },
+    {
+      "category": "filesystem",
+      "name": "jsonl_dir",
+      "label": "JSONL 目录",
+      "ok": true,
+      "status": "ok",
+      "detail": "data/logs"
+    },
+    {
+      "category": "filesystem",
+      "name": "model_interaction_jsonl_dir",
+      "label": "模型交互日志目录",
+      "ok": true,
+      "status": "ok",
+      "detail": "data/logs"
+    },
+    {
+      "category": "filesystem",
+      "name": "workspace_root",
+      "label": "工作区目录",
+      "ok": true,
+      "status": "ok",
+      "detail": "workspaces"
+    },
+    {
+      "category": "filesystem",
+      "name": "sqlite_file",
+      "label": "SQLite 文件",
+      "ok": true,
+      "status": "ok",
+      "detail": "data/patchweaver.db"
+    }
+  ],
+  "summary": {
+    "total": 49,
+    "ok": 46,
+    "warn": 3,
+    "error": 0
+  }
+}

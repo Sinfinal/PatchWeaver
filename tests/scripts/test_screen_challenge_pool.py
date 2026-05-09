@@ -8,10 +8,12 @@ from pathlib import Path
 from scripts.screen_challenge_pool import (
     apply_module_target_gate,
     apply_known_pool_gate,
+    annotate_with_fixture_metadata,
     annotate_with_rag_seed,
     count_existing_positive_pool,
     infer_build_targets_for_record,
     load_cves,
+    load_fixture_metadata,
     load_full_artifacts,
     load_rag_seed_index,
     parse_posix_descendant_process_groups,
@@ -338,6 +340,94 @@ def test_prepare_stable_baselines_blocks_positive_candidate_on_prepare_failure(m
     assert prepared[0]["positive_pool_candidate"] is False
     assert prepared[0]["screening_tier"] == "blocked_by_stable_baseline_prepare_failed"
     assert prepared[0]["agent_next_action"] == "inspect_stable_source_baseline_failure"
+
+
+def test_prepare_stable_baselines_skips_non_buildable_boundary_case(monkeypatch) -> None:
+    calls: list[list[str]] = []
+
+    class Args:
+        prepare_stable_baseline = True
+        only_positive_candidates = False
+        python = sys.executable
+        stable_baseline_timeout_sec = 321
+
+    def fake_run_cli_json(*, python_bin, cwd, cli_args, timeout_sec=None):
+        calls.append(cli_args)
+        return {"output_dir": "/tmp/should-not-run"}
+
+    monkeypatch.setattr("scripts.screen_challenge_pool.run_cli_json", fake_run_cli_json)
+    records = [
+        {
+            "cve_id": "CVE-2024-26631",
+            "positive_pool_candidate": False,
+            "sample_bucket": "already_patched",
+            "stable_source_baseline_ref": "abc123^",
+        }
+    ]
+
+    prepared = prepare_stable_baselines_for_records(records=records, args=Args())
+
+    assert calls == []
+    assert prepared[0]["stable_baseline_preparation"]["status"] == "skipped"
+    assert "不提前准备 stable baseline" in prepared[0]["stable_baseline_preparation"]["reason"]
+
+
+def test_prepare_stable_baselines_uses_fixture_bucket_to_skip_boundary_case(monkeypatch) -> None:
+    calls: list[list[str]] = []
+
+    class Args:
+        prepare_stable_baseline = True
+        only_positive_candidates = False
+        python = sys.executable
+        stable_baseline_timeout_sec = 321
+
+    def fake_run_cli_json(*, python_bin, cwd, cli_args, timeout_sec=None):
+        calls.append(cli_args)
+        return {"output_dir": "/tmp/should-not-run"}
+
+    monkeypatch.setattr("scripts.screen_challenge_pool.run_cli_json", fake_run_cli_json)
+    records = [
+        {
+            "cve_id": "CVE-2024-26631",
+            "positive_pool_candidate": True,
+            "sample_bucket": "buildable_and_should_pass",
+            "fixture_sample_bucket": "already_patched",
+            "stable_source_baseline_ref": "abc123^",
+        }
+    ]
+
+    prepared = prepare_stable_baselines_for_records(records=records, args=Args())
+
+    assert calls == []
+    assert prepared[0]["stable_baseline_preparation"]["status"] == "skipped"
+
+
+def test_load_fixture_metadata_and_annotation_preserve_measured_bucket(tmp_path: Path) -> None:
+    fixture = tmp_path / "fixture.json"
+    fixture.write_text(
+        json.dumps(
+            [
+                {
+                    "fixture_id": "case-1",
+                    "cve_id": "CVE-2024-26631",
+                    "sample_bucket": "already_patched",
+                    "screening_tier": "positive_candidate_blocked_by_target_state",
+                    "expected_outcome": "target already patched",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    metadata = load_fixture_metadata(fixture)
+    records = annotate_with_fixture_metadata(
+        [{"cve_id": "CVE-2024-26631", "sample_bucket": "buildable_and_should_pass"}],
+        metadata,
+    )
+
+    assert records[0]["sample_bucket"] == "buildable_and_should_pass"
+    assert records[0]["fixture_sample_bucket"] == "already_patched"
+    assert records[0]["fixture_screening_tier"] == "positive_candidate_blocked_by_target_state"
 
 
 def test_apply_known_pool_gate_skips_confirmed_positive_case(tmp_path: Path) -> None:
