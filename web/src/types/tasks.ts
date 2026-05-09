@@ -124,6 +124,38 @@ export type ProcessSummary = {
   state_conflicts: string[];
 };
 
+export type AgentDecisionSummary = {
+  task_id: string;
+  attempt_id?: string | null;
+  attempt_no?: number | null;
+  repair_intent?: Record<string, unknown> | null;
+  selected_recipe?: string | null;
+  selected_strategy?: string | null;
+  strategy?: string | null;
+  strategy_switch: {
+    repair_intent_strategy?: string | null;
+    selected_recipe?: string | null;
+    selected_strategy?: string | null;
+    final_strategy?: string | null;
+    switched: boolean;
+    reason?: string | null;
+  };
+  agent_next_action?: string | null;
+  failure_type?: string | null;
+  failure_record: {
+    summary?: string | null;
+    stage_name?: string | null;
+    failure_type?: string | null;
+    evidence: unknown[];
+    diagnostic_details?: unknown;
+    raw?: Record<string, unknown> | null;
+  };
+  diagnostic_details?: unknown;
+  state_conflicts: string[];
+  source_paths: Record<string, string | null | undefined>;
+  source_exists: Record<string, boolean>;
+};
+
 export type ArtifactIndexItem = {
   artifact_type: string;
   artifact_path: string;
@@ -158,6 +190,7 @@ export type TaskDetailResponse = {
   latest_validation?: Record<string, unknown> | null;
   latest_trace?: Record<string, unknown> | null;
   latest_rewrite_plan?: Record<string, unknown> | null;
+  agent_decision_summary?: AgentDecisionSummary;
   evaluation_summary?: Record<string, unknown> | null;
   reports: {
     json_path: string;

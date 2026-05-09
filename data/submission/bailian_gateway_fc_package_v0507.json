@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "package": "data\\submission\\bailian_gateway_fc_package_v0507.zip",
+  "entrypoint": "index.handler",
+  "files": [
+    "index.py",
+    "bailian_gateway.py",
+    "schema.json",
+    "openapi.json",
+    "README.md"
+  ],
+  "required_environment": [
+    {
+      "name": "PATCHWEAVER_API_BASE_URL",
+      "required": true,
+      "secret": false
+    },
+    {
+      "name": "PATCHWEAVER_BAILIAN_API_KEY",
+      "required": false,
+      "secret": true
+    },
+    {
+      "name": "PATCHWEAVER_API_TIMEOUT_SECONDS",
+      "required": false,
+      "secret": false
+    }
+  ],
+  "safe_default": "dry_run=true",
+  "limits": [
+    "The package does not create a Bailian application by itself.",
+    "A Bailian console login or cloud deployment credential is still required to publish an application link.",
+    "Secret values are not read, printed, or written."
+  ],
+  "generated_at": "2026-05-07T12:35:23.716951+00:00"
+}

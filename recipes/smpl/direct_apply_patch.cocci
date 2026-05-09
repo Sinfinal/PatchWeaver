@@ -1,1 +1,9 @@
-// direct_apply_patch: 当前阶段保留原始 diff，仅记录已命中 SmPL 入口。
+// PatchWeaver direct_apply_patch
+// Direct path keeps the normalized unified diff unchanged
+@ direct_apply_candidate @
+identifier fn;
+@@
+fn(...)
+{
+  ...
+}

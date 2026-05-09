@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from uuid import uuid4
 
@@ -7,6 +8,7 @@ from patchweaver.models.attempt import AttemptRecord
 from patchweaver.models.harness import ArtifactRef
 from patchweaver.models.task import TaskContext
 from patchweaver.models.validation import ValidationItem, ValidationMatrixEntry, ValidationReport
+from patchweaver.reporter.md_writer import MdWriter
 from patchweaver.reporter.report_builder import ReportBuilder
 
 
@@ -159,3 +161,107 @@ def test_report_builder_marks_success_replay_ready_when_validation_passed() -> N
     assert report.validation_summary["validation_status"] == "passed"
     assert report.closure_summary["missing_success_evidence"] == []
     assert any(item.endswith("validation_report.json") for item in report.replay_summary["recommended_replay_files"])
+
+
+def test_report_builder_surfaces_agent_decision_summary_in_report_and_markdown() -> None:
+    tmp_path = _case_dir("report-builder-agent-decision")
+    task = TaskContext(
+        task_id="TASK-RPT-003",
+        cve_id="CVE-2099-1003",
+        target_kernel="6.6.102-5.2.an23.x86_64",
+        workspace_dir=tmp_path / "workspace",
+        status="failed",
+    )
+    attempt_dir = task.workspace_dir / "attempts" / "001"
+    repair_intent_path = task.workspace_dir / "analysis" / "repair_intent.json"
+    rewrite_plan_path = attempt_dir / "rewrite" / "rewrite_plan.json"
+    failure_record_path = attempt_dir / "logs" / "failure_record.json"
+    build_summary_path = attempt_dir / "artifacts" / "build_summary.json"
+    for path in [repair_intent_path, rewrite_plan_path, failure_record_path, build_summary_path]:
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    repair_intent_path.write_text(
+        json.dumps(
+            {
+                "cve_id": task.cve_id,
+                "bug_class": "bounds_check",
+                "root_cause": "missing length guard",
+                "guard_conditions": ["if (len > max) return -EINVAL;"],
+                "recommended_strategy": "semantic_guard",
+                "confidence": 0.84,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    rewrite_plan_path.write_text(
+        json.dumps(
+            {
+                "selected_recipe": "smpl_primary_rewrite",
+                "selected_strategy": "smpl_template",
+                "selection_reason": "fallback to template rewrite",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    failure_record_path.write_text(
+        json.dumps(
+            {
+                "stage_name": "build",
+                "failure_type": "compile_failed",
+                "summary": "struct field mismatch",
+                "agent_next_action": "adapt field access before retry",
+                "diagnostic_details": {"compiler_error": "no member named max"},
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    build_summary_path.write_text(
+        json.dumps({"failure_type": "compile_failed", "build_exec_status": "executed"}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+    attempts = [
+        AttemptRecord(
+            task_id=task.task_id,
+            attempt_no=1,
+            attempt_id=f"{task.task_id}-A001",
+            status="failed",
+            failure_type="compile_failed",
+            build_exec_status="executed",
+        )
+    ]
+    report = ReportBuilder(tmp_path).build_report(
+        task=task,
+        attempts=attempts,
+        artifacts=[
+            ArtifactRef(artifact_type="repair_intent", artifact_path=repair_intent_path),
+            ArtifactRef(artifact_type="rewrite_plan", artifact_path=rewrite_plan_path),
+            ArtifactRef(artifact_type="failure_record", artifact_path=failure_record_path),
+            ArtifactRef(artifact_type="build_summary", artifact_path=build_summary_path),
+        ],
+    )
+
+    summary = report.agent_decision_summary
+    assert summary["repair_intent"]["recommended_strategy"] == "semantic_guard"
+    assert summary["selected_recipe"] == "smpl_primary_rewrite"
+    assert summary["selected_strategy"] == "smpl_template"
+    assert summary["strategy_switch"]["switched"] is True
+    assert summary["failure_attribution"]["failure_type"] == "compile_failed"
+    assert summary["failure_attribution"]["agent_next_action"] == "adapt field access before retry"
+    assert summary["source_exists"]["repair_intent"] is True
+
+    md_path = tmp_path / "report.md"
+    MdWriter().write_report(report, md_path)
+    markdown = md_path.read_text(encoding="utf-8")
+    assert "Agent Decision Summary" in markdown
+    assert "semantic_guard" in markdown
+    assert "compile_failed" in markdown

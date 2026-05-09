@@ -787,11 +787,30 @@ def summarize(results: list[dict[str, Any]], *, positive_pool_fixture: Path, pos
     role_counter = Counter(item.get("acceptance_role") or "unknown" for item in results)
     current_positive_pool_size = count_existing_positive_pool(positive_pool_fixture)
     confirmed_positive = [item["cve_id"] for item in results if positive_acceptance_evidence_ok(item)]
+    executed_records = [
+        item
+        for item in results
+        if item.get("run_attempts") or item.get("run_status") or item.get("build_status") or item.get("validation_status")
+    ]
+    attempt_counts = [
+        len(item.get("run_attempts") or []) or int(item.get("run_index") or 1)
+        for item in executed_records
+    ]
+    representative_total = len(executed_records) or len(results)
+    representative_success_rate = (
+        round(len(confirmed_positive) / representative_total, 4)
+        if representative_total
+        else 0.0
+    )
+    average_attempts = round(sum(attempt_counts) / len(attempt_counts), 2) if attempt_counts else 0.0
     projected_positive_pool_size = current_positive_pool_size + len(
         {cve for cve in confirmed_positive if cve not in {item.get("cve_id") for item in _read_positive_pool_items(positive_pool_fixture)}}
     )
     return {
         "total_cases": len(results),
+        "representative_total": representative_total,
+        "representative_success_rate": representative_success_rate,
+        "average_attempts": average_attempts,
         "bucket_counts": dict(bucket_counter),
         "tier_counts": dict(tier_counter),
         "role_counts": dict(role_counter),
@@ -1115,6 +1134,9 @@ def update_positive_pool_fixture(*, fixture_path: Path, results: list[dict[str, 
                 "expected_artifacts": [
                     "build_summary.json",
                     "validation_report.json",
+                    "repair_intent.json",
+                    "rewritten.patch",
+                    "semantic_guard.json",
                     "report.json",
                     "patchweaver-*.ko",
                 ],
@@ -1154,6 +1176,8 @@ def write_markdown_report(*, report_path: Path, payload: dict[str, Any]) -> None
         f"- current_positive_pool_size: `{summary['current_positive_pool_size']}`",
         f"- positive_pool_target: `{summary['positive_pool_target']}`",
         f"- positive_pool_gap: `{summary['positive_pool_gap']}`",
+        f"- representative_success_rate: `{summary.get('representative_success_rate', 0.0):.0%}`",
+        f"- average_attempts: `{summary.get('average_attempts', 0.0)}`",
         f"- rag_seed_hits: `{len(summary['rag_seed_hits'])}`",
         f"- known_pool_skipped: `{len(summary['known_pool_skipped'])}`",
         f"- stable_source_alignment_required: `{len(summary['stable_source_alignment_required'])}`",

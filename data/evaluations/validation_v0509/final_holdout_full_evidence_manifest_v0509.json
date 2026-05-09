@@ -1,0 +1,111 @@
+{
+  "fixture_path": "evaluations/fixtures/final_holdout_full_candidates_v0509.json",
+  "workspace_root": "/home/patchweaver/current/workspaces",
+  "total": 5,
+  "complete": 5,
+  "partial": 0,
+  "missing": 0,
+  "entries": [
+    {
+      "cve_id": "CVE-2024-26698",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/output/patchweaver-finalholdout0509c-26698-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/output/patchweaver-finalholdout0509c-26698-001.ko",
+          "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/output/patchweaver-s1full0507-26698-001.ko"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26693",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/output/patchweaver-finalholdout0509c-26693-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/output/patchweaver-finalholdout0509c-26693-001.ko",
+          "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/output/patchweaver-s1full0507-26693-001.ko"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26694",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/output/patchweaver-finalholdout0509c-26694-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/output/patchweaver-finalholdout0509c-26694-001.ko",
+          "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/output/patchweaver-s1full0507-26694-001.ko"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26615",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/output/patchweaver-finalholdout0509c-26615-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/output/patchweaver-finalholdout0509c-26615-001.ko",
+          "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/output/patchweaver-s1full0507-26615-001.ko"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26791",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/output/patchweaver-finalholdout0509c-26791-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/output/patchweaver-finalholdout0509c-26791-001.ko",
+          "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/output/patchweaver-s1full0507-26791-001.ko"
+        ]
+      }
+    }
+  ],
+  "generated_at": "2026-05-09T05:37:44.966616+00:00"
+}

@@ -1,2 +1,9 @@
-// smpl primary route placeholder
-// current stage keeps source diff stable and only records route hit
+// PatchWeaver smpl_primary_rewrite
+// Main structural rewrite route for shrinking the edited function area
+@ smpl_primary_candidate @
+identifier fn;
+@@
+fn(...)
+{
+  ...
+}

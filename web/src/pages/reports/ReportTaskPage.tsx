@@ -73,6 +73,37 @@ export function ReportTaskPage(): JSX.Element {
         </div>
       </SectionCard>
 
+      {payload.agent_decision_summary ? (
+        <SectionCard title="Agent Decision Summary" subtitle="报告页直接展示修复意图、策略选择和失败归因。">
+          <div className="pw-kv">
+            <div className="pw-kv-item">
+              <span className="pw-kv-label">RepairIntent 策略</span>
+              <div className="pw-kv-value">{payload.agent_decision_summary.strategy_switch.repair_intent_strategy ?? "未记录"}</div>
+            </div>
+            <div className="pw-kv-item">
+              <span className="pw-kv-label">选中 Recipe</span>
+              <div className="pw-kv-value">{payload.agent_decision_summary.selected_recipe ?? "未记录"}</div>
+            </div>
+            <div className="pw-kv-item">
+              <span className="pw-kv-label">最终策略</span>
+              <div className="pw-kv-value">{payload.agent_decision_summary.strategy ?? "未记录"}</div>
+            </div>
+            <div className="pw-kv-item">
+              <span className="pw-kv-label">失败类型</span>
+              <div className="pw-kv-value">{payload.agent_decision_summary.failure_type ?? "无"}</div>
+            </div>
+            <div className="pw-kv-item">
+              <span className="pw-kv-label">下一步动作</span>
+              <div className="pw-kv-value">{payload.agent_decision_summary.agent_next_action ?? "未记录"}</div>
+            </div>
+            <div className="pw-kv-item">
+              <span className="pw-kv-label">FailureRecord</span>
+              <div className="pw-kv-value">{shortenPath(payload.agent_decision_summary.source_paths.failure_record)}</div>
+            </div>
+          </div>
+        </SectionCard>
+      ) : null}
+
       <div className="pw-grid two">
         <SectionCard title="Markdown 报告" subtitle="当前先保留原始 Markdown 文本，便于和落盘文件逐项比对。">
           <CodePanel

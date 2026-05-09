@@ -1,0 +1,102 @@
+[
+  {
+    "fixture_id": "final-holdout-candidate-cve-2024-26698",
+    "cve_id": "CVE-2024-26698",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "final_holdout_retest_v0509",
+    "sample_bucket": "buildable_and_should_pass",
+    "screening_tier": "positive_acceptance_confirmed",
+    "screening_round": "v0507-s1-expand",
+    "selection_reason": "Fresh v0507 full-run positive; drivers/net Hyper-V module target; livepatchability 100/high; stable baseline prepared; .ko validation passed.",
+    "expected_artifacts": [
+      "build_summary.json",
+      "validation_report.json",
+      "repair_intent.json",
+      "rewritten.patch",
+      "semantic_guard.json",
+      "report.json",
+      "patchweaver-*.ko"
+    ],
+    "expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检"
+  },
+  {
+    "fixture_id": "final-holdout-candidate-cve-2024-26693",
+    "cve_id": "CVE-2024-26693",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "final_holdout_retest_v0509",
+    "sample_bucket": "buildable_and_should_pass",
+    "screening_tier": "positive_acceptance_confirmed",
+    "screening_round": "v0507-s1-expand",
+    "selection_reason": "Fresh v0507 full-run positive; drivers/net module target; livepatchability 100/high; stable baseline prepared; .ko validation passed.",
+    "expected_artifacts": [
+      "build_summary.json",
+      "validation_report.json",
+      "repair_intent.json",
+      "rewritten.patch",
+      "semantic_guard.json",
+      "report.json",
+      "patchweaver-*.ko"
+    ],
+    "expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检"
+  },
+  {
+    "fixture_id": "final-holdout-candidate-cve-2024-26694",
+    "cve_id": "CVE-2024-26694",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "final_holdout_retest_v0509",
+    "sample_bucket": "buildable_and_should_pass",
+    "screening_tier": "positive_acceptance_confirmed",
+    "screening_round": "v0507-s1-expand",
+    "selection_reason": "Fresh v0507 full-run positive; drivers/net module target; livepatchability 100/high; stable baseline prepared; .ko validation passed.",
+    "expected_artifacts": [
+      "build_summary.json",
+      "validation_report.json",
+      "repair_intent.json",
+      "rewritten.patch",
+      "semantic_guard.json",
+      "report.json",
+      "patchweaver-*.ko"
+    ],
+    "expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检"
+  },
+  {
+    "fixture_id": "final-holdout-candidate-cve-2024-26615",
+    "cve_id": "CVE-2024-26615",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "final_holdout_retest_v0509",
+    "sample_bucket": "buildable_and_should_pass",
+    "screening_tier": "positive_acceptance_confirmed",
+    "screening_round": "v0507-s1-expand",
+    "selection_reason": "Fresh v0507 full-run positive; net/smc subsystem adds non-drivers/net coverage; livepatchability 100/high; stable baseline prepared; .ko validation passed.",
+    "expected_artifacts": [
+      "build_summary.json",
+      "validation_report.json",
+      "repair_intent.json",
+      "rewritten.patch",
+      "semantic_guard.json",
+      "report.json",
+      "patchweaver-*.ko"
+    ],
+    "expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检"
+  },
+  {
+    "fixture_id": "final-holdout-candidate-cve-2024-26791",
+    "cve_id": "CVE-2024-26791",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "fixture_group": "final_holdout_retest_v0509",
+    "sample_bucket": "buildable_and_should_pass",
+    "screening_tier": "positive_acceptance_confirmed",
+    "screening_round": "v0507-s1-expand",
+    "selection_reason": "Fresh v0507 full-run positive; fs/btrfs subsystem adds filesystem coverage; livepatchability 100/high; stable baseline prepared; .ko validation passed.",
+    "expected_artifacts": [
+      "build_summary.json",
+      "validation_report.json",
+      "repair_intent.json",
+      "rewritten.patch",
+      "semantic_guard.json",
+      "report.json",
+      "patchweaver-*.ko"
+    ],
+    "expected_outcome": "当前验证机上应真实产出 .ko，并通过 load、unload、smoke、自检"
+  }
+]

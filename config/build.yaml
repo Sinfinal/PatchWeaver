@@ -21,7 +21,8 @@ stable_kernel_src_dir: ""
 stable_source_git_dir: ""
 
 # stable baseline worktree 缓存根目录。
-stable_source_cache_dir: /opt/patchweaver/stable-baselines
+# 验证机根分区较小，stable baseline 快照必须落到 /home 大分区。
+stable_source_cache_dir: /home/patchweaver/stable-baselines
 
 # 若验证机已经准备出完整的 vendor source tree，可在这里登记。
 # 这棵树通常来自 Anolis 对应 kernel source SRPM，比 /opt/kernel-src 更适合承接真实编译。

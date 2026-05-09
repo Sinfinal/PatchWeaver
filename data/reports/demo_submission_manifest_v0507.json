@@ -1,0 +1,1389 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-07T11:28:56.032869+00:00",
+  "inputs": {
+    "workspace_root": "/home/patchweaver/current/workspaces",
+    "reports_root": "data/reports",
+    "positive_evidence_path": "data/manifests/positive_pool_evidence_manifest_v0507_complete12.json"
+  },
+  "summary": {
+    "positive_evidence_count": 12,
+    "workspace_report_count": 104,
+    "standalone_report_count": 1,
+    "ko_artifact_count": 12
+  },
+  "positive_evidence": [
+    {
+      "cve_id": "CVE-2024-26742",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/p0-gate-fg-20260506210801-26742/attempts/001/output/patchweaver-p0-gate-fg-20260506210801-26742-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/p0-gate-fg-20260506210801-26742/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/p0-gate-fg-20260506210801-26742/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/p0-gate-fg-20260506210801-26742/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/p0-gate-fg-20260506210801-26742/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/p0-gate-fg-20260506210801-26742/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/p0-gate-fg-20260506210801-26742/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/p0-gate-fg-20260506210801-26742/attempts/001/output/patchweaver-p0-gate-fg-20260506210801-26742-001.ko",
+          "/home/patchweaver/current/workspaces/p0-vendorrev-20260506203124-26742/attempts/001/output/patchweaver-p0-vendorrev-20260506203124-26742-001.ko"
+        ]
+      },
+      "ko_path": "/home/patchweaver/current/workspaces/p0-gate-fg-20260506210801-26742/attempts/001/output/patchweaver-p0-gate-fg-20260506210801-26742-001.ko",
+      "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+    },
+    {
+      "cve_id": "CVE-2024-26675",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/p1-smoke-20260507160113-26675/attempts/001/output/patchweaver-p1-smoke-20260507160113-26675-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/p1-smoke-20260507160113-26675/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/p1-smoke-20260507160113-26675/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/p1mod0507-26675/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/p1-smoke-20260507160113-26675/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/p1-smoke-20260507160113-26675/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/p1-smoke-20260507160113-26675/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/p1-smoke-20260507160113-26675/attempts/001/output/patchweaver-p1-smoke-20260507160113-26675-001.ko",
+          "/home/patchweaver/current/workspaces/p0-confirm-20260507151120-26675/attempts/001/output/patchweaver-p0-confirm-20260507151120-26675-001.ko",
+          "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26675/attempts/001/output/patchweaver-p0-callsite-20260507144934-26675-001.ko",
+          "/home/patchweaver/current/workspaces/p0-wrapperprobe-20260507144255-26675/attempts/001/output/patchweaver-p0-wrapperprobe-20260507144255-26675-001.ko"
+        ]
+      },
+      "ko_path": "/home/patchweaver/current/workspaces/p1-smoke-20260507160113-26675/attempts/001/output/patchweaver-p1-smoke-20260507160113-26675-001.ko",
+      "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+    },
+    {
+      "cve_id": "CVE-2024-26663",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26663/attempts/001/output/patchweaver-p0-callsite-20260507144934-26663-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26663/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26663/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/p1mod0507-26663/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26663/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26663/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26663/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26663/attempts/001/output/patchweaver-p0-callsite-20260507144934-26663-001.ko",
+          "/home/patchweaver/current/workspaces/p0-guardfix-20260507135326-26663/attempts/001/sources/reverse_unpatched/net/tipc/tipc.ko",
+          "/home/patchweaver/current/workspaces/p0-guardfix-20260507135326-26663/attempts/001/sources/reverse_unpatched/net/ipv4/udp_tunnel.ko",
+          "/home/patchweaver/current/workspaces/p0-guardfix-20260507135326-26663/attempts/001/sources/reverse_unpatched/net/ipv6/ip6_udp_tunnel.ko"
+        ]
+      },
+      "ko_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26663/attempts/001/output/patchweaver-p0-callsite-20260507144934-26663-001.ko",
+      "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+    },
+    {
+      "cve_id": "CVE-2024-26668",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26668/attempts/001/output/patchweaver-p0-callsite-20260507144934-26668-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26668/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26668/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/p1mod0507-26668/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26668/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26668/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26668/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26668/attempts/001/output/patchweaver-p0-callsite-20260507144934-26668-001.ko"
+        ]
+      },
+      "ko_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26668/attempts/001/output/patchweaver-p0-callsite-20260507144934-26668-001.ko",
+      "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+    },
+    {
+      "cve_id": "CVE-2024-26666",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26666/attempts/001/output/patchweaver-p0-callsite-20260507144934-26666-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26666/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26666/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/p1mod0507-26666/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26666/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26666/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26666/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26666/attempts/001/output/patchweaver-p0-callsite-20260507144934-26666-001.ko"
+        ]
+      },
+      "ko_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26666/attempts/001/output/patchweaver-p0-callsite-20260507144934-26666-001.ko",
+      "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+    },
+    {
+      "cve_id": "CVE-2024-26656",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26656/attempts/001/output/patchweaver-p0-callsite-20260507144934-26656-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26656/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26656/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/p1mod0507-26656/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26656/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26656/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26656/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26656/attempts/001/output/patchweaver-p0-callsite-20260507144934-26656-001.ko"
+        ]
+      },
+      "ko_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26656/attempts/001/output/patchweaver-p0-callsite-20260507144934-26656-001.ko",
+      "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+    },
+    {
+      "cve_id": "CVE-2024-26726",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/output/patchweaver-s3sgpoolrerun0507-26726-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/output/patchweaver-s3sgpoolrerun0507-26726-001.ko",
+          "/home/patchweaver/current/workspaces/s3sg0507-26726/attempts/001/output/patchweaver-s3sg0507-26726-001.ko"
+        ]
+      },
+      "ko_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/output/patchweaver-s3sgpoolrerun0507-26726-001.ko",
+      "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+    },
+    {
+      "cve_id": "CVE-2024-26698",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/output/patchweaver-s1full0507-26698-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/s1full0507-26698/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/s1full0507-26698/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/output/patchweaver-s1full0507-26698-001.ko"
+        ]
+      },
+      "ko_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/output/patchweaver-s1full0507-26698-001.ko",
+      "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+    },
+    {
+      "cve_id": "CVE-2024-26693",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/output/patchweaver-s1full0507-26693-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/s1full0507-26693/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/s1full0507-26693/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/output/patchweaver-s1full0507-26693-001.ko"
+        ]
+      },
+      "ko_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/output/patchweaver-s1full0507-26693-001.ko",
+      "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+    },
+    {
+      "cve_id": "CVE-2024-26694",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/output/patchweaver-s1full0507-26694-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/s1full0507-26694/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/s1full0507-26694/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/output/patchweaver-s1full0507-26694-001.ko"
+        ]
+      },
+      "ko_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/output/patchweaver-s1full0507-26694-001.ko",
+      "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+    },
+    {
+      "cve_id": "CVE-2024-26615",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/output/patchweaver-s1full0507-26615-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/s1full0507-26615/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/s1full0507-26615/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/output/patchweaver-s1full0507-26615-001.ko"
+        ]
+      },
+      "ko_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/output/patchweaver-s1full0507-26615-001.ko",
+      "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+    },
+    {
+      "cve_id": "CVE-2024-26791",
+      "status": "complete",
+      "missing_artifacts": [],
+      "module_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/output/patchweaver-s1full0507-26791-001.ko",
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "validation_status": "passed",
+      "evidence_paths": {
+        "build_summary.json": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/diagnostics/build_summary.json",
+        "validation_report.json": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/diagnostics/validation_report.json",
+        "repair_intent.json": "/home/patchweaver/current/workspaces/s1full0507-26791/analysis/repair_intent.json",
+        "rewritten.patch": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/rewrite/rewritten.patch",
+        "semantic_guard.json": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/artifacts/semantic_guard.json",
+        "report.json": "/home/patchweaver/current/workspaces/s1full0507-26791/reports/report.json",
+        "patchweaver-*.ko": [
+          "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/output/patchweaver-s1full0507-26791-001.ko"
+        ]
+      },
+      "ko_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/output/patchweaver-s1full0507-26791-001.ko",
+      "vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions"
+    }
+  ],
+  "workspace_reports": [
+    {
+      "task_id": "agent-closeout-20260429-26668-kpatch3",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/agent-closeout-20260429-26668-kpatch3/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/agent-closeout-20260429-26668-kpatch3/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/agent-closeout-20260429-26668-kpatch3/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "agent-closeout-20260429-26727-force",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/agent-closeout-20260429-26727-force/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/agent-closeout-20260429-26727-force/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "agent-closeout-20260429-26727-force2",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/agent-closeout-20260429-26727-force2/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/agent-closeout-20260429-26727-force2/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "agent-closeout-20260429-26730-fix1",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/agent-closeout-20260429-26730-fix1/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/agent-closeout-20260429-26730-fix1/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/agent-closeout-20260429-26730-fix1/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-26727",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-26727/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-26727/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-26727/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-cachefix-20260506194307-26610",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-cachefix-20260506194307-26610/reports/report.json",
+      "validation_reports": [],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-cachefix-20260506194307-26742",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-cachefix-20260506194307-26742/reports/report.json",
+      "validation_reports": [],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-callsite-20260507144934-26656",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26656/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26656/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-callsite-20260507144934-26663",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26663/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26663/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-callsite-20260507144934-26666",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26666/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26666/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-callsite-20260507144934-26668",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26668/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26668/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-callsite-20260507144934-26675",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26675/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26675/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-confirm-20260507151120-26675",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-confirm-20260507151120-26675/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-confirm-20260507151120-26675/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full-20260506213421-26612",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full-20260506213421-26612/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full-20260506213421-26612/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full-20260506213421-26615",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full-20260506213421-26615/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full-20260506213421-26615/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full-20260506213421-26642",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full-20260506213421-26642/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full-20260506213421-26642/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full-20260506213421-26644",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full-20260506213421-26644/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full-20260506213421-26644/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full2-20260506214740-26649",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full2-20260506214740-26649/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full2-20260506214740-26649/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full2-20260506214740-26664",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full2-20260506214740-26664/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full2-20260506214740-26664/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full2-20260506214740-26673",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full2-20260506214740-26673/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full2-20260506214740-26673/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full2-20260506214740-26681",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full2-20260506214740-26681/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full2-20260506214740-26681/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full3-20260506215947-26689",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full3-20260506215947-26689/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full3-20260506215947-26689/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full3-20260506215947-26692",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full3-20260506215947-26692/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full3-20260506215947-26692/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full3-20260506215947-26693",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full3-20260506215947-26693/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full3-20260506215947-26693/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full3-20260506215947-26694",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full3-20260506215947-26694/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full3-20260506215947-26694/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full3-20260506215947-26698",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full3-20260506215947-26698/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full3-20260506215947-26698/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-full3-20260506215947-26722",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-full3-20260506215947-26722/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-full3-20260506215947-26722/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-gate-fg-20260506210801-26742",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-gate-fg-20260506210801-26742/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-gate-fg-20260506210801-26742/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-guard-20260506221152-26644",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-guard-20260506221152-26644/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-guard-20260506221152-26644/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-guard-20260506221152-26644/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-guard-20260506221152-26693",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-guard-20260506221152-26693/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-guard-20260506221152-26693/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-guard-20260506221152-26693/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-guardfix-20260507135326-26675",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-guardfix-20260507135326-26675/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-guardfix-20260507135326-26675/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-guardfix-20260507135326-26675/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-guardfix-20260507135326-26675/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-health-20260506192911-26610",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-health-20260506192911-26610/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-health-20260506192911-26610/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-health-20260506192911-26742",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-health-20260506192911-26742/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-health-20260506192911-26742/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-olddef-20260506202804-26742",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-olddef-20260506202804-26742/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-olddef-20260506202804-26742/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-olddef-20260506202804-26742/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-positive-20260507140750-26610",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26610/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26610/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26610/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26610/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-positive-20260507140750-26616",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26616/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26616/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26616/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26616/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-positive-20260507140750-26633",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26633/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26633/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26633/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26633/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-positive-20260507140750-26641",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26641/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26641/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26641/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26641/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-positive-20260507140750-26683",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26683/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26683/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26683/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26683/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-positive-20260507140750-26726",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26726/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26726/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26726/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26726/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-positive-20260507140750-26727",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26727/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26727/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26727/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-positive-20260507140750-26727/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-vendorrev-20260506203124-26742",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-vendorrev-20260506203124-26742/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-vendorrev-20260506203124-26742/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-vendorrev-20260506203356-26610",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-vendorrev-20260506203356-26610/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-vendorrev-20260506203356-26610/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/p0-vendorrev-20260506203356-26610/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p0-wrapperprobe-20260507144255-26675",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p0-wrapperprobe-20260507144255-26675/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p0-wrapperprobe-20260507144255-26675/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p1-smoke-20260507160113-26675",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p1-smoke-20260507160113-26675/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p1-smoke-20260507160113-26675/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p1full0507-26642",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p1full0507-26642/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p1full0507-26642/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p1full0507-26649",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p1full0507-26649/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p1full0507-26649/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p1full0507-26664",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p1full0507-26664/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p1full0507-26664/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p1full0507-26673",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p1full0507-26673/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p1full0507-26673/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p1full0507-26681",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p1full0507-26681/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p1full0507-26681/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p1nextfull0507-26730",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p1nextfull0507-26730/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p1nextfull0507-26730/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "p1nextfull0507-26803",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/p1nextfull0507-26803/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/p1nextfull0507-26803/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "posclose-20260429-26722",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/posclose-20260429-26722/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/posclose-20260429-26722/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/posclose-20260429-26722/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "posclose-20260429-26730",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/posclose-20260429-26730/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/posclose-20260429-26730/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "posclose2-20260429-26743",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/posclose2-20260429-26743/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/posclose2-20260429-26743/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/posclose2-20260429-26743/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "posclose2-20260429-26746",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/posclose2-20260429-26746/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/posclose2-20260429-26746/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "posclose2-20260429-26753",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/posclose2-20260429-26753/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/posclose2-20260429-26753/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/posclose2-20260429-26753/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "posverify-20260429-26730",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/posverify-20260429-26730/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/posverify-20260429-26730/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/posverify-20260429-26730/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "repair-intent-20260430-26727",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/repair-intent-20260430-26727/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/repair-intent-20260430-26727/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "repair-intent-20260430-26727-r2",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/repair-intent-20260430-26727-r2/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/repair-intent-20260430-26727-r2/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "repair-intent-20260430-26727-r3",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/repair-intent-20260430-26727-r3/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/repair-intent-20260430-26727-r3/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "s1full0507-26610",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/s1full0507-26610/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/s1full0507-26610/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "s1full0507-26615",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/s1full0507-26615/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "s1full0507-26692",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/s1full0507-26692/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/s1full0507-26692/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "s1full0507-26693",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/s1full0507-26693/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "s1full0507-26694",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/s1full0507-26694/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "s1full0507-26698",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/s1full0507-26698/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "s1full0507-26727",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/s1full0507-26727/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/s1full0507-26727/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "s1full0507-26791",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/s1full0507-26791/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "s3sg0507-26726",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/s3sg0507-26726/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/s3sg0507-26726/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "s3sg0507-26736",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/s3sg0507-26736/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/s3sg0507-26736/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "s3sgpoolrerun0507-26726",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "stable-baseline-20260430-26727",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/stable-baseline-20260430-26727/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/stable-baseline-20260430-26727/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "stable-baseline-cachefix-20260430-26727",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/stable-baseline-cachefix-20260430-26727/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/stable-baseline-cachefix-20260430-26727/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "stable-baseline-warm-20260430-26727",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/stable-baseline-warm-20260430-26727/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/stable-baseline-warm-20260430-26727/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "stable-cache-rerun-20260506-133045-26727",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/stable-cache-rerun-20260506-133045-26727/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/stable-cache-rerun-20260506-133045-26727/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0428-patchapply-diagnose-185900-26657",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0428-patchapply-diagnose-185900-26657/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0428-patchapply-diagnose-185900-26657/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0428-patchapply-diagnose-185900-26673",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0428-patchapply-diagnose-185900-26673/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0428-patchapply-diagnose-185900-26673/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0428-patchapply-diagnose-185900-26681",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0428-patchapply-diagnose-185900-26681/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0428-patchapply-diagnose-185900-26681/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0428-patchapply-reverse-181102-26657",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0428-patchapply-reverse-181102-26657/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0428-patchapply-reverse-181102-26657/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0428-patchapply-reverse-181102-26657/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0428-patchapply-reverse-181102-26673",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0428-patchapply-reverse-181102-26673/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0428-patchapply-reverse-181102-26673/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0428-patchapply-reverse-181102-26673/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0428-patchapply-reverse-181102-26681",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0428-patchapply-reverse-181102-26681/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0428-patchapply-reverse-181102-26681/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0428-patchapply-reverse-181102-26681/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-kconstraint-135526-26643",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26643/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26643/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26643/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26643/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-kconstraint-135526-26656",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26656/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26656/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26656/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26656/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-kconstraint-135526-26663",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26663/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26663/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26663/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26663/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-kconstraint-135526-26666",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26666/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26666/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26666/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26666/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-kconstraint-135526-26668",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26668/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26668/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26668/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26668/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-kconstraint-135526-26675",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26675/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26675/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26675/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-135526-26675/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-kconstraint-latest-20260429-154935-26643",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26643/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26643/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26643/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26643/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-kconstraint-latest-20260429-154935-26656",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26656/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26656/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26656/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-kconstraint-latest-20260429-154935-26663",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26663/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26663/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26663/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26663/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-kconstraint-latest-20260429-154935-26666",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26666/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26666/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26666/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26666/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-kconstraint-latest-20260429-154935-26668",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26668/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26668/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26668/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26668/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-kconstraint-latest-20260429-154935-26675",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26675/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26675/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26675/attempts/002/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-kconstraint-latest-20260429-154935-26675/attempts/003/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-patchapply-26727-fix-20260429-173528-26727",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-patchapply-26727-fix-20260429-173528-26727/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-patchapply-26727-fix-20260429-173528-26727/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-patchapply-26727-fix2-20260429-174151-26727",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-patchapply-26727-fix2-20260429-174151-26727/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-patchapply-26727-fix2-20260429-174151-26727/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-positive-full-20260429-165601-26689",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26689/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26689/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26689/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-positive-full-20260429-165601-26692",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26692/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26692/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-positive-full-20260429-165601-26693",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26693/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26693/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26693/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-positive-full-20260429-165601-26694",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26694/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26694/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26694/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-positive-full-20260429-165601-26698",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26698/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26698/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26698/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-positive-full-20260429-165601-26722",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26722/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26722/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26722/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-positive-full-20260429-165601-26726",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26726/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26726/attempts/001/artifacts/validation_report.json",
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26726/attempts/002/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    },
+    {
+      "task_id": "v0429-positive-full-20260429-165601-26727",
+      "cve_id": null,
+      "status": null,
+      "report_path": "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26727/reports/report.json",
+      "validation_reports": [
+        "/home/patchweaver/current/workspaces/v0429-positive-full-20260429-165601-26727/attempts/001/artifacts/validation_report.json"
+      ],
+      "ko_artifacts": []
+    }
+  ],
+  "standalone_reports": [
+    {
+      "name": "demo_submission_manifest_v0507.json",
+      "path": "data/reports/demo_submission_manifest_v0507.json",
+      "status": null
+    }
+  ],
+  "artifacts": {
+    "demo_report_md": "data/reports/demo_report_v0507.md",
+    "submission_manifest_json": "data/reports/demo_submission_manifest_v0507.json"
+  },
+  "limits": [
+    "Generated from local evidence only.",
+    "Validation-machine live kpatch-build/load/unload evidence is not produced by this script."
+  ]
+}

@@ -124,6 +124,7 @@ def test_rewrite_executor_materializes_scaffold_route_artifacts(
     rewrite_reason = json.loads(outputs["rewrite_reason"].read_text(encoding="utf-8"))
     kernel_adapter_plan = json.loads(outputs["kernel_adapter_plan"].read_text(encoding="utf-8"))
     step_map = {step["engine"]: step for step in trace_payload["steps"]}
+    scaffold_files = [PROJECT_ROOT / item for item in kernel_adapter_plan["scaffold_files"]]
 
     assert outputs["rewritten_patch"].exists()
     assert outputs["apply_precheck_report"].status == "skipped"
@@ -131,6 +132,16 @@ def test_rewrite_executor_materializes_scaffold_route_artifacts(
     assert rewrite_reason["selected_route_family"] == route_family
     assert kernel_adapter_plan["selected_recipe"] == recipe_name
     assert kernel_adapter_plan["selected_execution_mode"] == execution_mode
+    assert kernel_adapter_plan["scaffold_contract"]["target_files"] == [relative_file]
+    assert scaffold_files
+    assert scaffold_files[0].exists()
+    scaffold_text = scaffold_files[0].read_text(encoding="utf-8")
+    if "callback" in selected_primitives:
+        assert "patchweaver_pre_patch_callback" in scaffold_text
+    if "shadow_variable" in selected_primitives:
+        assert "patchweaver_shadow_state" in scaffold_text
+    if "state_preserving" in selected_primitives:
+        assert "patchweaver_state_preserve" in scaffold_text
     assert recipe_name in step_map["template"]["summary"]
     assert f"{recipe_name}.cocci" in step_map["smpl"]["summary"]
     assert step_map["route_dispatch"]["action"] == execution_mode

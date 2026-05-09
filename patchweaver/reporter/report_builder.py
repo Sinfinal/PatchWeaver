@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any
 
 from patchweaver.models.attempt import AttemptRecord
 from patchweaver.models.harness import ArtifactRef
@@ -131,6 +133,11 @@ class ReportBuilder:
                 "evaluation_summary_path": artifact_lookup.get("evaluation_summary"),
                 "recommended_replay_files": closure_summary["recommended_replay_files"],
             },
+            agent_decision_summary=self._build_agent_decision_summary(
+                task=task,
+                latest_attempt=latest_attempt,
+                artifact_lookup=artifact_lookup,
+            ),
             key_paths={
                 "report_json": artifact_lookup.get("final_report_json"),
                 "report_md": artifact_lookup.get("final_report_md"),
@@ -197,6 +204,182 @@ class ReportBuilder:
         summary["selftest_status"] = validation_report.selftest_result.status
         summary["regression_status"] = validation_report.regression_result.status
         return summary
+
+    def _build_agent_decision_summary(
+        self,
+        *,
+        task: TaskContext,
+        latest_attempt: AttemptRecord | None,
+        artifact_lookup: dict[str, str],
+    ) -> dict[str, object]:
+        """Surface repair intent, selected strategy, and failure attribution in reports."""
+
+        attempt_dir = task.workspace_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" if latest_attempt else None
+        repair_intent_path = self._artifact_or_default(
+            artifact_lookup,
+            "repair_intent",
+            task.workspace_dir / "analysis" / "repair_intent.json",
+        )
+        if repair_intent_path is not None and not repair_intent_path.exists() and attempt_dir is not None:
+            fallback = attempt_dir / "artifacts" / "repair_intent.json"
+            if fallback.exists():
+                repair_intent_path = fallback
+        rewrite_plan_path = self._artifact_or_default(
+            artifact_lookup,
+            "rewrite_plan",
+            attempt_dir / "rewrite" / "rewrite_plan.json" if attempt_dir else None,
+        )
+        failure_record_path = self._artifact_or_default(
+            artifact_lookup,
+            "failure_record",
+            attempt_dir / "logs" / "failure_record.json" if attempt_dir else None,
+        )
+        build_summary_path = self._artifact_or_default(
+            artifact_lookup,
+            "build_summary",
+            attempt_dir / "artifacts" / "build_summary.json" if attempt_dir else None,
+        )
+
+        repair_intent = self._read_json_payload(repair_intent_path)
+        rewrite_plan = self._read_json_payload(rewrite_plan_path)
+        failure_record = self._read_json_payload(failure_record_path)
+        build_summary = self._read_json_payload(build_summary_path)
+
+        intent_strategy = self._first_present(
+            repair_intent,
+            keys=("recommended_strategy", "repair_strategy", "strategy"),
+        )
+        selected_recipe = self._first_present(
+            rewrite_plan,
+            build_summary,
+            keys=("selected_recipe", "recipe", "recipe_name"),
+        )
+        selected_strategy = self._first_present(
+            rewrite_plan,
+            build_summary,
+            keys=("selected_strategy", "strategy", "route", "rewrite_strategy"),
+        )
+        final_strategy = selected_strategy or selected_recipe or intent_strategy
+        failure_type = self._first_present(
+            build_summary,
+            failure_record,
+            keys=("failure_type", "expected_failure_type"),
+        ) or (latest_attempt.failure_type if latest_attempt else None)
+        diagnostic_details = self._first_present(
+            failure_record,
+            build_summary,
+            keys=("diagnostic_details", "diagnostics", "details", "root_cause_details"),
+        )
+        strategy_switched = bool(
+            intent_strategy
+            and final_strategy
+            and str(intent_strategy) not in {str(final_strategy), str(selected_recipe)}
+        )
+
+        return {
+            "repair_intent": self._repair_intent_summary(repair_intent, task=task),
+            "selected_recipe": selected_recipe,
+            "selected_strategy": selected_strategy,
+            "strategy": final_strategy,
+            "strategy_switch": {
+                "repair_intent_strategy": intent_strategy,
+                "selected_recipe": selected_recipe,
+                "selected_strategy": selected_strategy,
+                "final_strategy": final_strategy,
+                "switched": strategy_switched,
+                "reason": self._first_present(
+                    rewrite_plan,
+                    build_summary,
+                    keys=("selection_reason", "strategy_reason", "reason"),
+                ),
+            },
+            "failure_type": failure_type,
+            "failure_attribution": {
+                "present": bool(failure_type or failure_record),
+                "stage_name": (failure_record or {}).get("stage_name"),
+                "failure_type": failure_type,
+                "summary": self._first_present(failure_record, build_summary, keys=("summary",)),
+                "agent_next_action": self._first_present(
+                    failure_record,
+                    build_summary,
+                    keys=("agent_next_action", "next_action", "recommended_action"),
+                ),
+                "diagnostic_details": diagnostic_details,
+            },
+            "source_paths": {
+                "repair_intent": self._path(repair_intent_path),
+                "rewrite_plan": self._path(rewrite_plan_path),
+                "failure_record": self._path(failure_record_path),
+                "build_summary": self._path(build_summary_path),
+            },
+            "source_exists": {
+                "repair_intent": bool(repair_intent_path and repair_intent_path.exists()),
+                "rewrite_plan": bool(rewrite_plan_path and rewrite_plan_path.exists()),
+                "failure_record": bool(failure_record_path and failure_record_path.exists()),
+                "build_summary": bool(build_summary_path and build_summary_path.exists()),
+            },
+        }
+
+    def _repair_intent_summary(self, payload: dict[str, Any] | None, *, task: TaskContext) -> dict[str, Any] | None:
+        """Reduce RepairIntent to the fields expected in reports and UI payloads."""
+
+        if payload is None:
+            return None
+        return {
+            "present": True,
+            "cve_id": payload.get("cve_id") or task.cve_id,
+            "bug_class": payload.get("bug_class"),
+            "root_cause": payload.get("root_cause"),
+            "vulnerability_conditions": payload.get("vulnerability_conditions") or [],
+            "guard_conditions": payload.get("guard_conditions") or [],
+            "guard_sites": payload.get("guard_sites") or [],
+            "safe_exits": payload.get("safe_exits") or [],
+            "preserved_side_effects": payload.get("preserved_side_effects") or [],
+            "touched_files": payload.get("touched_files") or [],
+            "touched_functions": payload.get("touched_functions") or [],
+            "touched_state": payload.get("touched_state") or [],
+            "recommended_strategy": payload.get("recommended_strategy"),
+            "confidence": payload.get("confidence"),
+            "evidence": payload.get("evidence") or [],
+        }
+
+    def _artifact_or_default(
+        self,
+        artifact_lookup: dict[str, str],
+        artifact_type: str,
+        default_path: Path | None,
+    ) -> Path | None:
+        """Resolve a registered artifact path, falling back to the canonical workspace path."""
+
+        raw_path = artifact_lookup.get(artifact_type)
+        if raw_path:
+            path = self._absolute_path(raw_path)
+            if path is not None:
+                return path
+        return default_path
+
+    def _read_json_payload(self, path: Path | None) -> dict[str, Any] | None:
+        """Read a JSON object without failing report generation."""
+
+        if path is None or not path.exists():
+            return None
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        return payload if isinstance(payload, dict) else None
+
+    def _first_present(self, *sources: dict[str, Any] | None, keys: tuple[str, ...]) -> Any | None:
+        """Return the first non-empty value from ordered JSON payloads."""
+
+        for source in sources:
+            if not isinstance(source, dict):
+                continue
+            for key in keys:
+                value = source.get(key)
+                if value not in (None, "", [], {}):
+                    return value
+        return None
 
     def _build_closure_summary(
         self,

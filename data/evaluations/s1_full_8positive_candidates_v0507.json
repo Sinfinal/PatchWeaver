@@ -1,0 +1,3340 @@
+{
+  "mode": "full",
+  "profile": "demo",
+  "task_prefix": "s1full0507",
+  "max_run_attempts": 1,
+  "run_timeout_sec": 900,
+  "stable_baseline_timeout_sec": 900,
+  "prepare_stable_baseline": true,
+  "only_positive_candidates": true,
+  "positive_pool_fixture": "/home/patchweaver/current/evaluations/fixtures/challenge_positive_pool_confirmed_v0426.json",
+  "known_kpatch_constraint_fixture": "/home/patchweaver/current/evaluations/fixtures/challenge_kpatch_constraint_pool_v0427.json",
+  "include_known_pool_cases": false,
+  "positive_pool_target": 10,
+  "min_livepatchability_score": 75,
+  "only_high_livepatchability": true,
+  "rag_seed_fixture": "/home/patchweaver/current/evaluations/fixtures/rag_seed_linux_kernel_2024_batch200.json",
+  "config_fragment_dir": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments",
+  "minimal_config_fragments_written": [
+    "CVE-2024-26698",
+    "CVE-2024-26610",
+    "CVE-2024-26693",
+    "CVE-2024-26694",
+    "CVE-2024-26615",
+    "CVE-2024-26692",
+    "CVE-2024-26727",
+    "CVE-2024-26791"
+  ],
+  "positive_pool_added": [
+    "CVE-2024-26698",
+    "CVE-2024-26693",
+    "CVE-2024-26694",
+    "CVE-2024-26615",
+    "CVE-2024-26791"
+  ],
+  "project_root": "/home/patchweaver/current",
+  "workspace_root": "/home/patchweaver/current/workspaces",
+  "summary": {
+    "total_cases": 8,
+    "representative_total": 8,
+    "representative_success_rate": 0.625,
+    "average_attempts": 1.0,
+    "bucket_counts": {
+      "buildable_and_should_pass": 5,
+      "unbucketed": 2,
+      "already_patched": 1
+    },
+    "tier_counts": {
+      "positive_acceptance_confirmed": 5,
+      "development_only_apply_precheck": 2,
+      "positive_candidate_blocked_by_target_state": 1
+    },
+    "role_counts": {
+      "positive_acceptance_sample": 5,
+      "development_sample": 2,
+      "screening_candidate": 1
+    },
+    "livepatchability_tier_counts": {
+      "high": 8
+    },
+    "livepatchability_high": [
+      "CVE-2024-26698",
+      "CVE-2024-26610",
+      "CVE-2024-26693",
+      "CVE-2024-26694",
+      "CVE-2024-26615",
+      "CVE-2024-26692",
+      "CVE-2024-26727",
+      "CVE-2024-26791"
+    ],
+    "confirmed_positive_acceptance": [
+      "CVE-2024-26698",
+      "CVE-2024-26693",
+      "CVE-2024-26694",
+      "CVE-2024-26615",
+      "CVE-2024-26791"
+    ],
+    "positive_pool_candidates": [
+      "CVE-2024-26698",
+      "CVE-2024-26693",
+      "CVE-2024-26694",
+      "CVE-2024-26615",
+      "CVE-2024-26791"
+    ],
+    "stable_bucket_ready": [
+      "CVE-2024-26698",
+      "CVE-2024-26693",
+      "CVE-2024-26694",
+      "CVE-2024-26615",
+      "CVE-2024-26692",
+      "CVE-2024-26791"
+    ],
+    "rag_seed_hits": [
+      "CVE-2024-26698",
+      "CVE-2024-26610",
+      "CVE-2024-26693",
+      "CVE-2024-26694",
+      "CVE-2024-26615",
+      "CVE-2024-26692",
+      "CVE-2024-26727",
+      "CVE-2024-26791"
+    ],
+    "known_pool_skipped": [],
+    "stable_source_alignment_required": [
+      "CVE-2024-26610",
+      "CVE-2024-26727"
+    ],
+    "stable_baseline_prepared": [
+      "CVE-2024-26698",
+      "CVE-2024-26610",
+      "CVE-2024-26693",
+      "CVE-2024-26694",
+      "CVE-2024-26615",
+      "CVE-2024-26692",
+      "CVE-2024-26727",
+      "CVE-2024-26791"
+    ],
+    "minimal_config_fragments": [
+      "CVE-2024-26698",
+      "CVE-2024-26610",
+      "CVE-2024-26693",
+      "CVE-2024-26694",
+      "CVE-2024-26615",
+      "CVE-2024-26692",
+      "CVE-2024-26727",
+      "CVE-2024-26791"
+    ],
+    "rag_subsystem_counts": {
+      "drivers/net": 4,
+      "net/smc": 1,
+      "fs/smb": 1,
+      "fs/btrfs": 2
+    },
+    "positive_pool_target": 10,
+    "current_positive_pool_size": 12,
+    "projected_positive_pool_size": 12,
+    "positive_pool_gap": 0
+  },
+  "results": [
+    {
+      "cve_id": "CVE-2024-26698",
+      "task_id": "s1full0507-26698",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/net/hyperv/netvsc.c"
+      ],
+      "critical_calls_count": 3,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 2,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "22a77c0f5b8233237731df3288d067af51a2fd7b^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/hyperv/netvsc.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "netvsc_device_remove"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 5,
+        "added_line_count": 3,
+        "removed_line_count": 2,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "hv_netvsc: Fix race condition between netvsc_probe and netvsc_remove",
+      "inferred_build_targets": [
+        "drivers/net/hyperv/hv_netvsc.ko"
+      ],
+      "build_target_states": [
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/net/hyperv/netvsc.c",
+          "target": "drivers/net/hyperv/hv_netvsc.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_HYPERV_NET": "m"
+        },
+        "target_files": [
+          "drivers/net/hyperv/netvsc.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_HYPERV_NET",
+            "token": "hyperv/",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_HYPERV_NET) += hyperv/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_HYPERV_NET",
+            "token": "hv_netvsc.o",
+            "makefile_dir": "drivers/net/hyperv",
+            "line": "obj-$(CONFIG_HYPERV_NET) += hv_netvsc.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_HYPERV_NET=m\n",
+      "minimal_config_fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26698.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26698.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26698.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [],
+        "shape": {
+          "touched_files": [
+            "drivers/net/hyperv/netvsc.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "netvsc_device_remove"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 5,
+          "added_line_count": 3,
+          "removed_line_count": 2,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "22a77c0f5b8233237731df3288d067af51a2fd7b^",
+        "output_dir": "/home/patchweaver/stable-baselines/22a77c0f5b8233237731df3288d067af51a2fd7b-32047e80fee7",
+        "reused_existing": false,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/22a77c0f5b8233237731df3288d067af51a2fd7b-32047e80fee7/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/22a77c0f5b8233237731df3288d067af51a2fd7b-32047e80fee7",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001",
+      "build_summary": {
+        "task_id": "s1full0507-26698",
+        "attempt_id": "s1full0507-26698-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/s1full0507-26698/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/s1full0507-26698/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/s1full0507-26698/attempts/001/logs/build.log",
+        "module_path": "workspaces/s1full0507-26698/attempts/001/output/patchweaver-s1full0507-26698-001.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-07T11:10:25.998382Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/output/patchweaver-s1full0507-26698-001.ko",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_s1full0507_26698_001",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: s1full0507-26698",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "s1full0507-26698",
+        "attempt_id": "s1full0507-26698-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "s1full0507-26698",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "011ad2a234294364eb3469d7abadf115b03e4cf42cf5b9066198207a64773ff9",
+            "current_changed_line_count": 6,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-07T11:10:26.021226Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/output/patchweaver-s1full0507-26698-001.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-07T11:10:29.582351+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26610",
+      "task_id": "s1full0507-26610",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/net/wireless/intel/iwlwifi/iwl-dbg-tlv.c"
+      ],
+      "critical_calls_count": 3,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 2,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "870171899d75d43e3d14360f3a4850e90a9c289b^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/wireless/intel/iwlwifi/iwl-dbg-tlv.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "iwl_dbg_tlv_override_trig_node"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 5,
+        "added_line_count": 2,
+        "removed_line_count": 3,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": null,
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_apply_precheck",
+      "reason": "当前源码树无法通过 apply 预检查，先不纳入稳定四桶样例集",
+      "stable_bucket_ready": false,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "wifi: iwlwifi: fix a memory corruption",
+      "inferred_build_targets": [
+        "drivers/net/wireless/intel/iwlwifi/iwlwifi.ko"
+      ],
+      "build_target_states": [
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/net/wireless/intel/iwlwifi/iwl-dbg-tlv.c",
+          "target": "drivers/net/wireless/intel/iwlwifi/iwlwifi.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_IWLMEI": "m",
+          "CONFIG_IWLWIFI": "m",
+          "CONFIG_WLAN": "m",
+          "CONFIG_WLAN_VENDOR_INTEL": "m"
+        },
+        "target_files": [
+          "drivers/net/wireless/intel/iwlwifi/iwl-dbg-tlv.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_WLAN",
+            "token": "wireless/",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_WLAN) += wireless/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_WLAN_VENDOR_INTEL",
+            "token": "intel/",
+            "makefile_dir": "drivers/net/wireless",
+            "line": "obj-$(CONFIG_WLAN_VENDOR_INTEL) += intel/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_IWLWIFI",
+            "token": "iwlwifi/",
+            "makefile_dir": "drivers/net/wireless/intel",
+            "line": "obj-$(CONFIG_IWLWIFI)\t+= iwlwifi/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_IWLMEI",
+            "token": "iwlwifi/",
+            "makefile_dir": "drivers/net/wireless/intel",
+            "line": "obj-$(CONFIG_IWLMEI)\t+= iwlwifi/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_IWLWIFI",
+            "token": "iwlwifi.o",
+            "makefile_dir": "drivers/net/wireless/intel/iwlwifi",
+            "line": "obj-$(CONFIG_IWLWIFI)\t+= iwlwifi.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_IWLMEI=m\nCONFIG_IWLWIFI=m\nCONFIG_WLAN=m\nCONFIG_WLAN_VENDOR_INTEL=m\n",
+      "minimal_config_fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26610.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26610.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26610.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [],
+        "shape": {
+          "touched_files": [
+            "drivers/net/wireless/intel/iwlwifi/iwl-dbg-tlv.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "iwl_dbg_tlv_override_trig_node"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 5,
+          "added_line_count": 2,
+          "removed_line_count": 3,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "870171899d75d43e3d14360f3a4850e90a9c289b^",
+        "output_dir": "/home/patchweaver/stable-baselines/870171899d75d43e3d14360f3a4850e90a9c289b-7aace1dc2fdc",
+        "reused_existing": false,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/870171899d75d43e3d14360f3a4850e90a9c289b-7aace1dc2fdc/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/870171899d75d43e3d14360f3a4850e90a9c289b-7aace1dc2fdc",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "failed",
+          "run_failure_type": "patch_apply_failed",
+          "build_exec_status": "not_run",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26610/attempts/001",
+          "failure_type": "patch_apply_failed",
+          "build_status": "not_run",
+          "validation_status": "pending",
+          "screening_tier": "development_only_apply_precheck",
+          "sample_bucket": null
+        }
+      ],
+      "run_index": 1,
+      "run_status": "failed",
+      "run_failure_type": "patch_apply_failed",
+      "build_exec_status": "not_run",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26610/attempts/001",
+      "build_summary": {
+        "task_id": "s1full0507-26610",
+        "attempt_id": "s1full0507-26610-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "not_run",
+        "summary": "apply 级预检查未通过，已跳过本机构建。",
+        "rewritten_patch_path": "workspaces/s1full0507-26610/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+        "build_log_path": "workspaces/s1full0507-26610/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "patch_apply_failed",
+        "build_exec_status": "not_run",
+        "target_state": null,
+        "exit_code": null,
+        "created_at": "2026-05-07T11:10:45.997269Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未执行加载测试，暂不执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未满足冒烟测试前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "当前轮尚未满足自检前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26610/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "当前轮尚未满足自检前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未执行加载测试，暂不执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未满足冒烟测试前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26610/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "pending",
+        "notes": [
+          "验证任务: s1full0507-26610",
+          "构建状态: failed",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False",
+          "本轮未构建出模块产物，动态验证阶段维持待执行状态。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "s1full0507-26610",
+        "attempt_id": "s1full0507-26610-A001",
+        "stage_name": "build",
+        "failure_type": "patch_apply_failed",
+        "summary": "error: while searching for:",
+        "evidence": [
+          "error: patch failed: drivers/net/wireless/intel/iwlwifi/iwl-dbg-tlv.c:1",
+          "error: drivers/net/wireless/intel/iwlwifi/iwl-dbg-tlv.c: patch does not apply",
+          "error: patch failed: drivers/net/wireless/intel/iwlwifi/iwl-dbg-tlv.c:1"
+        ],
+        "diagnostic_details": {
+          "patch_apply": {
+            "subtype": "source_too_new_or_already_patched",
+            "source_state": "likely_patched",
+            "conflict_files": [
+              "drivers/net/wireless/intel/iwlwifi/iwl-dbg-tlv.c"
+            ],
+            "conflict_hunks": [
+              {
+                "file": "drivers/net/wireless/intel/iwlwifi/iwl-dbg-tlv.c",
+                "line": 1
+              },
+              {
+                "file": "drivers/net/wireless/intel/iwlwifi/iwl-dbg-tlv.c",
+                "line": 1
+              }
+            ],
+            "reverse_unpatch_recommended": true,
+            "reverse_unpatch_attempted": true,
+            "reverse_unpatch_status": "failed",
+            "stable_source_alignment_required": true,
+            "stable_source_baseline_action": "prepare_unpatched_stable_source_baseline",
+            "reason": "当前源码树疑似已包含修复或版本过新，优先尝试 reverse-unpatch"
+          },
+          "agent_next_action": {
+            "action": "prepare_unpatched_stable_source_baseline",
+            "reason": "patch 上下文与当前源码树不一致，需要切换到修复提交父版本或等价未修复源码树",
+            "retry_scope": "source_baseline",
+            "retryable_after_environment_update": true
+          },
+          "route_effectiveness": {
+            "task_id": "s1full0507-26610",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "direct_apply_patch",
+            "current_patch_hash": "bed69c8774a39cd80e360a7cfc2c77059e4256ad6f4629acb1d2838a336c9678",
+            "current_changed_line_count": 5,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          }
+        },
+        "created_at": "2026-05-07T11:10:46.016447Z"
+      },
+      "build_status": "not_run",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": "source_too_new_or_already_patched",
+      "reverse_unpatch_status": "failed",
+      "stable_source_alignment_required": true,
+      "stable_source_baseline_action": "prepare_unpatched_stable_source_baseline",
+      "agent_next_action": "prepare_unpatched_stable_source_baseline",
+      "failure_type": "patch_apply_failed",
+      "diagnostics": {
+        "captured_at": "2026-05-07T11:10:47.476455+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/s1full0507-26610/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/s1full0507-26610/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/s1full0507-26610/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/s1full0507-26610/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26610/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26610/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26610/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26693",
+      "task_id": "s1full0507-26693",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c",
+        "drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c"
+      ],
+      "critical_calls_count": 2,
+      "key_conditions_count": 2,
+      "key_side_effects_count": 4,
+      "target_function_count": 2,
+      "stable_source_baseline_ref": "00f4eb31b8193f6070ce24df636883f9c104ca95^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c",
+          "drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c"
+        ],
+        "touched_file_count": 2,
+        "touched_functions": [
+          "iwl_mvm_sta_state_notexist_to_none",
+          "iwl_mvm_is_dup"
+        ],
+        "touched_function_count": 2,
+        "changed_line_count": 5,
+        "added_line_count": 4,
+        "removed_line_count": 1,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "wifi: iwlwifi: mvm: fix a crash when we run out of stations",
+      "inferred_build_targets": [
+        "drivers/net/wireless/intel/iwlwifi/mvm/iwlmvm.ko",
+        "drivers/net/wireless/intel/iwlwifi/mvm/iwlmvm.ko"
+      ],
+      "build_target_states": [
+        "module",
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c",
+          "target": "drivers/net/wireless/intel/iwlwifi/mvm/iwlmvm.ko",
+          "state": "module"
+        },
+        {
+          "file": "drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c",
+          "target": "drivers/net/wireless/intel/iwlwifi/mvm/iwlmvm.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_IWLMEI": "m",
+          "CONFIG_IWLMVM": "m",
+          "CONFIG_IWLWIFI": "m",
+          "CONFIG_WLAN": "m",
+          "CONFIG_WLAN_VENDOR_INTEL": "m"
+        },
+        "target_files": [
+          "drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c",
+          "drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_WLAN",
+            "token": "wireless/",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_WLAN) += wireless/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_WLAN_VENDOR_INTEL",
+            "token": "intel/",
+            "makefile_dir": "drivers/net/wireless",
+            "line": "obj-$(CONFIG_WLAN_VENDOR_INTEL) += intel/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_IWLWIFI",
+            "token": "iwlwifi/",
+            "makefile_dir": "drivers/net/wireless/intel",
+            "line": "obj-$(CONFIG_IWLWIFI)\t+= iwlwifi/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_IWLMEI",
+            "token": "iwlwifi/",
+            "makefile_dir": "drivers/net/wireless/intel",
+            "line": "obj-$(CONFIG_IWLMEI)\t+= iwlwifi/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_IWLMVM",
+            "token": "mvm/",
+            "makefile_dir": "drivers/net/wireless/intel/iwlwifi",
+            "line": "obj-$(CONFIG_IWLMVM)\t+= mvm/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_IWLMVM",
+            "token": "iwlmvm.o",
+            "makefile_dir": "drivers/net/wireless/intel/iwlwifi/mvm",
+            "line": "obj-$(CONFIG_IWLMVM)   += iwlmvm.o"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_WLAN",
+            "token": "wireless/",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_WLAN) += wireless/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_WLAN_VENDOR_INTEL",
+            "token": "intel/",
+            "makefile_dir": "drivers/net/wireless",
+            "line": "obj-$(CONFIG_WLAN_VENDOR_INTEL) += intel/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_IWLWIFI",
+            "token": "iwlwifi/",
+            "makefile_dir": "drivers/net/wireless/intel",
+            "line": "obj-$(CONFIG_IWLWIFI)\t+= iwlwifi/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_IWLMEI",
+            "token": "iwlwifi/",
+            "makefile_dir": "drivers/net/wireless/intel",
+            "line": "obj-$(CONFIG_IWLMEI)\t+= iwlwifi/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_IWLMVM",
+            "token": "mvm/",
+            "makefile_dir": "drivers/net/wireless/intel/iwlwifi",
+            "line": "obj-$(CONFIG_IWLMVM)\t+= mvm/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_IWLMVM",
+            "token": "iwlmvm.o",
+            "makefile_dir": "drivers/net/wireless/intel/iwlwifi/mvm",
+            "line": "obj-$(CONFIG_IWLMVM)   += iwlmvm.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_IWLMEI=m\nCONFIG_IWLMVM=m\nCONFIG_IWLWIFI=m\nCONFIG_WLAN=m\nCONFIG_WLAN_VENDOR_INTEL=m\n",
+      "minimal_config_fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26693.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26693.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26693.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [
+          "触达 2 个源码文件"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c",
+            "drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c"
+          ],
+          "touched_file_count": 2,
+          "touched_functions": [
+            "iwl_mvm_sta_state_notexist_to_none",
+            "iwl_mvm_is_dup"
+          ],
+          "touched_function_count": 2,
+          "changed_line_count": 5,
+          "added_line_count": 4,
+          "removed_line_count": 1,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "00f4eb31b8193f6070ce24df636883f9c104ca95^",
+        "output_dir": "/home/patchweaver/stable-baselines/00f4eb31b8193f6070ce24df636883f9c104ca95-ce1ee19651d5",
+        "reused_existing": false,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/00f4eb31b8193f6070ce24df636883f9c104ca95-ce1ee19651d5/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/00f4eb31b8193f6070ce24df636883f9c104ca95-ce1ee19651d5",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001",
+      "build_summary": {
+        "task_id": "s1full0507-26693",
+        "attempt_id": "s1full0507-26693-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/s1full0507-26693/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/s1full0507-26693/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/s1full0507-26693/attempts/001/logs/build.log",
+        "module_path": "workspaces/s1full0507-26693/attempts/001/output/patchweaver-s1full0507-26693-001.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-07T11:13:08.582708Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/output/patchweaver-s1full0507-26693-001.ko",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_s1full0507_26693_001",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: s1full0507-26693",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "s1full0507-26693",
+        "attempt_id": "s1full0507-26693-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "s1full0507-26693",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "4de723270076723673070f2e9f15602fccda0380484e8e981d3c8fd80c7c9f00",
+            "current_changed_line_count": 8,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-07T11:13:08.611312Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/output/patchweaver-s1full0507-26693-001.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-07T11:13:11.550083+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26694",
+      "task_id": "s1full0507-26694",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/net/wireless/intel/iwlwifi/iwl-drv.c"
+      ],
+      "critical_calls_count": 3,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 1,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "ab9d4bb9a1892439b3123fc52b19e32b9cdf80ad^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/wireless/intel/iwlwifi/iwl-drv.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "iwl_dealloc_ucode"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 2,
+        "added_line_count": 1,
+        "removed_line_count": 1,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "wifi: iwlwifi: fix double-free bug",
+      "inferred_build_targets": [
+        "drivers/net/wireless/intel/iwlwifi/iwlwifi.ko"
+      ],
+      "build_target_states": [
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/net/wireless/intel/iwlwifi/iwl-drv.c",
+          "target": "drivers/net/wireless/intel/iwlwifi/iwlwifi.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_IWLMEI": "m",
+          "CONFIG_IWLWIFI": "m",
+          "CONFIG_WLAN": "m",
+          "CONFIG_WLAN_VENDOR_INTEL": "m"
+        },
+        "target_files": [
+          "drivers/net/wireless/intel/iwlwifi/iwl-drv.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_WLAN",
+            "token": "wireless/",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_WLAN) += wireless/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_WLAN_VENDOR_INTEL",
+            "token": "intel/",
+            "makefile_dir": "drivers/net/wireless",
+            "line": "obj-$(CONFIG_WLAN_VENDOR_INTEL) += intel/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_IWLWIFI",
+            "token": "iwlwifi/",
+            "makefile_dir": "drivers/net/wireless/intel",
+            "line": "obj-$(CONFIG_IWLWIFI)\t+= iwlwifi/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_IWLMEI",
+            "token": "iwlwifi/",
+            "makefile_dir": "drivers/net/wireless/intel",
+            "line": "obj-$(CONFIG_IWLMEI)\t+= iwlwifi/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_IWLWIFI",
+            "token": "iwlwifi.o",
+            "makefile_dir": "drivers/net/wireless/intel/iwlwifi",
+            "line": "obj-$(CONFIG_IWLWIFI)\t+= iwlwifi.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_IWLMEI=m\nCONFIG_IWLWIFI=m\nCONFIG_WLAN=m\nCONFIG_WLAN_VENDOR_INTEL=m\n",
+      "minimal_config_fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26694.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26694.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26694.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [],
+        "shape": {
+          "touched_files": [
+            "drivers/net/wireless/intel/iwlwifi/iwl-drv.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "iwl_dealloc_ucode"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 2,
+          "added_line_count": 1,
+          "removed_line_count": 1,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "ab9d4bb9a1892439b3123fc52b19e32b9cdf80ad^",
+        "output_dir": "/home/patchweaver/stable-baselines/ab9d4bb9a1892439b3123fc52b19e32b9cdf80ad-1a38a9f03104",
+        "reused_existing": false,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/ab9d4bb9a1892439b3123fc52b19e32b9cdf80ad-1a38a9f03104/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/ab9d4bb9a1892439b3123fc52b19e32b9cdf80ad-1a38a9f03104",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001",
+      "build_summary": {
+        "task_id": "s1full0507-26694",
+        "attempt_id": "s1full0507-26694-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/s1full0507-26694/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/s1full0507-26694/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/s1full0507-26694/attempts/001/logs/build.log",
+        "module_path": "workspaces/s1full0507-26694/attempts/001/output/patchweaver-s1full0507-26694-001.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-07T11:15:18.411983Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/output/patchweaver-s1full0507-26694-001.ko",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_s1full0507_26694_001",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: s1full0507-26694",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "s1full0507-26694",
+        "attempt_id": "s1full0507-26694-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "s1full0507-26694",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "direct_apply_patch",
+            "current_patch_hash": "0712ad98eb253784469ea30ef1b662229da8a4b695213e67331611c4a09b4f73",
+            "current_changed_line_count": 2,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-07T11:15:18.433001Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/output/patchweaver-s1full0507-26694-001.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-07T11:15:22.922003+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26615",
+      "task_id": "s1full0507-26615",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "net/smc/smc_diag.c"
+      ],
+      "critical_calls_count": 2,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 1,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "a164c2922675d7051805cdaf2b07daffe44f20d9^",
+      "patch_shape": {
+        "touched_files": [
+          "net/smc/smc_diag.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "__smc_diag_dump"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 5,
+        "added_line_count": 1,
+        "removed_line_count": 4,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "net/smc",
+      "rag_summary": "net/smc: fix illegal rmb_desc access in SMC-D connection dump",
+      "inferred_build_targets": [
+        "net/smc/smc_diag.ko"
+      ],
+      "build_target_states": [
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "net/smc/smc_diag.c",
+          "target": "net/smc/smc_diag.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_SMC": "m",
+          "CONFIG_SMC_DIAG": "m"
+        },
+        "target_files": [
+          "net/smc/smc_diag.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_SMC",
+            "token": "smc/",
+            "makefile_dir": "net",
+            "line": "obj-$(CONFIG_SMC)\t\t+= smc/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_SMC_DIAG",
+            "token": "smc_diag.o",
+            "makefile_dir": "net/smc",
+            "line": "obj-$(CONFIG_SMC_DIAG)\t+= smc_diag.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_SMC=m\nCONFIG_SMC_DIAG=m\n",
+      "minimal_config_fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26615.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26615.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26615.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [],
+        "shape": {
+          "touched_files": [
+            "net/smc/smc_diag.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "__smc_diag_dump"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 5,
+          "added_line_count": 1,
+          "removed_line_count": 4,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "a164c2922675d7051805cdaf2b07daffe44f20d9^",
+        "output_dir": "/home/patchweaver/stable-baselines/a164c2922675d7051805cdaf2b07daffe44f20d9-854e936657e1",
+        "reused_existing": false,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/a164c2922675d7051805cdaf2b07daffe44f20d9-854e936657e1/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/a164c2922675d7051805cdaf2b07daffe44f20d9-854e936657e1",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001",
+      "build_summary": {
+        "task_id": "s1full0507-26615",
+        "attempt_id": "s1full0507-26615-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/s1full0507-26615/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/s1full0507-26615/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/s1full0507-26615/attempts/001/logs/build.log",
+        "module_path": "workspaces/s1full0507-26615/attempts/001/output/patchweaver-s1full0507-26615-001.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-07T11:17:19.827835Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/output/patchweaver-s1full0507-26615-001.ko",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_s1full0507_26615_001",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: s1full0507-26615",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "s1full0507-26615",
+        "attempt_id": "s1full0507-26615-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "s1full0507-26615",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "direct_apply_patch",
+            "current_patch_hash": "4ea7c437c1512707b20fc15f8ab187461feb67e4ce64a3612045c6664d78d4ad",
+            "current_changed_line_count": 5,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-07T11:17:19.849007Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/output/patchweaver-s1full0507-26615-001.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-07T11:17:22.808660+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26692",
+      "task_id": "s1full0507-26692",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "fs/smb/client/connect.c",
+        "fs/smb/client/fs_context.c"
+      ],
+      "critical_calls_count": 5,
+      "key_conditions_count": 3,
+      "key_side_effects_count": 9,
+      "target_function_count": 2,
+      "stable_source_baseline_ref": "4145ccff546ea868428b3e0fe6818c6261b574a9^",
+      "patch_shape": {
+        "touched_files": [
+          "fs/smb/client/connect.c",
+          "fs/smb/client/fs_context.c"
+        ],
+        "touched_file_count": 2,
+        "touched_functions": [
+          "cifs_mount_get_tcon",
+          "smb3_fs_context_parse_param"
+        ],
+        "touched_function_count": 2,
+        "changed_line_count": 26,
+        "added_line_count": 23,
+        "removed_line_count": 3,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "already_patched",
+      "acceptance_role": "screening_candidate",
+      "screening_tier": "positive_candidate_blocked_by_target_state",
+      "reason": "路线低风险，但当前验证机源码树已包含修复，无法用于正向 .ko 成功率统计",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "fs/smb",
+      "rag_summary": "smb: Fix regression in writes when non-standard maximum write size",
+      "inferred_build_targets": [
+        "fs/smb/client/cifs.ko",
+        "fs/smb/client/cifs.ko"
+      ],
+      "build_target_states": [
+        "module",
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "fs/smb/client/connect.c",
+          "target": "fs/smb/client/cifs.ko",
+          "state": "module"
+        },
+        {
+          "file": "fs/smb/client/fs_context.c",
+          "target": "fs/smb/client/cifs.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_CIFS": "m",
+          "CONFIG_SMBFS": "m"
+        },
+        "target_files": [
+          "fs/smb/client/connect.c",
+          "fs/smb/client/fs_context.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_SMBFS",
+            "token": "smb/",
+            "makefile_dir": "fs",
+            "line": "obj-$(CONFIG_SMBFS)\t\t+= smb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_CIFS",
+            "token": "client/",
+            "makefile_dir": "fs/smb",
+            "line": "obj-$(CONFIG_CIFS)\t\t+= client/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_CIFS",
+            "token": "cifs.o",
+            "makefile_dir": "fs/smb/client",
+            "line": "obj-$(CONFIG_CIFS) += cifs.o"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_SMBFS",
+            "token": "smb/",
+            "makefile_dir": "fs",
+            "line": "obj-$(CONFIG_SMBFS)\t\t+= smb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_CIFS",
+            "token": "client/",
+            "makefile_dir": "fs/smb",
+            "line": "obj-$(CONFIG_CIFS)\t\t+= client/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_CIFS",
+            "token": "cifs.o",
+            "makefile_dir": "fs/smb/client",
+            "line": "obj-$(CONFIG_CIFS) += cifs.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_CIFS=m\nCONFIG_SMBFS=m\n",
+      "minimal_config_fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26692.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26692.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26692.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数仍处于中等范围",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [
+          "触达 2 个源码文件"
+        ],
+        "shape": {
+          "touched_files": [
+            "fs/smb/client/connect.c",
+            "fs/smb/client/fs_context.c"
+          ],
+          "touched_file_count": 2,
+          "touched_functions": [
+            "cifs_mount_get_tcon",
+            "smb3_fs_context_parse_param"
+          ],
+          "touched_function_count": 2,
+          "changed_line_count": 26,
+          "added_line_count": 23,
+          "removed_line_count": 3,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "4145ccff546ea868428b3e0fe6818c6261b574a9^",
+        "output_dir": "/home/patchweaver/stable-baselines/4145ccff546ea868428b3e0fe6818c6261b574a9-9eb1b1a7b3f3",
+        "reused_existing": false,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/4145ccff546ea868428b3e0fe6818c6261b574a9-9eb1b1a7b3f3/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/4145ccff546ea868428b3e0fe6818c6261b574a9-9eb1b1a7b3f3",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "target_state",
+          "run_failure_type": "target_already_patched",
+          "build_exec_status": "not_run",
+          "target_state": "target_already_patched",
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26692/attempts/001",
+          "failure_type": "target_already_patched",
+          "build_status": "not_run",
+          "validation_status": "pending",
+          "screening_tier": "positive_candidate_blocked_by_target_state",
+          "sample_bucket": "already_patched"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "target_state",
+      "run_failure_type": "target_already_patched",
+      "build_exec_status": "not_run",
+      "target_state": "target_already_patched",
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26692/attempts/001",
+      "build_summary": {
+        "task_id": "s1full0507-26692",
+        "attempt_id": "s1full0507-26692-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "not_run",
+        "summary": "首选源码树已包含该补丁，备用源码树未能提供可继续构建的落点，本轮按目标态已修复收口",
+        "rewritten_patch_path": "workspaces/s1full0507-26692/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/opt/kernel-src",
+        "build_log_path": "workspaces/s1full0507-26692/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "target_already_patched",
+        "build_exec_status": "not_run",
+        "target_state": "target_already_patched",
+        "exit_code": null,
+        "created_at": "2026-05-07T11:17:40.458783Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行冒烟测试。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "目标源码已包含修复，真实构建未执行，未执行自检。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26692/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行自检。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "目标源码已包含修复，真实构建未执行，未执行冒烟测试。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26692/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "pending",
+        "notes": [
+          "验证任务: s1full0507-26692",
+          "构建状态: target_state",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False",
+          "本轮目标源码已包含修复，真实构建未执行，动态验证阶段不执行。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "s1full0507-26692",
+        "attempt_id": "s1full0507-26692-A001",
+        "stage_name": "build",
+        "failure_type": "target_already_patched",
+        "summary": "首选源码树已包含该补丁，备用源码树未能提供可继续构建的落点，本轮按目标态已修复收口",
+        "evidence": [
+          "目标源码已包含该补丁，apply 预检查判定无需重复应用。",
+          "目标态结论: target_already_patched",
+          "当前源码树已命中 target_already_patched，准备切换到备用源码树: /opt/kernel-src"
+        ],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "s1full0507-26692",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "975ff106a3b4a8dd79b95a2cb0ab275e998eddefa5e9b6a095f2b71b096f92da",
+            "current_changed_line_count": 26,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "target_already_patched 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-07T11:17:40.486696Z"
+      },
+      "build_status": "not_run",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "target_already_patched",
+      "diagnostics": {
+        "captured_at": "2026-05-07T11:17:41.852140+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/s1full0507-26692/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/s1full0507-26692/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/s1full0507-26692/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/s1full0507-26692/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26692/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26692/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26692/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26727",
+      "task_id": "s1full0507-26727",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "fs/btrfs/disk-io.c"
+      ],
+      "critical_calls_count": 6,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 4,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "833775656d447c545133a744a0ed1e189ce61430^",
+      "patch_shape": {
+        "touched_files": [
+          "fs/btrfs/disk-io.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "btrfs_get_root_ref"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 13,
+        "added_line_count": 10,
+        "removed_line_count": 3,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": null,
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_apply_precheck",
+      "reason": "当前源码树无法通过 apply 预检查，先不纳入稳定四桶样例集",
+      "stable_bucket_ready": false,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "fs/btrfs",
+      "rag_summary": "btrfs: do not ASSERT() if the newly created subvolume already got",
+      "inferred_build_targets": [
+        "fs/btrfs/btrfs.ko"
+      ],
+      "build_target_states": [
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "fs/btrfs/disk-io.c",
+          "target": "fs/btrfs/btrfs.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_BTRFS_FS": "m"
+        },
+        "target_files": [
+          "fs/btrfs/disk-io.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_BTRFS_FS",
+            "token": "btrfs/",
+            "makefile_dir": "fs",
+            "line": "obj-$(CONFIG_BTRFS_FS)\t\t+= btrfs/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_BTRFS_FS",
+            "token": "btrfs.o",
+            "makefile_dir": "fs/btrfs",
+            "line": "obj-$(CONFIG_BTRFS_FS) := btrfs.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_BTRFS_FS=m\n",
+      "minimal_config_fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26727.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26727.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26727.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [],
+        "shape": {
+          "touched_files": [
+            "fs/btrfs/disk-io.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "btrfs_get_root_ref"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 13,
+          "added_line_count": 10,
+          "removed_line_count": 3,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "833775656d447c545133a744a0ed1e189ce61430^",
+        "output_dir": "/home/patchweaver/stable-baselines/833775656d447c545133a744a0ed1e189ce61430-5c877e5d7ce8",
+        "reused_existing": true,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/833775656d447c545133a744a0ed1e189ce61430-5c877e5d7ce8/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/833775656d447c545133a744a0ed1e189ce61430-5c877e5d7ce8",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "failed",
+          "run_failure_type": "patch_apply_failed",
+          "build_exec_status": "not_run",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26727/attempts/001",
+          "failure_type": "patch_apply_failed",
+          "build_status": "not_run",
+          "validation_status": "pending",
+          "screening_tier": "development_only_apply_precheck",
+          "sample_bucket": null
+        }
+      ],
+      "run_index": 1,
+      "run_status": "failed",
+      "run_failure_type": "patch_apply_failed",
+      "build_exec_status": "not_run",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26727/attempts/001",
+      "build_summary": {
+        "task_id": "s1full0507-26727",
+        "attempt_id": "s1full0507-26727-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "not_run",
+        "summary": "apply 级预检查未通过，已跳过本机构建。",
+        "rewritten_patch_path": "workspaces/s1full0507-26727/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+        "build_log_path": "workspaces/s1full0507-26727/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "patch_apply_failed",
+        "build_exec_status": "not_run",
+        "target_state": null,
+        "exit_code": null,
+        "created_at": "2026-05-07T11:18:00.818966Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未执行加载测试，暂不执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未满足冒烟测试前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "当前轮尚未满足自检前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26727/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "当前轮尚未满足自检前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未执行加载测试，暂不执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未满足冒烟测试前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未成功，语义守卫暂保持待执行状态。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26727/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "pending",
+        "notes": [
+          "验证任务: s1full0507-26727",
+          "构建状态: failed",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False",
+          "本轮未构建出模块产物，动态验证阶段维持待执行状态。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "s1full0507-26727",
+        "attempt_id": "s1full0507-26727-A001",
+        "stage_name": "build",
+        "failure_type": "patch_apply_failed",
+        "summary": "error: while searching for:",
+        "evidence": [
+          "error: patch failed: fs/btrfs/disk-io.c:1311",
+          "error: fs/btrfs/disk-io.c: patch does not apply",
+          "error: patch failed: fs/btrfs/disk-io.c:1311"
+        ],
+        "diagnostic_details": {
+          "patch_apply": {
+            "subtype": "source_too_new_or_already_patched",
+            "source_state": "likely_patched",
+            "conflict_files": [
+              "fs/btrfs/disk-io.c"
+            ],
+            "conflict_hunks": [
+              {
+                "file": "fs/btrfs/disk-io.c",
+                "line": 1311
+              },
+              {
+                "file": "fs/btrfs/disk-io.c",
+                "line": 1311
+              }
+            ],
+            "reverse_unpatch_recommended": true,
+            "reverse_unpatch_attempted": true,
+            "reverse_unpatch_status": "failed",
+            "stable_source_alignment_required": true,
+            "stable_source_baseline_action": "prepare_unpatched_stable_source_baseline",
+            "reason": "当前源码树疑似已包含修复或版本过新，优先尝试 reverse-unpatch"
+          },
+          "agent_next_action": {
+            "action": "prepare_unpatched_stable_source_baseline",
+            "reason": "patch 上下文与当前源码树不一致，需要切换到修复提交父版本或等价未修复源码树",
+            "retry_scope": "source_baseline",
+            "retryable_after_environment_update": true
+          },
+          "route_effectiveness": {
+            "task_id": "s1full0507-26727",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "9bdb14f47454116fe0ced45e7ba2cde44d5ed214980adedca92aede92ab6c407",
+            "current_changed_line_count": 14,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          }
+        },
+        "created_at": "2026-05-07T11:18:00.853247Z"
+      },
+      "build_status": "not_run",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": "source_too_new_or_already_patched",
+      "reverse_unpatch_status": "failed",
+      "stable_source_alignment_required": true,
+      "stable_source_baseline_action": "prepare_unpatched_stable_source_baseline",
+      "agent_next_action": "prepare_unpatched_stable_source_baseline",
+      "failure_type": "patch_apply_failed",
+      "diagnostics": {
+        "captured_at": "2026-05-07T11:18:02.297094+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/s1full0507-26727/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/s1full0507-26727/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/s1full0507-26727/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/s1full0507-26727/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26727/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26727/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26727/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26791",
+      "task_id": "s1full0507-26791",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "fs/btrfs/dev-replace.c"
+      ],
+      "critical_calls_count": 5,
+      "key_conditions_count": 4,
+      "key_side_effects_count": 11,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "b1690ced4d2d8b28868811fb81cd33eee5aefee1^",
+      "patch_shape": {
+        "touched_files": [
+          "fs/btrfs/dev-replace.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "leave:",
+          "btrfs_dev_replace_by_ioctl"
+        ],
+        "touched_function_count": 2,
+        "changed_line_count": 21,
+        "added_line_count": 17,
+        "removed_line_count": 4,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "fs/btrfs",
+      "rag_summary": "btrfs: dev-replace: properly validate device names",
+      "inferred_build_targets": [
+        "fs/btrfs/btrfs.ko"
+      ],
+      "build_target_states": [
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "fs/btrfs/dev-replace.c",
+          "target": "fs/btrfs/btrfs.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_BTRFS_FS": "m"
+        },
+        "target_files": [
+          "fs/btrfs/dev-replace.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_BTRFS_FS",
+            "token": "btrfs/",
+            "makefile_dir": "fs",
+            "line": "obj-$(CONFIG_BTRFS_FS)\t\t+= btrfs/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_BTRFS_FS",
+            "token": "btrfs.o",
+            "makefile_dir": "fs/btrfs",
+            "line": "obj-$(CONFIG_BTRFS_FS) := btrfs.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_BTRFS_FS=m\n",
+      "minimal_config_fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26791.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26791.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/s1_full_8positive_candidates_v0507_config_fragments/CVE-2024-26791.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数仍处于中等范围",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [],
+        "shape": {
+          "touched_files": [
+            "fs/btrfs/dev-replace.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "leave:",
+            "btrfs_dev_replace_by_ioctl"
+          ],
+          "touched_function_count": 2,
+          "changed_line_count": 21,
+          "added_line_count": 17,
+          "removed_line_count": 4,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "b1690ced4d2d8b28868811fb81cd33eee5aefee1^",
+        "output_dir": "/home/patchweaver/stable-baselines/b1690ced4d2d8b28868811fb81cd33eee5aefee1-7824d33fb7e3",
+        "reused_existing": false,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/b1690ced4d2d8b28868811fb81cd33eee5aefee1-7824d33fb7e3/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/b1690ced4d2d8b28868811fb81cd33eee5aefee1-7824d33fb7e3",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001",
+      "build_summary": {
+        "task_id": "s1full0507-26791",
+        "attempt_id": "s1full0507-26791-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/s1full0507-26791/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/s1full0507-26791/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/s1full0507-26791/attempts/001/logs/build.log",
+        "module_path": "workspaces/s1full0507-26791/attempts/001/output/patchweaver-s1full0507-26791-001.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-07T11:20:15.201737Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/output/patchweaver-s1full0507-26791-001.ko",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_s1full0507_26791_001",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: s1full0507-26791",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "s1full0507-26791",
+        "attempt_id": "s1full0507-26791-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "s1full0507-26791",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "2a287881d36b11d21142377a2aa71bada7634456bdc7cbb7a6166f248e5ec7f9",
+            "current_changed_line_count": 25,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-07T11:20:15.218612Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/output/patchweaver-s1full0507-26791-001.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-07T11:20:18.709726+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    }
+  ]
+}

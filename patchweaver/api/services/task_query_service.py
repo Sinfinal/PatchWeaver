@@ -356,6 +356,15 @@ class TaskQueryService:
         latest_rewrite_plan = self._load_json(latest_rewrite_plan_path)
         latest_apply_precheck = self._load_json(latest_apply_precheck_path)
         latest_build_summary = self._load_json(latest_build_summary_path)
+        agent_decision_summary = self._build_agent_decision_summary(
+            task=task,
+            task_dir=task_dir,
+            latest_attempt=latest_attempt,
+            latest_failure=latest_failure,
+            latest_rewrite_plan=latest_rewrite_plan,
+            latest_apply_precheck=latest_apply_precheck,
+            latest_build_summary=latest_build_summary,
+        )
 
         return {
             # task 是顶部摘要
@@ -374,6 +383,7 @@ class TaskQueryService:
             "latest_validation": latest_validation,
             "latest_trace": latest_trace,
             "latest_rewrite_plan": latest_rewrite_plan,
+            "agent_decision_summary": agent_decision_summary,
             "evaluation_summary": self._load_json(task_dir / "reports" / "evaluation_summary.json"),
             "reports": {
                 "json_path": self._path(task_dir / "reports" / "report.json"),
@@ -434,6 +444,25 @@ class TaskQueryService:
             "workspace_exists": task_dir.exists(),
         }
 
+    def get_agent_decision_summary(self, task_id: str) -> dict[str, Any]:
+        """返回任务级 Agent 决策摘要，供 Web/API 和百炼入口直接展示"""
+
+        task = self._require_task(task_id)
+        attempts = self.context.attempt_repo.list_attempts(task_id)
+        latest_attempt = attempts[-1] if attempts else None
+        task_dir = task.workspace_dir.resolve()
+        attempt_dir = task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" if latest_attempt else None
+
+        return self._build_agent_decision_summary(
+            task=task,
+            task_dir=task_dir,
+            latest_attempt=latest_attempt,
+            latest_failure=self._load_json(attempt_dir / "logs" / "failure_record.json") if attempt_dir else None,
+            latest_rewrite_plan=self._load_json(attempt_dir / "rewrite" / "rewrite_plan.json") if attempt_dir else None,
+            latest_apply_precheck=self._load_json(attempt_dir / "rewrite" / "apply_precheck.json") if attempt_dir else None,
+            latest_build_summary=self._load_json(attempt_dir / "artifacts" / "build_summary.json") if attempt_dir else None,
+        )
+
     def analyze_task(self, task_id: str) -> dict[str, Any]:
         """触发分析阶段"""
 
@@ -465,6 +494,149 @@ class TaskQueryService:
         payload = self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts).replay_task(task_id)
         self.run_logger.info("web.replay_task", "通过 Web 读取任务回放。", task_id=task_id)
         return payload
+
+    def _build_agent_decision_summary(
+        self,
+        *,
+        task: TaskContext,
+        task_dir: Path,
+        latest_attempt: Any | None,
+        latest_failure: dict[str, Any] | None,
+        latest_rewrite_plan: dict[str, Any] | None,
+        latest_apply_precheck: dict[str, Any] | None,
+        latest_build_summary: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        """从工作区产物归并 Agent 修复意图、路线选择和失败归因"""
+
+        repair_intent_path = task_dir / "analysis" / "repair_intent.json"
+        report_path = task_dir / "reports" / "report.json"
+        repair_intent = self._load_json(repair_intent_path)
+        report_json = self._load_json(report_path)
+        latest_failure_type = self._latest_failure_type(latest_attempt, latest_failure, latest_build_summary, latest_apply_precheck)
+        latest_build_exec_status = self._latest_build_exec_status(latest_attempt, latest_build_summary, latest_apply_precheck)
+        selected_recipe = self._first_present(
+            latest_rewrite_plan,
+            report_json,
+            keys=("selected_recipe", "recipe", "recipe_name"),
+        )
+        intent_strategy = self._first_present(
+            repair_intent,
+            report_json,
+            keys=("recommended_strategy", "repair_strategy", "strategy"),
+        )
+        selected_strategy = self._first_present(
+            latest_rewrite_plan,
+            latest_build_summary,
+            latest_apply_precheck,
+            report_json,
+            keys=("selected_strategy", "strategy", "route", "rewrite_strategy"),
+        )
+        final_strategy = selected_strategy or selected_recipe or intent_strategy
+        agent_next_action = self._first_present(
+            latest_failure,
+            latest_build_summary,
+            latest_apply_precheck,
+            report_json,
+            keys=("agent_next_action", "next_action", "recommended_action"),
+        ) or self._next_action_for_failure(latest_failure_type, latest_build_exec_status)
+        diagnostic_details = self._first_present(
+            latest_failure,
+            latest_build_summary,
+            latest_apply_precheck,
+            report_json,
+            keys=("diagnostic_details", "diagnostics", "details", "root_cause_details"),
+        )
+        if diagnostic_details is None and latest_failure is not None:
+            diagnostic_details = {
+                "summary": latest_failure.get("summary"),
+                "evidence": latest_failure.get("evidence") or [],
+            }
+
+        attempt_dir = task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" if latest_attempt else None
+        repair_intent_summary = None
+        if repair_intent is not None:
+            repair_intent_summary = {
+                "cve_id": repair_intent.get("cve_id") or task.cve_id,
+                "bug_class": repair_intent.get("bug_class"),
+                "root_cause": repair_intent.get("root_cause"),
+                "vulnerability_conditions": repair_intent.get("vulnerability_conditions") or [],
+                "guard_conditions": repair_intent.get("guard_conditions") or [],
+                "guard_sites": repair_intent.get("guard_sites") or [],
+                "safe_exits": repair_intent.get("safe_exits") or [],
+                "preserved_side_effects": repair_intent.get("preserved_side_effects") or [],
+                "touched_files": repair_intent.get("touched_files") or [],
+                "touched_functions": repair_intent.get("touched_functions") or [],
+                "touched_state": repair_intent.get("touched_state") or [],
+                "recommended_strategy": repair_intent.get("recommended_strategy"),
+                "confidence": repair_intent.get("confidence"),
+                "evidence": repair_intent.get("evidence") or [],
+            }
+
+        strategy_switched = bool(
+            intent_strategy
+            and final_strategy
+            and str(intent_strategy) not in {str(final_strategy), str(selected_recipe)}
+        )
+        return {
+            "task_id": task.task_id,
+            "attempt_id": latest_attempt.attempt_id if latest_attempt is not None else None,
+            "attempt_no": latest_attempt.attempt_no if latest_attempt is not None else None,
+            "repair_intent": repair_intent_summary,
+            "selected_recipe": selected_recipe,
+            "selected_strategy": selected_strategy,
+            "strategy": final_strategy,
+            "strategy_switch": {
+                "repair_intent_strategy": intent_strategy,
+                "selected_recipe": selected_recipe,
+                "selected_strategy": selected_strategy,
+                "final_strategy": final_strategy,
+                "switched": strategy_switched,
+                "reason": self._first_present(latest_rewrite_plan, report_json, keys=("selection_reason", "strategy_reason", "reason")),
+            },
+            "agent_next_action": agent_next_action,
+            "failure_type": latest_failure_type,
+            "failure_record": {
+                "summary": (latest_failure or {}).get("summary"),
+                "stage_name": (latest_failure or {}).get("stage_name"),
+                "failure_type": (latest_failure or {}).get("failure_type"),
+                "evidence": (latest_failure or {}).get("evidence") or [],
+                "diagnostic_details": diagnostic_details,
+                "raw": latest_failure,
+            },
+            "diagnostic_details": diagnostic_details,
+            "state_conflicts": self._state_conflicts(
+                latest_attempt=latest_attempt,
+                latest_failure=latest_failure,
+                latest_apply_precheck=latest_apply_precheck,
+                latest_build_summary=latest_build_summary,
+            ),
+            "source_paths": {
+                "repair_intent": self._path(repair_intent_path),
+                "rewrite_plan": self._path(attempt_dir / "rewrite" / "rewrite_plan.json") if attempt_dir else None,
+                "failure_record": self._path(attempt_dir / "logs" / "failure_record.json") if attempt_dir else None,
+                "build_summary": self._path(attempt_dir / "artifacts" / "build_summary.json") if attempt_dir else None,
+                "report_json": self._path(report_path),
+            },
+            "source_exists": {
+                "repair_intent": repair_intent_path.exists(),
+                "rewrite_plan": bool(attempt_dir and (attempt_dir / "rewrite" / "rewrite_plan.json").exists()),
+                "failure_record": bool(attempt_dir and (attempt_dir / "logs" / "failure_record.json").exists()),
+                "build_summary": bool(attempt_dir and (attempt_dir / "artifacts" / "build_summary.json").exists()),
+                "report_json": report_path.exists(),
+            },
+        }
+
+    def _first_present(self, *sources: dict[str, Any] | None, keys: tuple[str, ...]) -> Any | None:
+        """按优先级从多个 JSON 产物读取第一个非空字段"""
+
+        for source in sources:
+            if not isinstance(source, dict):
+                continue
+            for key in keys:
+                value = source.get(key)
+                if value not in (None, "", [], {}):
+                    return value
+        return None
 
     def _task_payload(self, task: TaskContext, latest_attempt=None) -> dict[str, Any]:
         """把任务对象转成接口返回结构"""

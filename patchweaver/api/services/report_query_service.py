@@ -37,6 +37,7 @@ class ReportQueryService:
                 "json": self._read_json(report_json_path),
                 "markdown": self._read_text(report_md_path),
             },
+            "agent_decision_summary": detail["agent_decision_summary"],
             "latest_failure": detail["latest_failure"],
             "latest_validation": detail["latest_validation"],
             "evaluation_summary": self._read_json(evaluation_summary_path),

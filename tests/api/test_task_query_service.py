@@ -4,12 +4,255 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+from fastapi.testclient import TestClient
+
+from patchweaver.api.app import create_app
+from patchweaver.api.deps import get_api_context
+from patchweaver.api.services.report_query_service import ReportQueryService
 from patchweaver.api.services.task_query_service import TaskQueryService
 from patchweaver.models.attempt import AttemptRecord, FailureRecord
 from patchweaver.models.task import MachineProfile, TaskContext
 from patchweaver.storage.artifact_repo import ArtifactRepository
 from patchweaver.storage.attempt_repo import AttemptRepository
 from patchweaver.storage.task_repo import TaskRepository
+
+
+def test_task_query_service_agent_decision_summary_reads_workspace_reports(tmp_path: Path) -> None:
+    project_root = tmp_path / "project"
+    database_path = project_root / "data" / "patchweaver.db"
+    workspace_root = project_root / "workspaces"
+    task_workspace = workspace_root / "TASK-DECISION-001"
+    attempt_dir = task_workspace / "attempts" / "001"
+    (task_workspace / "analysis").mkdir(parents=True, exist_ok=True)
+    (task_workspace / "reports").mkdir(parents=True, exist_ok=True)
+    (attempt_dir / "logs").mkdir(parents=True, exist_ok=True)
+    (attempt_dir / "rewrite").mkdir(parents=True, exist_ok=True)
+    (attempt_dir / "artifacts").mkdir(parents=True, exist_ok=True)
+
+    (task_workspace / "analysis" / "repair_intent.json").write_text(
+        json.dumps(
+            {
+                "cve_id": "CVE-2026-0001",
+                "bug_class": "bounds_check",
+                "root_cause": "missing length guard",
+                "vulnerability_conditions": ["len > buf_size"],
+                "guard_conditions": ["if (len > buf_size) return -EINVAL;"],
+                "guard_sites": ["drivers/demo.c:demo_write"],
+                "safe_exits": ["return -EINVAL"],
+                "preserved_side_effects": ["keep audit log"],
+                "touched_files": ["drivers/demo.c"],
+                "touched_functions": ["demo_write"],
+                "recommended_strategy": "semantic_guard",
+                "confidence": 0.82,
+                "evidence": ["added guard in upstream fix"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (attempt_dir / "rewrite" / "rewrite_plan.json").write_text(
+        json.dumps(
+            {
+                "selected_recipe": "smpl_primary_rewrite",
+                "selected_strategy": "smpl_template",
+                "selection_reason": "semantic guard 需要模板化落点，切换到 SmPL 路线。",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (attempt_dir / "logs" / "failure_record.json").write_text(
+        json.dumps(
+            {
+                "task_id": "TASK-DECISION-001",
+                "attempt_id": "TASK-DECISION-001-A001",
+                "stage_name": "build",
+                "failure_type": "compile_failed",
+                "summary": "demo_write references missing field",
+                "agent_next_action": "补齐目标内核结构体字段差异后重试 SmPL 路线。",
+                "diagnostic_details": {
+                    "compiler_error": "struct demo has no member named limit",
+                    "log_excerpt": ["error: no member named limit"],
+                },
+                "evidence": ["build.log:error: no member named limit"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (attempt_dir / "artifacts" / "build_summary.json").write_text(
+        json.dumps(
+            {
+                "status": "failed",
+                "failure_type": "compile_failed",
+                "build_exec_status": "executed",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (task_workspace / "reports" / "report.json").write_text(
+        json.dumps({"final_status": "failed", "selected_recipe": "fallback_recipe"}, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    (task_workspace / "reports" / "report.md").write_text("# failed\n", encoding="utf-8")
+    (task_workspace / "reports" / "evaluation_summary.json").write_text("{\"latest_status\":\"failed\"}\n", encoding="utf-8")
+
+    task_repo = TaskRepository(database_path, project_root)
+    attempt_repo = AttemptRepository(database_path, project_root)
+    artifact_repo = ArtifactRepository(database_path, project_root)
+    task = TaskContext(
+        task_id="TASK-DECISION-001",
+        cve_id="CVE-2026-0001",
+        target_kernel="6.6.102-5.2.an23.x86_64",
+        target_kernel_source="detected_machine",
+        status="failed",
+        current_attempt=1,
+        max_attempts=3,
+        workspace_dir=task_workspace,
+    )
+    task_repo.create_task(task)
+    attempt_repo.create_attempt(
+        AttemptRecord(
+            task_id=task.task_id,
+            attempt_no=1,
+            attempt_id="TASK-DECISION-001-A001",
+            status="failed",
+            failure_type="compile_failed",
+            build_exec_status="executed",
+        )
+    )
+
+    context = SimpleNamespace(
+        project_root=project_root,
+        task_repo=task_repo,
+        attempt_repo=attempt_repo,
+        artifact_repo=artifact_repo,
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+        build_task_runner=lambda profile_name=None, max_attempts=None: SimpleNamespace(
+            replay_task=lambda task_id: {
+                "task_id": task_id,
+                "status": "ok",
+                "stage_routes": {},
+                "dispatch_modes": {},
+                "replay_files": [],
+                "comparison": {},
+            }
+        ),
+    )
+
+    summary = TaskQueryService(context).get_agent_decision_summary(task.task_id)
+    report = ReportQueryService(context).get_task_report(task.task_id)
+
+    assert summary["repair_intent"]["recommended_strategy"] == "semantic_guard"
+    assert summary["repair_intent"]["guard_conditions"] == ["if (len > buf_size) return -EINVAL;"]
+    assert summary["selected_recipe"] == "smpl_primary_rewrite"
+    assert summary["selected_strategy"] == "smpl_template"
+    assert summary["strategy"] == "smpl_template"
+    assert summary["strategy_switch"]["switched"] is True
+    assert summary["failure_type"] == "compile_failed"
+    assert summary["agent_next_action"] == "补齐目标内核结构体字段差异后重试 SmPL 路线。"
+    assert summary["diagnostic_details"]["compiler_error"] == "struct demo has no member named limit"
+    assert summary["failure_record"]["raw"]["summary"] == "demo_write references missing field"
+    assert summary["source_exists"]["repair_intent"] is True
+    assert summary["source_exists"]["failure_record"] is True
+    assert report["agent_decision_summary"]["selected_recipe"] == "smpl_primary_rewrite"
+    assert report["agent_decision_summary"]["failure_type"] == "compile_failed"
+
+
+def test_agent_decision_endpoint_returns_workspace_summary(tmp_path: Path) -> None:
+    project_root = tmp_path / "project"
+    database_path = project_root / "data" / "patchweaver.db"
+    task_workspace = project_root / "workspaces" / "TASK-DECISION-API"
+    attempt_dir = task_workspace / "attempts" / "001"
+    (task_workspace / "analysis").mkdir(parents=True, exist_ok=True)
+    (task_workspace / "reports").mkdir(parents=True, exist_ok=True)
+    (attempt_dir / "logs").mkdir(parents=True, exist_ok=True)
+    (attempt_dir / "rewrite").mkdir(parents=True, exist_ok=True)
+    (attempt_dir / "artifacts").mkdir(parents=True, exist_ok=True)
+
+    (task_workspace / "analysis" / "repair_intent.json").write_text(
+        json.dumps({"cve_id": "CVE-2026-0002", "recommended_strategy": "callback_shadow"}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    (attempt_dir / "rewrite" / "rewrite_plan.json").write_text(
+        json.dumps({"selected_recipe": "callback_shadow_wrap", "selected_strategy": "callback_shadow"}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    (attempt_dir / "logs" / "failure_record.json").write_text(
+        json.dumps(
+            {
+                "failure_type": "kpatch_constraint",
+                "summary": "unsupported section change",
+                "diagnostics": {"constraint": "section .init.text changed"},
+                "agent_next_action": "切换 section avoidance 或收口为不可热补丁化。",
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    task_repo = TaskRepository(database_path, project_root)
+    attempt_repo = AttemptRepository(database_path, project_root)
+    artifact_repo = ArtifactRepository(database_path, project_root)
+    task_repo.create_task(
+        TaskContext(
+            task_id="TASK-DECISION-API",
+            cve_id="CVE-2026-0002",
+            target_kernel="6.6.102-5.2.an23.x86_64",
+            status="failed",
+            current_attempt=1,
+            workspace_dir=task_workspace,
+        )
+    )
+    attempt_repo.create_attempt(
+        AttemptRecord(
+            task_id="TASK-DECISION-API",
+            attempt_no=1,
+            attempt_id="TASK-DECISION-API-A001",
+            status="failed",
+            failure_type="kpatch_constraint",
+        )
+    )
+    context = SimpleNamespace(
+        project_root=project_root,
+        task_repo=task_repo,
+        attempt_repo=attempt_repo,
+        artifact_repo=artifact_repo,
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+    )
+    app = create_app()
+    app.dependency_overrides[get_api_context] = lambda: context
+    try:
+        response = TestClient(app).get("/api/v1/tasks/TASK-DECISION-API/agent-decision")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["repair_intent"]["recommended_strategy"] == "callback_shadow"
+    assert payload["selected_recipe"] == "callback_shadow_wrap"
+    assert payload["failure_type"] == "kpatch_constraint"
+    assert payload["diagnostic_details"]["constraint"] == "section .init.text changed"
+    assert payload["agent_next_action"] == "切换 section avoidance 或收口为不可热补丁化。"
+
 
 def test_task_query_service_detail_contains_phase_outputs(tmp_path: Path) -> None:
     project_root = tmp_path / "project"

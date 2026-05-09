@@ -1,0 +1,369 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-09T04:58:04.901969+00:00",
+  "status": "passed",
+  "mode": "dry-run",
+  "dry_run": true,
+  "fixture_name": "challenge_positive_pool_confirmed_v0426",
+  "fixture_path": "evaluations\\fixtures\\challenge_positive_pool_confirmed_v0426.json",
+  "total_cases": 12,
+  "cases": [
+    {
+      "blind_id": "HOLDOUT-001-51585bb2",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 7,
+        "has_repair_intent": false,
+        "has_strategy_hint": false,
+        "has_failure_attribution": false
+      },
+      "agent_decision_surface": {
+        "repair_intent": {
+          "present": false
+        },
+        "strategy_switch": {
+          "present": false,
+          "switched": false
+        },
+        "failure_attribution": {
+          "present": false
+        }
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    },
+    {
+      "blind_id": "HOLDOUT-002-e082fa48",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 7,
+        "has_repair_intent": false,
+        "has_strategy_hint": false,
+        "has_failure_attribution": false
+      },
+      "agent_decision_surface": {
+        "repair_intent": {
+          "present": false
+        },
+        "strategy_switch": {
+          "present": false,
+          "switched": false
+        },
+        "failure_attribution": {
+          "present": false
+        }
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    },
+    {
+      "blind_id": "HOLDOUT-003-bc605a9b",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 7,
+        "has_repair_intent": false,
+        "has_strategy_hint": false,
+        "has_failure_attribution": false
+      },
+      "agent_decision_surface": {
+        "repair_intent": {
+          "present": false
+        },
+        "strategy_switch": {
+          "present": false,
+          "switched": false
+        },
+        "failure_attribution": {
+          "present": false
+        }
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    },
+    {
+      "blind_id": "HOLDOUT-004-8cbe070a",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 7,
+        "has_repair_intent": false,
+        "has_strategy_hint": false,
+        "has_failure_attribution": false
+      },
+      "agent_decision_surface": {
+        "repair_intent": {
+          "present": false
+        },
+        "strategy_switch": {
+          "present": false,
+          "switched": false
+        },
+        "failure_attribution": {
+          "present": false
+        }
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    },
+    {
+      "blind_id": "HOLDOUT-005-4225fa86",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 7,
+        "has_repair_intent": false,
+        "has_strategy_hint": false,
+        "has_failure_attribution": false
+      },
+      "agent_decision_surface": {
+        "repair_intent": {
+          "present": false
+        },
+        "strategy_switch": {
+          "present": false,
+          "switched": false
+        },
+        "failure_attribution": {
+          "present": false
+        }
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    },
+    {
+      "blind_id": "HOLDOUT-006-31bb1905",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 7,
+        "has_repair_intent": false,
+        "has_strategy_hint": false,
+        "has_failure_attribution": false
+      },
+      "agent_decision_surface": {
+        "repair_intent": {
+          "present": false
+        },
+        "strategy_switch": {
+          "present": false,
+          "switched": false
+        },
+        "failure_attribution": {
+          "present": false
+        }
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    },
+    {
+      "blind_id": "HOLDOUT-007-8e60de4b",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 7,
+        "has_repair_intent": false,
+        "has_strategy_hint": false,
+        "has_failure_attribution": false
+      },
+      "agent_decision_surface": {
+        "repair_intent": {
+          "present": false
+        },
+        "strategy_switch": {
+          "present": false,
+          "switched": false
+        },
+        "failure_attribution": {
+          "present": false
+        }
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    },
+    {
+      "blind_id": "HOLDOUT-008-a59816fb",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 7,
+        "has_repair_intent": false,
+        "has_strategy_hint": false,
+        "has_failure_attribution": false
+      },
+      "agent_decision_surface": {
+        "repair_intent": {
+          "present": false
+        },
+        "strategy_switch": {
+          "present": false,
+          "switched": false
+        },
+        "failure_attribution": {
+          "present": false
+        }
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    },
+    {
+      "blind_id": "HOLDOUT-009-24d51184",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 7,
+        "has_repair_intent": false,
+        "has_strategy_hint": false,
+        "has_failure_attribution": false
+      },
+      "agent_decision_surface": {
+        "repair_intent": {
+          "present": false
+        },
+        "strategy_switch": {
+          "present": false,
+          "switched": false
+        },
+        "failure_attribution": {
+          "present": false
+        }
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    },
+    {
+      "blind_id": "HOLDOUT-010-2167d8bd",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 7,
+        "has_repair_intent": false,
+        "has_strategy_hint": false,
+        "has_failure_attribution": false
+      },
+      "agent_decision_surface": {
+        "repair_intent": {
+          "present": false
+        },
+        "strategy_switch": {
+          "present": false,
+          "switched": false
+        },
+        "failure_attribution": {
+          "present": false
+        }
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    },
+    {
+      "blind_id": "HOLDOUT-011-22023cdb",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 7,
+        "has_repair_intent": false,
+        "has_strategy_hint": false,
+        "has_failure_attribution": false
+      },
+      "agent_decision_surface": {
+        "repair_intent": {
+          "present": false
+        },
+        "strategy_switch": {
+          "present": false,
+          "switched": false
+        },
+        "failure_attribution": {
+          "present": false
+        }
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    },
+    {
+      "blind_id": "HOLDOUT-012-4503806f",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 7,
+        "has_repair_intent": false,
+        "has_strategy_hint": false,
+        "has_failure_attribution": false
+      },
+      "agent_decision_surface": {
+        "repair_intent": {
+          "present": false
+        },
+        "strategy_switch": {
+          "present": false,
+          "switched": false
+        },
+        "failure_attribution": {
+          "present": false
+        }
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    }
+  ],
+  "agent_decision_summary": {
+    "repair_intent_cases": 0,
+    "strategy_switch_cases": 0,
+    "failure_attribution_cases": 0
+  },
+  "limits": [
+    "No kpatch-build command is invoked.",
+    "Blind identity is hidden unless --reveal-identities is passed."
+  ]
+}

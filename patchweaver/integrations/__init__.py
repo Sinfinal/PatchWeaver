@@ -1,0 +1,2 @@
+"""External platform integration adapters."""
+

@@ -428,6 +428,19 @@ def test_apply_known_pool_gate_skips_known_kpatch_constraint_case(tmp_path: Path
     assert gated[0]["positive_pool_candidate"] is False
 
 
+def test_known_kpatch_constraint_fixture_marks_p0_breakthrough_cases() -> None:
+    fixture_path = PROJECT_ROOT / "evaluations" / "fixtures" / "challenge_kpatch_constraint_pool_v0427.json"
+    payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+    breakthrough = {
+        item["cve_id"]: item
+        for item in payload
+        if item.get("breakthrough_status") == "positive_acceptance_confirmed"
+    }
+
+    assert {"CVE-2024-26675", "CVE-2024-26663"}.issubset(breakthrough)
+    assert all(item["breakthrough_strategy"] == "call_sites_section_compat" for item in breakthrough.values())
+
+
 def test_update_positive_pool_fixture_appends_confirmed_cases(tmp_path: Path) -> None:
     fixture_path = tmp_path / "positive.json"
     results = [
@@ -451,7 +464,11 @@ def test_update_positive_pool_fixture_appends_confirmed_cases(tmp_path: Path) ->
     )
 
     assert added == ["CVE-2024-29999"]
-    assert "CVE-2024-29999" in fixture_path.read_text(encoding="utf-8")
+    text = fixture_path.read_text(encoding="utf-8")
+    assert "CVE-2024-29999" in text
+    assert "repair_intent.json" in text
+    assert "rewritten.patch" in text
+    assert "semantic_guard.json" in text
 
 
 def test_update_positive_pool_fixture_rejects_missing_vermagic(tmp_path: Path) -> None:
@@ -559,8 +576,45 @@ def test_summarize_reports_positive_pool_gap(tmp_path: Path) -> None:
     assert count_existing_positive_pool(fixture_path) == 1
     assert summary["projected_positive_pool_size"] == 2
     assert summary["positive_pool_gap"] == 8
+    assert summary["representative_success_rate"] == 1.0
+    assert summary["average_attempts"] == 1.0
     assert summary["rag_subsystem_counts"] == {"net/demo": 1}
     assert summary["stable_source_alignment_required"] == ["CVE-2024-29999"]
+
+
+def test_summarize_reports_representative_success_rate_and_attempts(tmp_path: Path) -> None:
+    fixture_path = tmp_path / "positive.json"
+    fixture_path.write_text("[]\n", encoding="utf-8")
+    results = [
+        {
+            "cve_id": "CVE-2024-29991",
+            "sample_bucket": "buildable_and_should_pass",
+            "acceptance_role": "positive_acceptance_sample",
+            "screening_tier": "positive_acceptance_confirmed",
+            "build_status": "built",
+            "validation_status": "passed",
+            "module_path": "/tmp/patchweaver.ko",
+            "module_exists": True,
+            "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+            "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+            "run_attempts": [{"run_index": 1}, {"run_index": 2}],
+        },
+        {
+            "cve_id": "CVE-2024-29992",
+            "sample_bucket": "kpatch_constraint",
+            "screening_tier": "blocked_by_kpatch_constraint",
+            "build_status": "failed",
+            "validation_status": "",
+            "failure_type": "kpatch_constraint",
+            "run_attempts": [{"run_index": 1}, {"run_index": 2}, {"run_index": 3}],
+        },
+    ]
+
+    summary = summarize(results, positive_pool_fixture=fixture_path, positive_pool_target=10)
+
+    assert summary["representative_total"] == 2
+    assert summary["representative_success_rate"] == 0.5
+    assert summary["average_attempts"] == 2.5
 
 
 def test_load_full_artifacts_exposes_patch_apply_source_alignment(tmp_path: Path) -> None:

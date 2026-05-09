@@ -79,7 +79,7 @@
 ```powershell
 & 'F:\Anaconda\python.exe' -m patchweaver --help
 & 'F:\Anaconda\python.exe' -m patchweaver paths --json
-$env:PATCHWEAVER_REMOTE_PASSWORD='b314B314'
+$env:PATCHWEAVER_REMOTE_PASSWORD='<VALIDATION_PASSWORD>'
 & 'F:\Anaconda\python.exe' -m patchweaver doctor --json
 & 'F:\Anaconda\python.exe' -m patchweaver init --with-db --json
 ```
@@ -138,7 +138,7 @@ $env:PATCHWEAVER_REMOTE_PASSWORD='b314B314'
 执行命令：
 
 ```powershell
-$env:PATCHWEAVER_REMOTE_PASSWORD='b314B314'
+$env:PATCHWEAVER_REMOTE_PASSWORD='<VALIDATION_PASSWORD>'
 & 'F:\Anaconda\python.exe' -m patchweaver analyze --task TASK-STAGE-I-20260420-1086 --json
 ```
 
@@ -170,7 +170,7 @@ $env:PATCHWEAVER_REMOTE_PASSWORD='b314B314'
 执行命令：
 
 ```powershell
-$env:PATCHWEAVER_REMOTE_PASSWORD='b314B314'
+$env:PATCHWEAVER_REMOTE_PASSWORD='<VALIDATION_PASSWORD>'
 & 'F:\Anaconda\python.exe' -m patchweaver run --task TASK-STAGE-I-20260420-1086 --json
 ```
 

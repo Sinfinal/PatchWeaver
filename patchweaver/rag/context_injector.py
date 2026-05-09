@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from patchweaver.config.models import RagConfig
@@ -30,6 +32,7 @@ class RagContextInjector:
 
     def __init__(self, config: RagConfig | None) -> None:
         self.config = config
+        self.project_root = Path(__file__).resolve().parents[2]
 
     def inject(
         self,
@@ -70,17 +73,49 @@ class RagContextInjector:
                 subsystem=subsystem,
             )
         except Exception as exc:  # noqa: BLE001
-            return RagInjectionResult(evidence_bundle=evidence_bundle, subsystem=subsystem, error=str(exc)[:240])
+            return self._inject_experience_fallback(
+                stage_name=stage_name,
+                evidence_bundle=evidence_bundle,
+                query=query,
+                subsystem=subsystem,
+                error=f"vector_error: {str(exc)[:200]}",
+            )
 
         items = [item for item in result.get("items", []) if isinstance(item, dict)]
         if not items:
-            return RagInjectionResult(evidence_bundle=evidence_bundle, subsystem=subsystem, error="no_rag_hits")
+            return self._inject_experience_fallback(
+                stage_name=stage_name,
+                evidence_bundle=evidence_bundle,
+                query=query,
+                subsystem=subsystem,
+                error="no_vector_hits",
+            )
+
+        return self._append_items(
+            stage_name=stage_name,
+            evidence_bundle=evidence_bundle,
+            items=items,
+            subsystem=subsystem,
+            fallback_error=None,
+        )
+
+    def _append_items(
+        self,
+        *,
+        stage_name: str,
+        evidence_bundle: EvidenceBundle,
+        items: list[dict[str, Any]],
+        subsystem: str | None,
+        fallback_error: str | None,
+    ) -> RagInjectionResult:
+        """Append retrieved items as evidence spans"""
 
         existing_ids = set(evidence_bundle.evidence_ids)
         added_ids: list[str] = []
         added_spans: list[EvidenceSpan] = []
         for index, item in enumerate(items, start=1):
-            evidence_id = f"RAG-{stage_name}-{index:02d}"
+            source_kind = str(item.get("source_kind") or "rag").upper()
+            evidence_id = f"{source_kind}-{stage_name}-{index:02d}"
             if evidence_id in existing_ids:
                 continue
             excerpt = self._item_excerpt(item)
@@ -90,7 +125,7 @@ class RagContextInjector:
             added_spans.append(
                 EvidenceSpan(
                     evidence_id=evidence_id,
-                    source_type="rag",
+                    source_type=str(item.get("source_kind") or "rag"),
                     source_path=str(item.get("source_path") or item.get("url") or item.get("cve_id") or ""),
                     excerpt=excerpt,
                     start_line=None,
@@ -100,7 +135,7 @@ class RagContextInjector:
             )
 
         if not added_spans:
-            return RagInjectionResult(evidence_bundle=evidence_bundle, subsystem=subsystem, error="empty_rag_spans")
+            return RagInjectionResult(evidence_bundle=evidence_bundle, subsystem=subsystem, error=fallback_error or "empty_rag_spans")
 
         return RagInjectionResult(
             evidence_bundle=evidence_bundle.model_copy(
@@ -111,6 +146,31 @@ class RagContextInjector:
             ),
             added_count=len(added_spans),
             subsystem=subsystem,
+            error=fallback_error,
+        )
+
+    def _inject_experience_fallback(
+        self,
+        *,
+        stage_name: str,
+        evidence_bundle: EvidenceBundle,
+        query: str,
+        subsystem: str | None,
+        error: str,
+    ) -> RagInjectionResult:
+        """Fallback to local challenge experience fixtures when vector retrieval is unavailable"""
+
+        if not bool(getattr(self.config, "experience_enabled", False)):
+            return RagInjectionResult(evidence_bundle=evidence_bundle, subsystem=subsystem, error=error)
+        items = self._search_experience(query=query, subsystem=subsystem)
+        if not items:
+            return RagInjectionResult(evidence_bundle=evidence_bundle, subsystem=subsystem, error=f"{error}; no_experience_hits")
+        return self._append_items(
+            stage_name=stage_name,
+            evidence_bundle=evidence_bundle,
+            items=items,
+            subsystem=subsystem,
+            fallback_error=f"{error}; experience_fallback",
         )
 
     def _build_query(
@@ -168,3 +228,88 @@ class RagContextInjector:
         if not text:
             return ""
         return text[:1200]
+
+    def _search_experience(self, *, query: str, subsystem: str | None) -> list[dict[str, Any]]:
+        """Search local confirmed positive and kpatch constraint experience records"""
+
+        fixture_paths = list(getattr(self.config, "experience_fixture_paths", []) or [])
+        limit = int(getattr(self.config, "experience_limit", 4) or 4)
+        query_lower = query.lower()
+        scored: list[tuple[float, dict[str, Any]]] = []
+        for fixture_path in fixture_paths:
+            path = Path(str(fixture_path))
+            if not path.is_absolute():
+                path = self.project_root / path
+            if not path.exists():
+                continue
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if not isinstance(payload, list):
+                continue
+            for item in payload:
+                if not isinstance(item, dict):
+                    continue
+                score = self._experience_score(item=item, query_lower=query_lower, subsystem=subsystem)
+                if score <= 0:
+                    continue
+                scored.append(
+                    (
+                        score,
+                        {
+                            "source_kind": "rag_experience",
+                            "source_path": str(path),
+                            "score": score,
+                            "cve_id": item.get("cve_id"),
+                            "summary": self._experience_excerpt(item),
+                            "metadata": item,
+                        },
+                    )
+                )
+        scored.sort(key=lambda value: value[0], reverse=True)
+        return [item for _, item in scored[:limit]]
+
+    def _experience_score(self, *, item: dict[str, Any], query_lower: str, subsystem: str | None) -> float:
+        """Score one local experience record against the current task query"""
+
+        haystack_parts = [
+            item.get("cve_id"),
+            item.get("sample_bucket"),
+            item.get("screening_tier"),
+            item.get("fixture_group"),
+            item.get("observed_constraint"),
+            item.get("expected_outcome"),
+            item.get("breakthrough_status"),
+            item.get("breakthrough_strategy"),
+            " ".join(str(value) for value in item.get("target_modules") or []),
+        ]
+        haystack = " ".join(str(part) for part in haystack_parts if part).lower()
+        score = 0.0
+        for token in query_lower.split():
+            if len(token) < 4:
+                continue
+            if token in haystack:
+                score += 0.1
+        if subsystem and subsystem.lower() in haystack:
+            score += 0.35
+        if item.get("screening_tier") == "positive_acceptance_confirmed":
+            score += 0.25
+        if item.get("sample_bucket") == "kpatch_constraint":
+            score += 0.18
+        if item.get("breakthrough_status"):
+            score += 0.3
+        return round(min(score, 1.0), 4)
+
+    def _experience_excerpt(self, item: dict[str, Any]) -> str:
+        """Render one local experience record as a compact evidence excerpt"""
+
+        fields = [
+            f"cve={item.get('cve_id')}",
+            f"bucket={item.get('sample_bucket')}",
+            f"tier={item.get('screening_tier')}",
+            f"strategy={item.get('breakthrough_strategy') or item.get('expected_outcome')}",
+            f"constraint={item.get('observed_constraint')}",
+            f"modules={','.join(str(value) for value in item.get('target_modules') or [])}",
+        ]
+        return "; ".join(part for part in fields if not part.endswith("=None") and not part.endswith("="))

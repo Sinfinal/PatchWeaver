@@ -92,7 +92,7 @@ cd <project_root>
 export LANG=C.UTF-8
 export LC_ALL=C.UTF-8
 export PYTHONIOENCODING=utf-8
-export PATCHWEAVER_REMOTE_PASSWORD='b314B314'
+export PATCHWEAVER_REMOTE_PASSWORD='<VALIDATION_PASSWORD>'
 ```
 
 若要先确认当前验证副本是否存在，可执行：

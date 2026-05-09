@@ -9,6 +9,7 @@ from patchweaver.models.patch import PatchBundle
 from patchweaver.models.rewrite import RewritePlan, TransformationStep, TransformationTrace
 from patchweaver.models.semantic import RepairIntent
 from patchweaver.rewriter.diff_editor import DiffEditor
+from patchweaver.rewriter.primitive_templates import PrimitiveTemplates
 from patchweaver.rewriter.semantic_guard import SemanticGuardRewriter
 from patchweaver.rewriter.smpl_engine import SmPLEngine
 from patchweaver.rewriter.template_engine import TemplateEngine
@@ -26,6 +27,7 @@ class RewriteExecutor:
         self.smpl_engine = SmPLEngine(project_root)
         self.diff_editor = DiffEditor()
         self.project_root = project_root.resolve()
+        self.primitive_templates = PrimitiveTemplates(self.project_root)
 
     def execute(
         self,
@@ -215,6 +217,8 @@ class RewriteExecutor:
         if not plan.requires_kernel_scaffold:
             return None
 
+        scaffold_files = self._write_kernel_scaffold_files(plan=plan, rewrite_dir=rewrite_dir)
+        template_spec = self.primitive_templates.get(plan.selected_recipe or "")
         path = rewrite_dir / "kernel_adapter_plan.json"
         payload = {
             "plan_id": plan.plan_id,
@@ -222,6 +226,17 @@ class RewriteExecutor:
             "selected_route_family": plan.selected_route_family,
             "selected_execution_mode": plan.selected_execution_mode,
             "selected_primitives": plan.selected_primitives,
+            "template_spec": {
+                "template_path": to_project_relative(self.project_root, template_spec.template_path)
+                if template_spec and template_spec.template_path
+                else None,
+                "smpl_path": to_project_relative(self.project_root, template_spec.smpl_path)
+                if template_spec and template_spec.smpl_path
+                else None,
+                "requires_kernel_scaffold": template_spec.requires_kernel_scaffold if template_spec else True,
+            },
+            "scaffold_files": [to_project_relative(self.project_root, item) for item in scaffold_files],
+            "scaffold_contract": self._kernel_scaffold_contract(plan),
             "notes": plan.scaffold_notes,
         }
         path.write_text(
@@ -229,6 +244,97 @@ class RewriteExecutor:
             encoding="utf-8",
         )
         return path
+
+    def _write_kernel_scaffold_files(self, *, plan: RewritePlan, rewrite_dir: Path) -> list[Path]:
+        """为 callback/shadow 路线写出第一版辅助模板"""
+
+        primitives = set(plan.selected_primitives)
+        if not primitives.intersection({"callback", "shadow_variable", "state_preserving"}):
+            return []
+
+        scaffold_path = rewrite_dir / "kernel_adapter_scaffold.c"
+        blocks: list[str] = [
+            "/* PatchWeaver kernel adapter scaffold */",
+            f"/* recipe: {plan.selected_recipe or 'unknown'} */",
+            f"/* route: {plan.selected_route_family or 'unknown'} */",
+            "",
+            "#include <linux/livepatch.h>",
+            "#include <linux/slab.h>",
+            "",
+        ]
+        if "shadow_variable" in primitives:
+            blocks.extend(
+                [
+                    "struct patchweaver_shadow_state {",
+                    "\tvoid *object;",
+                    "\tunsigned long flags;",
+                    "};",
+                    "",
+                    "static int patchweaver_shadow_init(void *obj, struct patchweaver_shadow_state **state)",
+                    "{",
+                    "\t*state = kzalloc(sizeof(**state), GFP_KERNEL);",
+                    "\tif (!*state)",
+                    "\t\treturn -ENOMEM;",
+                    "\t(*state)->object = obj;",
+                    "\treturn 0;",
+                    "}",
+                    "",
+                    "static void patchweaver_shadow_free(struct patchweaver_shadow_state *state)",
+                    "{",
+                    "\tkfree(state);",
+                    "}",
+                    "",
+                ]
+            )
+        if "callback" in primitives:
+            blocks.extend(
+                [
+                    "static int patchweaver_pre_patch_callback(struct klp_object *obj)",
+                    "{",
+                    "\treturn 0;",
+                    "}",
+                    "",
+                    "static void patchweaver_post_unpatch_callback(struct klp_object *obj)",
+                    "{",
+                    "}",
+                    "",
+                ]
+            )
+        if "state_preserving" in primitives:
+            blocks.extend(
+                [
+                    "static int patchweaver_state_preserve(void *old_obj, void *new_obj)",
+                    "{",
+                    "\treturn old_obj || new_obj ? 0 : -EINVAL;",
+                    "}",
+                    "",
+                ]
+            )
+        blocks.extend(
+            [
+                "/* This scaffold is an execution contract, not a standalone module */",
+                "/* The final adapter must bind these hooks to the selected livepatch object */",
+                "",
+            ]
+        )
+        scaffold_path.write_text("\n".join(blocks), encoding="utf-8")
+        return [scaffold_path]
+
+    def _kernel_scaffold_contract(self, plan: RewritePlan) -> dict[str, object]:
+        """整理 callback/shadow 辅助模板的落地契约"""
+
+        primitives = set(plan.selected_primitives)
+        return {
+            "requires_callback_hooks": "callback" in primitives,
+            "requires_shadow_state": "shadow_variable" in primitives,
+            "requires_state_preservation": "state_preserving" in primitives,
+            "target_files": plan.target_files,
+            "review_points": [
+                "确认 callback 绑定到正确 klp_object",
+                "确认 shadow state 生命周期覆盖 load 和 unload",
+                "确认辅助状态不改变原补丁安全语义",
+            ],
+        }
 
     def _write_semantic_guard_report(self, *, rewrite_dir: Path, report: dict[str, object]) -> Path | None:
         """写出 semantic guard 改写报告"""

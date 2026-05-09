@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-07T11:25:45.937081+00:00",
+  "status": "passed",
+  "mode": "dry-run",
+  "dry_run": true,
+  "fixture_name": "holdout",
+  "fixture_path": "evaluations/fixtures/holdout.json",
+  "total_cases": 1,
+  "cases": [
+    {
+      "blind_id": "HOLDOUT-001-5324ac86",
+      "mode": "dry-run",
+      "bucket": null,
+      "metadata": {
+        "target_kernel": "6.6.102-5.2.an23.x86_64",
+        "expected_artifact_count": 4,
+        "has_repair_intent": false
+      },
+      "planned_actions": [
+        "load_fixture",
+        "plan_attempt",
+        "skip_kpatch_build"
+      ]
+    }
+  ],
+  "limits": [
+    "No kpatch-build command is invoked.",
+    "Blind identity is hidden unless --reveal-identities is passed."
+  ]
+}

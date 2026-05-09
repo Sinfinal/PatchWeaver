@@ -1,0 +1,445 @@
+{
+  "mode": "full",
+  "profile": "demo",
+  "task_prefix": "s3sgpoolrerun0507",
+  "max_run_attempts": 1,
+  "run_timeout_sec": 900,
+  "stable_baseline_timeout_sec": 900,
+  "prepare_stable_baseline": true,
+  "only_positive_candidates": true,
+  "positive_pool_fixture": "/home/patchweaver/current/evaluations/fixtures/challenge_positive_pool_confirmed_v0426.json",
+  "known_kpatch_constraint_fixture": "/home/patchweaver/current/evaluations/fixtures/challenge_kpatch_constraint_pool_v0427.json",
+  "include_known_pool_cases": false,
+  "positive_pool_target": 10,
+  "min_livepatchability_score": 75,
+  "only_high_livepatchability": true,
+  "rag_seed_fixture": "/home/patchweaver/current/evaluations/fixtures/rag_seed_linux_kernel_2024_batch200.json",
+  "config_fragment_dir": "data/evaluations/s3_semantic_guard_26726_full_v0507_rerun_config_fragments",
+  "minimal_config_fragments_written": [
+    "CVE-2024-26726"
+  ],
+  "positive_pool_added": [
+    "CVE-2024-26726"
+  ],
+  "project_root": "/home/patchweaver/current",
+  "workspace_root": "/home/patchweaver/current/workspaces",
+  "summary": {
+    "total_cases": 1,
+    "representative_total": 1,
+    "representative_success_rate": 1.0,
+    "average_attempts": 1.0,
+    "bucket_counts": {
+      "buildable_and_should_pass": 1
+    },
+    "tier_counts": {
+      "positive_acceptance_confirmed": 1
+    },
+    "role_counts": {
+      "positive_acceptance_sample": 1
+    },
+    "livepatchability_tier_counts": {
+      "high": 1
+    },
+    "livepatchability_high": [
+      "CVE-2024-26726"
+    ],
+    "confirmed_positive_acceptance": [
+      "CVE-2024-26726"
+    ],
+    "positive_pool_candidates": [
+      "CVE-2024-26726"
+    ],
+    "stable_bucket_ready": [
+      "CVE-2024-26726"
+    ],
+    "rag_seed_hits": [
+      "CVE-2024-26726"
+    ],
+    "known_pool_skipped": [],
+    "stable_source_alignment_required": [],
+    "stable_baseline_prepared": [
+      "CVE-2024-26726"
+    ],
+    "minimal_config_fragments": [
+      "CVE-2024-26726"
+    ],
+    "rag_subsystem_counts": {
+      "fs/btrfs": 1
+    },
+    "positive_pool_target": 10,
+    "current_positive_pool_size": 7,
+    "projected_positive_pool_size": 7,
+    "positive_pool_gap": 3
+  },
+  "results": [
+    {
+      "cve_id": "CVE-2024-26726",
+      "task_id": "s3sgpoolrerun0507-26726",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "fs/btrfs/inode.c"
+      ],
+      "critical_calls_count": 4,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 3,
+      "target_function_count": 0,
+      "stable_source_baseline_ref": "7bddf18f474f166c19f91b2baf67bf7c5eda03f7^",
+      "patch_shape": {
+        "touched_files": [
+          "fs/btrfs/inode.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "out:"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 20,
+        "added_line_count": 17,
+        "removed_line_count": 3,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "fs/btrfs",
+      "rag_summary": "btrfs: don't drop extent_map for free space inode on write error",
+      "inferred_build_targets": [
+        "fs/btrfs/btrfs.ko"
+      ],
+      "build_target_states": [
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "fs/btrfs/inode.c",
+          "target": "fs/btrfs/btrfs.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_BTRFS_FS": "m"
+        },
+        "target_files": [
+          "fs/btrfs/inode.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_BTRFS_FS",
+            "token": "btrfs/",
+            "makefile_dir": "fs",
+            "line": "obj-$(CONFIG_BTRFS_FS)\t\t+= btrfs/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_BTRFS_FS",
+            "token": "btrfs.o",
+            "makefile_dir": "fs/btrfs",
+            "line": "obj-$(CONFIG_BTRFS_FS) := btrfs.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_BTRFS_FS=m\n",
+      "minimal_config_fragment_path": "data/evaluations/s3_semantic_guard_26726_full_v0507_rerun_config_fragments/CVE-2024-26726.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/s3_semantic_guard_26726_full_v0507_rerun_config_fragments/CVE-2024-26726.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/s3_semantic_guard_26726_full_v0507_rerun_config_fragments/CVE-2024-26726.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [],
+        "shape": {
+          "touched_files": [
+            "fs/btrfs/inode.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "out:"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 20,
+          "added_line_count": 17,
+          "removed_line_count": 3,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "7bddf18f474f166c19f91b2baf67bf7c5eda03f7^",
+        "output_dir": "/home/patchweaver/stable-baselines/7bddf18f474f166c19f91b2baf67bf7c5eda03f7-6e79c2d70a15",
+        "reused_existing": false,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/7bddf18f474f166c19f91b2baf67bf7c5eda03f7-6e79c2d70a15/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/7bddf18f474f166c19f91b2baf67bf7c5eda03f7-6e79c2d70a15",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001",
+      "build_summary": {
+        "task_id": "s3sgpoolrerun0507-26726",
+        "attempt_id": "s3sgpoolrerun0507-26726-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/s3sgpoolrerun0507-26726/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/s3sgpoolrerun0507-26726/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/s3sgpoolrerun0507-26726/attempts/001/logs/build.log",
+        "module_path": "workspaces/s3sgpoolrerun0507-26726/attempts/001/output/patchweaver-s3sgpoolrerun0507-26726-001.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-07T09:56:34.987750Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/output/patchweaver-s3sgpoolrerun0507-26726-001.ko",
+          "log_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_s3sgpoolrerun0507_26726_001",
+          "log_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: s3sgpoolrerun0507-26726",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "s3sgpoolrerun0507-26726",
+        "attempt_id": "s3sgpoolrerun0507-26726-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "s3sgpoolrerun0507-26726",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "c5b895d1562b022a940d7fcbfaefe75bdcf04da692ee10205a16c44039eb61e5",
+            "current_changed_line_count": 20,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-07T09:56:35.015403Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/output/patchweaver-s3sgpoolrerun0507-26726-001.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-07T09:56:37.547341+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    }
+  ]
+}

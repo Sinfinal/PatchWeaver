@@ -29,6 +29,8 @@ dependencies = [
   "paramiko>=4.0",
   #Web API
   "fastapi>=0.115",
+  #FastAPI/Starlette TestClient 依赖
+  "httpx>=0.27",
   #API 服务启动
   "uvicorn>=0.30",
   #Milvus 向量数据库客户端
@@ -48,4 +50,4 @@ testpaths = ["tests"]
 cache_dir = "data/cache/pytest-cache"
 pythonpath = ["."]
 norecursedirs = ["tests/_tmp", ".pytest_tmp", "data/cache"]
-addopts = "--basetemp=data/cache/pytest-tmp --ignore=tests/_tmp"
+addopts = "--ignore=tests/_tmp -p no:debugging"

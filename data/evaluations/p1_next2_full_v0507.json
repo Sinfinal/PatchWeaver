@@ -1,0 +1,891 @@
+{
+  "mode": "full",
+  "profile": "dev",
+  "task_prefix": "p1nextfull0507",
+  "max_run_attempts": 1,
+  "run_timeout_sec": 900,
+  "stable_baseline_timeout_sec": 900,
+  "prepare_stable_baseline": true,
+  "only_positive_candidates": true,
+  "positive_pool_fixture": "/home/patchweaver/current/evaluations/fixtures/challenge_positive_pool_confirmed_v0426.json",
+  "known_kpatch_constraint_fixture": "/home/patchweaver/current/evaluations/fixtures/challenge_kpatch_constraint_pool_v0427.json",
+  "include_known_pool_cases": false,
+  "positive_pool_target": 10,
+  "min_livepatchability_score": 75,
+  "only_high_livepatchability": true,
+  "rag_seed_fixture": "/home/patchweaver/current/evaluations/fixtures/rag_seed_linux_kernel_2024_batch200.json",
+  "config_fragment_dir": "data/evaluations/p1_next2_full_v0507_config_fragments",
+  "minimal_config_fragments_written": [
+    "CVE-2024-26803",
+    "CVE-2024-26730"
+  ],
+  "positive_pool_added": [],
+  "project_root": "/home/patchweaver/current",
+  "workspace_root": "/home/patchweaver/current/workspaces",
+  "summary": {
+    "total_cases": 2,
+    "representative_total": 2,
+    "representative_success_rate": 0.0,
+    "average_attempts": 1.0,
+    "bucket_counts": {
+      "buildable_and_should_pass": 1,
+      "unbucketed": 1
+    },
+    "tier_counts": {
+      "positive_candidate_low_risk": 1,
+      "blocked_by_compile_failure": 1
+    },
+    "role_counts": {
+      "screening_candidate": 1,
+      "blocked_sample": 1
+    },
+    "livepatchability_tier_counts": {
+      "high": 2
+    },
+    "livepatchability_high": [
+      "CVE-2024-26803",
+      "CVE-2024-26730"
+    ],
+    "confirmed_positive_acceptance": [],
+    "positive_pool_candidates": [
+      "CVE-2024-26803"
+    ],
+    "stable_bucket_ready": [
+      "CVE-2024-26803"
+    ],
+    "rag_seed_hits": [
+      "CVE-2024-26803",
+      "CVE-2024-26730"
+    ],
+    "known_pool_skipped": [],
+    "stable_source_alignment_required": [],
+    "stable_baseline_prepared": [
+      "CVE-2024-26803",
+      "CVE-2024-26730"
+    ],
+    "minimal_config_fragments": [
+      "CVE-2024-26803",
+      "CVE-2024-26730"
+    ],
+    "rag_subsystem_counts": {
+      "drivers/net": 1,
+      "drivers/hwmon": 1
+    },
+    "positive_pool_target": 10,
+    "current_positive_pool_size": 6,
+    "projected_positive_pool_size": 6,
+    "positive_pool_gap": 4
+  },
+  "results": [
+    {
+      "cve_id": "CVE-2024-26803",
+      "task_id": "p1nextfull0507-26803",
+      "mode": "full",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/net/veth.c"
+      ],
+      "critical_calls_count": 7,
+      "key_conditions_count": 2,
+      "key_side_effects_count": 8,
+      "target_function_count": 3,
+      "stable_source_baseline_ref": "16edf51f33f52dff70ed455bc40a6cc443c04664^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/veth.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "veth_enable_xdp",
+          "veth_disable_xdp",
+          "veth_xdp_set"
+        ],
+        "touched_function_count": 3,
+        "changed_line_count": 32,
+        "added_line_count": 15,
+        "removed_line_count": 17,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "screening_candidate",
+      "screening_tier": "positive_candidate_low_risk",
+      "reason": "当前分析结果显示为低风险路线，值得继续推进到真实构建筛选",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "net: veth: clear GRO when clearing XDP even when down",
+      "inferred_build_targets": [
+        "drivers/net/veth.ko"
+      ],
+      "build_target_states": [
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/net/veth.c",
+          "target": "drivers/net/veth.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_VETH": "m"
+        },
+        "target_files": [
+          "drivers/net/veth.c"
+        ],
+        "findings": [
+          {
+            "type": "object_gate",
+            "config": "CONFIG_VETH",
+            "token": "veth.o",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_VETH) += veth.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_VETH=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_next2_full_v0507_config_fragments/CVE-2024-26803.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_next2_full_v0507_config_fragments/CVE-2024-26803.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_next2_full_v0507_config_fragments/CVE-2024-26803.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数仍处于中等范围",
+          "只触达 1 个源码文件",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "触达 3 个函数"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/net/veth.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "veth_enable_xdp",
+            "veth_disable_xdp",
+            "veth_xdp_set"
+          ],
+          "touched_function_count": 3,
+          "changed_line_count": 32,
+          "added_line_count": 15,
+          "removed_line_count": 17,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "16edf51f33f52dff70ed455bc40a6cc443c04664^",
+        "output_dir": "/opt/patchweaver/stable-baselines/16edf51f33f52dff70ed455bc40a6cc443c04664-34a2ae63de80",
+        "reused_existing": false,
+        "git_head": null,
+        "config_path": "/opt/patchweaver/stable-baselines/16edf51f33f52dff70ed455bc40a6cc443c04664-34a2ae63de80/.config"
+      },
+      "stable_kernel_src_dir": "/opt/patchweaver/stable-baselines/16edf51f33f52dff70ed455bc40a6cc443c04664-34a2ae63de80",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "failed",
+          "run_failure_type": "kpatch_symbol_bundle_constraint",
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/p1nextfull0507-26803/attempts/001",
+          "failure_type": "kpatch_symbol_bundle_constraint",
+          "build_status": "failed",
+          "validation_status": "pending",
+          "screening_tier": "positive_candidate_low_risk",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "failed",
+      "run_failure_type": "kpatch_symbol_bundle_constraint",
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/p1nextfull0507-26803/attempts/001",
+      "build_summary": {
+        "task_id": "p1nextfull0507-26803",
+        "attempt_id": "p1nextfull0507-26803-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "failed",
+        "summary": "本机构建失败，已生成结构化失败摘要。",
+        "rewritten_patch_path": "workspaces/p1nextfull0507-26803/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+        "build_log_path": "workspaces/p1nextfull0507-26803/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "kpatch_symbol_bundle_constraint",
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 1,
+        "created_at": "2026-05-07T09:40:29.732823Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未执行加载测试，暂不执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未满足冒烟测试前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "当前轮尚未满足自检前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/p1nextfull0507-26803/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭语义守卫。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "当前轮尚未满足自检前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未执行加载测试，暂不执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未满足冒烟测试前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭语义守卫。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/p1nextfull0507-26803/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "pending",
+        "notes": [
+          "验证任务: p1nextfull0507-26803",
+          "构建状态: failed",
+          "风险等级: low",
+          "验证档位: dev",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=False regression=False",
+          "本轮未构建出模块产物，动态验证阶段维持待执行状态。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "p1nextfull0507-26803",
+        "attempt_id": "p1nextfull0507-26803-A001",
+        "stage_name": "build",
+        "failure_type": "kpatch_symbol_bundle_constraint",
+        "summary": "create-diff-object.real-pw: ERROR: orig.o: kpatch_bundle_symbols: 260: symbol veth_get_link_ksettings at offset 16 within section .text.veth_get_link_ksettings, expected 0: Success",
+        "evidence": [
+          "create-diff-object.real-pw: ERROR: orig.o: kpatch_bundle_symbols: 260: symbol veth_get_link_ksettings at offset 16 within section .text.veth_get_link_ksettings, expected 0: Success",
+          "create-diff-object.real-pw: ERROR: orig.o: kpatch_bundle_symbols: 260: symbol veth_get_link_ksettings at offset 16 within section .text.veth_get_link_ksettings, expected 0: Success"
+        ],
+        "diagnostic_details": {
+          "kpatch_constraint": {
+            "constraint_kind": "symbol_bundle_offset",
+            "object_file": "orig.o",
+            "source_files": [
+              "drivers/net/veth.c"
+            ],
+            "functions": [
+              "veth_xdp_set"
+            ],
+            "section_change_count": null,
+            "symbol_bundle": {
+              "object_file": "orig.o",
+              "source_object_path": "orig.o",
+              "symbol": "veth_get_link_ksettings",
+              "offset": 16,
+              "section": ".text.veth_get_link_ksettings",
+              "expected_offset": 0,
+              "raw_line": "create-diff-object.real-pw: ERROR: orig.o: kpatch_bundle_symbols: 260: symbol veth_get_link_ksettings at offset 16 within section .text.veth_get_link_ksettings, expected 0: Success",
+              "source_files": [
+                "drivers/net/veth.c"
+              ],
+              "functions": [
+                "veth_xdp_set"
+              ]
+            },
+            "section_changes": [],
+            "patch_files": [
+              {
+                "source_file": "drivers/net/veth.c",
+                "object_stem": "veth",
+                "functions": [
+                  "veth_xdp_set"
+                ]
+              }
+            ],
+            "patch_shape": {
+              "touched_files": [
+                "drivers/net/veth.c"
+              ],
+              "touched_file_count": 1,
+              "touched_functions": [
+                "veth_xdp_set"
+              ],
+              "touched_function_count": 1,
+              "changed_line_count": 15,
+              "added_line_count": 14,
+              "removed_line_count": 1,
+              "guard_like": false,
+              "touches_kbuild": false,
+              "touches_header": false,
+              "touches_init_or_probe": false,
+              "touches_global_or_static_data": false,
+              "touches_struct_definition": false,
+              "risk_markers": []
+            },
+            "rewrite_classification": {
+              "class": "unfixable_by_livepatch_candidate",
+              "next_strategy": "mark_unfixable_after_repeated_constraint",
+              "reason": "补丁形态不适合继续盲目收缩，若多轮仍命中同一后端约束应收口"
+            },
+            "trigger_reason": "kpatch-build 在差异对象符号打包阶段发现函数入口或 section 符号偏移不符合后端预期"
+          },
+          "agent_next_action": {
+            "action": "check_vendor_baseline_then_section_symbol_rewrite",
+            "reason": "kpatch 后端在符号打包阶段发现 section 符号偏移，需先确认 vendor baseline 与目标内核完全匹配，再考虑函数入口 guard 或 section 收缩",
+            "retry_scope": "source_baseline_then_rewrite_strategy",
+            "retryable_after_environment_update": true
+          },
+          "route_effectiveness": {
+            "task_id": "p1nextfull0507-26803",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "3a9d560f9af5f0b95ce8ee2d99be90374c7630705b58b8a7bb7ccecea983a4a8",
+            "current_changed_line_count": 17,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          }
+        },
+        "created_at": "2026-05-07T09:40:29.749789Z"
+      },
+      "build_status": "failed",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "check_vendor_baseline_then_section_symbol_rewrite",
+      "failure_type": "kpatch_symbol_bundle_constraint",
+      "diagnostics": {
+        "captured_at": "2026-05-07T09:40:31.231554+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/p1nextfull0507-26803/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/p1nextfull0507-26803/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/p1nextfull0507-26803/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/p1nextfull0507-26803/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/p1nextfull0507-26803/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/p1nextfull0507-26803/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/p1nextfull0507-26803/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26730",
+      "task_id": "p1nextfull0507-26730",
+      "mode": "full",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/hwmon/nct6775-core.c"
+      ],
+      "critical_calls_count": 2,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 3,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "f006c45a3ea424f8f6c8e4b9283bc245ce2a4d0f^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/hwmon/nct6775-core.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "nct6775_probe"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 15,
+        "added_line_count": 12,
+        "removed_line_count": 3,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": null,
+      "acceptance_role": "blocked_sample",
+      "screening_tier": "blocked_by_compile_failure",
+      "reason": "已进入构建但未形成稳定失败口径，先不纳入稳定四桶样例集",
+      "stable_bucket_ready": false,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/hwmon",
+      "rag_summary": "hwmon: (nct6775) Fix access to temperature configuration registers",
+      "inferred_build_targets": [
+        "drivers/hwmon/nct6775-core.ko"
+      ],
+      "build_target_states": [
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/hwmon/nct6775-core.c",
+          "target": "drivers/hwmon/nct6775-core.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_HWMON": "m",
+          "CONFIG_SENSORS_NCT6775_CORE": "m"
+        },
+        "target_files": [
+          "drivers/hwmon/nct6775-core.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_HWMON",
+            "token": "hwmon/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_HWMON)\t\t+= hwmon/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_SENSORS_NCT6775_CORE",
+            "token": "nct6775-core.o",
+            "makefile_dir": "drivers/hwmon",
+            "line": "obj-$(CONFIG_SENSORS_NCT6775_CORE) += nct6775-core.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_HWMON=m\nCONFIG_SENSORS_NCT6775_CORE=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_next2_full_v0507_config_fragments/CVE-2024-26730.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_next2_full_v0507_config_fragments/CVE-2024-26730.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_next2_full_v0507_config_fragments/CVE-2024-26730.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [],
+        "shape": {
+          "touched_files": [
+            "drivers/hwmon/nct6775-core.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "nct6775_probe"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 15,
+          "added_line_count": 12,
+          "removed_line_count": 3,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "f006c45a3ea424f8f6c8e4b9283bc245ce2a4d0f^",
+        "output_dir": "/opt/patchweaver/stable-baselines/f006c45a3ea424f8f6c8e4b9283bc245ce2a4d0f-a3d82d364ebf",
+        "reused_existing": false,
+        "git_head": null,
+        "config_path": "/opt/patchweaver/stable-baselines/f006c45a3ea424f8f6c8e4b9283bc245ce2a4d0f-a3d82d364ebf/.config"
+      },
+      "stable_kernel_src_dir": "/opt/patchweaver/stable-baselines/f006c45a3ea424f8f6c8e4b9283bc245ce2a4d0f-a3d82d364ebf",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "failed",
+          "run_failure_type": "compile_failed",
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/p1nextfull0507-26730/attempts/001",
+          "failure_type": "compile_failed",
+          "build_status": "failed",
+          "validation_status": "pending",
+          "screening_tier": "blocked_by_compile_failure",
+          "sample_bucket": null
+        }
+      ],
+      "run_index": 1,
+      "run_status": "failed",
+      "run_failure_type": "compile_failed",
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/p1nextfull0507-26730/attempts/001",
+      "build_summary": {
+        "task_id": "p1nextfull0507-26730",
+        "attempt_id": "p1nextfull0507-26730-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "failed",
+        "summary": "本机构建失败，已生成结构化失败摘要。",
+        "rewritten_patch_path": "workspaces/p1nextfull0507-26730/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/p1nextfull0507-26730/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/p1nextfull0507-26730/attempts/001/logs/build.log",
+        "module_path": null,
+        "failure_type": "compile_failed",
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 1,
+        "created_at": "2026-05-07T09:41:08.006445Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "unload_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未执行加载测试，暂不执行卸载测试。",
+          "command": null,
+          "log_path": null
+        },
+        "smoke_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "尚未满足冒烟测试前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "selftest_result": {
+          "status": "pending",
+          "ok": false,
+          "detail": "当前轮尚未满足自检前置条件。",
+          "command": null,
+          "log_path": null
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/p1nextfull0507-26730/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭语义守卫。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": false,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "当前轮尚未满足自检前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "构建尚未产出可验证模块，暂不执行加载测试。",
+            "log_path": null
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未执行加载测试，暂不执行卸载测试。",
+            "log_path": null
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "pending",
+            "risk_level": "low",
+            "detail": "尚未满足冒烟测试前置条件。",
+            "log_path": null
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭语义守卫。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/p1nextfull0507-26730/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "pending",
+        "notes": [
+          "验证任务: p1nextfull0507-26730",
+          "构建状态: failed",
+          "风险等级: low",
+          "验证档位: dev",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=False regression=False",
+          "本轮未构建出模块产物，动态验证阶段维持待执行状态。"
+        ]
+      },
+      "failure_record": {
+        "task_id": "p1nextfull0507-26730",
+        "attempt_id": "p1nextfull0507-26730-A001",
+        "stage_name": "build",
+        "failure_type": "compile_failed",
+        "summary": "ERROR: kpatch build failed. Check /root/.kpatch/build.log for more details.",
+        "evidence": [
+          "ERROR: kpatch build failed. Check /root/.kpatch/build.log for more details.",
+          "退出码: 1",
+          "WARNING: modpost: EXPORT symbol \"dpm_resume_start\" [vmlinux] version generation failed, symbol will not be versioned."
+        ],
+        "diagnostic_details": {
+          "agent_next_action": {
+            "action": "adjust_build_target_or_dependencies",
+            "reason": "真实编译失败应优先检查模块目标、依赖模块和构建日志根因",
+            "retry_scope": "build_target"
+          },
+          "route_effectiveness": {
+            "task_id": "p1nextfull0507-26730",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "d5303d32de9c97c42e2ddde60434216bc9142a2d0a11d1562a3ecc900fdec2c3",
+            "current_changed_line_count": 7,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          }
+        },
+        "created_at": "2026-05-07T09:41:08.017314Z"
+      },
+      "build_status": "failed",
+      "validation_status": "pending",
+      "module_path": null,
+      "module_exists": false,
+      "module_vermagic": null,
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "adjust_build_target_or_dependencies",
+      "failure_type": "compile_failed",
+      "diagnostics": {
+        "captured_at": "2026-05-07T09:41:09.475102+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/p1nextfull0507-26730/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/p1nextfull0507-26730/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/p1nextfull0507-26730/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/p1nextfull0507-26730/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/p1nextfull0507-26730/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/p1nextfull0507-26730/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/p1nextfull0507-26730/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    }
+  ]
+}

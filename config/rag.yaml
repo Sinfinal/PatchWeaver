@@ -34,3 +34,11 @@ rerank_top_n: 6
 # Default corpus
 corpus_jsonl_path: "rag_corpus_batch200/chunks/all_chunks.jsonl"
 import_batch_size: 32
+
+# Experience retrieval fallback
+# 这层读取已确认正向池和 kpatch constraint 专项池，供 Agent 在构建失败或规划阶段召回历史经验。
+experience_enabled: true
+experience_fixture_paths:
+  - "evaluations/fixtures/challenge_positive_pool_confirmed_v0426.json"
+  - "evaluations/fixtures/challenge_kpatch_constraint_pool_v0427.json"
+experience_limit: 4

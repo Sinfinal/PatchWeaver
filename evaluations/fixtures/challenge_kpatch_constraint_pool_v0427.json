@@ -25,6 +25,10 @@
       "drivers/gpu/drm/amd/amdgpu/amdgpu.ko"
     ],
     "observed_constraint": "ERROR: amdgpu_hmm.o: 2 unsupported section change(s)",
+    "breakthrough_status": "positive_acceptance_confirmed",
+    "breakthrough_round": "v0507",
+    "breakthrough_strategy": "call_sites_section_compat",
+    "confirmed_positive_pool": true,
     "expected_outcome": "系统应进入真实 kpatch-build，并将 unsupported section change 归因为 kpatch_constraint"
   },
   {
@@ -39,6 +43,10 @@
       "net/tipc/tipc.ko"
     ],
     "observed_constraint": "ERROR: bearer.o: 2 unsupported section change(s)",
+    "breakthrough_status": "positive_acceptance_confirmed",
+    "breakthrough_round": "v0507",
+    "breakthrough_strategy": "call_sites_section_compat",
+    "confirmed_positive_pool": true,
     "expected_outcome": "系统应进入真实 kpatch-build，并将 unsupported section change 归因为 kpatch_constraint"
   },
   {
@@ -53,6 +61,10 @@
       "net/mac80211/mac80211.ko"
     ],
     "observed_constraint": "ERROR: tx.o: 2 unsupported section change(s)",
+    "breakthrough_status": "positive_acceptance_confirmed",
+    "breakthrough_round": "v0507",
+    "breakthrough_strategy": "call_sites_section_compat",
+    "confirmed_positive_pool": true,
     "expected_outcome": "系统应进入真实 kpatch-build，并将 unsupported section change 归因为 kpatch_constraint"
   },
   {
@@ -67,6 +79,10 @@
       "net/netfilter/nft_limit.ko"
     ],
     "observed_constraint": "ERROR: nft_limit.o: 1 unsupported section change(s)",
+    "breakthrough_status": "positive_acceptance_confirmed",
+    "breakthrough_round": "v0507",
+    "breakthrough_strategy": "call_sites_section_compat",
+    "confirmed_positive_pool": true,
     "expected_outcome": "系统应进入真实 kpatch-build，并将 unsupported section change 归因为 kpatch_constraint"
   },
   {
@@ -81,6 +97,10 @@
       "drivers/net/ppp/ppp_async.ko"
     ],
     "observed_constraint": "ERROR: ppp_async.o: 1 unsupported section change(s)",
+    "breakthrough_status": "positive_acceptance_confirmed",
+    "breakthrough_round": "v0507",
+    "breakthrough_strategy": "call_sites_section_compat",
+    "confirmed_positive_pool": true,
     "expected_outcome": "系统应进入真实 kpatch-build，并将 unsupported section change 归因为 kpatch_constraint"
   }
 ]

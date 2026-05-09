@@ -42,3 +42,9 @@ recipes:
     primitives:
       - wrapper
       - smpl
+  - name: section_change_avoidance_rewrite
+    template: recipes/templates/section_change_avoidance_rewrite.patch.j2
+    smpl: recipes/smpl/section_change_avoidance_rewrite.cocci
+    primitives:
+      - smpl
+      - section_change_avoidance

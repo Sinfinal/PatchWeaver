@@ -52,6 +52,23 @@ class MdWriter:
             lines.extend(["", "## 回放索引"])
             for key, value in report.replay_summary.items():
                 lines.append(f"- {key}: {value}")
+        if report.agent_decision_summary:
+            lines.extend(["", "## Agent Decision Summary"])
+            repair_intent = report.agent_decision_summary.get("repair_intent")
+            strategy_switch = report.agent_decision_summary.get("strategy_switch")
+            failure_attribution = report.agent_decision_summary.get("failure_attribution")
+            if isinstance(repair_intent, dict):
+                lines.append(f"- RepairIntent strategy: {repair_intent.get('recommended_strategy') or 'unknown'}")
+                lines.append(f"- RepairIntent root_cause: {repair_intent.get('root_cause') or 'unknown'}")
+            if isinstance(strategy_switch, dict):
+                lines.append(f"- selected_recipe: {strategy_switch.get('selected_recipe') or 'unknown'}")
+                lines.append(f"- selected_strategy: {strategy_switch.get('selected_strategy') or 'unknown'}")
+                lines.append(f"- strategy_switched: {strategy_switch.get('switched')}")
+                lines.append(f"- strategy_reason: {strategy_switch.get('reason') or 'unknown'}")
+            if isinstance(failure_attribution, dict):
+                lines.append(f"- failure_type: {failure_attribution.get('failure_type') or 'none'}")
+                lines.append(f"- failure_summary: {failure_attribution.get('summary') or 'none'}")
+                lines.append(f"- agent_next_action: {failure_attribution.get('agent_next_action') or 'none'}")
         if report.key_paths:
             lines.extend(["", "## 关键路径"])
             for key, value in report.key_paths.items():

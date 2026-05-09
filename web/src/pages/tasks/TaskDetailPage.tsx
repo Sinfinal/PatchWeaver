@@ -230,6 +230,12 @@ export function TaskDetailPage(): JSX.Element {
         <StageTimeline items={detail.stage_view ?? detail.timeline} currentStage={detail.process_summary?.current_stage} />
       </SectionCard>
 
+      {detail.agent_decision_summary ? (
+        <SectionCard title="Agent Decision Summary" subtitle="展示 RepairIntent、路线选择、下一步动作和失败归因。">
+          <AgentDecisionPanel detail={detail} />
+        </SectionCard>
+      ) : null}
+
       <SectionCard
         title="任务证据面板"
         subtitle="按阶段查看任务产物，并在右侧预览对应文件内容。"
@@ -288,6 +294,51 @@ export function TaskDetailPage(): JSX.Element {
           />
         </div>
       </SectionCard>
+    </div>
+  );
+}
+
+function AgentDecisionPanel({ detail }: { detail: TaskDetailResponse }): JSX.Element | null {
+  const summary = detail.agent_decision_summary;
+  if (!summary) {
+    return null;
+  }
+  const repairIntentStrategy =
+    typeof summary.repair_intent?.recommended_strategy === "string"
+      ? summary.repair_intent.recommended_strategy
+      : summary.strategy_switch.repair_intent_strategy;
+
+  return (
+    <div className="pw-process-summary">
+      <div className="pw-process-grid">
+        <div>
+          <span className="pw-process-label">RepairIntent 策略</span>
+          <div>{repairIntentStrategy ?? "未记录"}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">选中 Recipe</span>
+          <div>{summary.selected_recipe ?? "未记录"}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">最终策略</span>
+          <div>{summary.strategy ?? "未记录"}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">失败类型</span>
+          <div>{summary.failure_type ?? "无"}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">策略切换</span>
+          <div>{summary.strategy_switch.switched ? "已切换" : "未切换"}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">下一步动作</span>
+          <div>{summary.agent_next_action ?? "未记录"}</div>
+        </div>
+      </div>
+      <div className="pw-inline-note">RepairIntent: {shortenPath(summary.source_paths.repair_intent)}</div>
+      <div className="pw-inline-note">FailureRecord: {shortenPath(summary.source_paths.failure_record)}</div>
+      {summary.failure_record.summary ? <div className="pw-process-conflict">归因摘要：{summary.failure_record.summary}</div> : null}
     </div>
   );
 }

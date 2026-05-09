@@ -71,6 +71,16 @@ def get_task_detail(task_id: str, context: ApiContext = Depends(get_api_context)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@router.get("/tasks/{task_id}/agent-decision")
+def get_agent_decision_summary(task_id: str, context: ApiContext = Depends(get_api_context)) -> dict:
+    """读取任务级 Agent 决策摘要"""
+
+    try:
+        return TaskQueryService(context).get_agent_decision_summary(task_id)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
 @router.post("/tasks/{task_id}/analyze", response_model=TaskActionResponse)
 def analyze_task(task_id: str, context: ApiContext = Depends(get_api_context)) -> TaskActionResponse:
     """执行分析阶段"""

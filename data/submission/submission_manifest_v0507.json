@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "inputs": {
+    "positive_evidence_manifest": "data/manifests/positive_pool_evidence_manifest_v0507_complete12.json",
+    "holdout_report": "data/evaluations/p2_holdout_dry_run_v0507.json",
+    "demo_manifest": "data/reports/demo_submission_manifest_v0507.json"
+  },
+  "artifacts": {
+    "submission_manifest_json": "data/submission/submission_manifest_v0507.json",
+    "submission_summary_md": "data/submission/submission_summary_v0507.md"
+  },
+  "confirmed_pool": {
+    "total": 12,
+    "complete": 12,
+    "partial": 0,
+    "missing": 0,
+    "entries": [
+      {
+        "cve_id": "CVE-2024-26742",
+        "status": "complete",
+        "validation_status": "passed",
+        "module_path": "/home/patchweaver/current/workspaces/p0-gate-fg-20260506210801-26742/attempts/001/output/patchweaver-p0-gate-fg-20260506210801-26742-001.ko",
+        "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+        "missing_artifacts": []
+      },
+      {
+        "cve_id": "CVE-2024-26675",
+        "status": "complete",
+        "validation_status": "passed",
+        "module_path": "/home/patchweaver/current/workspaces/p1-smoke-20260507160113-26675/attempts/001/output/patchweaver-p1-smoke-20260507160113-26675-001.ko",
+        "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+        "missing_artifacts": []
+      },
+      {
+        "cve_id": "CVE-2024-26663",
+        "status": "complete",
+        "validation_status": "passed",
+        "module_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26663/attempts/001/output/patchweaver-p0-callsite-20260507144934-26663-001.ko",
+        "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+        "missing_artifacts": []
+      },
+      {
+        "cve_id": "CVE-2024-26668",
+        "status": "complete",
+        "validation_status": "passed",
+        "module_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26668/attempts/001/output/patchweaver-p0-callsite-20260507144934-26668-001.ko",
+        "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+        "missing_artifacts": []
+      },
+      {
+        "cve_id": "CVE-2024-26666",
+        "status": "complete",
+        "validation_status": "passed",
+        "module_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26666/attempts/001/output/patchweaver-p0-callsite-20260507144934-26666-001.ko",
+        "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+        "missing_artifacts": []
+      },
+      {
+        "cve_id": "CVE-2024-26656",
+        "status": "complete",
+        "validation_status": "passed",
+        "module_path": "/home/patchweaver/current/workspaces/p0-callsite-20260507144934-26656/attempts/001/output/patchweaver-p0-callsite-20260507144934-26656-001.ko",
+        "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+        "missing_artifacts": []
+      },
+      {
+        "cve_id": "CVE-2024-26726",
+        "status": "complete",
+        "validation_status": "passed",
+        "module_path": "/home/patchweaver/current/workspaces/s3sgpoolrerun0507-26726/attempts/001/output/patchweaver-s3sgpoolrerun0507-26726-001.ko",
+        "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+        "missing_artifacts": []
+      },
+      {
+        "cve_id": "CVE-2024-26698",
+        "status": "complete",
+        "validation_status": "passed",
+        "module_path": "/home/patchweaver/current/workspaces/s1full0507-26698/attempts/001/output/patchweaver-s1full0507-26698-001.ko",
+        "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+        "missing_artifacts": []
+      },
+      {
+        "cve_id": "CVE-2024-26693",
+        "status": "complete",
+        "validation_status": "passed",
+        "module_path": "/home/patchweaver/current/workspaces/s1full0507-26693/attempts/001/output/patchweaver-s1full0507-26693-001.ko",
+        "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+        "missing_artifacts": []
+      },
+      {
+        "cve_id": "CVE-2024-26694",
+        "status": "complete",
+        "validation_status": "passed",
+        "module_path": "/home/patchweaver/current/workspaces/s1full0507-26694/attempts/001/output/patchweaver-s1full0507-26694-001.ko",
+        "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+        "missing_artifacts": []
+      },
+      {
+        "cve_id": "CVE-2024-26615",
+        "status": "complete",
+        "validation_status": "passed",
+        "module_path": "/home/patchweaver/current/workspaces/s1full0507-26615/attempts/001/output/patchweaver-s1full0507-26615-001.ko",
+        "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+        "missing_artifacts": []
+      },
+      {
+        "cve_id": "CVE-2024-26791",
+        "status": "complete",
+        "validation_status": "passed",
+        "module_path": "/home/patchweaver/current/workspaces/s1full0507-26791/attempts/001/output/patchweaver-s1full0507-26791-001.ko",
+        "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+        "missing_artifacts": []
+      }
+    ]
+  },
+  "representative_metrics": {
+    "positive_evidence_completion_rate": 1.0,
+    "positive_manifest_complete": 12,
+    "positive_manifest_partial": 0,
+    "positive_manifest_missing": 0,
+    "ko_artifact_count": 12,
+    "workspace_report_count": 104,
+    "standalone_report_count": 1,
+    "demo_positive_evidence_count": 12,
+    "positive_manifest_source_total": 12
+  },
+  "p2_holdout": {
+    "status": "passed",
+    "mode": "dry-run",
+    "dry_run": true,
+    "total_cases": 1,
+    "fixture_name": "holdout",
+    "cases": [
+      {
+        "blind_id": "HOLDOUT-001-5324ac86",
+        "mode": "dry-run",
+        "bucket": null,
+        "planned_actions": [
+          "load_fixture",
+          "plan_attempt",
+          "skip_kpatch_build"
+        ]
+      }
+    ],
+    "blind_identities_preserved": true,
+    "limits": [
+      "No kpatch-build command is invoked.",
+      "Blind identity is hidden unless --reveal-identities is passed."
+    ]
+  },
+  "bailian_entrypoint": {
+    "status": "placeholder",
+    "value": "PATCHWEAVER_BAILIAN_APP_LINK_PENDING",
+    "required_environment": [
+      {
+        "name": "PATCHWEAVER_BAILIAN_API_KEY",
+        "required": true,
+        "secret": true
+      },
+      {
+        "name": "PATCHWEAVER_API_BASE_URL",
+        "required": true,
+        "secret": false
+      },
+      {
+        "name": "PATCHWEAVER_API_TIMEOUT_SECONDS",
+        "required": true,
+        "secret": false
+      }
+    ],
+    "secret_policy": "Environment variable names only; secret values are not read or written."
+  },
+  "limits": [
+    "Generated from local manifests and dry-run reports only.",
+    "Does not contact the validation machine.",
+    "Does not read, print, or write secret values."
+  ],
+  "generated_at": "2026-05-07T11:28:56.098238+00:00"
+}

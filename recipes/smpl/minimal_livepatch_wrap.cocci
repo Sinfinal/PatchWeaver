@@ -1,1 +1,9 @@
-// minimal_livepatch_wrap: 为后续接入结构化 livepatch 改写预留规则入口。
+// PatchWeaver minimal_livepatch_wrap
+// Minimal wrapper route for low risk function local edits
+@ minimal_wrapper_candidate @
+identifier fn;
+@@
+fn(...)
+{
+  ...
+}

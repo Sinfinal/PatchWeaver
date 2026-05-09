@@ -1,0 +1,1694 @@
+{
+  "mode": "full",
+  "profile": "demo",
+  "task_prefix": "finalholdout0509c",
+  "max_run_attempts": 1,
+  "run_timeout_sec": 900,
+  "stable_baseline_timeout_sec": 900,
+  "prepare_stable_baseline": true,
+  "only_positive_candidates": false,
+  "positive_pool_fixture": "/home/patchweaver/current/evaluations/fixtures/challenge_positive_pool_confirmed_v0426.json",
+  "known_kpatch_constraint_fixture": "/home/patchweaver/current/evaluations/fixtures/challenge_kpatch_constraint_pool_v0427.json",
+  "include_known_pool_cases": true,
+  "positive_pool_target": 10,
+  "min_livepatchability_score": 75,
+  "only_high_livepatchability": false,
+  "rag_seed_fixture": "/home/patchweaver/current/evaluations/fixtures/rag_seed_linux_kernel_2024_batch200.json",
+  "config_fragment_dir": "data/evaluations/final_holdout_full_run_v0509_config_fragments",
+  "minimal_config_fragments_written": [],
+  "positive_pool_added": [],
+  "project_root": "/home/patchweaver/current",
+  "workspace_root": "/home/patchweaver/current/workspaces",
+  "summary": {
+    "total_cases": 5,
+    "representative_total": 5,
+    "representative_success_rate": 1.0,
+    "average_attempts": 1.0,
+    "bucket_counts": {
+      "buildable_and_should_pass": 5
+    },
+    "tier_counts": {
+      "positive_acceptance_confirmed": 5
+    },
+    "role_counts": {
+      "positive_acceptance_sample": 5
+    },
+    "livepatchability_tier_counts": {
+      "medium": 5
+    },
+    "livepatchability_high": [],
+    "confirmed_positive_acceptance": [
+      "CVE-2024-26698",
+      "CVE-2024-26693",
+      "CVE-2024-26694",
+      "CVE-2024-26615",
+      "CVE-2024-26791"
+    ],
+    "positive_pool_candidates": [
+      "CVE-2024-26698",
+      "CVE-2024-26693",
+      "CVE-2024-26694",
+      "CVE-2024-26615",
+      "CVE-2024-26791"
+    ],
+    "stable_bucket_ready": [
+      "CVE-2024-26698",
+      "CVE-2024-26693",
+      "CVE-2024-26694",
+      "CVE-2024-26615",
+      "CVE-2024-26791"
+    ],
+    "rag_seed_hits": [
+      "CVE-2024-26698",
+      "CVE-2024-26693",
+      "CVE-2024-26694",
+      "CVE-2024-26615",
+      "CVE-2024-26791"
+    ],
+    "known_pool_skipped": [],
+    "stable_source_alignment_required": [],
+    "stable_baseline_prepared": [
+      "CVE-2024-26698",
+      "CVE-2024-26693",
+      "CVE-2024-26694",
+      "CVE-2024-26615",
+      "CVE-2024-26791"
+    ],
+    "minimal_config_fragments": [],
+    "rag_subsystem_counts": {
+      "drivers/net": 3,
+      "net/smc": 1,
+      "fs/btrfs": 1
+    },
+    "positive_pool_target": 10,
+    "current_positive_pool_size": 12,
+    "projected_positive_pool_size": 12,
+    "positive_pool_gap": 0
+  },
+  "results": [
+    {
+      "cve_id": "CVE-2024-26698",
+      "task_id": "finalholdout0509c-26698",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/net/hyperv/netvsc.c"
+      ],
+      "critical_calls_count": 3,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 2,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "22a77c0f5b8233237731df3288d067af51a2fd7b^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/hyperv/netvsc.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "netvsc_device_remove"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 5,
+        "added_line_count": 3,
+        "removed_line_count": 2,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "hv_netvsc: Fix race condition between netvsc_probe and netvsc_remove",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/net/hyperv/netvsc.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "netvsc_device_remove"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 5,
+          "added_line_count": 3,
+          "removed_line_count": 2,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "22a77c0f5b8233237731df3288d067af51a2fd7b^",
+        "output_dir": "/home/patchweaver/stable-baselines/22a77c0f5b8233237731df3288d067af51a2fd7b-32047e80fee7",
+        "reused_existing": true,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/22a77c0f5b8233237731df3288d067af51a2fd7b-32047e80fee7/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/22a77c0f5b8233237731df3288d067af51a2fd7b-32047e80fee7",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001",
+      "build_summary": {
+        "task_id": "finalholdout0509c-26698",
+        "attempt_id": "finalholdout0509c-26698-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/finalholdout0509c-26698/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/finalholdout0509c-26698/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/finalholdout0509c-26698/attempts/001/logs/build.log",
+        "module_path": "workspaces/finalholdout0509c-26698/attempts/001/output/patchweaver-finalholdout0509c-26698-001.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-09T05:26:23.711989Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/output/patchweaver-finalholdout0509c-26698-001.ko",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout0509c_26698_001",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: finalholdout0509c-26698",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "finalholdout0509c-26698",
+        "attempt_id": "finalholdout0509c-26698-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "finalholdout0509c-26698",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "011ad2a234294364eb3469d7abadf115b03e4cf42cf5b9066198207a64773ff9",
+            "current_changed_line_count": 6,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T05:26:23.737776Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/output/patchweaver-finalholdout0509c-26698-001.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-09T05:26:26.698403+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26698/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26693",
+      "task_id": "finalholdout0509c-26693",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c",
+        "drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c"
+      ],
+      "critical_calls_count": 2,
+      "key_conditions_count": 2,
+      "key_side_effects_count": 4,
+      "target_function_count": 2,
+      "stable_source_baseline_ref": "00f4eb31b8193f6070ce24df636883f9c104ca95^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c",
+          "drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c"
+        ],
+        "touched_file_count": 2,
+        "touched_functions": [
+          "iwl_mvm_sta_state_notexist_to_none",
+          "iwl_mvm_is_dup"
+        ],
+        "touched_function_count": 2,
+        "changed_line_count": 5,
+        "added_line_count": 4,
+        "removed_line_count": 1,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "wifi: iwlwifi: mvm: fix a crash when we run out of stations",
+      "livepatchability": {
+        "score": 59,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "触达 2 个源码文件"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c",
+            "drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c"
+          ],
+          "touched_file_count": 2,
+          "touched_functions": [
+            "iwl_mvm_sta_state_notexist_to_none",
+            "iwl_mvm_is_dup"
+          ],
+          "touched_function_count": 2,
+          "changed_line_count": 5,
+          "added_line_count": 4,
+          "removed_line_count": 1,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 59,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "00f4eb31b8193f6070ce24df636883f9c104ca95^",
+        "output_dir": "/home/patchweaver/stable-baselines/00f4eb31b8193f6070ce24df636883f9c104ca95-ce1ee19651d5",
+        "reused_existing": true,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/00f4eb31b8193f6070ce24df636883f9c104ca95-ce1ee19651d5/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/00f4eb31b8193f6070ce24df636883f9c104ca95-ce1ee19651d5",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001",
+      "build_summary": {
+        "task_id": "finalholdout0509c-26693",
+        "attempt_id": "finalholdout0509c-26693-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/finalholdout0509c-26693/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/finalholdout0509c-26693/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/finalholdout0509c-26693/attempts/001/logs/build.log",
+        "module_path": "workspaces/finalholdout0509c-26693/attempts/001/output/patchweaver-finalholdout0509c-26693-001.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-09T05:28:30.328434Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/output/patchweaver-finalholdout0509c-26693-001.ko",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout0509c_26693_001",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: finalholdout0509c-26693",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "finalholdout0509c-26693",
+        "attempt_id": "finalholdout0509c-26693-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "finalholdout0509c-26693",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "4de723270076723673070f2e9f15602fccda0380484e8e981d3c8fd80c7c9f00",
+            "current_changed_line_count": 8,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T05:28:30.358902Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/output/patchweaver-finalholdout0509c-26693-001.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-09T05:28:33.846254+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26693/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26694",
+      "task_id": "finalholdout0509c-26694",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/net/wireless/intel/iwlwifi/iwl-drv.c"
+      ],
+      "critical_calls_count": 3,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 1,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "ab9d4bb9a1892439b3123fc52b19e32b9cdf80ad^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/wireless/intel/iwlwifi/iwl-drv.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "iwl_dealloc_ucode"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 2,
+        "added_line_count": 1,
+        "removed_line_count": 1,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "wifi: iwlwifi: fix double-free bug",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/net/wireless/intel/iwlwifi/iwl-drv.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "iwl_dealloc_ucode"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 2,
+          "added_line_count": 1,
+          "removed_line_count": 1,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "ab9d4bb9a1892439b3123fc52b19e32b9cdf80ad^",
+        "output_dir": "/home/patchweaver/stable-baselines/ab9d4bb9a1892439b3123fc52b19e32b9cdf80ad-1a38a9f03104",
+        "reused_existing": true,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/ab9d4bb9a1892439b3123fc52b19e32b9cdf80ad-1a38a9f03104/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/ab9d4bb9a1892439b3123fc52b19e32b9cdf80ad-1a38a9f03104",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001",
+      "build_summary": {
+        "task_id": "finalholdout0509c-26694",
+        "attempt_id": "finalholdout0509c-26694-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/finalholdout0509c-26694/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/finalholdout0509c-26694/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/finalholdout0509c-26694/attempts/001/logs/build.log",
+        "module_path": "workspaces/finalholdout0509c-26694/attempts/001/output/patchweaver-finalholdout0509c-26694-001.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-09T05:30:27.481641Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/output/patchweaver-finalholdout0509c-26694-001.ko",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout0509c_26694_001",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: finalholdout0509c-26694",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "finalholdout0509c-26694",
+        "attempt_id": "finalholdout0509c-26694-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "finalholdout0509c-26694",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "direct_apply_patch",
+            "current_patch_hash": "0712ad98eb253784469ea30ef1b662229da8a4b695213e67331611c4a09b4f73",
+            "current_changed_line_count": 2,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T05:30:27.501568Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/output/patchweaver-finalholdout0509c-26694-001.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-09T05:30:30.995093+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26694/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26615",
+      "task_id": "finalholdout0509c-26615",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "net/smc/smc_diag.c"
+      ],
+      "critical_calls_count": 2,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 1,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "a164c2922675d7051805cdaf2b07daffe44f20d9^",
+      "patch_shape": {
+        "touched_files": [
+          "net/smc/smc_diag.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "__smc_diag_dump"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 5,
+        "added_line_count": 1,
+        "removed_line_count": 4,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "net/smc",
+      "rag_summary": "net/smc: fix illegal rmb_desc access in SMC-D connection dump",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "net/smc/smc_diag.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "__smc_diag_dump"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 5,
+          "added_line_count": 1,
+          "removed_line_count": 4,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "a164c2922675d7051805cdaf2b07daffe44f20d9^",
+        "output_dir": "/home/patchweaver/stable-baselines/a164c2922675d7051805cdaf2b07daffe44f20d9-854e936657e1",
+        "reused_existing": true,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/a164c2922675d7051805cdaf2b07daffe44f20d9-854e936657e1/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/a164c2922675d7051805cdaf2b07daffe44f20d9-854e936657e1",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001",
+      "build_summary": {
+        "task_id": "finalholdout0509c-26615",
+        "attempt_id": "finalholdout0509c-26615-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/finalholdout0509c-26615/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/finalholdout0509c-26615/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/finalholdout0509c-26615/attempts/001/logs/build.log",
+        "module_path": "workspaces/finalholdout0509c-26615/attempts/001/output/patchweaver-finalholdout0509c-26615-001.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-09T05:32:14.060428Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/output/patchweaver-finalholdout0509c-26615-001.ko",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout0509c_26615_001",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: finalholdout0509c-26615",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "finalholdout0509c-26615",
+        "attempt_id": "finalholdout0509c-26615-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "finalholdout0509c-26615",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "direct_apply_patch",
+            "current_patch_hash": "4ea7c437c1512707b20fc15f8ab187461feb67e4ce64a3612045c6664d78d4ad",
+            "current_changed_line_count": 5,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T05:32:14.080791Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/output/patchweaver-finalholdout0509c-26615-001.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-09T05:32:17.572788+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26615/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-26791",
+      "task_id": "finalholdout0509c-26791",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "fs/btrfs/dev-replace.c"
+      ],
+      "critical_calls_count": 5,
+      "key_conditions_count": 4,
+      "key_side_effects_count": 11,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "b1690ced4d2d8b28868811fb81cd33eee5aefee1^",
+      "patch_shape": {
+        "touched_files": [
+          "fs/btrfs/dev-replace.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "leave:",
+          "btrfs_dev_replace_by_ioctl"
+        ],
+        "touched_function_count": 2,
+        "changed_line_count": 21,
+        "added_line_count": 17,
+        "removed_line_count": 4,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "fs/btrfs",
+      "rag_summary": "btrfs: dev-replace: properly validate device names",
+      "livepatchability": {
+        "score": 67,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数仍处于中等范围",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "fs/btrfs/dev-replace.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "leave:",
+            "btrfs_dev_replace_by_ioctl"
+          ],
+          "touched_function_count": 2,
+          "changed_line_count": 21,
+          "added_line_count": 17,
+          "removed_line_count": 4,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 67,
+      "livepatchability_tier": "medium",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "b1690ced4d2d8b28868811fb81cd33eee5aefee1^",
+        "output_dir": "/home/patchweaver/stable-baselines/b1690ced4d2d8b28868811fb81cd33eee5aefee1-7824d33fb7e3",
+        "reused_existing": true,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/b1690ced4d2d8b28868811fb81cd33eee5aefee1-7824d33fb7e3/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/b1690ced4d2d8b28868811fb81cd33eee5aefee1-7824d33fb7e3",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001",
+      "build_summary": {
+        "task_id": "finalholdout0509c-26791",
+        "attempt_id": "finalholdout0509c-26791-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/finalholdout0509c-26791/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/finalholdout0509c-26791/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/finalholdout0509c-26791/attempts/001/logs/build.log",
+        "module_path": "workspaces/finalholdout0509c-26791/attempts/001/output/patchweaver-finalholdout0509c-26791-001.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-09T05:34:16.082718Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/output/patchweaver-finalholdout0509c-26791-001.ko",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_finalholdout0509c_26791_001",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "low",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "low",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "light",
+        "status": "passed",
+        "notes": [
+          "验证任务: finalholdout0509c-26791",
+          "构建状态: built",
+          "风险等级: low",
+          "验证档位: standard",
+          "验证强度: light",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "finalholdout0509c-26791",
+        "attempt_id": "finalholdout0509c-26791-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "finalholdout0509c-26791",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "2a287881d36b11d21142377a2aa71bada7634456bdc7cbb7a6166f248e5ec7f9",
+            "current_changed_line_count": 25,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T05:34:16.100638Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/output/patchweaver-finalholdout0509c-26791-001.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-09T05:34:19.561366+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/finalholdout0509c-26791/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    }
+  ]
+}

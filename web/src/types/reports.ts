@@ -1,4 +1,4 @@
-import type { ReplayPayload, TaskSummary } from "./tasks";
+import type { AgentDecisionSummary, ReplayPayload, TaskSummary } from "./tasks";
 
 export type EvaluationGroupItem = {
   fixture_group: string;
@@ -82,6 +82,7 @@ export type TaskReportResponse = {
     json?: Record<string, unknown> | null;
     markdown?: string | null;
   };
+  agent_decision_summary?: AgentDecisionSummary;
   latest_failure?: Record<string, unknown> | null;
   latest_validation?: Record<string, unknown> | null;
   evaluation_summary?: Record<string, unknown> | null;

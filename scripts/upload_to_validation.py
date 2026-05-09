@@ -535,7 +535,7 @@ else:
             PYTHON_BIN=""
             for candidate in {remote_python} /usr/bin/python3 python3 python; do
               if [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; then
-                if "$candidate" -c "mods = ['paramiko', 'fastapi', 'uvicorn', 'typer', 'pydantic', 'yaml', 'jinja2', 'unidiff', 'rich']; [__import__(name) for name in mods]" >/dev/null 2>&1; then
+                if "$candidate" -c "mods = ['paramiko', 'fastapi', 'httpx', 'uvicorn', 'typer', 'pydantic', 'yaml', 'jinja2', 'unidiff', 'rich']; [__import__(name) for name in mods]" >/dev/null 2>&1; then
                   PYTHON_BIN="$candidate"
                   break
                 fi

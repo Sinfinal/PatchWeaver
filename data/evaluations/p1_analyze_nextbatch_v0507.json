@@ -1,0 +1,1996 @@
+{
+  "mode": "analyze",
+  "profile": "dev",
+  "task_prefix": "p1next0507",
+  "max_run_attempts": null,
+  "run_timeout_sec": 900,
+  "stable_baseline_timeout_sec": 600,
+  "prepare_stable_baseline": true,
+  "only_positive_candidates": false,
+  "positive_pool_fixture": "/home/patchweaver/current/evaluations/fixtures/challenge_positive_pool_confirmed_v0426.json",
+  "known_kpatch_constraint_fixture": "/home/patchweaver/current/evaluations/fixtures/challenge_kpatch_constraint_pool_v0427.json",
+  "include_known_pool_cases": false,
+  "positive_pool_target": 10,
+  "min_livepatchability_score": 75,
+  "only_high_livepatchability": true,
+  "rag_seed_fixture": "/home/patchweaver/current/evaluations/fixtures/rag_seed_linux_kernel_2024_batch200.json",
+  "config_fragment_dir": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments",
+  "minimal_config_fragments_written": [
+    "CVE-2024-26793",
+    "CVE-2024-26754",
+    "CVE-2024-26747",
+    "CVE-2024-26716",
+    "CVE-2024-26715",
+    "CVE-2024-26651",
+    "CVE-2024-26600",
+    "CVE-2024-26807",
+    "CVE-2024-26803",
+    "CVE-2024-26730",
+    "CVE-2024-26684"
+  ],
+  "positive_pool_added": [],
+  "project_root": "/home/patchweaver/current",
+  "workspace_root": "/home/patchweaver/current/workspaces",
+  "summary": {
+    "total_cases": 12,
+    "representative_total": 12,
+    "representative_success_rate": 0.0,
+    "average_attempts": 0.0,
+    "bucket_counts": {
+      "unbucketed": 6,
+      "feature_not_enabled": 4,
+      "buildable_and_should_pass": 2
+    },
+    "tier_counts": {
+      "development_only_high_risk": 4,
+      "deferred_vmlinux_target": 1,
+      "development_only_feature_gate": 4,
+      "positive_candidate_livepatchability_high": 2,
+      "development_only_source_or_analysis_error": 1
+    },
+    "role_counts": {
+      "development_sample": 9,
+      "deferred_sample": 1,
+      "screening_candidate": 2
+    },
+    "livepatchability_tier_counts": {
+      "low": 9,
+      "medium": 1,
+      "high": 2
+    },
+    "livepatchability_high": [
+      "CVE-2024-26803",
+      "CVE-2024-26730"
+    ],
+    "confirmed_positive_acceptance": [],
+    "positive_pool_candidates": [
+      "CVE-2024-26803",
+      "CVE-2024-26730"
+    ],
+    "stable_bucket_ready": [
+      "CVE-2024-26715",
+      "CVE-2024-26651",
+      "CVE-2024-26600",
+      "CVE-2024-26807",
+      "CVE-2024-26803",
+      "CVE-2024-26730"
+    ],
+    "rag_seed_hits": [
+      "CVE-2024-26793",
+      "CVE-2024-26754",
+      "CVE-2024-26747",
+      "CVE-2024-26716",
+      "CVE-2024-26715",
+      "CVE-2024-26651",
+      "CVE-2024-26600",
+      "CVE-2024-26807",
+      "CVE-2024-26803",
+      "CVE-2024-26730",
+      "CVE-2024-26724",
+      "CVE-2024-26684"
+    ],
+    "known_pool_skipped": [],
+    "stable_source_alignment_required": [],
+    "stable_baseline_prepared": [],
+    "minimal_config_fragments": [
+      "CVE-2024-26793",
+      "CVE-2024-26754",
+      "CVE-2024-26747",
+      "CVE-2024-26716",
+      "CVE-2024-26715",
+      "CVE-2024-26651",
+      "CVE-2024-26600",
+      "CVE-2024-26807",
+      "CVE-2024-26803",
+      "CVE-2024-26730",
+      "CVE-2024-26684"
+    ],
+    "rag_subsystem_counts": {
+      "drivers/net": 6,
+      "drivers/usb": 3,
+      "drivers/phy": 1,
+      "drivers/spi": 1,
+      "drivers/hwmon": 1
+    },
+    "positive_pool_target": 10,
+    "current_positive_pool_size": 6,
+    "projected_positive_pool_size": 6,
+    "positive_pool_gap": 4
+  },
+  "results": [
+    {
+      "cve_id": "CVE-2024-26793",
+      "task_id": "p1next0507-26793",
+      "mode": "analyze",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "minimal_livepatch_wrap",
+      "preferred_route": "minimal_livepatch_wrap",
+      "direct_apply_viable": true,
+      "high_risk_count": 1,
+      "dominant_risk_types": [
+        "init_code_change"
+      ],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "命中 1 类热补丁约束：init_code_change，涉及函数 gtp_init，建议原语 direct_apply, wrapper，direct apply 仅保留为对照或回退路线",
+      "target_files": [
+        "drivers/net/gtp.c"
+      ],
+      "critical_calls_count": 11,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 4,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "93dd420bc41531c9a31498b9538ca83ba6ec191e^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/gtp.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "gtp_init"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 13,
+        "added_line_count": 6,
+        "removed_line_count": 7,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": null,
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_high_risk",
+      "reason": "分析结果显示改写风险偏高，暂不作为正向验收样例",
+      "stable_bucket_ready": false,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "gtp: fix use-after-free and null-ptr-deref in gtp_newlink()",
+      "inferred_build_targets": [
+        "vmlinux"
+      ],
+      "build_target_states": [
+        "disabled"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/net/gtp.c",
+          "target": "vmlinux",
+          "state": "disabled"
+        }
+      ],
+      "module_target_candidate": false,
+      "vmlinux_target_candidate": true,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_GTP": "m"
+        },
+        "target_files": [
+          "drivers/net/gtp.c"
+        ],
+        "findings": [
+          {
+            "type": "object_gate",
+            "config": "CONFIG_GTP",
+            "token": "gtp.o",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_GTP) += gtp.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_GTP=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26793.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26793.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26793.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 0,
+        "tier": "low",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "目标落到 vmlinux 或未知内建路径",
+          "当前 .config 未启用目标源码",
+          "约束诊断不是纯低风险路线"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/net/gtp.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "gtp_init"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 13,
+          "added_line_count": 6,
+          "removed_line_count": 7,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 0,
+      "livepatchability_tier": "low"
+    },
+    {
+      "cve_id": "CVE-2024-26754",
+      "task_id": "p1next0507-26754",
+      "mode": "analyze",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "minimal_livepatch_wrap",
+      "preferred_route": "minimal_livepatch_wrap",
+      "direct_apply_viable": true,
+      "high_risk_count": 1,
+      "dominant_risk_types": [
+        "init_code_change"
+      ],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "命中 1 类热补丁约束：init_code_change，涉及函数 gtp_init，建议原语 direct_apply, wrapper，direct apply 仅保留为对照或回退路线",
+      "target_files": [
+        "drivers/net/gtp.c"
+      ],
+      "critical_calls_count": 9,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 5,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "ba6b8b02a3314e62571a540efa96560888c5f03e^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/gtp.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "gtp_init"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 11,
+        "added_line_count": 5,
+        "removed_line_count": 6,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": null,
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_high_risk",
+      "reason": "分析结果显示改写风险偏高，暂不作为正向验收样例",
+      "stable_bucket_ready": false,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "gtp: fix use-after-free and null-ptr-deref in gtp_genl_dump_pdp()",
+      "inferred_build_targets": [
+        "vmlinux"
+      ],
+      "build_target_states": [
+        "disabled"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/net/gtp.c",
+          "target": "vmlinux",
+          "state": "disabled"
+        }
+      ],
+      "module_target_candidate": false,
+      "vmlinux_target_candidate": true,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_GTP": "m"
+        },
+        "target_files": [
+          "drivers/net/gtp.c"
+        ],
+        "findings": [
+          {
+            "type": "object_gate",
+            "config": "CONFIG_GTP",
+            "token": "gtp.o",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_GTP) += gtp.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_GTP=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26754.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26754.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26754.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 0,
+        "tier": "low",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "目标落到 vmlinux 或未知内建路径",
+          "当前 .config 未启用目标源码",
+          "约束诊断不是纯低风险路线"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/net/gtp.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "gtp_init"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 11,
+          "added_line_count": 5,
+          "removed_line_count": 6,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 0,
+      "livepatchability_tier": "low"
+    },
+    {
+      "cve_id": "CVE-2024-26747",
+      "task_id": "p1next0507-26747",
+      "mode": "analyze",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "state_preserving_wrap",
+      "preferred_route": "state_preserving_wrap",
+      "direct_apply_viable": true,
+      "high_risk_count": 1,
+      "dominant_risk_types": [
+        "struct_layout_change"
+      ],
+      "requires_callback": false,
+      "requires_shadow_variable": true,
+      "summary": "命中 1 类热补丁约束：struct_layout_change，涉及函数 usb_role_switch_get, fwnode_usb_role_switch_get，建议原语 direct_apply, shadow_variable, wrapper，direct apply 仅保留为对照或回退路线",
+      "target_files": [
+        "drivers/usb/roles/class.c"
+      ],
+      "critical_calls_count": 9,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 9,
+      "target_function_count": 4,
+      "stable_source_baseline_ref": "4b45829440b1b208948b39cc71f77a37a2536734^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/usb/roles/class.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "static const struct class role_class = {",
+          "usb_role_switch_get",
+          "fwnode_usb_role_switch_get",
+          "EXPORT_SYMBOL_GPL",
+          "struct usb_role_switch *",
+          "usb_role_switch_register"
+        ],
+        "touched_function_count": 6,
+        "changed_line_count": 18,
+        "added_line_count": 11,
+        "removed_line_count": 7,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": true,
+        "risk_markers": [
+          "struct_or_type_definition_change"
+        ]
+      },
+      "sample_bucket": null,
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_high_risk",
+      "reason": "分析结果显示改写风险偏高，暂不作为正向验收样例",
+      "stable_bucket_ready": false,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/usb",
+      "rag_summary": "usb: roles: fix NULL pointer issue when put module's reference",
+      "inferred_build_targets": [
+        "vmlinux"
+      ],
+      "build_target_states": [
+        "built_in"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/usb/roles/class.c",
+          "target": "vmlinux",
+          "state": "built_in"
+        }
+      ],
+      "module_target_candidate": false,
+      "vmlinux_target_candidate": true,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_OF": "m",
+          "CONFIG_PCI": "m",
+          "CONFIG_USB": "m",
+          "CONFIG_USB_GADGET": "m",
+          "CONFIG_USB_PHY": "m",
+          "CONFIG_USB_ROLE_SWITCH": "m",
+          "CONFIG_USB_SUPPORT": "m"
+        },
+        "target_files": [
+          "drivers/usb/roles/class.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB_PHY",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_USB_PHY)\t\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_USB)\t\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB_SUPPORT",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_USB_SUPPORT)\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_PCI",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_PCI)\t\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB_GADGET",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_USB_GADGET)\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_OF",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_OF)\t\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB_ROLE_SWITCH",
+            "token": "roles/",
+            "makefile_dir": "drivers/usb",
+            "line": "obj-$(CONFIG_USB_ROLE_SWITCH)\t+= roles/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_USB_ROLE_SWITCH",
+            "token": "roles.o",
+            "makefile_dir": "drivers/usb/roles",
+            "line": "obj-$(CONFIG_USB_ROLE_SWITCH)\t\t+= roles.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_OF=m\nCONFIG_PCI=m\nCONFIG_USB=m\nCONFIG_USB_GADGET=m\nCONFIG_USB_PHY=m\nCONFIG_USB_ROLE_SWITCH=m\nCONFIG_USB_SUPPORT=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26747.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26747.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26747.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 0,
+        "tier": "low",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "目标落到 vmlinux 或未知内建路径",
+          "触达 6 个函数",
+          "约束诊断不是纯低风险路线",
+          "修改结构体或类型定义"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/usb/roles/class.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "static const struct class role_class = {",
+            "usb_role_switch_get",
+            "fwnode_usb_role_switch_get",
+            "EXPORT_SYMBOL_GPL",
+            "struct usb_role_switch *",
+            "usb_role_switch_register"
+          ],
+          "touched_function_count": 6,
+          "changed_line_count": 18,
+          "added_line_count": 11,
+          "removed_line_count": 7,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": true,
+          "risk_markers": [
+            "struct_or_type_definition_change"
+          ]
+        }
+      },
+      "livepatchability_score": 0,
+      "livepatchability_tier": "low"
+    },
+    {
+      "cve_id": "CVE-2024-26716",
+      "task_id": "p1next0507-26716",
+      "mode": "analyze",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/usb/core/hub.c"
+      ],
+      "critical_calls_count": 4,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 4,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "ed85777c640cf9e6920bb1b60ed8cd48e1f4d873^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/usb/core/hub.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "update_port_device_state"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 16,
+        "added_line_count": 12,
+        "removed_line_count": 4,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": null,
+      "acceptance_role": "deferred_sample",
+      "screening_tier": "deferred_vmlinux_target",
+      "reason": "低风险候选落到 vmlinux 或未知构建目标，本轮快速扩池只推进具体 .ko 模块目标",
+      "stable_bucket_ready": false,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/usb",
+      "rag_summary": "usb: core: Prevent null pointer dereference in",
+      "inferred_build_targets": [
+        "vmlinux"
+      ],
+      "build_target_states": [
+        "built_in"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/usb/core/hub.c",
+          "target": "vmlinux",
+          "state": "built_in"
+        }
+      ],
+      "module_target_candidate": false,
+      "vmlinux_target_candidate": true,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_OF": "m",
+          "CONFIG_PCI": "m",
+          "CONFIG_USB": "m",
+          "CONFIG_USB_GADGET": "m",
+          "CONFIG_USB_PHY": "m",
+          "CONFIG_USB_SUPPORT": "m"
+        },
+        "target_files": [
+          "drivers/usb/core/hub.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB_PHY",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_USB_PHY)\t\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_USB)\t\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB_SUPPORT",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_USB_SUPPORT)\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_PCI",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_PCI)\t\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB_GADGET",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_USB_GADGET)\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_OF",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_OF)\t\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB",
+            "token": "core/",
+            "makefile_dir": "drivers/usb",
+            "line": "obj-$(CONFIG_USB)\t\t+= core/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_USB",
+            "token": "usbcore.o",
+            "makefile_dir": "drivers/usb/core",
+            "line": "obj-$(CONFIG_USB)\t\t+= usbcore.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_OF=m\nCONFIG_PCI=m\nCONFIG_USB=m\nCONFIG_USB_GADGET=m\nCONFIG_USB_PHY=m\nCONFIG_USB_SUPPORT=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26716.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26716.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26716.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 52,
+        "tier": "medium",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "目标落到 vmlinux 或未知内建路径"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/usb/core/hub.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "update_port_device_state"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 16,
+          "added_line_count": 12,
+          "removed_line_count": 4,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 52,
+      "livepatchability_tier": "medium"
+    },
+    {
+      "cve_id": "CVE-2024-26715",
+      "task_id": "p1next0507-26715",
+      "mode": "analyze",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/usb/dwc3/gadget.c"
+      ],
+      "critical_calls_count": 4,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 3,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "c7ebd8149ee519d27232e6e4940e9c02071b568b^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/usb/dwc3/gadget.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "dwc3_gadget_suspend"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 6,
+        "added_line_count": 2,
+        "removed_line_count": 4,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "feature_not_enabled",
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_feature_gate",
+      "reason": "目标文件在当前验证机配置下不可构建，先归入配置门控回归",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/usb",
+      "rag_summary": "usb: dwc3: gadget: Fix NULL pointer dereference in",
+      "inferred_build_targets": [
+        "vmlinux"
+      ],
+      "build_target_states": [
+        "disabled"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/usb/dwc3/gadget.c",
+          "target": "vmlinux",
+          "state": "disabled"
+        }
+      ],
+      "module_target_candidate": false,
+      "vmlinux_target_candidate": true,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_OF": "m",
+          "CONFIG_PCI": "m",
+          "CONFIG_USB": "m",
+          "CONFIG_USB_DWC3": "m",
+          "CONFIG_USB_GADGET": "m",
+          "CONFIG_USB_PHY": "m",
+          "CONFIG_USB_SUPPORT": "m"
+        },
+        "target_files": [
+          "drivers/usb/dwc3/gadget.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB_PHY",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_USB_PHY)\t\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_USB)\t\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB_SUPPORT",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_USB_SUPPORT)\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_PCI",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_PCI)\t\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB_GADGET",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_USB_GADGET)\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_OF",
+            "token": "usb/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_OF)\t\t+= usb/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB_DWC3",
+            "token": "dwc3/",
+            "makefile_dir": "drivers/usb",
+            "line": "obj-$(CONFIG_USB_DWC3)\t\t+= dwc3/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_USB_DWC3",
+            "token": "dwc3.o",
+            "makefile_dir": "drivers/usb/dwc3",
+            "line": "obj-$(CONFIG_USB_DWC3)\t\t\t+= dwc3.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_OF=m\nCONFIG_PCI=m\nCONFIG_USB=m\nCONFIG_USB_DWC3=m\nCONFIG_USB_GADGET=m\nCONFIG_USB_PHY=m\nCONFIG_USB_SUPPORT=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26715.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26715.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26715.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 7,
+        "tier": "low",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "目标落到 vmlinux 或未知内建路径",
+          "当前 .config 未启用目标源码"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/usb/dwc3/gadget.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "dwc3_gadget_suspend"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 6,
+          "added_line_count": 2,
+          "removed_line_count": 4,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 7,
+      "livepatchability_tier": "low"
+    },
+    {
+      "cve_id": "CVE-2024-26651",
+      "task_id": "p1next0507-26651",
+      "mode": "analyze",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/net/usb/sr9800.c"
+      ],
+      "critical_calls_count": 1,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 4,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "e39a3a14eafcf17f03c037290b78c8f483529028^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/usb/sr9800.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "sr9800_bind"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 5,
+        "added_line_count": 3,
+        "removed_line_count": 2,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "feature_not_enabled",
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_feature_gate",
+      "reason": "目标文件在当前验证机配置下不可构建，先归入配置门控回归",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "sr9800: Add check for usbnet_get_endpoints",
+      "inferred_build_targets": [
+        "vmlinux"
+      ],
+      "build_target_states": [
+        "disabled"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/net/usb/sr9800.c",
+          "target": "vmlinux",
+          "state": "disabled"
+        }
+      ],
+      "module_target_candidate": false,
+      "vmlinux_target_candidate": true,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_USB_NET_DRIVERS": "m",
+          "CONFIG_USB_NET_SR9800": "m"
+        },
+        "target_files": [
+          "drivers/net/usb/sr9800.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_USB_NET_DRIVERS",
+            "token": "usb/",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_USB_NET_DRIVERS) += usb/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_USB_NET_SR9800",
+            "token": "sr9800.o",
+            "makefile_dir": "drivers/net/usb",
+            "line": "obj-$(CONFIG_USB_NET_SR9800)\t+= sr9800.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_USB_NET_DRIVERS=m\nCONFIG_USB_NET_SR9800=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26651.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26651.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26651.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 17,
+        "tier": "low",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "目标落到 vmlinux 或未知内建路径",
+          "当前 .config 未启用目标源码"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/net/usb/sr9800.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "sr9800_bind"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 5,
+          "added_line_count": 3,
+          "removed_line_count": 2,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 17,
+      "livepatchability_tier": "low"
+    },
+    {
+      "cve_id": "CVE-2024-26600",
+      "task_id": "p1next0507-26600",
+      "mode": "analyze",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/phy/ti/phy-omap-usb2.c"
+      ],
+      "critical_calls_count": 3,
+      "key_conditions_count": 2,
+      "key_side_effects_count": 2,
+      "target_function_count": 2,
+      "stable_source_baseline_ref": "14ef61594a5a286ae0d493b8acbf9eac46fd04c4^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/phy/ti/phy-omap-usb2.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "omap_usb_set_vbus",
+          "omap_usb_start_srp"
+        ],
+        "touched_function_count": 2,
+        "changed_line_count": 5,
+        "added_line_count": 2,
+        "removed_line_count": 3,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "feature_not_enabled",
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_feature_gate",
+      "reason": "目标文件在当前验证机配置下不可构建，先归入配置门控回归",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "drivers/phy",
+      "rag_summary": "phy: ti: phy-omap-usb2: Fix NULL pointer dereference for SRP",
+      "inferred_build_targets": [
+        "vmlinux"
+      ],
+      "build_target_states": [
+        "disabled"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/phy/ti/phy-omap-usb2.c",
+          "target": "vmlinux",
+          "state": "disabled"
+        }
+      ],
+      "module_target_candidate": false,
+      "vmlinux_target_candidate": true,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_GENERIC_PHY": "m",
+          "CONFIG_OMAP_USB2": "m"
+        },
+        "target_files": [
+          "drivers/phy/ti/phy-omap-usb2.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_GENERIC_PHY",
+            "token": "phy/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_GENERIC_PHY)\t+= phy/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_OMAP_USB2",
+            "token": "phy-omap-usb2.o",
+            "makefile_dir": "drivers/phy/ti",
+            "line": "obj-$(CONFIG_OMAP_USB2)\t\t\t+= phy-omap-usb2.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_GENERIC_PHY=m\nCONFIG_OMAP_USB2=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26600.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26600.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26600.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 7,
+        "tier": "low",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "目标落到 vmlinux 或未知内建路径",
+          "当前 .config 未启用目标源码"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/phy/ti/phy-omap-usb2.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "omap_usb_set_vbus",
+            "omap_usb_start_srp"
+          ],
+          "touched_function_count": 2,
+          "changed_line_count": 5,
+          "added_line_count": 2,
+          "removed_line_count": 3,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 7,
+      "livepatchability_tier": "low"
+    },
+    {
+      "cve_id": "CVE-2024-26807",
+      "task_id": "p1next0507-26807",
+      "mode": "analyze",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/spi/spi-cadence-quadspi.c"
+      ],
+      "critical_calls_count": 9,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 4,
+      "target_function_count": 3,
+      "stable_source_baseline_ref": "03f1573c9587029730ca68503f5062105b122f61^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/spi/spi-cadence-quadspi.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "cqspi_remove",
+          "cqspi_suspend",
+          "cqspi_resume"
+        ],
+        "touched_function_count": 3,
+        "changed_line_count": 7,
+        "added_line_count": 2,
+        "removed_line_count": 5,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": true,
+        "risk_markers": [
+          "struct_or_type_definition_change"
+        ]
+      },
+      "sample_bucket": "feature_not_enabled",
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_feature_gate",
+      "reason": "目标文件在当前验证机配置下不可构建，先归入配置门控回归",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/spi",
+      "rag_summary": "spi: cadence-qspi: fix pointer reference in runtime PM hooks",
+      "inferred_build_targets": [
+        "vmlinux"
+      ],
+      "build_target_states": [
+        "disabled"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/spi/spi-cadence-quadspi.c",
+          "target": "vmlinux",
+          "state": "disabled"
+        }
+      ],
+      "module_target_candidate": false,
+      "vmlinux_target_candidate": true,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_SPI": "m",
+          "CONFIG_SPI_CADENCE_QUADSPI": "m"
+        },
+        "target_files": [
+          "drivers/spi/spi-cadence-quadspi.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_SPI",
+            "token": "spi/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_SPI)\t\t+= spi/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_SPI_CADENCE_QUADSPI",
+            "token": "spi-cadence-quadspi.o",
+            "makefile_dir": "drivers/spi",
+            "line": "obj-$(CONFIG_SPI_CADENCE_QUADSPI)\t+= spi-cadence-quadspi.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_SPI=m\nCONFIG_SPI_CADENCE_QUADSPI=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26807.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26807.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26807.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 0,
+        "tier": "low",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "目标落到 vmlinux 或未知内建路径",
+          "当前 .config 未启用目标源码",
+          "触达 3 个函数",
+          "修改结构体或类型定义"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/spi/spi-cadence-quadspi.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "cqspi_remove",
+            "cqspi_suspend",
+            "cqspi_resume"
+          ],
+          "touched_function_count": 3,
+          "changed_line_count": 7,
+          "added_line_count": 2,
+          "removed_line_count": 5,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": true,
+          "risk_markers": [
+            "struct_or_type_definition_change"
+          ]
+        }
+      },
+      "livepatchability_score": 0,
+      "livepatchability_tier": "low"
+    },
+    {
+      "cve_id": "CVE-2024-26803",
+      "task_id": "p1next0507-26803",
+      "mode": "analyze",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/net/veth.c"
+      ],
+      "critical_calls_count": 7,
+      "key_conditions_count": 2,
+      "key_side_effects_count": 8,
+      "target_function_count": 3,
+      "stable_source_baseline_ref": "16edf51f33f52dff70ed455bc40a6cc443c04664^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/veth.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "veth_enable_xdp",
+          "veth_disable_xdp",
+          "veth_xdp_set"
+        ],
+        "touched_function_count": 3,
+        "changed_line_count": 32,
+        "added_line_count": 15,
+        "removed_line_count": 17,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "screening_candidate",
+      "screening_tier": "positive_candidate_livepatchability_high",
+      "reason": "livepatchability-first 打分通过，允许进入 full run",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "net: veth: clear GRO when clearing XDP even when down",
+      "inferred_build_targets": [
+        "drivers/net/veth.ko"
+      ],
+      "build_target_states": [
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/net/veth.c",
+          "target": "drivers/net/veth.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_VETH": "m"
+        },
+        "target_files": [
+          "drivers/net/veth.c"
+        ],
+        "findings": [
+          {
+            "type": "object_gate",
+            "config": "CONFIG_VETH",
+            "token": "veth.o",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_VETH) += veth.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_VETH=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26803.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26803.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26803.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数仍处于中等范围",
+          "只触达 1 个源码文件",
+          "约束诊断给出低风险路线"
+        ],
+        "penalties": [
+          "触达 3 个函数"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/net/veth.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "veth_enable_xdp",
+            "veth_disable_xdp",
+            "veth_xdp_set"
+          ],
+          "touched_function_count": 3,
+          "changed_line_count": 32,
+          "added_line_count": 15,
+          "removed_line_count": 17,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high"
+    },
+    {
+      "cve_id": "CVE-2024-26730",
+      "task_id": "p1next0507-26730",
+      "mode": "analyze",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "direct_apply_patch",
+      "preferred_route": "direct_apply_patch",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+      "target_files": [
+        "drivers/hwmon/nct6775-core.c"
+      ],
+      "critical_calls_count": 2,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 3,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "f006c45a3ea424f8f6c8e4b9283bc245ce2a4d0f^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/hwmon/nct6775-core.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "nct6775_probe"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 15,
+        "added_line_count": 12,
+        "removed_line_count": 3,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "screening_candidate",
+      "screening_tier": "positive_candidate_livepatchability_high",
+      "reason": "livepatchability-first 打分通过，允许进入 full run",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/hwmon",
+      "rag_summary": "hwmon: (nct6775) Fix access to temperature configuration registers",
+      "inferred_build_targets": [
+        "drivers/hwmon/nct6775-core.ko"
+      ],
+      "build_target_states": [
+        "module"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/hwmon/nct6775-core.c",
+          "target": "drivers/hwmon/nct6775-core.ko",
+          "state": "module"
+        }
+      ],
+      "module_target_candidate": true,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_HWMON": "m",
+          "CONFIG_SENSORS_NCT6775_CORE": "m"
+        },
+        "target_files": [
+          "drivers/hwmon/nct6775-core.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_HWMON",
+            "token": "hwmon/",
+            "makefile_dir": "drivers",
+            "line": "obj-$(CONFIG_HWMON)\t\t+= hwmon/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_SENSORS_NCT6775_CORE",
+            "token": "nct6775-core.o",
+            "makefile_dir": "drivers/hwmon",
+            "line": "obj-$(CONFIG_SENSORS_NCT6775_CORE) += nct6775-core.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_HWMON=m\nCONFIG_SENSORS_NCT6775_CORE=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26730.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26730.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26730.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 100,
+        "tier": "high",
+        "full_run_recommended": true,
+        "boosts": [
+          "目标能映射到具体 .ko 模块",
+          "只涉及 1 个模块目标",
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [],
+        "shape": {
+          "touched_files": [
+            "drivers/hwmon/nct6775-core.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "nct6775_probe"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 15,
+          "added_line_count": 12,
+          "removed_line_count": 3,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 100,
+      "livepatchability_tier": "high"
+    },
+    {
+      "cve_id": "CVE-2024-26724",
+      "task_id": "p1next0507-26724",
+      "mode": "analyze",
+      "profile": "dev",
+      "create_or_analyze_status": "error",
+      "create_or_analyze_error": "命令失败: analyze --task p1next0507-26724 --json\nSTDERR:\n错误: CVE-2024-26724 未找到可下载的 stable/upstream patch 来源 来源抓取轨迹已写入 /home/patchweaver/current/workspaces/p1next0507-26724/analysis/trace/source_fetch_trace.json\n\nSTDOUT:\n",
+      "sample_bucket": null,
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_source_or_analysis_error",
+      "reason": "create/analyze 阶段未完成，先作为开发样例观察",
+      "stable_bucket_ready": false,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "net/mlx5: DPLL, Fix possible use after free after delayed work timer",
+      "inferred_build_targets": [],
+      "build_target_states": [],
+      "inferred_build_target_details": [],
+      "module_target_candidate": false,
+      "vmlinux_target_candidate": false,
+      "minimal_config_repair": {
+        "status": "no_config_gate_found",
+        "config_delta": {},
+        "target_files": [],
+        "findings": [],
+        "reason": "未在 Kbuild/Makefile 中定位到明确 CONFIG 门控"
+      },
+      "minimal_config_fragment": "",
+      "livepatchability": {
+        "score": 7,
+        "tier": "low",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数仍处于中等范围"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "未能从 hunk header 识别函数",
+          "约束诊断不是纯低风险路线"
+        ],
+        "shape": {}
+      },
+      "livepatchability_score": 7,
+      "livepatchability_tier": "low"
+    },
+    {
+      "cve_id": "CVE-2024-26684",
+      "task_id": "p1next0507-26684",
+      "mode": "analyze",
+      "profile": "dev",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "state_preserving_wrap",
+      "preferred_route": "state_preserving_wrap",
+      "direct_apply_viable": true,
+      "high_risk_count": 3,
+      "dominant_risk_types": [
+        "global_data_change",
+        "header_abi_change",
+        "static_local_change",
+        "struct_layout_change"
+      ],
+      "requires_callback": false,
+      "requires_shadow_variable": true,
+      "summary": "命中 4 类热补丁约束：global_data_change, header_abi_change, static_local_change, struct_layout_change，涉及函数 dwxgmac3_handle_dma_err, dwxgmac3_safety_feat_config，建议原语 direct_apply, shadow_variable, wrapper，direct apply 仅保留为对照或回退路线",
+      "target_files": [
+        "drivers/net/ethernet/stmicro/stmmac/common.h",
+        "drivers/net/ethernet/stmicro/stmmac/dwxgmac2.h",
+        "drivers/net/ethernet/stmicro/stmmac/dwxgmac2_core.c"
+      ],
+      "critical_calls_count": 10,
+      "key_conditions_count": 0,
+      "key_side_effects_count": 6,
+      "target_function_count": 3,
+      "stable_source_baseline_ref": "7e0ff50131e9d1aa507be8e670d38e9300a5f5bf^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/net/ethernet/stmicro/stmmac/common.h",
+          "drivers/net/ethernet/stmicro/stmmac/dwxgmac2.h",
+          "drivers/net/ethernet/stmicro/stmmac/dwxgmac2_core.c"
+        ],
+        "touched_file_count": 3,
+        "touched_functions": [
+          "struct stmmac_safety_stats {",
+          "static const struct dwxgmac3_error_desc dwxgmac3_dma_errors[32]= {",
+          "dwxgmac3_handle_dma_err",
+          "dwxgmac3_safety_feat_config",
+          "dwxgmac3_safety_feat_irq_status",
+          "static const struct dwxgmac3_error {"
+        ],
+        "touched_function_count": 6,
+        "changed_line_count": 58,
+        "added_line_count": 56,
+        "removed_line_count": 2,
+        "guard_like": false,
+        "touches_kbuild": false,
+        "touches_header": true,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": true,
+        "touches_struct_definition": false,
+        "risk_markers": [
+          "module_export_or_section_marker",
+          "global_or_static_data_change",
+          "header_change"
+        ]
+      },
+      "sample_bucket": null,
+      "acceptance_role": "development_sample",
+      "screening_tier": "development_only_high_risk",
+      "reason": "分析结果显示改写风险偏高，暂不作为正向验收样例",
+      "stable_bucket_ready": false,
+      "positive_pool_candidate": false,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch100",
+      "rag_subsystem": "drivers/net",
+      "rag_summary": "net: stmmac: xgmac: fix handling of DPP safety error for DMA channels",
+      "inferred_build_targets": [
+        "vmlinux",
+        "vmlinux",
+        "vmlinux"
+      ],
+      "build_target_states": [
+        "built_in",
+        "built_in",
+        "disabled"
+      ],
+      "inferred_build_target_details": [
+        {
+          "file": "drivers/net/ethernet/stmicro/stmmac/common.h",
+          "target": "vmlinux",
+          "state": "built_in"
+        },
+        {
+          "file": "drivers/net/ethernet/stmicro/stmmac/dwxgmac2.h",
+          "target": "vmlinux",
+          "state": "built_in"
+        },
+        {
+          "file": "drivers/net/ethernet/stmicro/stmmac/dwxgmac2_core.c",
+          "target": "vmlinux",
+          "state": "disabled"
+        }
+      ],
+      "module_target_candidate": false,
+      "vmlinux_target_candidate": true,
+      "minimal_config_repair": {
+        "status": "repairable",
+        "config_delta": {
+          "CONFIG_ETHERNET": "m",
+          "CONFIG_NET_VENDOR_STMICRO": "m",
+          "CONFIG_STMMAC_ETH": "m"
+        },
+        "target_files": [
+          "drivers/net/ethernet/stmicro/stmmac/common.h",
+          "drivers/net/ethernet/stmicro/stmmac/dwxgmac2.h",
+          "drivers/net/ethernet/stmicro/stmmac/dwxgmac2_core.c"
+        ],
+        "findings": [
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_ETHERNET",
+            "token": "ethernet/",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_ETHERNET) += ethernet/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_NET_VENDOR_STMICRO",
+            "token": "stmicro/",
+            "makefile_dir": "drivers/net/ethernet",
+            "line": "obj-$(CONFIG_NET_VENDOR_STMICRO) += stmicro/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_STMMAC_ETH",
+            "token": "stmmac/",
+            "makefile_dir": "drivers/net/ethernet/stmicro",
+            "line": "obj-$(CONFIG_STMMAC_ETH) += stmmac/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_ETHERNET",
+            "token": "ethernet/",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_ETHERNET) += ethernet/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_NET_VENDOR_STMICRO",
+            "token": "stmicro/",
+            "makefile_dir": "drivers/net/ethernet",
+            "line": "obj-$(CONFIG_NET_VENDOR_STMICRO) += stmicro/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_STMMAC_ETH",
+            "token": "stmmac/",
+            "makefile_dir": "drivers/net/ethernet/stmicro",
+            "line": "obj-$(CONFIG_STMMAC_ETH) += stmmac/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_ETHERNET",
+            "token": "ethernet/",
+            "makefile_dir": "drivers/net",
+            "line": "obj-$(CONFIG_ETHERNET) += ethernet/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_NET_VENDOR_STMICRO",
+            "token": "stmicro/",
+            "makefile_dir": "drivers/net/ethernet",
+            "line": "obj-$(CONFIG_NET_VENDOR_STMICRO) += stmicro/"
+          },
+          {
+            "type": "directory_gate",
+            "config": "CONFIG_STMMAC_ETH",
+            "token": "stmmac/",
+            "makefile_dir": "drivers/net/ethernet/stmicro",
+            "line": "obj-$(CONFIG_STMMAC_ETH) += stmmac/"
+          },
+          {
+            "type": "object_gate",
+            "config": "CONFIG_STMMAC_ETH",
+            "token": "stmmac.o",
+            "makefile_dir": "drivers/net/ethernet/stmicro/stmmac",
+            "line": "obj-$(CONFIG_STMMAC_ETH) += stmmac.o"
+          }
+        ],
+        "reason": "已找到可尝试打开的最小 CONFIG 集合"
+      },
+      "minimal_config_fragment": "CONFIG_ETHERNET=m\nCONFIG_NET_VENDOR_STMICRO=m\nCONFIG_STMMAC_ETH=m\n",
+      "minimal_config_fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26684.config.fragment",
+      "minimal_config_profile": {
+        "status": "fragment_ready",
+        "fragment_path": "data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26684.config.fragment",
+        "merge_config_cmd": "./scripts/kconfig/merge_config.sh .config data/evaluations/p1_analyze_nextbatch_v0507_config_fragments/CVE-2024-26684.config.fragment",
+        "olddefconfig_cmd": "make olddefconfig",
+        "reason": "高分候选遇到 feature_not_enabled 时可用该 fragment 准备正向验证 profile"
+      },
+      "livepatchability": {
+        "score": 0,
+        "tier": "low",
+        "full_run_recommended": false,
+        "boosts": [],
+        "penalties": [
+          "未能映射到具体 .ko 模块",
+          "目标落到 vmlinux 或未知内建路径",
+          "当前 .config 未启用目标源码",
+          "patch 变更行数偏多",
+          "触达 3 个源码文件",
+          "触达 6 个函数",
+          "约束诊断不是纯低风险路线",
+          "修改静态表或全局数据",
+          "修改头文件",
+          "修改导出符号或 section 相关宏"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/net/ethernet/stmicro/stmmac/common.h",
+            "drivers/net/ethernet/stmicro/stmmac/dwxgmac2.h",
+            "drivers/net/ethernet/stmicro/stmmac/dwxgmac2_core.c"
+          ],
+          "touched_file_count": 3,
+          "touched_functions": [
+            "struct stmmac_safety_stats {",
+            "static const struct dwxgmac3_error_desc dwxgmac3_dma_errors[32]= {",
+            "dwxgmac3_handle_dma_err",
+            "dwxgmac3_safety_feat_config",
+            "dwxgmac3_safety_feat_irq_status",
+            "static const struct dwxgmac3_error {"
+          ],
+          "touched_function_count": 6,
+          "changed_line_count": 58,
+          "added_line_count": 56,
+          "removed_line_count": 2,
+          "guard_like": false,
+          "touches_kbuild": false,
+          "touches_header": true,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": true,
+          "touches_struct_definition": false,
+          "risk_markers": [
+            "module_export_or_section_marker",
+            "global_or_static_data_change",
+            "header_change"
+          ]
+        }
+      },
+      "livepatchability_score": 0,
+      "livepatchability_tier": "low"
+    }
+  ]
+}

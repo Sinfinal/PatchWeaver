@@ -322,6 +322,14 @@ class RagConfig(ConfigModel):
     rerank_top_n: int = 6
     corpus_jsonl_path: str = "rag_corpus_batch200/chunks/all_chunks.jsonl"
     import_batch_size: int = 32
+    experience_enabled: bool = True
+    experience_fixture_paths: list[str] = Field(
+        default_factory=lambda: [
+            "evaluations/fixtures/challenge_positive_pool_confirmed_v0426.json",
+            "evaluations/fixtures/challenge_kpatch_constraint_pool_v0427.json",
+        ]
+    )
+    experience_limit: int = 4
 
     def resolve_api_key(self) -> str | None:
         """解析 embedding API Key"""
