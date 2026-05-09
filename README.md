@@ -2,17 +2,10 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/license-MIT-111827?style=flat-square&labelColor=374151&color=10b981"></a>
-  <img alt="AI Agent" src="https://img.shields.io/badge/AI%20Agent-PatchWeaver-0f172a?style=flat-square&labelColor=020617&color=06b6d4">
-  <img alt="Anolis OS" src="https://img.shields.io/badge/Anolis%20OS-ANCK%206.6-1f2937?style=flat-square&labelColor=111827&color=f59e0b">
-  <img alt="kpatch livepatch" src="https://img.shields.io/badge/kpatch-livepatch-1f2937?style=flat-square&labelColor=111827&color=22c55e">
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-1f2937?style=flat-square&labelColor=111827&color=3b82f6">
-</p>
-
-<p align="center">
-  <img alt="Holdout 10/10" src="https://img.shields.io/badge/holdout-10%2F10%20.ko%20built-111827?style=flat-square&labelColor=374151&color=10b981">
-  <img alt="Validation 10/10" src="https://img.shields.io/badge/validation-10%2F10%20passed-111827?style=flat-square&labelColor=374151&color=14b8a6">
-  <img alt="Evidence JSON" src="https://img.shields.io/badge/evidence-JSON%20%2B%20logs-111827?style=flat-square&labelColor=374151&color=64748b">
-  <img alt="Bailian FC MCP" src="https://img.shields.io/badge/Bailian-FC%20%2F%20MCP-111827?style=flat-square&labelColor=374151&color=8b5cf6">
+  <img alt="Anolis OS ANCK" src="https://img.shields.io/badge/Anolis%20OS-ANCK%206.6-1f2937?style=flat-square&labelColor=111827&color=f59e0b">
+  <img alt="kpatch" src="https://img.shields.io/badge/kpatch-livepatch-1f2937?style=flat-square&labelColor=111827&color=22c55e">
+  <img alt="Agent" src="https://img.shields.io/badge/agent-CVE%20livepatch-0f172a?style=flat-square&labelColor=020617&color=06b6d4">
 </p>
 
 # PatchWeaver
