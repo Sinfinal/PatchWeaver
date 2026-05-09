@@ -1,0 +1,141 @@
+{
+  "task_id": "reviewv0510-26726",
+  "plan_id": "reviewv0510-26726-plan-001",
+  "candidate_ids": [
+    "reviewv0510-26726-candidate-003",
+    "reviewv0510-26726-candidate-001",
+    "reviewv0510-26726-candidate-004"
+  ],
+  "selected_recipe": "semantic_guard_rewrite",
+  "selected_route_family": "semantic_guard",
+  "selected_execution_mode": "semantic_guard",
+  "selected_primitives": [
+    "semantic_guard"
+  ],
+  "target_files": [
+    "fs/btrfs/inode.c"
+  ],
+  "rule_hits": [
+    "constraint_review"
+  ],
+  "requires_kernel_scaffold": false,
+  "scaffold_notes": [
+    "优先把官方 patch 收缩为函数局部 guard",
+    "进入构建前需要确认 guard 条件和安全退出路径保留了修复语义"
+  ],
+  "risk_coverage": 0.0,
+  "selection_reason": "优先选择综合得分最高的候选，当前命中 semantic_guard_rewrite，排序得分 0.680",
+  "notes": [
+    "fs/btrfs/inode.c 中存在条件判断或状态转换缺陷，修复围绕条件 `!btrfs_is_free_space_inode(inode)` 展开。 依据：commit 5571e41ec6e56e35f34ae9f5b3a335ef510e0ade upstream.",
+    "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+    "候选数: 3",
+    "命中规则: constraint_review",
+    "路线族: semantic_guard",
+    "执行模式: semantic_guard",
+    "关键条件: !btrfs_is_free_space_inode(inode)",
+    "关键调用: clear_extent_uptodate，btrfs_drop_extent_map_range，btrfs_get_extent",
+    "路线提示: 当前未命中显式热补丁约束，当前按文件级范围继续推进，优先走 direct_apply 路线",
+    "修复意图策略: semantic_guard",
+    "guard 条件: !btrfs_is_free_space_inode(inode)",
+    "约束首选路线: direct_apply_patch",
+    "候选路线: direct_apply_patch",
+    "排序依据: 预估风险 0.04；语义漂移 0.03；构建代价 0.06；历史成功率 36%；历史失败率 64%"
+  ],
+  "candidate_summaries": [
+    {
+      "candidate_id": "reviewv0510-26726-candidate-003",
+      "recipe_name": "semantic_guard_rewrite",
+      "route_family": "semantic_guard",
+      "execution_mode": "semantic_guard",
+      "primitives": [
+        "semantic_guard"
+      ],
+      "target_functions": [
+        "fs/btrfs/inode.c"
+      ],
+      "rule_hits": [
+        "constraint_review"
+      ],
+      "requires_kernel_scaffold": false,
+      "scaffold_notes": [
+        "优先把官方 patch 收缩为函数局部 guard",
+        "进入构建前需要确认 guard 条件和安全退出路径保留了修复语义"
+      ],
+      "expected_risk": 0.04,
+      "expected_semantic_drift": 0.03,
+      "expected_build_cost": 0.06,
+      "history_success_rate": 0.3636,
+      "history_failure_rate": 0.6364,
+      "failure_pressure": 0.0,
+      "ranking_score": 0.6803,
+      "ranking_reasons": [
+        "预估风险 0.04",
+        "语义漂移 0.03",
+        "构建代价 0.06",
+        "历史成功率 36%",
+        "历史失败率 64%"
+      ]
+    },
+    {
+      "candidate_id": "reviewv0510-26726-candidate-001",
+      "recipe_name": "direct_apply_patch",
+      "route_family": "direct_apply",
+      "execution_mode": "direct_patch",
+      "primitives": [
+        "direct_apply"
+      ],
+      "target_functions": [
+        "fs/btrfs/inode.c"
+      ],
+      "rule_hits": [
+        "direct_apply_path"
+      ],
+      "requires_kernel_scaffold": false,
+      "scaffold_notes": [],
+      "expected_risk": 0.08,
+      "expected_semantic_drift": 0.04,
+      "expected_build_cost": 0.08,
+      "history_success_rate": 0.1042,
+      "history_failure_rate": 0.8958,
+      "failure_pressure": 0.0,
+      "ranking_score": 0.5655,
+      "ranking_reasons": [
+        "预估风险 0.08",
+        "语义漂移 0.04",
+        "构建代价 0.08",
+        "历史成功率 10%",
+        "历史失败率 90%"
+      ]
+    },
+    {
+      "candidate_id": "reviewv0510-26726-candidate-004",
+      "recipe_name": "minimal_livepatch_wrap",
+      "route_family": "wrapper",
+      "execution_mode": "template_wrap",
+      "primitives": [
+        "wrapper"
+      ],
+      "target_functions": [
+        "fs/btrfs/inode.c"
+      ],
+      "rule_hits": [
+        "constraint_review"
+      ],
+      "requires_kernel_scaffold": false,
+      "scaffold_notes": [],
+      "expected_risk": 0.19,
+      "expected_semantic_drift": 0.12,
+      "expected_build_cost": 0.2,
+      "history_success_rate": 0.0,
+      "history_failure_rate": 1.0,
+      "failure_pressure": 0.0,
+      "ranking_score": 0.4506,
+      "ranking_reasons": [
+        "预估风险 0.19",
+        "语义漂移 0.12",
+        "构建代价 0.20",
+        "历史失败率 100%"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "cve_id": "CVE-2024-26668",
+  "bug_class": "cve_fix",
+  "root_cause": "nft_limit_eval 中存在边界长度校验缺陷，补丁将条件 `priv->rate == 0 || priv->nsecs < unit` 调整为 `priv->rate == 0`。 依据：overflow",
+  "vulnerability_conditions": [
+    "nft_limit_eval: priv->rate == 0",
+    "nft_limit_eval: check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs)",
+    "nft_limit_init: check_add_overflow(priv->rate, priv->burst, &rate_with_burst)",
+    "nft_limit_init: check_mul_overflow(tmp, priv->burst, &tokens)",
+    "nft_limit_init: check_mul_overflow(priv->nsecs, rate_with_burst, &tmp)"
+  ],
+  "guard_conditions": [
+    "nft_limit_eval: priv->rate == 0",
+    "nft_limit_eval: check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs)",
+    "nft_limit_init: check_add_overflow(priv->rate, priv->burst, &rate_with_burst)",
+    "nft_limit_init: check_mul_overflow(tmp, priv->burst, &tokens)",
+    "nft_limit_init: check_mul_overflow(priv->nsecs, rate_with_burst, &tmp)",
+    "priv->rate == 0",
+    "check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs)",
+    "check_add_overflow(priv->rate, priv->burst, &rate_with_burst)",
+    "check_mul_overflow(tmp, priv->burst, &tokens)",
+    "check_mul_overflow(priv->nsecs, rate_with_burst, &tmp)"
+  ],
+  "guard_sites": [
+    "nft_limit_eval",
+    "nft_limit_init"
+  ],
+  "safe_exits": [
+    "return -EINVAL;",
+    "return -EOVERFLOW;"
+  ],
+  "preserved_side_effects": [
+    "nft_limit_eval: 条件 priv->rate == 0 命中时返回 -EINVAL",
+    "nft_limit_eval: 返回 -EINVAL",
+    "nft_limit_eval: 更新 priv->nsecs",
+    "nft_limit_eval: 条件 check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs) 命中时返回 -EOVERFLOW",
+    "nft_limit_init: 条件 check_add_overflow(priv->rate, priv->burst, &rate_with_burst) 命中时返回 -EOVERFLOW",
+    "nft_limit_init: 更新 tokens",
+    "nft_limit_init: 调用 div64_u64(...)",
+    "nft_limit_init: 条件 check_mul_overflow(tmp, priv->burst, &tokens) 命中时返回 -EOVERFLOW",
+    "nft_limit_init: 返回 -EOVERFLOW",
+    "nft_limit_init: 条件 check_mul_overflow(priv->nsecs, rate_with_burst, &tmp) 命中时返回 -EOVERFLOW",
+    "u64 tmp = div64_u64(priv->nsecs, priv->rate);",
+    "tokens = div64_u64(tmp, priv->rate);"
+  ],
+  "touched_files": [
+    "net/netfilter/nft_limit.c"
+  ],
+  "touched_functions": [
+    "nft_limit_eval",
+    "nft_limit_init"
+  ],
+  "touched_state": [],
+  "recommended_strategy": "semantic_guard",
+  "confidence": 0.92,
+  "evidence": [
+    "guard 条件: nft_limit_eval: priv->rate == 0 | nft_limit_eval: check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs) | nft_limit_init: check_add_overflow(priv->rate, priv->burst, &rate_with_burst)",
+    "安全退出: return -EINVAL; | return -EOVERFLOW;",
+    "保留副作用: nft_limit_eval: 条件 priv->rate == 0 命中时返回 -EINVAL | nft_limit_eval: 返回 -EINVAL | nft_limit_eval: 更新 priv->nsecs",
+    "推荐策略: semantic_guard"
+  ]
+}

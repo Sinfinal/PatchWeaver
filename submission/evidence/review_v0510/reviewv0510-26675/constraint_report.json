@@ -1,0 +1,91 @@
+{
+  "task_id": "reviewv0510-26675",
+  "semantic_card_source": "deterministic",
+  "semantic_card_enriched": false,
+  "target_files": [
+    "drivers/net/ppp/ppp_async.c"
+  ],
+  "target_functions": [
+    "ppp_async_ioctl"
+  ],
+  "risk_items": [
+    {
+      "risk_type": "inline_side_effect",
+      "severity": "medium",
+      "summary": "patch 触及 inline 路径或内联副作用，可能放大 livepatch 语义漂移风险",
+      "source_rule": "inline_side_effect",
+      "evidence": [
+        "规则命中: inline_side_effect",
+        "涉及文件: drivers/net/ppp/ppp_async.c",
+        "涉及函数: ppp_async_ioctl",
+        "关键条件: ppp_async_ioctl: val > U16_MAX",
+        "关键调用: get_user",
+        "patch 摘要: From 7e5ef49670766c9742ffcd9cead7cdb018268719 Mon Sep 17 00:00:00 2001 | From: Eric Dumazet <edumazet@google.com> | Date: Mon, 5 Feb 2024 17:10:04 +0000"
+      ],
+      "affected_files": [
+        "drivers/net/ppp/ppp_async.c"
+      ],
+      "affected_functions": [
+        "ppp_async_ioctl"
+      ],
+      "affected_conditions": [
+        "ppp_async_ioctl: val > U16_MAX"
+      ],
+      "critical_calls": [
+        "get_user"
+      ],
+      "required_primitives": [
+        "wrapper"
+      ],
+      "forbidden_actions": [
+        "silent_inline_side_effect_change"
+      ]
+    }
+  ],
+  "dominant_risk_types": [
+    "inline_side_effect"
+  ],
+  "suggested_primitives": [
+    "direct_apply",
+    "wrapper"
+  ],
+  "forbidden_actions": [
+    "silent_inline_side_effect_change"
+  ],
+  "route_hints": [
+    {
+      "route_name": "minimal_livepatch_wrap",
+      "summary": "当前已命中约束 inline_side_effect，涉及函数 ppp_async_ioctl，首选语义路线 minimal_livepatch_wrap，后续规划层应优先按该路线组织候选",
+      "recommended_primitives": [
+        "wrapper"
+      ],
+      "blocking_risk_types": [
+        "inline_side_effect"
+      ],
+      "preferred": true
+    },
+    {
+      "route_name": "direct_apply_patch",
+      "summary": "补丁形态仍满足 direct apply 预检查，可保留为对照路径，当前候选路线集合为 minimal_livepatch_wrap, direct_apply_patch，但不作为当前首选",
+      "recommended_primitives": [
+        "direct_apply"
+      ],
+      "blocking_risk_types": [
+        "inline_side_effect"
+      ],
+      "preferred": false
+    }
+  ],
+  "candidate_routes": [
+    "minimal_livepatch_wrap",
+    "direct_apply_patch"
+  ],
+  "preferred_route": "minimal_livepatch_wrap",
+  "high_risk_count": 0,
+  "requires_callback": false,
+  "requires_shadow_variable": false,
+  "direct_apply_viable": true,
+  "direct_apply_recommended": false,
+  "direct_apply_role": "fallback",
+  "summary": "命中 1 类热补丁约束：inline_side_effect，涉及函数 ppp_async_ioctl，建议原语 direct_apply, wrapper，direct apply 仅保留为对照或回退路线"
+}

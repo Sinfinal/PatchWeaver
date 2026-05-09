@@ -1,0 +1,26 @@
+{
+  "bug_class": "cve_fix",
+  "root_cause": "ieee80211_check_fast_xmit 中存在条件判断或状态转换缺陷，补丁将条件 `WARN_ON_ONCE(!link)` 调整为 `!WARN_ON_ONCE(!link)`。 依据：[ Upstream commit 9480adfe4e0f0319b9da04b44e4eebd5ad07e0cd ]",
+  "must_keep_conditions": [
+    "ieee80211_check_fast_xmit: !WARN_ON_ONCE(!link)"
+  ],
+  "must_keep_side_effects": [
+    "ieee80211_check_fast_xmit: 调用 rcu_read_lock(...)",
+    "ieee80211_check_fast_xmit: 调用 memcpy(...)",
+    "ieee80211_check_fast_xmit: 条件 !WARN_ON_ONCE(!link) 命中时调用 memcpy(...)",
+    "ieee80211_check_fast_xmit: 调用 rcu_read_unlock(...)"
+  ],
+  "critical_calls": [
+    "offsetof",
+    "rcu_read_lock",
+    "rcu_dereference",
+    "memcpy",
+    "rcu_read_unlock"
+  ],
+  "touched_files": [
+    "net/mac80211/tx.c"
+  ],
+  "touched_functions": [
+    "ieee80211_check_fast_xmit"
+  ]
+}

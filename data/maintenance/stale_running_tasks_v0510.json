@@ -1,0 +1,54 @@
+{
+  "generated_at": "2026-05-09T09:54:07.749120+00:00",
+  "reason": "close stale active-state tasks before judge-facing API overview",
+  "rows": [
+    {
+      "task_id": "v0429-kconstraint-latest-20260429-154935-26656",
+      "cve_id": "CVE-2024-26656",
+      "status": "running",
+      "current_attempt": 3,
+      "updated_at": "2026-04-29T08:07:14.632177+00:00",
+      "workspace_dir": "workspaces/v0429-kconstraint-latest-20260429-154935-26656"
+    },
+    {
+      "task_id": "posclose-20260429-26730",
+      "cve_id": "CVE-2024-26730",
+      "status": "running",
+      "current_attempt": 2,
+      "updated_at": "2026-04-29T12:03:06.639872+00:00",
+      "workspace_dir": "workspaces/posclose-20260429-26730"
+    },
+    {
+      "task_id": "p0-cachefix-20260506194307-26742",
+      "cve_id": "CVE-2024-26742",
+      "status": "running",
+      "current_attempt": 1,
+      "updated_at": "2026-05-06T11:43:17.396167+00:00",
+      "workspace_dir": "workspaces/p0-cachefix-20260506194307-26742"
+    },
+    {
+      "task_id": "p0-cachefix-20260506194307-26610",
+      "cve_id": "CVE-2024-26610",
+      "status": "running",
+      "current_attempt": 1,
+      "updated_at": "2026-05-06T11:58:18.660997+00:00",
+      "workspace_dir": "workspaces/p0-cachefix-20260506194307-26610"
+    },
+    {
+      "task_id": "p0-guardfix-20260507135326-26663",
+      "cve_id": "CVE-2024-26663",
+      "status": "running",
+      "current_attempt": 1,
+      "updated_at": "2026-05-07T05:58:59.558933+00:00",
+      "workspace_dir": "workspaces/p0-guardfix-20260507135326-26663"
+    },
+    {
+      "task_id": "p0-positive-20260507140750-26629",
+      "cve_id": "CVE-2024-26629",
+      "status": "running",
+      "current_attempt": 3,
+      "updated_at": "2026-05-07T06:38:24.288977+00:00",
+      "workspace_dir": "workspaces/p0-positive-20260507140750-26629"
+    }
+  ]
+}

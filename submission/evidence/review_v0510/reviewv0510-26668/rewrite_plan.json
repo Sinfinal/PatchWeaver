@@ -1,0 +1,179 @@
+{
+  "task_id": "reviewv0510-26668",
+  "plan_id": "reviewv0510-26668-plan-001",
+  "candidate_ids": [
+    "reviewv0510-26668-candidate-005",
+    "reviewv0510-26668-candidate-001",
+    "reviewv0510-26668-candidate-006",
+    "reviewv0510-26668-candidate-002"
+  ],
+  "selected_recipe": "semantic_guard_rewrite",
+  "selected_route_family": "semantic_guard",
+  "selected_execution_mode": "semantic_guard",
+  "selected_primitives": [
+    "semantic_guard"
+  ],
+  "target_files": [
+    "net/netfilter/nft_limit.c"
+  ],
+  "rule_hits": [
+    "inline_side_effect"
+  ],
+  "requires_kernel_scaffold": false,
+  "scaffold_notes": [
+    "优先把官方 patch 收缩为函数局部 guard",
+    "进入构建前需要确认 guard 条件和安全退出路径保留了修复语义"
+  ],
+  "risk_coverage": 1.0,
+  "selection_reason": "优先选择综合得分最高的候选，当前命中 semantic_guard_rewrite，排序得分 0.849",
+  "notes": [
+    "nft_limit_eval 中存在边界长度校验缺陷，补丁将条件 `priv->rate == 0 || priv->nsecs < unit` 调整为 `priv->rate == 0`。 依据：overflow",
+    "命中 1 类热补丁约束：inline_side_effect，涉及函数 nft_limit_eval, nft_limit_init，建议原语 direct_apply, wrapper，direct apply 仅保留为对照或回退路线",
+    "候选数: 4",
+    "命中规则: inline_side_effect",
+    "路线族: semantic_guard",
+    "执行模式: semantic_guard",
+    "禁止动作: silent_inline_side_effect_change",
+    "关键条件: nft_limit_eval: priv->rate == 0；nft_limit_eval: check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs)",
+    "关键调用: nft_limit_init，rate_with_burst，be64_to_cpu",
+    "路线提示: 当前已命中约束 inline_side_effect，涉及函数 nft_limit_eval, nft_limit_init，首选语义路线 minimal_livepatch_wrap，后续规划层应优先按该路线组织候选；补丁形态仍满足 direct apply 预检查，可保留为对照路径，当前候选路线集合为 minimal_livepatch_wrap, direct_apply_patch，但不作为当前首选",
+    "修复意图策略: semantic_guard",
+    "guard 条件: nft_limit_eval: priv->rate == 0；nft_limit_eval: check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs)",
+    "约束首选路线: minimal_livepatch_wrap",
+    "候选路线: minimal_livepatch_wrap，direct_apply_patch",
+    "排序依据: 预估风险 0.04；语义漂移 0.03；构建代价 0.06；历史成功率 83%；历史失败率 17%"
+  ],
+  "candidate_summaries": [
+    {
+      "candidate_id": "reviewv0510-26668-candidate-005",
+      "recipe_name": "semantic_guard_rewrite",
+      "route_family": "semantic_guard",
+      "execution_mode": "semantic_guard",
+      "primitives": [
+        "semantic_guard"
+      ],
+      "target_functions": [
+        "nft_limit_eval",
+        "nft_limit_init"
+      ],
+      "rule_hits": [
+        "inline_side_effect"
+      ],
+      "requires_kernel_scaffold": false,
+      "scaffold_notes": [
+        "优先把官方 patch 收缩为函数局部 guard",
+        "进入构建前需要确认 guard 条件和安全退出路径保留了修复语义"
+      ],
+      "expected_risk": 0.04,
+      "expected_semantic_drift": 0.03,
+      "expected_build_cost": 0.06,
+      "history_success_rate": 0.8333,
+      "history_failure_rate": 0.1667,
+      "failure_pressure": 0.0,
+      "ranking_score": 0.8494,
+      "ranking_reasons": [
+        "预估风险 0.04",
+        "语义漂移 0.03",
+        "构建代价 0.06",
+        "历史成功率 83%",
+        "历史失败率 17%"
+      ]
+    },
+    {
+      "candidate_id": "reviewv0510-26668-candidate-001",
+      "recipe_name": "minimal_livepatch_wrap",
+      "route_family": "wrapper",
+      "execution_mode": "template_wrap",
+      "primitives": [
+        "wrapper"
+      ],
+      "target_functions": [
+        "nft_limit_eval",
+        "nft_limit_init"
+      ],
+      "rule_hits": [
+        "inline_side_effect"
+      ],
+      "requires_kernel_scaffold": false,
+      "scaffold_notes": [],
+      "expected_risk": 0.2,
+      "expected_semantic_drift": 0.14,
+      "expected_build_cost": 0.2,
+      "history_success_rate": 0.0,
+      "history_failure_rate": 1.0,
+      "failure_pressure": 0.0,
+      "ranking_score": 0.4428,
+      "ranking_reasons": [
+        "预估风险 0.20",
+        "语义漂移 0.14",
+        "构建代价 0.20",
+        "历史失败率 100%"
+      ]
+    },
+    {
+      "candidate_id": "reviewv0510-26668-candidate-006",
+      "recipe_name": "smpl_primary_rewrite",
+      "route_family": "smpl_primary",
+      "execution_mode": "smpl_primary",
+      "primitives": [
+        "wrapper",
+        "smpl"
+      ],
+      "target_functions": [
+        "nft_limit_eval",
+        "nft_limit_init"
+      ],
+      "rule_hits": [
+        "inline_side_effect"
+      ],
+      "requires_kernel_scaffold": false,
+      "scaffold_notes": [
+        "优先通过结构化变换缩小编辑半径"
+      ],
+      "expected_risk": 0.3,
+      "expected_semantic_drift": 0.12,
+      "expected_build_cost": 0.25,
+      "history_success_rate": 0.0,
+      "history_failure_rate": 1.0,
+      "failure_pressure": 0.0,
+      "ranking_score": 0.3974,
+      "ranking_reasons": [
+        "预估风险 0.30",
+        "语义漂移 0.12",
+        "构建代价 0.25",
+        "历史失败率 100%"
+      ]
+    },
+    {
+      "candidate_id": "reviewv0510-26668-candidate-002",
+      "recipe_name": "direct_apply_patch",
+      "route_family": "direct_apply",
+      "execution_mode": "direct_patch",
+      "primitives": [
+        "direct_apply"
+      ],
+      "target_functions": [
+        "nft_limit_eval",
+        "nft_limit_init"
+      ],
+      "rule_hits": [
+        "inline_side_effect"
+      ],
+      "requires_kernel_scaffold": false,
+      "scaffold_notes": [],
+      "expected_risk": 0.48,
+      "expected_semantic_drift": 0.14,
+      "expected_build_cost": 0.08,
+      "history_success_rate": 0.0,
+      "history_failure_rate": 1.0,
+      "failure_pressure": 0.0,
+      "ranking_score": 0.342,
+      "ranking_reasons": [
+        "预估风险 0.48",
+        "语义漂移 0.14",
+        "构建代价 0.08",
+        "历史失败率 100%"
+      ]
+    }
+  ]
+}

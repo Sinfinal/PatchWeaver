@@ -1,0 +1,14 @@
+{
+  "generated_at": "20260509T104917Z",
+  "purpose": "manual evaluation environment reset",
+  "loaded_livepatch_before": "",
+  "patchweaver_modules_before": "",
+  "kpatch_pids_before": "",
+  "tmp_candidates_before": 124,
+  "loaded_livepatch_after": "",
+  "patchweaver_modules_after": "",
+  "tmp_candidates_after": 0,
+  "cache_cleaned": true,
+  "workspaces_preserved": true,
+  "submission_evidence_preserved": true
+}

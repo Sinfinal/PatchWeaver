@@ -1,0 +1,14 @@
+{
+  "strategy": "semantic_guard_rewrite",
+  "status": "pass_through",
+  "effective": false,
+  "summary": "原始 patch 已基本符合 semantic guard 形态",
+  "kept_hunk_count": 1,
+  "dropped_hunk_count": 0,
+  "call_elision_count": 0,
+  "transformations": [],
+  "kept_hunks": [
+    "ppp_async_ioctl(struct ppp_channel *chan, unsigned int cmd, unsigned long arg): 新增函数局部 guard"
+  ],
+  "dropped_hunks": []
+}

@@ -1,0 +1,31 @@
+{
+  "cve_id": "CVE-2024-26726",
+  "bug_class": "cve_fix",
+  "root_cause": "fs/btrfs/inode.c 中存在条件判断或状态转换缺陷，修复围绕条件 `!btrfs_is_free_space_inode(inode)` 展开。 依据：commit 5571e41ec6e56e35f34ae9f5b3a335ef510e0ade upstream.",
+  "vulnerability_conditions": [
+    "!btrfs_is_free_space_inode(inode)"
+  ],
+  "guard_conditions": [
+    "!btrfs_is_free_space_inode(inode)"
+  ],
+  "guard_sites": [],
+  "safe_exits": [],
+  "preserved_side_effects": [
+    "调用 btrfs_drop_extent_map_range(...)",
+    "调用 btrfs_get_extent(...)",
+    "条件 !btrfs_is_free_space_inode(inode) 命中时调用 btrfs_drop_extent_map_range(...)",
+    "btrfs_drop_extent_map_range(inode, unwritten_start,"
+  ],
+  "touched_files": [
+    "fs/btrfs/inode.c"
+  ],
+  "touched_functions": [],
+  "touched_state": [],
+  "recommended_strategy": "semantic_guard",
+  "confidence": 0.72,
+  "evidence": [
+    "guard 条件: !btrfs_is_free_space_inode(inode)",
+    "保留副作用: 调用 btrfs_drop_extent_map_range(...) | 调用 btrfs_get_extent(...) | 条件 !btrfs_is_free_space_inode(inode) 命中时调用 btrfs_drop_extent_map_range(...)",
+    "推荐策略: semantic_guard"
+  ]
+}

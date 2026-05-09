@@ -4,6 +4,10 @@
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp-livepatchability/test_prepare_stable_source_bas0/baselines/HEAD-e84dc3b7e70d" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp-livepatchability/test_prepare_stable_source_bas0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp-p1-s123-related/test_prepare_stable_source_bas0/baselines/HEAD-e84dc3b7e70d" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp-p1-s123-related/test_prepare_stable_source_bas0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp-p1-s123-related/test_prepare_stable_source_bas1/baselines/HEAD-7138a5166194" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp-p1-s123-related/test_prepare_stable_source_bas1/linux-stable" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp-repair-intent/test_prepare_stable_source_bas0/baselines/HEAD-e84dc3b7e70d" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp-repair-intent/test_prepare_stable_source_bas0/linux-stable" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp-stable-cache/test_prepare_stable_source_bas0/baselines/HEAD-e84dc3b7e70d" vcs="Git" />

@@ -1,0 +1,40 @@
+{
+  "cve_id": "CVE-2024-26742",
+  "bug_class": "cve_fix",
+  "root_cause": "pqi_map_queues 中存在条件判断或状态转换缺陷，修复围绕条件 `!ctrl_info->disable_managed_interrupts` 展开。 依据：[ Upstream commit 5761eb9761d2d5fe8248a9b719efc4d8baf1f24a ]",
+  "vulnerability_conditions": [
+    "pqi_map_queues: !ctrl_info->disable_managed_interrupts"
+  ],
+  "guard_conditions": [
+    "pqi_map_queues: !ctrl_info->disable_managed_interrupts",
+    "!ctrl_info->disable_managed_interrupts"
+  ],
+  "guard_sites": [
+    "pqi_map_queues"
+  ],
+  "safe_exits": [
+    "return blk_mq_pci_map_queues(&shost->tag_set.map[HCTX_TYPE_DEFAULT],",
+    "return blk_mq_map_queues(&shost->tag_set.map[HCTX_TYPE_DEFAULT]);"
+  ],
+  "preserved_side_effects": [
+    "pqi_map_queues: 调用 blk_mq_pci_map_queues(...)",
+    "pqi_map_queues: 条件 !ctrl_info->disable_managed_interrupts 命中时返回 blk_mq_pci_map_queues(...)",
+    "pqi_map_queues: 返回 blk_mq_pci_map_queues(...)",
+    "pqi_map_queues: 返回 blk_mq_map_queues(...)"
+  ],
+  "touched_files": [
+    "drivers/scsi/smartpqi/smartpqi_init.c"
+  ],
+  "touched_functions": [
+    "pqi_map_queues"
+  ],
+  "touched_state": [],
+  "recommended_strategy": "semantic_guard",
+  "confidence": 0.92,
+  "evidence": [
+    "guard 条件: pqi_map_queues: !ctrl_info->disable_managed_interrupts | !ctrl_info->disable_managed_interrupts",
+    "安全退出: return blk_mq_pci_map_queues(&shost->tag_set.map[HCTX_TYPE_DEFAULT], | return blk_mq_map_queues(&shost->tag_set.map[HCTX_TYPE_DEFAULT]);",
+    "保留副作用: pqi_map_queues: 调用 blk_mq_pci_map_queues(...) | pqi_map_queues: 条件 !ctrl_info->disable_managed_interrupts 命中时返回 blk_mq_pci_map_queues(...) | pqi_map_queues: 返回 blk_mq_pci_map_queues(...)",
+    "推荐策略: semantic_guard"
+  ]
+}

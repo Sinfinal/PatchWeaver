@@ -1,0 +1,126 @@
+{
+  "semantic_precheck_result": {
+    "status": "passed",
+    "ok": true,
+    "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+    "command": null,
+    "log_path": null
+  },
+  "load_result": {
+    "status": "passed",
+    "ok": true,
+    "detail": "模块加载测试通过。",
+    "command": "insmod /home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/output/patchweaver-reviewv0510-26742-001.ko",
+    "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/load.log"
+  },
+  "unload_result": {
+    "status": "passed",
+    "ok": true,
+    "detail": "模块卸载测试通过。",
+    "command": "rmmod patchweaver_reviewv0510_26742_001",
+    "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/unload.log"
+  },
+  "smoke_result": {
+    "status": "passed",
+    "ok": true,
+    "detail": "冒烟测试通过。",
+    "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+    "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/smoke.log"
+  },
+  "selftest_result": {
+    "status": "passed",
+    "ok": true,
+    "detail": "已完成模块产物与基本加载前置检查。",
+    "command": null,
+    "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/selftest.log"
+  },
+  "regression_result": {
+    "status": "skipped",
+    "ok": false,
+    "detail": "配置已关闭回归验证。",
+    "command": null,
+    "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/regression.log"
+  },
+  "semantic_guard_result": {
+    "status": "passed",
+    "ok": true,
+    "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+    "command": null,
+    "log_path": null
+  },
+  "validation_matrix": [
+    {
+      "name": "semantic_precheck",
+      "category": "static",
+      "enabled": true,
+      "status": "passed",
+      "risk_level": "medium",
+      "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+      "log_path": null
+    },
+    {
+      "name": "selftest",
+      "category": "dynamic",
+      "enabled": true,
+      "status": "passed",
+      "risk_level": "medium",
+      "detail": "已完成模块产物与基本加载前置检查。",
+      "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/selftest.log"
+    },
+    {
+      "name": "load_test",
+      "category": "dynamic",
+      "enabled": true,
+      "status": "passed",
+      "risk_level": "medium",
+      "detail": "模块加载测试通过。",
+      "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/load.log"
+    },
+    {
+      "name": "unload_test",
+      "category": "dynamic",
+      "enabled": true,
+      "status": "passed",
+      "risk_level": "medium",
+      "detail": "模块卸载测试通过。",
+      "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/unload.log"
+    },
+    {
+      "name": "smoke_test",
+      "category": "dynamic",
+      "enabled": true,
+      "status": "passed",
+      "risk_level": "medium",
+      "detail": "冒烟测试通过。",
+      "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/smoke.log"
+    },
+    {
+      "name": "semantic_guard",
+      "category": "guard",
+      "enabled": true,
+      "status": "passed",
+      "risk_level": "medium",
+      "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+      "log_path": null
+    },
+    {
+      "name": "regression",
+      "category": "regression",
+      "enabled": false,
+      "status": "skipped",
+      "risk_level": "medium",
+      "detail": "配置已关闭回归验证。",
+      "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/regression.log"
+    }
+  ],
+  "validation_intensity": "standard",
+  "status": "passed",
+  "notes": [
+    "验证任务: reviewv0510-26742",
+    "构建状态: built",
+    "风险等级: medium",
+    "验证档位: standard",
+    "验证强度: standard",
+    "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+  ]
+}

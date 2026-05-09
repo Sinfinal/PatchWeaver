@@ -598,6 +598,63 @@ class ReleaseService:
                     "summary_md_path": self._path(path.with_name("summary.md")),
                 }
             )
+        for path in sorted(evaluations_root.glob("**/representative_metrics*.json")):
+            payload = self._read_json(path)
+            if not isinstance(payload, dict):
+                continue
+            metrics = payload.get("metrics") or {}
+            if not isinstance(metrics, dict) or "representative_total" not in metrics:
+                continue
+            total = int(metrics.get("representative_total", 0) or 0)
+            items.append(
+                {
+                    "fixture_name": str(payload.get("fixture_name") or f"{path.parent.name}/{path.stem}"),
+                    "success_count": int(metrics.get("representative_success_count", 0) or 0),
+                    "matched_fixtures": total,
+                    "missing_fixtures": 0,
+                    "success_rate": float(metrics.get("representative_success_rate", 0.0) or 0.0),
+                    "bucket_order": list((payload.get("failure_buckets") or {}).keys()),
+                    "bucket_counts": payload.get("failure_buckets") or {},
+                    "bucket_summary": payload.get("evidence_summary") or {},
+                    "mixed_summary_note": (payload.get("target_gap") or {}).get("explanation"),
+                    "summary_json_path": self._path(path),
+                    "summary_md_path": self._path(path.with_suffix(".md")),
+                }
+            )
+        full_run_paths = {
+            *evaluations_root.glob("**/*full_run*.json"),
+            *evaluations_root.glob("**/*_full.json"),
+        }
+        for path in sorted(full_run_paths):
+            payload = self._read_json(path)
+            if not isinstance(payload, dict):
+                continue
+            summary = payload.get("summary") or {}
+            if not isinstance(summary, dict):
+                continue
+            total = int(summary.get("representative_total", summary.get("total_cases", 0)) or 0)
+            if total <= 0:
+                continue
+            success_rate = float(summary.get("representative_success_rate", 0.0) or 0.0)
+            items.append(
+                {
+                    "fixture_name": str(payload.get("fixture_name") or f"{path.parent.name}/{path.stem}"),
+                    "success_count": int(round(total * success_rate)),
+                    "matched_fixtures": total,
+                    "missing_fixtures": 0,
+                    "success_rate": success_rate,
+                    "bucket_order": list((summary.get("bucket_counts") or {}).keys()),
+                    "bucket_counts": summary.get("bucket_counts") or {},
+                    "bucket_summary": {
+                        "positive_pool_size": summary.get("current_positive_pool_size"),
+                        "positive_pool_gap": summary.get("positive_pool_gap"),
+                        "livepatchability_tier_counts": summary.get("livepatchability_tier_counts") or {},
+                    },
+                    "mixed_summary_note": None,
+                    "summary_json_path": self._path(path),
+                    "summary_md_path": self._path(path.with_suffix(".md")),
+                }
+            )
         return items
 
     def _check(self, name: str, ok: bool, evidence: str, detail: str, failed_status: str) -> dict[str, str]:

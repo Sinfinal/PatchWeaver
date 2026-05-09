@@ -243,6 +243,8 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
     assert payload["metrics"]["failed_tasks"] == 1
     assert payload["metrics"]["success_tasks"] == 1
     assert payload["metrics"]["target_state_tasks"] == 1
+    assert payload["metrics"]["pending_tasks"] == 0
+    assert payload["metrics"]["running_tasks"] == 0
     assert payload["metrics"]["validation_passed"] == 1
     assert payload["metrics"]["latest_evaluation_summary"] == "data/evaluations/challenge_dev/summary.json"
     assert payload["metrics"]["selected_model"] == "qwen-plus-2025-07-28"
@@ -253,3 +255,273 @@ def test_overview_service_collects_phase_three_evaluation_summaries(monkeypatch)
     assert any(item["latest_target_state"] == "target_already_patched" for item in payload["recent_tasks"])
     assert payload["release"]["selected_models"]["topology"] == "single_primary_with_optional_helpers"
     assert payload["release"]["selected_models"]["helper_models"]["code_assistant"] == "qwen-coder-turbo-0919"
+
+
+def test_overview_service_treats_created_and_analyzed_as_pending_not_running(monkeypatch) -> None:
+    tmp_path = _case_dir("overview-pending")
+    project_root = tmp_path / "project"
+    data_dir = project_root / "data"
+    workspace_root = project_root / "workspaces"
+    database_path = data_dir / "patchweaver.db"
+    project_root.mkdir(parents=True, exist_ok=True)
+    workspace_root.mkdir(parents=True, exist_ok=True)
+
+    task_repo = TaskRepository(database_path)
+    attempt_repo = AttemptRepository(database_path)
+    artifact_repo = ArtifactRepository(database_path)
+    for task_id, status in (
+        ("TASK-PENDING-001", "created"),
+        ("TASK-PENDING-002", "analyzed"),
+        ("TASK-RUNNING-001", "running"),
+        ("TASK-RUNNING-002", "building"),
+        ("TASK-RUNNING-003", "validating"),
+    ):
+        task_repo.create_task(
+            TaskContext(
+                task_id=task_id,
+                cve_id="CVE-2099-0001",
+                target_kernel="6.6.102-5.2.an23.x86_64",
+                status=status,
+                workspace_dir=workspace_root / task_id,
+            )
+        )
+
+    context = SimpleNamespace(
+        runtime=SimpleNamespace(database_path=database_path, data_dir=data_dir, project_root=project_root),
+        build_config=SimpleNamespace(),
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+        models_config=SimpleNamespace(
+            topology="single_primary_with_optional_helpers",
+            default_model="qwen-plus-2025-07-28",
+            development_model="qwen-plus-2025-07-28",
+            delivery_model="qwen-plus-2025-07-28",
+            api_key_env="PATCHWEAVER_BAILIAN_API_KEY",
+            fallback_model="qwen-plus-2025-07-28",
+            helper_models={},
+        ),
+        task_repo=task_repo,
+        attempt_repo=attempt_repo,
+        artifact_repo=artifact_repo,
+    )
+    service = OverviewService(context)
+    service.log_service = SimpleNamespace(
+        get_events=lambda limit=12: [],
+        tail_logs=lambda limit=40: {},
+    )
+    monkeypatch.setattr(
+        "patchweaver.api.services.overview_service.BuildOrchestrator.probe_environment",
+        lambda self: {"backend": "local", "builder_ok": True, "selected_source_ok": True, "config_ok": True},
+    )
+    monkeypatch.setattr(
+        "patchweaver.reporter.release_service.BuildOrchestrator.probe_environment",
+        lambda self: {"backend": "local", "builder_ok": True, "selected_source_ok": True, "config_ok": True},
+    )
+
+    payload = service.get_overview()
+
+    assert payload["metrics"]["pending_tasks"] == 2
+    assert payload["metrics"]["running_tasks"] == 3
+
+
+def test_overview_service_marks_limited_release_as_delivery_ready(monkeypatch) -> None:
+    tmp_path = _case_dir("overview-delivery-limited")
+    project_root = tmp_path / "project"
+    data_dir = project_root / "data"
+    workspace_root = project_root / "workspaces"
+    database_path = data_dir / "patchweaver.db"
+    manifest_dir = project_root / "submission" / "manifests"
+    project_root.mkdir(parents=True, exist_ok=True)
+    workspace_root.mkdir(parents=True, exist_ok=True)
+    manifest_dir.mkdir(parents=True, exist_ok=True)
+    (manifest_dir / "final_gate_report.json").write_text(
+        json.dumps({"status": "limited"}, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    context = SimpleNamespace(
+        runtime=SimpleNamespace(
+            database_path=database_path,
+            data_dir=data_dir,
+            project_root=project_root,
+            manifest_dir=manifest_dir,
+        ),
+        build_config=SimpleNamespace(),
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+        models_config=SimpleNamespace(
+            topology="single_primary_with_optional_helpers",
+            default_model="qwen-plus-2025-07-28",
+            development_model="qwen-plus-2025-07-28",
+            delivery_model="qwen-plus-2025-07-28",
+            api_key_env="PATCHWEAVER_BAILIAN_API_KEY",
+            fallback_model="qwen-plus-2025-07-28",
+            helper_models={},
+        ),
+        task_repo=TaskRepository(database_path),
+        attempt_repo=AttemptRepository(database_path),
+        artifact_repo=ArtifactRepository(database_path),
+    )
+    service = OverviewService(context)
+    service.log_service = SimpleNamespace(get_events=lambda limit=12: [], tail_logs=lambda limit=40: {})
+    monkeypatch.setattr(
+        "patchweaver.api.services.overview_service.BuildOrchestrator.probe_environment",
+        lambda self: {"backend": "local", "builder_ok": True, "selected_source_ok": True, "config_ok": True},
+    )
+    monkeypatch.setattr(
+        "patchweaver.reporter.release_service.BuildOrchestrator.probe_environment",
+        lambda self: {"backend": "local", "builder_ok": True, "selected_source_ok": True, "config_ok": True},
+    )
+
+    payload = service.get_overview()
+
+    assert payload["metrics"]["delivery_ready"] is True
+    assert payload["metrics"]["delivery_limited"] is True
+    assert payload["release"]["final_gate_status"] == "limited"
+
+
+def test_overview_service_collects_representative_metrics_files(monkeypatch) -> None:
+    tmp_path = _case_dir("overview-representative")
+    project_root = tmp_path / "project"
+    data_dir = project_root / "data"
+    workspace_root = project_root / "workspaces"
+    database_path = data_dir / "patchweaver.db"
+    metrics_dir = data_dir / "evaluations" / "validation_v0509"
+    metrics_dir.mkdir(parents=True, exist_ok=True)
+    workspace_root.mkdir(parents=True, exist_ok=True)
+    (metrics_dir / "representative_metrics_v0510.json").write_text(
+        json.dumps(
+            {
+                "metrics": {
+                    "representative_total": 10,
+                    "representative_success_count": 10,
+                    "representative_success_rate": 1.0,
+                    "average_attempts": 1.0,
+                },
+                "evidence_summary": {"ko": {"passed": 10, "total": 10}},
+                "failure_buckets": {"success": 10},
+                "target_gap": {"explanation": "代表集达到目标。"},
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    context = SimpleNamespace(
+        runtime=SimpleNamespace(database_path=database_path, data_dir=data_dir, project_root=project_root),
+        build_config=SimpleNamespace(),
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+        models_config=SimpleNamespace(
+            topology="single_primary_with_optional_helpers",
+            default_model="qwen-plus-2025-07-28",
+            development_model="qwen-plus-2025-07-28",
+            delivery_model="qwen-plus-2025-07-28",
+            api_key_env="PATCHWEAVER_BAILIAN_API_KEY",
+            fallback_model="qwen-plus-2025-07-28",
+            helper_models={},
+        ),
+        task_repo=TaskRepository(database_path),
+        attempt_repo=AttemptRepository(database_path),
+        artifact_repo=ArtifactRepository(database_path),
+    )
+    service = OverviewService(context)
+    service.log_service = SimpleNamespace(get_events=lambda limit=12: [], tail_logs=lambda limit=40: {})
+    monkeypatch.setattr(
+        "patchweaver.api.services.overview_service.BuildOrchestrator.probe_environment",
+        lambda self: {"backend": "local", "builder_ok": True, "selected_source_ok": True, "config_ok": True},
+    )
+    monkeypatch.setattr(
+        "patchweaver.reporter.release_service.BuildOrchestrator.probe_environment",
+        lambda self: {"backend": "local", "builder_ok": True, "selected_source_ok": True, "config_ok": True},
+    )
+
+    payload = service.get_overview()
+
+    assert payload["evaluation_summaries"][0]["fixture_name"] == "validation_v0509/representative_metrics_v0510"
+    assert payload["evaluation_summaries"][0]["success_count"] == 10
+    assert payload["evaluation_summaries"][0]["success_rate"] == 1.0
+    assert payload["evaluation_summaries"][0]["summary_json_path"] == (
+        "data/evaluations/validation_v0509/representative_metrics_v0510.json"
+    )
+
+
+def test_overview_service_collects_full_run_result_files(monkeypatch) -> None:
+    tmp_path = _case_dir("overview-full-run")
+    project_root = tmp_path / "project"
+    data_dir = project_root / "data"
+    workspace_root = project_root / "workspaces"
+    database_path = data_dir / "patchweaver.db"
+    validation_dir = data_dir / "evaluations" / "validation_v0509"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    workspace_root.mkdir(parents=True, exist_ok=True)
+    (validation_dir / "final_holdout10_full_run_v0509.json").write_text(
+        json.dumps(
+            {
+                "summary": {
+                    "total_cases": 10,
+                    "representative_total": 10,
+                    "representative_success_rate": 1.0,
+                    "average_attempts": 1.0,
+                    "bucket_counts": {"buildable_and_should_pass": 10},
+                    "current_positive_pool_size": 12,
+                    "positive_pool_gap": 0,
+                }
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    context = SimpleNamespace(
+        runtime=SimpleNamespace(database_path=database_path, data_dir=data_dir, project_root=project_root),
+        build_config=SimpleNamespace(),
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+        models_config=SimpleNamespace(
+            topology="single_primary_with_optional_helpers",
+            default_model="qwen-plus-2025-07-28",
+            development_model="qwen-plus-2025-07-28",
+            delivery_model="qwen-plus-2025-07-28",
+            api_key_env="PATCHWEAVER_BAILIAN_API_KEY",
+            fallback_model="qwen-plus-2025-07-28",
+            helper_models={},
+        ),
+        task_repo=TaskRepository(database_path),
+        attempt_repo=AttemptRepository(database_path),
+        artifact_repo=ArtifactRepository(database_path),
+    )
+    service = OverviewService(context)
+    service.log_service = SimpleNamespace(get_events=lambda limit=12: [], tail_logs=lambda limit=40: {})
+    monkeypatch.setattr(
+        "patchweaver.api.services.overview_service.BuildOrchestrator.probe_environment",
+        lambda self: {"backend": "local", "builder_ok": True, "selected_source_ok": True, "config_ok": True},
+    )
+    monkeypatch.setattr(
+        "patchweaver.reporter.release_service.BuildOrchestrator.probe_environment",
+        lambda self: {"backend": "local", "builder_ok": True, "selected_source_ok": True, "config_ok": True},
+    )
+
+    payload = service.get_overview()
+
+    assert payload["evaluation_summaries"][0]["fixture_name"] == "validation_v0509/final_holdout10_full_run_v0509"
+    assert payload["evaluation_summaries"][0]["success_count"] == 10
+    assert payload["evaluation_summaries"][0]["summary_json_path"] == (
+        "data/evaluations/validation_v0509/final_holdout10_full_run_v0509.json"
+    )

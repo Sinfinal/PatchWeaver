@@ -1,0 +1,14 @@
+{
+  "strategy": "semantic_guard_rewrite",
+  "status": "pass_through",
+  "effective": false,
+  "summary": "原始 patch 已基本符合 semantic guard 形态",
+  "kept_hunk_count": 1,
+  "dropped_hunk_count": 0,
+  "call_elision_count": 0,
+  "transformations": [],
+  "kept_hunks": [
+    "static const struct mmu_interval_notifier_ops amdgpu_hmm_hsa_ops = {: 新增函数局部 guard"
+  ],
+  "dropped_hunks": []
+}

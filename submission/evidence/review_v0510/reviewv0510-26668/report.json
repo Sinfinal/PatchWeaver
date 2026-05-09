@@ -1,0 +1,574 @@
+{
+  "task_summary": {
+    "task_id": "reviewv0510-26668",
+    "cve_id": "CVE-2024-26668",
+    "target_kernel": "6.6.102-5.2.an23.x86_64",
+    "profile_name": "demo",
+    "workspace_dir": "workspaces/reviewv0510-26668"
+  },
+  "attempt_digest": [
+    {
+      "attempt_id": "reviewv0510-26668-A001",
+      "attempt_no": 1,
+      "status": "built",
+      "failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null
+    }
+  ],
+  "artifact_index": [
+    {
+      "artifact_type": "task_context",
+      "artifact_path": "workspaces/reviewv0510-26668/task_context.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "raw_patch",
+      "artifact_path": "workspaces/reviewv0510-26668/input/raw_patch.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "normalized_patch",
+      "artifact_path": "workspaces/reviewv0510-26668/normalized/normalized.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "patch_bundle",
+      "artifact_path": "workspaces/reviewv0510-26668/input/patch_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "source_evidence",
+      "artifact_path": "workspaces/reviewv0510-26668/input/source_evidence.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "source_fetch_trace",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/trace/source_fetch_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_card",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/semantic_card.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_card_enrichment",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/trace/semantic_card_enrichment.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "repair_intent",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/repair_intent.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "constraint_report",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/constraint_report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "analysis_bootstrap_manifest",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/bootstrap/bootstrap_manifest.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "analysis_evidence_bundle",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/context/evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "analysis_context_bundle",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/context/context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "retrieval_skill_route",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/route/retrieval_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "retrieval_prompt_packet",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/prompt/retrieval_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_card_skill_route",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/route/semantic_card_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_card_prompt_packet",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/prompt/semantic_card_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "constraint_skill_route",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/route/constraint_diagnosis_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "constraint_prompt_packet",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/prompt/constraint_diagnosis_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "analysis_trace",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/trace/analysis_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_bootstrap_manifest",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/prompt/bootstrap_manifest.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_evidence_bundle",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/context/evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_context_bundle",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/context/context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_skill_route",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/route/rewrite_recipe_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_prompt_packet",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/prompt/rewrite_recipe_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_plan",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/rewrite/rewrite_plan.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "planning_hints",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/rewrite/planning_hints.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "repair_intent",
+      "artifact_path": "workspaces/reviewv0510-26668/analysis/repair_intent.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "route_effectiveness",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/rewrite/route_effectiveness.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewritten_patch",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/rewrite/rewritten.patch",
+      "summary": ""
+    },
+    {
+      "artifact_type": "rewrite_reason",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/rewrite/rewrite_reason.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "transformation_trace",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/rewrite/transformation_trace.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "apply_precheck",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/rewrite/apply_precheck.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_guard_rewrite",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/rewrite/semantic_guard_rewrite.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "environment_check_log",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/logs/environment_check.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "build_log",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/logs/build.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "build_precheck",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/artifacts/build_precheck.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "build_summary",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/artifacts/build_summary.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_record",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/logs/failure_record.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "failure_memory_snapshot",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/artifacts/failure_memory_snapshot.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "recipe_memory_snapshot",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/artifacts/recipe_memory_snapshot.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validate_log",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/logs/validate.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_precheck",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/artifacts/semantic_precheck.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "semantic_guard",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/artifacts/semantic_guard.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_matrix",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/artifacts/validation_matrix.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "selftest_log",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/logs/selftest.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "load_log",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/logs/load.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "unload_log",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/logs/unload.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "smoke_log",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/logs/smoke.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "regression_log",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/logs/regression.log",
+      "summary": ""
+    },
+    {
+      "artifact_type": "regression_summary",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/artifacts/regression_summary.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_report",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/artifacts/validation_report.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_evidence_bundle",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/context/validation_evidence_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_context_bundle",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/context/validation_context_bundle.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_skill_route",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/route/validation_skill_route.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "validation_prompt_packet",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/prompt/validation_prompt_packet.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "attempt_state",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/attempt_state.json",
+      "summary": ""
+    },
+    {
+      "artifact_type": "harness_trace",
+      "artifact_path": "workspaces/reviewv0510-26668/attempts/001/trace/harness_trace.json",
+      "summary": ""
+    }
+  ],
+  "final_status": "built",
+  "evaluation_summary": {
+    "total_attempts": 1,
+    "built_attempts": 1,
+    "failed_attempts": 0,
+    "success_rate": 1.0,
+    "average_attempt_no": 1.0,
+    "latest_status": "built",
+    "latest_failure_type": null,
+    "failure_breakdown": {},
+    "artifact_type_counts": {
+      "task_context": 1,
+      "raw_patch": 1,
+      "normalized_patch": 1,
+      "patch_bundle": 1,
+      "source_evidence": 1,
+      "source_fetch_trace": 1,
+      "semantic_card": 1,
+      "semantic_card_enrichment": 1,
+      "repair_intent": 2,
+      "constraint_report": 1,
+      "analysis_bootstrap_manifest": 1,
+      "analysis_evidence_bundle": 1,
+      "analysis_context_bundle": 1,
+      "retrieval_skill_route": 1,
+      "retrieval_prompt_packet": 1,
+      "semantic_card_skill_route": 1,
+      "semantic_card_prompt_packet": 1,
+      "constraint_skill_route": 1,
+      "constraint_prompt_packet": 1,
+      "analysis_trace": 1,
+      "rewrite_bootstrap_manifest": 1,
+      "rewrite_evidence_bundle": 1,
+      "rewrite_context_bundle": 1,
+      "rewrite_skill_route": 1,
+      "rewrite_prompt_packet": 1,
+      "rewrite_plan": 1,
+      "planning_hints": 1,
+      "route_effectiveness": 1,
+      "rewritten_patch": 1,
+      "rewrite_reason": 1,
+      "transformation_trace": 1,
+      "apply_precheck": 1,
+      "semantic_guard_rewrite": 1,
+      "environment_check_log": 1,
+      "build_log": 1,
+      "build_precheck": 1,
+      "build_summary": 1,
+      "failure_record": 1,
+      "failure_memory_snapshot": 1,
+      "recipe_memory_snapshot": 1,
+      "validate_log": 1,
+      "semantic_precheck": 1,
+      "semantic_guard": 1,
+      "validation_matrix": 1,
+      "selftest_log": 1,
+      "load_log": 1,
+      "unload_log": 1,
+      "smoke_log": 1,
+      "regression_log": 1,
+      "regression_summary": 1,
+      "validation_report": 1,
+      "validation_evidence_bundle": 1,
+      "validation_context_bundle": 1,
+      "validation_skill_route": 1,
+      "validation_prompt_packet": 1,
+      "attempt_state": 1,
+      "harness_trace": 1
+    }
+  },
+  "analysis_summary": {
+    "semantic_card_path": "workspaces/reviewv0510-26668/analysis/semantic_card.json",
+    "constraint_report_path": "workspaces/reviewv0510-26668/analysis/constraint_report.json",
+    "patch_bundle_path": "workspaces/reviewv0510-26668/input/patch_bundle.json"
+  },
+  "build_summary": {
+    "latest_attempt_id": "reviewv0510-26668-A001",
+    "latest_attempt_status": "built",
+    "latest_failure_type": null,
+    "latest_build_exec_status": "executed",
+    "latest_target_state": null,
+    "build_log_path": "workspaces/reviewv0510-26668/attempts/001/logs/build.log",
+    "module_path": "workspaces/reviewv0510-26668/attempts/001/output/patchweaver-reviewv0510-26668-001.ko",
+    "rewritten_patch_path": "workspaces/reviewv0510-26668/attempts/001/rewrite/rewritten.patch"
+  },
+  "validation_summary": {
+    "validation_report_path": "workspaces/reviewv0510-26668/attempts/001/artifacts/validation_report.json",
+    "validation_matrix_path": "workspaces/reviewv0510-26668/attempts/001/artifacts/validation_matrix.json",
+    "semantic_guard_path": "workspaces/reviewv0510-26668/attempts/001/artifacts/semantic_guard.json",
+    "validation_status": "passed",
+    "validation_intensity": "standard",
+    "semantic_guard_status": "passed",
+    "load_status": "passed",
+    "unload_status": "passed",
+    "smoke_status": "passed",
+    "selftest_status": "passed",
+    "regression_status": "skipped"
+  },
+  "closure_summary": {
+    "closure_type": "success",
+    "closure_status": "ready",
+    "failure_replay_ready": false,
+    "success_replay_ready": true,
+    "validation_status": "passed",
+    "missing_success_evidence": [],
+    "recommended_replay_files": [
+      "workspaces/reviewv0510-26668/attempts/001/trace/harness_trace.json",
+      "workspaces/reviewv0510-26668/attempts/001/rewrite/rewritten.patch",
+      "workspaces/reviewv0510-26668/attempts/001/logs/build.log",
+      "workspaces/reviewv0510-26668/attempts/001/artifacts/validation_report.json",
+      "workspaces/reviewv0510-26668/attempts/001/artifacts/validation_matrix.json",
+      "workspaces/reviewv0510-26668/attempts/001/logs/selftest.log",
+      "workspaces/reviewv0510-26668/attempts/001/logs/load.log",
+      "workspaces/reviewv0510-26668/attempts/001/logs/unload.log",
+      "workspaces/reviewv0510-26668/attempts/001/logs/smoke.log",
+      "workspaces/reviewv0510-26668/attempts/001/logs/regression.log"
+    ]
+  },
+  "replay_summary": {
+    "trace_path": "workspaces/reviewv0510-26668/attempts/001/trace/harness_trace.json",
+    "failover_record_path": null,
+    "evaluation_summary_path": "workspaces/reviewv0510-26668/reports/evaluation_summary.json",
+    "recommended_replay_files": [
+      "workspaces/reviewv0510-26668/attempts/001/trace/harness_trace.json",
+      "workspaces/reviewv0510-26668/attempts/001/rewrite/rewritten.patch",
+      "workspaces/reviewv0510-26668/attempts/001/logs/build.log",
+      "workspaces/reviewv0510-26668/attempts/001/artifacts/validation_report.json",
+      "workspaces/reviewv0510-26668/attempts/001/artifacts/validation_matrix.json",
+      "workspaces/reviewv0510-26668/attempts/001/logs/selftest.log",
+      "workspaces/reviewv0510-26668/attempts/001/logs/load.log",
+      "workspaces/reviewv0510-26668/attempts/001/logs/unload.log",
+      "workspaces/reviewv0510-26668/attempts/001/logs/smoke.log",
+      "workspaces/reviewv0510-26668/attempts/001/logs/regression.log"
+    ]
+  },
+  "agent_decision_summary": {
+    "repair_intent": {
+      "present": true,
+      "cve_id": "CVE-2024-26668",
+      "bug_class": "cve_fix",
+      "root_cause": "nft_limit_eval 中存在边界长度校验缺陷，补丁将条件 `priv->rate == 0 || priv->nsecs < unit` 调整为 `priv->rate == 0`。 依据：overflow",
+      "vulnerability_conditions": [
+        "nft_limit_eval: priv->rate == 0",
+        "nft_limit_eval: check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs)",
+        "nft_limit_init: check_add_overflow(priv->rate, priv->burst, &rate_with_burst)",
+        "nft_limit_init: check_mul_overflow(tmp, priv->burst, &tokens)",
+        "nft_limit_init: check_mul_overflow(priv->nsecs, rate_with_burst, &tmp)"
+      ],
+      "guard_conditions": [
+        "nft_limit_eval: priv->rate == 0",
+        "nft_limit_eval: check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs)",
+        "nft_limit_init: check_add_overflow(priv->rate, priv->burst, &rate_with_burst)",
+        "nft_limit_init: check_mul_overflow(tmp, priv->burst, &tokens)",
+        "nft_limit_init: check_mul_overflow(priv->nsecs, rate_with_burst, &tmp)",
+        "priv->rate == 0",
+        "check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs)",
+        "check_add_overflow(priv->rate, priv->burst, &rate_with_burst)",
+        "check_mul_overflow(tmp, priv->burst, &tokens)",
+        "check_mul_overflow(priv->nsecs, rate_with_burst, &tmp)"
+      ],
+      "guard_sites": [
+        "nft_limit_eval",
+        "nft_limit_init"
+      ],
+      "safe_exits": [
+        "return -EINVAL;",
+        "return -EOVERFLOW;"
+      ],
+      "preserved_side_effects": [
+        "nft_limit_eval: 条件 priv->rate == 0 命中时返回 -EINVAL",
+        "nft_limit_eval: 返回 -EINVAL",
+        "nft_limit_eval: 更新 priv->nsecs",
+        "nft_limit_eval: 条件 check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs) 命中时返回 -EOVERFLOW",
+        "nft_limit_init: 条件 check_add_overflow(priv->rate, priv->burst, &rate_with_burst) 命中时返回 -EOVERFLOW",
+        "nft_limit_init: 更新 tokens",
+        "nft_limit_init: 调用 div64_u64(...)",
+        "nft_limit_init: 条件 check_mul_overflow(tmp, priv->burst, &tokens) 命中时返回 -EOVERFLOW",
+        "nft_limit_init: 返回 -EOVERFLOW",
+        "nft_limit_init: 条件 check_mul_overflow(priv->nsecs, rate_with_burst, &tmp) 命中时返回 -EOVERFLOW",
+        "u64 tmp = div64_u64(priv->nsecs, priv->rate);",
+        "tokens = div64_u64(tmp, priv->rate);"
+      ],
+      "touched_files": [
+        "net/netfilter/nft_limit.c"
+      ],
+      "touched_functions": [
+        "nft_limit_eval",
+        "nft_limit_init"
+      ],
+      "touched_state": [],
+      "recommended_strategy": "semantic_guard",
+      "confidence": 0.92,
+      "evidence": [
+        "guard 条件: nft_limit_eval: priv->rate == 0 | nft_limit_eval: check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs) | nft_limit_init: check_add_overflow(priv->rate, priv->burst, &rate_with_burst)",
+        "安全退出: return -EINVAL; | return -EOVERFLOW;",
+        "保留副作用: nft_limit_eval: 条件 priv->rate == 0 命中时返回 -EINVAL | nft_limit_eval: 返回 -EINVAL | nft_limit_eval: 更新 priv->nsecs",
+        "推荐策略: semantic_guard"
+      ]
+    },
+    "selected_recipe": "semantic_guard_rewrite",
+    "selected_strategy": null,
+    "strategy": "semantic_guard_rewrite",
+    "strategy_switch": {
+      "repair_intent_strategy": "semantic_guard",
+      "selected_recipe": "semantic_guard_rewrite",
+      "selected_strategy": null,
+      "final_strategy": "semantic_guard_rewrite",
+      "switched": true,
+      "reason": "优先选择综合得分最高的候选，当前命中 semantic_guard_rewrite，排序得分 0.849"
+    },
+    "failure_type": "none",
+    "failure_attribution": {
+      "present": true,
+      "stage_name": "build",
+      "failure_type": "none",
+      "summary": "构建阶段已完成。",
+      "agent_next_action": null,
+      "diagnostic_details": {
+        "route_effectiveness": {
+          "task_id": "reviewv0510-26668",
+          "attempt_no": 1,
+          "status": "first_attempt",
+          "current_recipe": "semantic_guard_rewrite",
+          "current_patch_hash": "c4b01f4ed1a3a2fa33f9818ec5ddfdf54cb59e1695b92d0e538403f9f60e942e",
+          "current_changed_line_count": 24,
+          "summary": "首轮尝试，无上一轮补丁可比较"
+        },
+        "agent_next_action": {
+          "action": "stop_or_manual_review",
+          "reason": "none 暂无自动重试策略",
+          "retry_scope": "manual"
+        }
+      }
+    },
+    "source_paths": {
+      "repair_intent": "workspaces/reviewv0510-26668/analysis/repair_intent.json",
+      "rewrite_plan": "workspaces/reviewv0510-26668/attempts/001/rewrite/rewrite_plan.json",
+      "failure_record": "workspaces/reviewv0510-26668/attempts/001/logs/failure_record.json",
+      "build_summary": "workspaces/reviewv0510-26668/attempts/001/artifacts/build_summary.json"
+    },
+    "source_exists": {
+      "repair_intent": true,
+      "rewrite_plan": true,
+      "failure_record": true,
+      "build_summary": true
+    }
+  },
+  "key_paths": {
+    "report_json": "workspaces/reviewv0510-26668/reports/report.json",
+    "report_md": "workspaces/reviewv0510-26668/reports/report.md",
+    "workspace_dir": "workspaces/reviewv0510-26668",
+    "report_trace": "workspaces/reviewv0510-26668/attempts/001/trace/harness_trace.json",
+    "report_build_log": "workspaces/reviewv0510-26668/attempts/001/logs/build.log"
+  },
+  "known_limits": [],
+  "explanations": [
+    "当前共执行 1 轮尝试。",
+    "分析、归因和报告阶段按只读路径整理证据，改写与构建阶段走写入独占路径。",
+    "当前成功率为 100%，已归档产物类型 57 类。",
+    "最近一轮结果为 built，失败类型为 无。"
+  ],
+  "next_priority_layer": "freeze",
+  "next_action": "当前任务已具备成功回放闭环，优先固化样例、脚本和验收材料"
+}

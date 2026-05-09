@@ -1,0 +1,25 @@
+{
+  "task_id": "reviewv0510-complex-26656",
+  "attempt_id": "reviewv0510-complex-26656-A001",
+  "stage_name": "build",
+  "failure_type": "none",
+  "summary": "构建阶段已完成。",
+  "evidence": [],
+  "diagnostic_details": {
+    "route_effectiveness": {
+      "task_id": "reviewv0510-complex-26656",
+      "attempt_no": 1,
+      "status": "first_attempt",
+      "current_recipe": "semantic_guard_rewrite",
+      "current_patch_hash": "3fdaaf26a2e4d6c4dfd74389abb946dec326f1405b3bbc0101c385a835469c76",
+      "current_changed_line_count": 21,
+      "summary": "首轮尝试，无上一轮补丁可比较"
+    },
+    "agent_next_action": {
+      "action": "stop_or_manual_review",
+      "reason": "none 暂无自动重试策略",
+      "retry_scope": "manual"
+    }
+  },
+  "created_at": "2026-05-09T10:16:41.639108Z"
+}

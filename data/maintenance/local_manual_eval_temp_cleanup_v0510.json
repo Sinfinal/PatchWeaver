@@ -1,0 +1,28 @@
+﻿{
+    "generated_at":  "2026-05-09T10:49:41Z",
+    "purpose":  "local manual evaluation temp cleanup",
+    "project_root":  "D:\\spaces\\ai\\PatchWeaver",
+    "cleaned":  [
+
+                ],
+    "skipped":  [
+                    {
+                        "path":  "D:\\spaces\\ai\\PatchWeaver\\.pytest_cache",
+                        "reason":  "not_exists"
+                    }
+                ],
+    "errors":  [
+                   {
+                       "path":  "D:\\spaces\\ai\\PatchWeaver\\.pytest_tmp",
+                       "reason":  "Access to the path \u0027D:\\spaces\\ai\\PatchWeaver\\.pytest_tmp\u0027 is denied."
+                   },
+                   {
+                       "path":  "D:\\spaces\\ai\\PatchWeaver\\data\\cache",
+                       "reason":  "Access to the path is denied."
+                   },
+                   {
+                       "path":  "D:\\spaces\\ai\\PatchWeaver\\tests\\_tmp",
+                       "reason":  "Access to the path \u0027D:\\spaces\\ai\\PatchWeaver\\tests\\_tmp\\build-precheck-placeholder-oddkn7q4\u0027 is denied."
+                   }
+               ]
+}

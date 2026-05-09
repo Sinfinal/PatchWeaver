@@ -1,0 +1,7 @@
+{
+  "status": "passed",
+  "ok": true,
+  "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+  "command": null,
+  "log_path": null
+}

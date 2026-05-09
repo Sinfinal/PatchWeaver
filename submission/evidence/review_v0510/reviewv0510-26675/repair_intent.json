@@ -1,0 +1,38 @@
+{
+  "cve_id": "CVE-2024-26675",
+  "bug_class": "cve_fix",
+  "root_cause": "ppp_async_ioctl 中存在条件判断或状态转换缺陷，修复围绕条件 `val > U16_MAX` 展开。 依据：[ Upstream commit cb88cb53badb8aeb3955ad6ce80b07b598e310b8 ]",
+  "vulnerability_conditions": [
+    "ppp_async_ioctl: val > U16_MAX"
+  ],
+  "guard_conditions": [
+    "ppp_async_ioctl: val > U16_MAX",
+    "val > U16_MAX"
+  ],
+  "guard_sites": [
+    "ppp_async_ioctl"
+  ],
+  "safe_exits": [
+    "break;"
+  ],
+  "preserved_side_effects": [
+    "ppp_async_ioctl: 条件 val > U16_MAX 命中时更新 err",
+    "ppp_async_ioctl: 更新 err",
+    "err = -EINVAL;"
+  ],
+  "touched_files": [
+    "drivers/net/ppp/ppp_async.c"
+  ],
+  "touched_functions": [
+    "ppp_async_ioctl"
+  ],
+  "touched_state": [],
+  "recommended_strategy": "semantic_guard",
+  "confidence": 0.92,
+  "evidence": [
+    "guard 条件: ppp_async_ioctl: val > U16_MAX | val > U16_MAX",
+    "安全退出: break;",
+    "保留副作用: ppp_async_ioctl: 条件 val > U16_MAX 命中时更新 err | ppp_async_ioctl: 更新 err | err = -EINVAL;",
+    "推荐策略: semantic_guard"
+  ]
+}

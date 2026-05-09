@@ -139,3 +139,188 @@ def test_release_service_writes_manifest_and_gate(monkeypatch, tmp_path: Path) -
     manifest_json = json.loads((project_root / manifest_payload["final_manifest_json"]).read_text(encoding="utf-8"))
     assert manifest_json["models"]["topology"] == "single_primary_with_optional_helpers"
     assert any(item["name"] == "PatchWeaver-模型选型说明.md" for item in manifest_json["documents"])
+
+
+def test_release_service_accepts_representative_metrics_as_evaluation_summary(tmp_path: Path) -> None:
+    project_root = tmp_path / "project"
+    data_dir = project_root / "data"
+    workspace_root = project_root / "workspaces"
+    metrics_dir = data_dir / "evaluations" / "validation_v0509"
+    database_path = data_dir / "patchweaver.db"
+    metrics_dir.mkdir(parents=True, exist_ok=True)
+    workspace_root.mkdir(parents=True, exist_ok=True)
+    (metrics_dir / "representative_metrics_v0510.json").write_text(
+        json.dumps(
+            {
+                "metrics": {
+                    "representative_total": 10,
+                    "representative_success_count": 10,
+                    "representative_success_rate": 1.0,
+                    "average_attempts": 1.0,
+                },
+                "evidence_summary": {"ko": {"passed": 10, "total": 10}},
+                "failure_buckets": {"success": 10},
+                "target_gap": {"explanation": "代表集达到目标。"},
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    service = ReleaseService(
+        runtime=SimpleNamespace(
+            project_root=project_root,
+            data_dir=data_dir,
+            workspace_root=workspace_root,
+            manifest_dir=data_dir / "manifests",
+            database_path=database_path,
+            profile_name="full",
+            default_kernel="6.6.102-5.2.an23.x86_64",
+        ),
+        build_config=SimpleNamespace(),
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+        models_config=ModelsConfig(),
+        task_repo=TaskRepository(database_path, project_root),
+        attempt_repo=AttemptRepository(database_path, project_root),
+        artifact_repo=ArtifactRepository(database_path, project_root),
+    )
+
+    summaries = service._evaluation_summaries()
+
+    assert summaries == [
+        {
+            "fixture_name": "validation_v0509/representative_metrics_v0510",
+            "success_count": 10,
+            "matched_fixtures": 10,
+            "missing_fixtures": 0,
+            "success_rate": 1.0,
+            "bucket_order": ["success"],
+            "bucket_counts": {"success": 10},
+            "bucket_summary": {"ko": {"passed": 10, "total": 10}},
+            "mixed_summary_note": "代表集达到目标。",
+            "summary_json_path": "data/evaluations/validation_v0509/representative_metrics_v0510.json",
+            "summary_md_path": "data/evaluations/validation_v0509/representative_metrics_v0510.md",
+        }
+    ]
+
+
+def test_release_service_accepts_full_run_result_as_evaluation_summary(tmp_path: Path) -> None:
+    project_root = tmp_path / "project"
+    data_dir = project_root / "data"
+    workspace_root = project_root / "workspaces"
+    validation_dir = data_dir / "evaluations" / "validation_v0509"
+    database_path = data_dir / "patchweaver.db"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    workspace_root.mkdir(parents=True, exist_ok=True)
+    (validation_dir / "final_holdout10_full_run_v0509.json").write_text(
+        json.dumps(
+            {
+                "summary": {
+                    "total_cases": 10,
+                    "representative_total": 10,
+                    "representative_success_rate": 1.0,
+                    "average_attempts": 1.0,
+                    "bucket_counts": {"buildable_and_should_pass": 10},
+                    "current_positive_pool_size": 12,
+                    "positive_pool_gap": 0,
+                }
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    service = ReleaseService(
+        runtime=SimpleNamespace(
+            project_root=project_root,
+            data_dir=data_dir,
+            workspace_root=workspace_root,
+            manifest_dir=data_dir / "manifests",
+            database_path=database_path,
+            profile_name="full",
+            default_kernel="6.6.102-5.2.an23.x86_64",
+        ),
+        build_config=SimpleNamespace(),
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+        models_config=ModelsConfig(),
+        task_repo=TaskRepository(database_path, project_root),
+        attempt_repo=AttemptRepository(database_path, project_root),
+        artifact_repo=ArtifactRepository(database_path, project_root),
+    )
+
+    summaries = service._evaluation_summaries()
+
+    assert summaries[0]["fixture_name"] == "validation_v0509/final_holdout10_full_run_v0509"
+    assert summaries[0]["success_count"] == 10
+    assert summaries[0]["matched_fixtures"] == 10
+    assert summaries[0]["success_rate"] == 1.0
+    assert summaries[0]["summary_json_path"] == "data/evaluations/validation_v0509/final_holdout10_full_run_v0509.json"
+
+
+def test_release_service_accepts_legacy_full_run_total_cases_only(tmp_path: Path) -> None:
+    project_root = tmp_path / "project"
+    data_dir = project_root / "data"
+    workspace_root = project_root / "workspaces"
+    validation_dir = data_dir / "evaluations" / "review_v0510"
+    database_path = data_dir / "patchweaver.db"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    workspace_root.mkdir(parents=True, exist_ok=True)
+    (validation_dir / "review_complex2_full.json").write_text(
+        json.dumps(
+            {
+                "summary": {
+                    "total_cases": 2,
+                    "representative_success_rate": 1.0,
+                    "average_attempts": 1.0,
+                    "bucket_counts": {"buildable_and_should_pass": 2},
+                    "current_positive_pool_size": 12,
+                    "positive_pool_gap": 0,
+                }
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    service = ReleaseService(
+        runtime=SimpleNamespace(
+            project_root=project_root,
+            data_dir=data_dir,
+            workspace_root=workspace_root,
+            manifest_dir=data_dir / "manifests",
+            database_path=database_path,
+            profile_name="full",
+            default_kernel="6.6.102-5.2.an23.x86_64",
+        ),
+        build_config=SimpleNamespace(),
+        logging_config=SimpleNamespace(
+            file_path="data/logs/patchweaver.log",
+            jsonl_path="data/logs/patchweaver.jsonl",
+            enable_jsonl=True,
+        ),
+        models_config=ModelsConfig(),
+        task_repo=TaskRepository(database_path, project_root),
+        attempt_repo=AttemptRepository(database_path, project_root),
+        artifact_repo=ArtifactRepository(database_path, project_root),
+    )
+
+    summaries = service._evaluation_summaries()
+
+    assert summaries[0]["fixture_name"] == "review_v0510/review_complex2_full"
+    assert summaries[0]["success_count"] == 2
+    assert summaries[0]["matched_fixtures"] == 2
+    assert summaries[0]["success_rate"] == 1.0

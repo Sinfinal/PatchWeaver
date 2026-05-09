@@ -1,0 +1,9 @@
+{
+  "task_id": "reviewv0510-complex-26666",
+  "attempt_no": 1,
+  "status": "first_attempt",
+  "current_recipe": "semantic_guard_rewrite",
+  "current_patch_hash": "0a36b2c0c08906739d72d74622666871df934d9d10c0ae3e205f7d7022a1e67c",
+  "current_changed_line_count": 8,
+  "summary": "首轮尝试，无上一轮补丁可比较"
+}

@@ -1,0 +1,9 @@
+{
+  "task_id": "reviewv0510-26726",
+  "attempt_no": 1,
+  "status": "first_attempt",
+  "current_recipe": "semantic_guard_rewrite",
+  "current_patch_hash": "c5b895d1562b022a940d7fcbfaefe75bdcf04da692ee10205a16c44039eb61e5",
+  "current_changed_line_count": 20,
+  "summary": "首轮尝试，无上一轮补丁可比较"
+}

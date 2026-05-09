@@ -1,0 +1,39 @@
+{
+  "cve_id": "CVE-2024-26656",
+  "bug_class": "cve_fix",
+  "root_cause": "drivers/gpu/drm/amd/amdgpu/amdgpu_hmm.c 中存在对象生命周期处理缺陷，修复围绕条件 `r` 展开。 依据：MIME-Version: 1.0 Content-Type: text/plain; charset=UTF-8 Content-Transfer-Encoding: 8bit",
+  "vulnerability_conditions": [
+    "r"
+  ],
+  "guard_conditions": [
+    "r"
+  ],
+  "guard_sites": [],
+  "safe_exits": [
+    "return r;"
+  ],
+  "preserved_side_effects": [
+    "返回 mmu_interval_notifier_insert(...)",
+    "更新 r",
+    "调用 amdgpu_bo_size(...)",
+    "条件 r 命中时调用 amdgpu_hmm_unregister(...)",
+    "调用 amdgpu_hmm_unregister(...)",
+    "调用 mmu_interval_notifier_remove(...)",
+    "更新 bo->notifier.mm",
+    "返回 r",
+    "bo->notifier.mm = NULL;"
+  ],
+  "touched_files": [
+    "drivers/gpu/drm/amd/amdgpu/amdgpu_hmm.c"
+  ],
+  "touched_functions": [],
+  "touched_state": [],
+  "recommended_strategy": "semantic_guard",
+  "confidence": 0.92,
+  "evidence": [
+    "guard 条件: r",
+    "安全退出: return r;",
+    "保留副作用: 返回 mmu_interval_notifier_insert(...) | 更新 r | 调用 amdgpu_bo_size(...)",
+    "推荐策略: semantic_guard"
+  ]
+}

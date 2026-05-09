@@ -1,0 +1,392 @@
+{
+  "mode": "full",
+  "profile": "demo",
+  "task_prefix": "reviewv0510",
+  "max_run_attempts": 1,
+  "run_timeout_sec": 600,
+  "stable_baseline_timeout_sec": 300,
+  "prepare_stable_baseline": true,
+  "only_positive_candidates": false,
+  "positive_pool_fixture": "evaluations/fixtures/challenge_positive_pool_confirmed_v0426.json",
+  "known_kpatch_constraint_fixture": "evaluations/fixtures/challenge_kpatch_constraint_pool_v0427.json",
+  "include_known_pool_cases": true,
+  "positive_pool_target": 10,
+  "min_livepatchability_score": 75,
+  "only_high_livepatchability": false,
+  "rag_seed_fixture": "evaluations/fixtures/rag_seed_linux_kernel_2024_batch200.json",
+  "config_fragment_dir": "data/evaluations/review_v0510/review_26742_full_config_fragments",
+  "minimal_config_fragments_written": [],
+  "positive_pool_added": [],
+  "project_root": "/home/patchweaver/current",
+  "workspace_root": "/home/patchweaver/current/workspaces",
+  "summary": {
+    "total_cases": 1,
+    "representative_total": 1,
+    "representative_success_rate": 1.0,
+    "average_attempts": 1.0,
+    "bucket_counts": {
+      "buildable_and_should_pass": 1
+    },
+    "tier_counts": {
+      "positive_acceptance_confirmed": 1
+    },
+    "role_counts": {
+      "positive_acceptance_sample": 1
+    },
+    "livepatchability_tier_counts": {
+      "high": 1
+    },
+    "livepatchability_high": [
+      "CVE-2024-26742"
+    ],
+    "confirmed_positive_acceptance": [
+      "CVE-2024-26742"
+    ],
+    "positive_pool_candidates": [
+      "CVE-2024-26742"
+    ],
+    "stable_bucket_ready": [
+      "CVE-2024-26742"
+    ],
+    "rag_seed_hits": [
+      "CVE-2024-26742"
+    ],
+    "known_pool_skipped": [],
+    "stable_source_alignment_required": [],
+    "stable_baseline_prepared": [
+      "CVE-2024-26742"
+    ],
+    "minimal_config_fragments": [],
+    "rag_subsystem_counts": {
+      "drivers/scsi": 1
+    },
+    "positive_pool_target": 10,
+    "current_positive_pool_size": 12,
+    "projected_positive_pool_size": 12,
+    "positive_pool_gap": 0
+  },
+  "results": [
+    {
+      "cve_id": "CVE-2024-26742",
+      "task_id": "reviewv0510-26742",
+      "mode": "full",
+      "profile": "demo",
+      "create_status": "ok",
+      "analyze_status": "ok",
+      "selected_route": "minimal_livepatch_wrap",
+      "preferred_route": "minimal_livepatch_wrap",
+      "direct_apply_viable": true,
+      "high_risk_count": 0,
+      "dominant_risk_types": [
+        "inline_side_effect"
+      ],
+      "requires_callback": false,
+      "requires_shadow_variable": false,
+      "summary": "命中 1 类热补丁约束：inline_side_effect，涉及函数 pqi_map_queues，建议原语 direct_apply, wrapper，direct apply 仅保留为对照或回退路线",
+      "target_files": [
+        "drivers/scsi/smartpqi/smartpqi_init.c"
+      ],
+      "critical_calls_count": 4,
+      "key_conditions_count": 1,
+      "key_side_effects_count": 4,
+      "target_function_count": 1,
+      "stable_source_baseline_ref": "4f5b15c15e6016efb3e14582d02cc4ddf57227df^",
+      "patch_shape": {
+        "touched_files": [
+          "drivers/scsi/smartpqi/smartpqi_init.c"
+        ],
+        "touched_file_count": 1,
+        "touched_functions": [
+          "pqi_map_queues"
+        ],
+        "touched_function_count": 1,
+        "changed_line_count": 6,
+        "added_line_count": 4,
+        "removed_line_count": 2,
+        "guard_like": true,
+        "touches_kbuild": false,
+        "touches_header": false,
+        "touches_init_or_probe": false,
+        "touches_global_or_static_data": false,
+        "touches_struct_definition": false,
+        "risk_markers": []
+      },
+      "sample_bucket": "buildable_and_should_pass",
+      "acceptance_role": "positive_acceptance_sample",
+      "screening_tier": "positive_acceptance_confirmed",
+      "reason": "已产出 .ko，且加载、卸载、smoke、自检均通过",
+      "stable_bucket_ready": true,
+      "positive_pool_candidate": true,
+      "rag_seed_hit": true,
+      "rag_seed_group": "rag-linux-kernel-2024-batch200",
+      "rag_subsystem": "drivers/scsi",
+      "rag_summary": "scsi: smartpqi: Fix disable_managed_interrupts",
+      "livepatchability": {
+        "score": 77,
+        "tier": "high",
+        "full_run_recommended": false,
+        "boosts": [
+          "patch 变更行数在 1 到 20 行",
+          "只触达 1 个源码文件",
+          "只触达 1 到 2 个函数",
+          "约束诊断给出低风险路线",
+          "新增逻辑像函数局部 guard"
+        ],
+        "penalties": [
+          "未能映射到具体 .ko 模块"
+        ],
+        "shape": {
+          "touched_files": [
+            "drivers/scsi/smartpqi/smartpqi_init.c"
+          ],
+          "touched_file_count": 1,
+          "touched_functions": [
+            "pqi_map_queues"
+          ],
+          "touched_function_count": 1,
+          "changed_line_count": 6,
+          "added_line_count": 4,
+          "removed_line_count": 2,
+          "guard_like": true,
+          "touches_kbuild": false,
+          "touches_header": false,
+          "touches_init_or_probe": false,
+          "touches_global_or_static_data": false,
+          "touches_struct_definition": false,
+          "risk_markers": []
+        }
+      },
+      "livepatchability_score": 77,
+      "livepatchability_tier": "high",
+      "stable_baseline_preparation": {
+        "status": "prepared",
+        "baseline_ref": "4f5b15c15e6016efb3e14582d02cc4ddf57227df^",
+        "output_dir": "/home/patchweaver/stable-baselines/4f5b15c15e6016efb3e14582d02cc4ddf57227df-0056ecd0d15a",
+        "reused_existing": true,
+        "git_head": null,
+        "config_path": "/home/patchweaver/stable-baselines/4f5b15c15e6016efb3e14582d02cc4ddf57227df-0056ecd0d15a/.config"
+      },
+      "stable_kernel_src_dir": "/home/patchweaver/stable-baselines/4f5b15c15e6016efb3e14582d02cc4ddf57227df-0056ecd0d15a",
+      "stable_baseline_ready": true,
+      "run_attempts": [
+        {
+          "run_index": 1,
+          "run_status": "built",
+          "run_failure_type": null,
+          "build_exec_status": "executed",
+          "target_state": null,
+          "max_attempts_exhausted": false,
+          "report_status": "ok",
+          "replay_status": "ok",
+          "latest_attempt_dir": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001",
+          "failure_type": "none",
+          "build_status": "built",
+          "validation_status": "passed",
+          "screening_tier": "positive_acceptance_confirmed",
+          "sample_bucket": "buildable_and_should_pass"
+        }
+      ],
+      "run_index": 1,
+      "run_status": "built",
+      "run_failure_type": null,
+      "build_exec_status": "executed",
+      "target_state": null,
+      "max_attempts_exhausted": false,
+      "report_status": "ok",
+      "replay_status": "ok",
+      "latest_attempt_dir": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001",
+      "build_summary": {
+        "task_id": "reviewv0510-26742",
+        "attempt_id": "reviewv0510-26742-A001",
+        "backend": "local",
+        "builder_cmd": "/usr/bin/kpatch-build",
+        "status": "built",
+        "summary": "本机构建成功，并已记录模块产物。",
+        "rewritten_patch_path": "workspaces/reviewv0510-26742/attempts/001/rewrite/rewritten.patch",
+        "source_dir": "workspaces/reviewv0510-26742/attempts/001/sources/reverse_unpatched",
+        "build_log_path": "workspaces/reviewv0510-26742/attempts/001/logs/build.log",
+        "module_path": "workspaces/reviewv0510-26742/attempts/001/output/patchweaver-reviewv0510-26742-001.ko",
+        "failure_type": null,
+        "build_exec_status": "executed",
+        "target_state": null,
+        "exit_code": 0,
+        "created_at": "2026-05-09T09:33:14.832617Z"
+      },
+      "validation_report": {
+        "semantic_precheck_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+          "command": null,
+          "log_path": null
+        },
+        "load_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块加载测试通过。",
+          "command": "insmod /home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/output/patchweaver-reviewv0510-26742-001.ko",
+          "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/load.log"
+        },
+        "unload_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "模块卸载测试通过。",
+          "command": "rmmod patchweaver_reviewv0510_26742_001",
+          "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/unload.log"
+        },
+        "smoke_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "冒烟测试通过。",
+          "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+          "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/smoke.log"
+        },
+        "selftest_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "已完成模块产物与基本加载前置检查。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/selftest.log"
+        },
+        "regression_result": {
+          "status": "skipped",
+          "ok": false,
+          "detail": "配置已关闭回归验证。",
+          "command": null,
+          "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/regression.log"
+        },
+        "semantic_guard_result": {
+          "status": "passed",
+          "ok": true,
+          "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+          "command": null,
+          "log_path": null
+        },
+        "validation_matrix": [
+          {
+            "name": "semantic_precheck",
+            "category": "static",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+            "log_path": null
+          },
+          {
+            "name": "selftest",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "已完成模块产物与基本加载前置检查。",
+            "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/selftest.log"
+          },
+          {
+            "name": "load_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "模块加载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/load.log"
+          },
+          {
+            "name": "unload_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "模块卸载测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/unload.log"
+          },
+          {
+            "name": "smoke_test",
+            "category": "dynamic",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "冒烟测试通过。",
+            "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/smoke.log"
+          },
+          {
+            "name": "semantic_guard",
+            "category": "guard",
+            "enabled": true,
+            "status": "passed",
+            "risk_level": "medium",
+            "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+            "log_path": null
+          },
+          {
+            "name": "regression",
+            "category": "regression",
+            "enabled": false,
+            "status": "skipped",
+            "risk_level": "medium",
+            "detail": "配置已关闭回归验证。",
+            "log_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/logs/regression.log"
+          }
+        ],
+        "validation_intensity": "standard",
+        "status": "passed",
+        "notes": [
+          "验证任务: reviewv0510-26742",
+          "构建状态: built",
+          "风险等级: medium",
+          "验证档位: standard",
+          "验证强度: standard",
+          "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+        ]
+      },
+      "failure_record": {
+        "task_id": "reviewv0510-26742",
+        "attempt_id": "reviewv0510-26742-A001",
+        "stage_name": "build",
+        "failure_type": "none",
+        "summary": "构建阶段已完成。",
+        "evidence": [],
+        "diagnostic_details": {
+          "route_effectiveness": {
+            "task_id": "reviewv0510-26742",
+            "attempt_no": 1,
+            "status": "first_attempt",
+            "current_recipe": "semantic_guard_rewrite",
+            "current_patch_hash": "81c5b53831c02d4cfa7b28855a173094acff535051d8f12f3fc3da60a4be541d",
+            "current_changed_line_count": 6,
+            "summary": "首轮尝试，无上一轮补丁可比较"
+          },
+          "agent_next_action": {
+            "action": "stop_or_manual_review",
+            "reason": "none 暂无自动重试策略",
+            "retry_scope": "manual"
+          }
+        },
+        "created_at": "2026-05-09T09:33:14.858012Z"
+      },
+      "build_status": "built",
+      "validation_status": "passed",
+      "module_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/output/patchweaver-reviewv0510-26742-001.ko",
+      "module_exists": true,
+      "module_vermagic": "6.6.102-5.2.an23.x86_64 SMP preempt mod_unload modversions",
+      "target_kernel_release": "6.6.102-5.2.an23.x86_64",
+      "patch_apply_subtype": null,
+      "reverse_unpatch_status": null,
+      "stable_source_alignment_required": false,
+      "stable_source_baseline_action": null,
+      "agent_next_action": "stop_or_manual_review",
+      "failure_type": "none",
+      "diagnostics": {
+        "captured_at": "2026-05-09T09:33:18.836617+00:00",
+        "diagnostics_dir": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/diagnostics",
+        "process_snapshot_path": "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/diagnostics/process_snapshot.txt",
+        "copied_logs": [
+          "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/diagnostics/build.log",
+          "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/diagnostics/failure_record.json",
+          "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/diagnostics/build_summary.json",
+          "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/diagnostics/validation_report.json",
+          "/home/patchweaver/current/workspaces/reviewv0510-26742/attempts/001/diagnostics/harness_trace.json"
+        ]
+      }
+    }
+  ]
+}

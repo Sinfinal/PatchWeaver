@@ -1,0 +1,20 @@
+{
+  "bug_class": "cve_fix",
+  "root_cause": "ppp_async_ioctl 中存在条件判断或状态转换缺陷，修复围绕条件 `val > U16_MAX` 展开。 依据：[ Upstream commit cb88cb53badb8aeb3955ad6ce80b07b598e310b8 ]",
+  "must_keep_conditions": [
+    "ppp_async_ioctl: val > U16_MAX"
+  ],
+  "must_keep_side_effects": [
+    "ppp_async_ioctl: 条件 val > U16_MAX 命中时更新 err",
+    "ppp_async_ioctl: 更新 err"
+  ],
+  "critical_calls": [
+    "get_user"
+  ],
+  "touched_files": [
+    "drivers/net/ppp/ppp_async.c"
+  ],
+  "touched_functions": [
+    "ppp_async_ioctl"
+  ]
+}

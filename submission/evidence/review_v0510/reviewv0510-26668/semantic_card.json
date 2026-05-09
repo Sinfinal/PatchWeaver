@@ -1,0 +1,39 @@
+{
+  "bug_class": "cve_fix",
+  "root_cause": "nft_limit_eval 中存在边界长度校验缺陷，补丁将条件 `priv->rate == 0 || priv->nsecs < unit` 调整为 `priv->rate == 0`。 依据：overflow",
+  "must_keep_conditions": [
+    "nft_limit_eval: priv->rate == 0",
+    "nft_limit_eval: check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs)",
+    "nft_limit_init: check_add_overflow(priv->rate, priv->burst, &rate_with_burst)",
+    "nft_limit_init: check_mul_overflow(tmp, priv->burst, &tokens)",
+    "nft_limit_init: check_mul_overflow(priv->nsecs, rate_with_burst, &tmp)"
+  ],
+  "must_keep_side_effects": [
+    "nft_limit_eval: 条件 priv->rate == 0 命中时返回 -EINVAL",
+    "nft_limit_eval: 返回 -EINVAL",
+    "nft_limit_eval: 更新 priv->nsecs",
+    "nft_limit_eval: 条件 check_mul_overflow(unit, NSEC_PER_SEC, &priv->nsecs) 命中时返回 -EOVERFLOW",
+    "nft_limit_init: 条件 check_add_overflow(priv->rate, priv->burst, &rate_with_burst) 命中时返回 -EOVERFLOW",
+    "nft_limit_init: 更新 tokens",
+    "nft_limit_init: 调用 div64_u64(...)",
+    "nft_limit_init: 条件 check_mul_overflow(tmp, priv->burst, &tokens) 命中时返回 -EOVERFLOW",
+    "nft_limit_init: 返回 -EOVERFLOW",
+    "nft_limit_init: 条件 check_mul_overflow(priv->nsecs, rate_with_burst, &tmp) 命中时返回 -EOVERFLOW"
+  ],
+  "critical_calls": [
+    "nft_limit_init",
+    "rate_with_burst",
+    "be64_to_cpu",
+    "nla_get_be64",
+    "check_mul_overflow",
+    "check_add_overflow",
+    "div64_u64"
+  ],
+  "touched_files": [
+    "net/netfilter/nft_limit.c"
+  ],
+  "touched_functions": [
+    "nft_limit_eval",
+    "nft_limit_init"
+  ]
+}

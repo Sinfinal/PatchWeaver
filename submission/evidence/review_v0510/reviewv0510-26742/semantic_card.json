@@ -1,0 +1,25 @@
+{
+  "bug_class": "cve_fix",
+  "root_cause": "pqi_map_queues 中存在条件判断或状态转换缺陷，修复围绕条件 `!ctrl_info->disable_managed_interrupts` 展开。 依据：[ Upstream commit 5761eb9761d2d5fe8248a9b719efc4d8baf1f24a ]",
+  "must_keep_conditions": [
+    "pqi_map_queues: !ctrl_info->disable_managed_interrupts"
+  ],
+  "must_keep_side_effects": [
+    "pqi_map_queues: 调用 blk_mq_pci_map_queues(...)",
+    "pqi_map_queues: 条件 !ctrl_info->disable_managed_interrupts 命中时返回 blk_mq_pci_map_queues(...)",
+    "pqi_map_queues: 返回 blk_mq_pci_map_queues(...)",
+    "pqi_map_queues: 返回 blk_mq_map_queues(...)"
+  ],
+  "critical_calls": [
+    "shost_to_hba",
+    "blk_mq_pci_map_queues",
+    "blk_mq_map_queues",
+    "pqi_is_tape_changer_device"
+  ],
+  "touched_files": [
+    "drivers/scsi/smartpqi/smartpqi_init.c"
+  ],
+  "touched_functions": [
+    "pqi_map_queues"
+  ]
+}

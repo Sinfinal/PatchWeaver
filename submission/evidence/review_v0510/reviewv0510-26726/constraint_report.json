@@ -1,0 +1,37 @@
+{
+  "task_id": "reviewv0510-26726",
+  "semantic_card_source": "deterministic",
+  "semantic_card_enriched": false,
+  "target_files": [
+    "fs/btrfs/inode.c"
+  ],
+  "target_functions": [],
+  "risk_items": [],
+  "dominant_risk_types": [],
+  "suggested_primitives": [
+    "direct_apply"
+  ],
+  "forbidden_actions": [],
+  "route_hints": [
+    {
+      "route_name": "direct_apply_patch",
+      "summary": "当前未命中显式热补丁约束，当前按文件级范围继续推进，优先走 direct_apply 路线",
+      "recommended_primitives": [
+        "direct_apply"
+      ],
+      "blocking_risk_types": [],
+      "preferred": true
+    }
+  ],
+  "candidate_routes": [
+    "direct_apply_patch"
+  ],
+  "preferred_route": "direct_apply_patch",
+  "high_risk_count": 0,
+  "requires_callback": false,
+  "requires_shadow_variable": false,
+  "direct_apply_viable": true,
+  "direct_apply_recommended": true,
+  "direct_apply_role": "primary",
+  "summary": "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查"
+}

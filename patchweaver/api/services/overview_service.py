@@ -46,9 +46,13 @@ class OverviewService:
             failed_tasks = self._count(connection, "SELECT COUNT(*) FROM tasks WHERE status = 'failed'")
             success_tasks = self._count(connection, "SELECT COUNT(*) FROM tasks WHERE status IN ('built', 'reported', 'succeeded')")
             target_state_tasks = self._count(connection, "SELECT COUNT(*) FROM tasks WHERE status = 'target_state'")
+            pending_tasks = self._count(
+                connection,
+                "SELECT COUNT(*) FROM tasks WHERE status IN ('created', 'analyzed')",
+            )
             running_tasks = self._count(
                 connection,
-                "SELECT COUNT(*) FROM tasks WHERE status IN ('created', 'analyzed', 'running', 'building', 'validating')",
+                "SELECT COUNT(*) FROM tasks WHERE status IN ('running', 'building', 'validating')",
             )
             recent_tasks = connection.execute(
                 """
@@ -118,13 +122,15 @@ class OverviewService:
                 "success_tasks": success_tasks,
                 "failed_tasks": failed_tasks,
                 "target_state_tasks": target_state_tasks,
+                "pending_tasks": pending_tasks,
                 "success_rate": success_rate,
                 "build_backend": build_env["backend"],
                 "build_ready": bool(build_env.get("builder_ok") and build_env.get("selected_source_ok") and build_env.get("config_ok")),
                 "validation_passed": next((row["total"] for row in validation_distribution if row["status"] == "passed"), 0),
                 "validation_failed": next((row["total"] for row in validation_distribution if row["status"] == "failed"), 0),
                 "latest_evaluation_summary": self._path(Path(latest_evaluation["artifact_path"])) if latest_evaluation is not None else None,
-                "delivery_ready": release_snapshot.get("final_gate_status") == "passed",
+                "delivery_ready": release_snapshot.get("final_gate_status") in {"passed", "limited"},
+                "delivery_limited": release_snapshot.get("final_gate_status") == "limited",
                 "selected_model": self.context.models_config.delivery_model,
             },
             "release": release_snapshot,
@@ -176,26 +182,34 @@ class OverviewService:
                 continue
 
             fixture_name = str(payload.get("fixture_name") or summary_path.parent.name)
-            summary_items.append(
-                {
-                    "fixture_name": fixture_name,
-                    "total_fixtures": int(payload.get("total_fixtures", 0) or 0),
-                    "matched_fixtures": int(payload.get("matched_fixtures", 0) or 0),
-                    "missing_fixtures": int(payload.get("missing_fixtures", 0) or 0),
-                    "success_count": int(payload.get("success_count", 0) or 0),
-                    "success_rate": float(payload.get("success_rate", 0.0) or 0.0),
-                    "average_attempts": float(payload.get("average_attempts", 0.0) or 0.0),
-                    "failure_distribution": payload.get("failure_distribution") or {},
-                    "bucket_order": payload.get("bucket_order") or [],
-                    "bucket_counts": payload.get("bucket_counts") or {},
-                    "bucket_summary": payload.get("bucket_summary") or {},
-                    "mixed_summary_note": payload.get("mixed_summary_note"),
-                    "summary_json_path": self._path(summary_path),
-                    "summary_md_path": self._path(summary_path.with_name("summary.md")),
-                    "updated_at": summary_path.stat().st_mtime,
-                    "sort_order": preferred_order.get(fixture_name, 99),
-                }
-            )
+            summary_items.append(self._evaluation_summary_item(summary_path, payload, fixture_name, preferred_order))
+
+        for metrics_path in sorted(evaluations_dir.glob("**/representative_metrics*.json")):
+            payload = self._read_json(metrics_path)
+            if not isinstance(payload, dict):
+                continue
+            metrics = payload.get("metrics") or {}
+            if not isinstance(metrics, dict) or "representative_total" not in metrics:
+                continue
+            fixture_name = str(payload.get("fixture_name") or f"{metrics_path.parent.name}/{metrics_path.stem}")
+            summary_items.append(self._representative_metrics_item(metrics_path, payload, fixture_name, preferred_order))
+
+        full_run_paths = {
+            *evaluations_dir.glob("**/*full_run*.json"),
+            *evaluations_dir.glob("**/*_full.json"),
+        }
+        for full_run_path in sorted(full_run_paths):
+            payload = self._read_json(full_run_path)
+            if not isinstance(payload, dict):
+                continue
+            summary = payload.get("summary") or {}
+            if not isinstance(summary, dict):
+                continue
+            total = int(summary.get("representative_total", summary.get("total_cases", 0)) or 0)
+            if total <= 0:
+                continue
+            fixture_name = str(payload.get("fixture_name") or f"{full_run_path.parent.name}/{full_run_path.stem}")
+            summary_items.append(self._full_run_summary_item(full_run_path, payload, fixture_name, preferred_order))
 
         summary_items.sort(
             key=lambda item: (
@@ -208,6 +222,103 @@ class OverviewService:
             item.pop("sort_order", None)
             item["updated_at"] = self._format_timestamp(float(item["updated_at"]))
         return summary_items
+
+    def _evaluation_summary_item(
+        self,
+        summary_path: Path,
+        payload: dict[str, Any],
+        fixture_name: str,
+        preferred_order: dict[str, int],
+    ) -> dict[str, Any]:
+        """把传统 summary.json 转成总览页统一摘要结构"""
+
+        return {
+            "fixture_name": fixture_name,
+            "total_fixtures": int(payload.get("total_fixtures", 0) or 0),
+            "matched_fixtures": int(payload.get("matched_fixtures", 0) or 0),
+            "missing_fixtures": int(payload.get("missing_fixtures", 0) or 0),
+            "success_count": int(payload.get("success_count", 0) or 0),
+            "success_rate": float(payload.get("success_rate", 0.0) or 0.0),
+            "average_attempts": float(payload.get("average_attempts", 0.0) or 0.0),
+            "failure_distribution": payload.get("failure_distribution") or {},
+            "bucket_order": payload.get("bucket_order") or [],
+            "bucket_counts": payload.get("bucket_counts") or {},
+            "bucket_summary": payload.get("bucket_summary") or {},
+            "mixed_summary_note": payload.get("mixed_summary_note"),
+            "summary_json_path": self._path(summary_path),
+            "summary_md_path": self._path(summary_path.with_name("summary.md")),
+            "updated_at": summary_path.stat().st_mtime,
+            "sort_order": preferred_order.get(fixture_name, 99),
+        }
+
+    def _representative_metrics_item(
+        self,
+        metrics_path: Path,
+        payload: dict[str, Any],
+        fixture_name: str,
+        preferred_order: dict[str, int],
+    ) -> dict[str, Any]:
+        """把封版代表集指标文件纳入总览页和交付门禁视野"""
+
+        metrics = payload.get("metrics") or {}
+        evidence_summary = payload.get("evidence_summary") or {}
+        total = int(metrics.get("representative_total", 0) or 0)
+        success_count = int(metrics.get("representative_success_count", 0) or 0)
+        success_rate = float(metrics.get("representative_success_rate", 0.0) or 0.0)
+        return {
+            "fixture_name": fixture_name,
+            "total_fixtures": total,
+            "matched_fixtures": total,
+            "missing_fixtures": 0,
+            "success_count": success_count,
+            "success_rate": success_rate,
+            "average_attempts": float(metrics.get("average_attempts", 0.0) or 0.0),
+            "failure_distribution": payload.get("failure_buckets") or {},
+            "bucket_order": list((payload.get("failure_buckets") or {}).keys()),
+            "bucket_counts": payload.get("failure_buckets") or {},
+            "bucket_summary": evidence_summary,
+            "mixed_summary_note": (payload.get("target_gap") or {}).get("explanation"),
+            "summary_json_path": self._path(metrics_path),
+            "summary_md_path": self._path(metrics_path.with_suffix(".md")),
+            "updated_at": metrics_path.stat().st_mtime,
+            "sort_order": preferred_order.get(fixture_name, 50),
+        }
+
+    def _full_run_summary_item(
+        self,
+        full_run_path: Path,
+        payload: dict[str, Any],
+        fixture_name: str,
+        preferred_order: dict[str, int],
+    ) -> dict[str, Any]:
+        """把 full-run 验证结果纳入总览页和交付门禁视野"""
+
+        summary = payload.get("summary") or {}
+        total = int(summary.get("representative_total", summary.get("total_cases", 0)) or 0)
+        success_rate = float(summary.get("representative_success_rate", 0.0) or 0.0)
+        success_count = int(round(total * success_rate))
+        return {
+            "fixture_name": fixture_name,
+            "total_fixtures": total,
+            "matched_fixtures": total,
+            "missing_fixtures": 0,
+            "success_count": success_count,
+            "success_rate": success_rate,
+            "average_attempts": float(summary.get("average_attempts", 0.0) or 0.0),
+            "failure_distribution": summary.get("bucket_counts") or {},
+            "bucket_order": list((summary.get("bucket_counts") or {}).keys()),
+            "bucket_counts": summary.get("bucket_counts") or {},
+            "bucket_summary": {
+                "positive_pool_size": summary.get("current_positive_pool_size"),
+                "positive_pool_gap": summary.get("positive_pool_gap"),
+                "livepatchability_tier_counts": summary.get("livepatchability_tier_counts") or {},
+            },
+            "mixed_summary_note": None,
+            "summary_json_path": self._path(full_run_path),
+            "summary_md_path": self._path(full_run_path.with_suffix(".md")),
+            "updated_at": full_run_path.stat().st_mtime,
+            "sort_order": preferred_order.get(fixture_name, 55),
+        }
 
     def _read_json(self, path: Path) -> dict[str, Any] | None:
         """安全读取 JSON 文件"""

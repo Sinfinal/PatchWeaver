@@ -1,0 +1,22 @@
+{
+  "bug_class": "cve_fix",
+  "root_cause": "tipc_nl_bearer_add 中存在条件判断或状态转换缺陷，修复围绕条件 `b->media->type_id != TIPC_MEDIA_TYPE_UDP` 展开。 依据：[ Upstream commit 3871aa01e1a779d866fa9dfdd5a836f342f4eb87 ]",
+  "must_keep_conditions": [
+    "tipc_nl_bearer_add: b->media->type_id != TIPC_MEDIA_TYPE_UDP"
+  ],
+  "must_keep_side_effects": [
+    "tipc_nl_bearer_add: 条件 b->media->type_id != TIPC_MEDIA_TYPE_UDP 命中时调用 rtnl_unlock(...)",
+    "tipc_nl_bearer_add: 调用 rtnl_unlock(...)",
+    "tipc_nl_bearer_add: 返回 -EINVAL"
+  ],
+  "critical_calls": [
+    "rtnl_unlock",
+    "tipc_udp_nl_bearer_add"
+  ],
+  "touched_files": [
+    "net/tipc/bearer.c"
+  ],
+  "touched_functions": [
+    "tipc_nl_bearer_add"
+  ]
+}

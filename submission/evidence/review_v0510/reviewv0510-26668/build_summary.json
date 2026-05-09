@@ -1,0 +1,17 @@
+{
+  "task_id": "reviewv0510-26668",
+  "attempt_id": "reviewv0510-26668-A001",
+  "backend": "local",
+  "builder_cmd": "/usr/bin/kpatch-build",
+  "status": "built",
+  "summary": "本机构建成功，并已记录模块产物。",
+  "rewritten_patch_path": "workspaces/reviewv0510-26668/attempts/001/rewrite/rewritten.patch",
+  "source_dir": "workspaces/reviewv0510-26668/attempts/001/sources/reverse_unpatched",
+  "build_log_path": "workspaces/reviewv0510-26668/attempts/001/logs/build.log",
+  "module_path": "workspaces/reviewv0510-26668/attempts/001/output/patchweaver-reviewv0510-26668-001.ko",
+  "failure_type": null,
+  "build_exec_status": "executed",
+  "target_state": null,
+  "exit_code": 0,
+  "created_at": "2026-05-09T10:00:11.896934Z"
+}
