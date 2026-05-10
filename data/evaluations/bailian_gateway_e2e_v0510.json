@@ -1,0 +1,1885 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-10T05:15:08.351964+00:00",
+  "api_base_url": "http://10.223.185.3:18084/api/v1",
+  "mode": "execute",
+  "task_id": "judge-like-v0510-20260509191933-26698",
+  "cve_id": "",
+  "actions": [
+    "status",
+    "agent_decision",
+    "report",
+    "replay"
+  ],
+  "summary": {
+    "total": 4,
+    "ok": 4,
+    "failed": 0,
+    "real_http_invoked": true,
+    "secrets_written": false
+  },
+  "cases": [
+    {
+      "action": "status",
+      "dry_run": false,
+      "ok": true,
+      "request": {
+        "method": "GET",
+        "url": "http://10.223.185.3:18084/api/v1/tasks/judge-like-v0510-20260509191933-26698",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "json": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "task": {
+            "task_id": "judge-like-v0510-20260509191933-26698",
+            "cve_id": "CVE-2024-26698",
+            "target_kernel": "6.6.102-5.2.an23.x86_64",
+            "target_kernel_source": "detected_build_env",
+            "profile_name": "demo",
+            "status": "built",
+            "current_attempt": 1,
+            "max_attempts": 3,
+            "workspace_dir": "workspaces/judge-like-v0510-20260509191933-26698",
+            "machine_profile": {
+              "machine_system": "Linux",
+              "machine_kernel": "6.6.102-5.2.an23.x86_64",
+              "machine_arch": "x86_64",
+              "hostname": "anolis",
+              "build_target_kernel": "6.6.102-5.2.an23.x86_64",
+              "build_target_kernel_source": "vmlinux_path",
+              "build_backend": "local",
+              "builder_cmd": "kpatch-build",
+              "builder_path": "/usr/bin/kpatch-build",
+              "selected_source_dir": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64",
+              "selected_source_reason": "prepared_kernel_src_dir",
+              "config_path": "/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64/.config",
+              "vmlinux_path": "/usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux",
+              "detected_at": "2026-05-09T11:19:36.498527Z"
+            },
+            "created_at": "2026-05-09T11:19:36.499618+00:00",
+            "updated_at": "2026-05-09T11:21:57.404353+00:00",
+            "latest_failure_type": null,
+            "latest_build_exec_status": "executed",
+            "latest_target_state": null,
+            "fixture_group": "regression",
+            "fixture_id": "challenge-positive-cve-2024-26698"
+          },
+          "patch_bundle": {
+            "task_id": "judge-like-v0510-20260509191933-26698",
+            "cve_id": "CVE-2024-26698",
+            "upstream_commit": "ac5047671758",
+            "stable_commit": "22a77c0f5b8233237731df3288d067af51a2fd7b",
+            "stable_source_baseline_ref": "22a77c0f5b8233237731df3288d067af51a2fd7b^",
+            "commit_message": "hv_netvsc: Fix race condition between netvsc_probe and netvsc_remove",
+            "affected_files": [
+              "drivers/net/hyperv/netvsc.c"
+            ],
+            "raw_patch_path": "workspaces/judge-like-v0510-20260509191933-26698/input/raw_patch.patch",
+            "normalized_patch_path": "workspaces/judge-like-v0510-20260509191933-26698/normalized/normalized.patch",
+            "source_evidence": [
+              {
+                "source_name": "nvd",
+                "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2024-26698",
+                "summary": "In the Linux kernel, the following vulnerability has been resolved: hv_netvsc: Fix race condition between netvsc_probe and netvsc_remove In commit ac5047671758 (\"hv_netvsc: Disable NAPI before closing the VMBus channel\"), napi_disable was…",
+                "commit_id": null,
+                "stage": "metadata",
+                "reference_type": "cve_record",
+                "title": "hv_netvsc: Fix race condition between netvsc_probe and netvsc_remove",
+                "preferred": false
+              },
+              {
+                "source_name": "cvelistV5",
+                "url": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2024/26xxx/CVE-2024-26698.json",
+                "summary": "In the Linux kernel, the following vulnerability has been resolved: hv_netvsc: Fix race condition between netvsc_probe and netvsc_remove In commit ac5047671758 (\"hv_netvsc: Disable NAPI before closing the VMBus channel\"), napi_disable was…",
+                "commit_id": null,
+                "stage": "metadata",
+                "reference_type": "cve_record",
+                "title": "hv_netvsc: Fix race condition between netvsc_probe and netvsc_remove",
+                "preferred": false
+              },
+              {
+                "source_name": "linux-kernel-cve-process",
+                "url": "https://docs.kernel.org/process/security-bugs.html",
+                "summary": "CVE-2024-26698 的公告/流程来源：https://docs.kernel.org/process/security-bugs.html",
+                "commit_id": null,
+                "stage": "announce",
+                "reference_type": "advisory",
+                "title": null,
+                "preferred": false
+              },
+              {
+                "source_name": "linux-stable",
+                "url": "https://git.kernel.org/stable/c/22a77c0f5b8233237731df3288d067af51a2fd7b",
+                "summary": "stable backport 提交 22a77c0f5b8233237731df3288d067af51a2fd7b，优先作为目标内核 patch 来源。",
+                "commit_id": "22a77c0f5b8233237731df3288d067af51a2fd7b",
+                "stage": "patch",
+                "reference_type": "stable_commit",
+                "title": null,
+                "preferred": true
+              },
+              {
+                "source_name": "linux-stable",
+                "url": "https://git.kernel.org/stable/c/0e8875de9dad12805ff66e92cd5edea6a421f1cd",
+                "summary": "stable backport 提交 0e8875de9dad12805ff66e92cd5edea6a421f1cd，优先作为目标内核 patch 来源。",
+                "commit_id": "0e8875de9dad12805ff66e92cd5edea6a421f1cd",
+                "stage": "patch",
+                "reference_type": "stable_commit",
+                "title": null,
+                "preferred": false
+              },
+              {
+                "source_name": "linux-stable",
+                "url": "https://git.kernel.org/stable/c/48a8ccccffbae10c91d31fc872db5c31aba07518",
+                "summary": "stable backport 提交 48a8ccccffbae10c91d31fc872db5c31aba07518，优先作为目标内核 patch 来源。",
+                "commit_id": "48a8ccccffbae10c91d31fc872db5c31aba07518",
+                "stage": "patch",
+                "reference_type": "stable_commit",
+                "title": null,
+                "preferred": false
+              },
+              {
+                "source_name": "linux-stable",
+                "url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+                "summary": "建议以 22a77c0f5b8233237731df3288d067af51a2fd7b^ 作为未修复 stable source 基线。",
+                "commit_id": "22a77c0f5b8233237731df3288d067af51a2fd7b^",
+                "stage": "source_baseline",
+                "reference_type": "unpatched_stable_baseline",
+                "title": null,
+                "preferred": true
+              },
+              {
+                "source_name": "upstream",
+                "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ac5047671758",
+                "summary": "upstream 提交 ac5047671758，在无 stable backport 时作为回退来源。",
+                "commit_id": "ac5047671758",
+                "stage": "patch",
+                "reference_type": "upstream_commit",
+                "title": null,
+                "preferred": false
+              }
+            ]
+          },
+          "analysis": {
+            "semantic_card_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/semantic_card.json",
+            "semantic_card_enrichment_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/trace/semantic_card_enrichment.json",
+            "constraint_report_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/constraint_report.json",
+            "context_bundle_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/context/context_bundle.json",
+            "analysis_trace_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/trace/analysis_trace.json"
+          },
+          "attempts": [
+            {
+              "attempt_id": "judge-like-v0510-20260509191933-26698-A001",
+              "attempt_no": 1,
+              "status": "built",
+              "failure_type": null,
+              "build_exec_status": "executed",
+              "target_state": null,
+              "build_log_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log",
+              "module_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/output/patchweaver-judge-like-v0510-20260509191933-26698-001.ko",
+              "rewritten_patch_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch",
+              "started_at": "2026-05-09T11:20:15.708220+00:00",
+              "finished_at": "2026-05-09T11:21:54.091816+00:00",
+              "failure_record_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/failure_record.json",
+              "validation_report_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+              "validation_matrix_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_matrix.json",
+              "semantic_guard_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/semantic_guard.json",
+              "planning_hints_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/planning_hints.json",
+              "harness_trace_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json",
+              "rewrite_plan_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewrite_plan.json"
+            }
+          ],
+          "latest_failure": {
+            "task_id": "judge-like-v0510-20260509191933-26698",
+            "attempt_id": "judge-like-v0510-20260509191933-26698-A001",
+            "stage_name": "build",
+            "failure_type": "none",
+            "summary": "构建阶段已完成。",
+            "evidence": [],
+            "diagnostic_details": {
+              "route_effectiveness": {
+                "task_id": "judge-like-v0510-20260509191933-26698",
+                "attempt_no": 1,
+                "status": "first_attempt",
+                "current_recipe": "semantic_guard_rewrite",
+                "current_patch_hash": "011ad2a234294364eb3469d7abadf115b03e4cf42cf5b9066198207a64773ff9",
+                "current_changed_line_count": 6,
+                "summary": "首轮尝试，无上一轮补丁可比较"
+              },
+              "agent_next_action": {
+                "action": "stop_or_manual_review",
+                "reason": "none 暂无自动重试策略",
+                "retry_scope": "manual"
+              }
+            },
+            "created_at": "2026-05-09T11:21:54.112655Z"
+          },
+          "latest_validation": {
+            "semantic_precheck_result": {
+              "status": "passed",
+              "ok": true,
+              "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+              "command": null,
+              "log_path": null
+            },
+            "load_result": {
+              "status": "passed",
+              "ok": true,
+              "detail": "模块加载测试通过。",
+              "command": "insmod /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/output/patchweaver-judge-like-v0510-20260509191933-26698-001.ko",
+              "log_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/load.log"
+            },
+            "unload_result": {
+              "status": "passed",
+              "ok": true,
+              "detail": "模块卸载测试通过。",
+              "command": "rmmod patchweaver_judge_like_v0510_20260509191933_26698_001",
+              "log_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/unload.log"
+            },
+            "smoke_result": {
+              "status": "passed",
+              "ok": true,
+              "detail": "冒烟测试通过。",
+              "command": "bash /home/patchweaver/current/scripts/validate_smoke.sh",
+              "log_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/smoke.log"
+            },
+            "selftest_result": {
+              "status": "passed",
+              "ok": true,
+              "detail": "已完成模块产物与基本加载前置检查。",
+              "command": null,
+              "log_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/selftest.log"
+            },
+            "regression_result": {
+              "status": "skipped",
+              "ok": false,
+              "detail": "配置已关闭回归验证。",
+              "command": null,
+              "log_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/regression.log"
+            },
+            "semantic_guard_result": {
+              "status": "passed",
+              "ok": true,
+              "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+              "command": null,
+              "log_path": null
+            },
+            "validation_matrix": [
+              {
+                "name": "semantic_precheck",
+                "category": "static",
+                "enabled": true,
+                "status": "passed",
+                "risk_level": "low",
+                "detail": "语义预检查通过，补丁具备基础 unified diff 结构。",
+                "log_path": null
+              },
+              {
+                "name": "selftest",
+                "category": "dynamic",
+                "enabled": true,
+                "status": "passed",
+                "risk_level": "low",
+                "detail": "已完成模块产物与基本加载前置检查。",
+                "log_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/selftest.log"
+              },
+              {
+                "name": "load_test",
+                "category": "dynamic",
+                "enabled": true,
+                "status": "passed",
+                "risk_level": "low",
+                "detail": "模块加载测试通过。",
+                "log_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/load.log"
+              },
+              {
+                "name": "unload_test",
+                "category": "dynamic",
+                "enabled": true,
+                "status": "passed",
+                "risk_level": "low",
+                "detail": "模块卸载测试通过。",
+                "log_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/unload.log"
+              },
+              {
+                "name": "smoke_test",
+                "category": "dynamic",
+                "enabled": true,
+                "status": "passed",
+                "risk_level": "low",
+                "detail": "冒烟测试通过。",
+                "log_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/smoke.log"
+              },
+              {
+                "name": "semantic_guard",
+                "category": "guard",
+                "enabled": true,
+                "status": "passed",
+                "risk_level": "low",
+                "detail": "静态预检、模块产物和动态基线均未发现明显语义偏移。",
+                "log_path": null
+              },
+              {
+                "name": "regression",
+                "category": "regression",
+                "enabled": false,
+                "status": "skipped",
+                "risk_level": "low",
+                "detail": "配置已关闭回归验证。",
+                "log_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/regression.log"
+              }
+            ],
+            "validation_intensity": "light",
+            "status": "passed",
+            "notes": [
+              "验证任务: judge-like-v0510-20260509191933-26698",
+              "构建状态: built",
+              "风险等级: low",
+              "验证档位: standard",
+              "验证强度: light",
+              "验证开关: load=True unload=True smoke=True semantic_guard=True regression=False"
+            ]
+          },
+          "latest_trace": {
+            "trace_id": "judge-like-v0510-20260509191933-26698-trace-001",
+            "task_id": "judge-like-v0510-20260509191933-26698",
+            "attempt_no": 1,
+            "state_transitions": [
+              {
+                "from_stage": "analyzed",
+                "to_stage": "rewrite_recipe",
+                "reason": "进入改写规划与补丁生成阶段。"
+              },
+              {
+                "from_stage": "rewrite_recipe",
+                "to_stage": "build",
+                "reason": "改写产物已落盘，完成 apply 预检查后进入构建阶段。"
+              },
+              {
+                "from_stage": "build",
+                "to_stage": "validation",
+                "reason": "整理验证输入并输出验证结果。"
+              }
+            ],
+            "tool_calls": [
+              {
+                "tool_name": "build",
+                "action": "kpatch-build",
+                "status": "built",
+                "detail": "构建后端: local\n构建命令: /usr/bin/kpatch-build\n源码目录: /home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64\n源码槽位: prepared_kernel_src_dir\n源码期望状态: likely_patched\n配置文件: /home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64/.config\nvmlinux: /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux\n源码候选: prepared_kernel_src_dir=/home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64 (ok, likely_patched) | kernel_src_dir=/opt/kernel-src (ok, likely_patched) | kernel_devel_dir=/usr/src/kernels/6.6.102-5.2.an23.x86_64 (ok, unknown)\n\n[apply precheck]\nChecking patch drivers/net/hyperv/netvsc.c...\n源码目录: /home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64\n源码期望状态: likely_patched\n补丁路径: /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch\n命令: /usr/bin/git apply --check --verbose /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch\n[precheck stderr]\nChecking patch drivers/net/hyperv/netvsc.c...\nerror: while searching for:\n\t/* Disable NAPI and disassociate its context from the device. */\n\tfor (i = 0; i < net_device->num_chn; i++) {\n\t\t/* See also vmbus_reset_channel_cb(). */\n\t\tnapi_disable(&net_device->chan_table[i].napi);\n\t\tnetif_napi_del(&net_device->chan_table[i].napi);\n\t}\n\n\nerror: patch failed: drivers/net/hyperv/netvsc.c:708\nerror: drivers/net/hyperv/netvsc.c: patch does not apply\n构建执行状态: not_run\n\n[reverse source tree]\n已修复源码树: /home/patchweaver/kernel-src-prepared/6.6.102-5.2.an23.x86_64\n反向源码树: /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/sources/reverse_unpatched\n反向基线补丁: /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/input/raw_patch.patch\nsetlocalversion 兼容处理完成: 支持 kpatch-build --save-scmversion\n反向检查命令: /usr/bin/git apply --reverse --check --verbose /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/input/raw_patch.patch\n[reverse check stderr]\nChecking patch drivers/net/hyperv/netvsc.c...\nHunk #1 succeeded at 711 (offset -3 lines).\n反向应用命令: /usr/bin/git apply --reverse --verbose /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/input/raw_patch.patch\n[reverse apply stderr]\nChecking patch drivers/net/hyperv/netvsc.c...\nHunk #1 succeeded at 711 (offset -3 lines).\nApplied patch drivers/net/hyperv/netvsc.c cleanly.\n\n[kpatch source normalization]\nx86 Makefile: /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/sources/reverse_unpatched/arch/x86/Makefile\n已将 -fpatchable-function-entry 第二参数归零\n反向源码树生成完成，继续在该源码树上执行 apply precheck\n\n[apply precheck]\napply 级预检查通过。\n源码目录: /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/sources/reverse_unpatched\n源码期望状态: unpatched\n补丁路径: /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch\n命令: /usr/bin/git apply --check --verbose /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch\n[precheck stderr]\nChecking patch drivers/net/hyperv/netvsc.c...\nHunk #1 succeeded at 711 (offset 3 lines).\n[kpatch compat]\ncall_sites section 兼容 wrapper 已存在: /usr/libexec/kpatch/create-diff-object\n\n[build targets]\ndrivers/hv/hv_vmbus.ko, drivers/net/hyperv/hv_netvsc.ko\n\n[local command]\n/usr/bin/kpatch-build -s /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/sources/reverse_unpatched -c /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/sources/reverse_unpatched/.config -v /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux -n patchweaver-judge-like-v0510-20260509191933-26698-001 -o /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/output -t drivers/hv/hv_vmbus.ko -t drivers/net/hyperv/hv_netvsc.ko /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch\n\n[stdout]\nUsing source directory at /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/sources/reverse_unpatched\nTesting patch file(s)\nBuilding original source\n6.6.102-5.2.an23.x86_64\nReading special section data\nBuilding patched source\nExtracting new and modified ELF sections\norig.o: changed function: netvsc_device_remove\nPatched objects: drivers/net/hyperv/hv_netvsc.ko\nBuilding patch module: patchweaver-judge-like-v0510-20260509191933-26698-001.ko\nSUCCESS\n\n[stderr]\n<empty>\n\n退出码: 0\n\n[source cleanup]\n临时源码树: /home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/sources/reverse_unpatched\n临时源码树已清理\n"
+              }
+            ],
+            "skill_route": {
+              "stage_name": "rewrite_recipe",
+              "candidate_skills": [
+                "rewrite_recipe"
+              ],
+              "selected_skill": "rewrite_recipe",
+              "rejected_skills": [],
+              "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=False。",
+              "readonly_subagent_allowed": false,
+              "contract_summary": [
+                "输入: patch_bundle.json, semantic_card.json, constraint_report.json",
+                "输出: rewrite_plan.json, rewritten.patch, transformation_trace.json",
+                "工具: template_engine, smpl_engine, diff_editor",
+                "调度模式: skill_first"
+              ],
+              "fallback_used": false,
+              "route_source": "registry"
+            },
+            "subagent_records": [],
+            "artifacts": [
+              {
+                "artifact_type": "rewrite_plan",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewrite_plan.json",
+                "summary": "候选改写规划"
+              },
+              {
+                "artifact_type": "planning_hints",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/planning_hints.json",
+                "summary": "排序与经验提示"
+              },
+              {
+                "artifact_type": "repair_intent",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/repair_intent.json",
+                "summary": "可驱动改写执行的修复意图"
+              },
+              {
+                "artifact_type": "route_effectiveness",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/route_effectiveness.json",
+                "summary": "路线有效性检查"
+              },
+              {
+                "artifact_type": "environment_check_log",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/environment_check.log",
+                "summary": "运行前环境一致性检查"
+              },
+              {
+                "artifact_type": "rewritten_patch",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch",
+                "summary": "单轮改写结果"
+              },
+              {
+                "artifact_type": "apply_precheck",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/apply_precheck.json",
+                "summary": "构建前 apply 预检查"
+              },
+              {
+                "artifact_type": "build_summary",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/build_summary.json",
+                "summary": "构建阶段结构化摘要"
+              },
+              {
+                "artifact_type": "failure_record",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/failure_record.json",
+                "summary": "构建失败归因"
+              },
+              {
+                "artifact_type": "failure_memory_snapshot",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/failure_memory_snapshot.json",
+                "summary": "失败经验快照"
+              },
+              {
+                "artifact_type": "recipe_memory_snapshot",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/recipe_memory_snapshot.json",
+                "summary": "配方经验快照"
+              },
+              {
+                "artifact_type": "semantic_precheck",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/semantic_precheck.json",
+                "summary": "验证前语义预检查"
+              },
+              {
+                "artifact_type": "semantic_guard",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/semantic_guard.json",
+                "summary": "语义守卫结果"
+              },
+              {
+                "artifact_type": "validation_matrix",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_matrix.json",
+                "summary": "验证矩阵"
+              },
+              {
+                "artifact_type": "validation_report",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+                "summary": "验证结果摘要"
+              },
+              {
+                "artifact_type": "semantic_guard_rewrite",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/semantic_guard_rewrite.json",
+                "summary": "semantic guard 专项改写结果"
+              },
+              {
+                "artifact_type": "stable_baseline_preflight",
+                "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/input/stable_baseline_preflight.json",
+                "summary": "stable source baseline 前置检查结果"
+              }
+            ],
+            "created_at": "2026-05-09T11:21:57.261961Z",
+            "extras": {
+              "stage_routes": {
+                "rewrite_recipe": {
+                  "selected_skill": "rewrite_recipe",
+                  "candidate_skills": [
+                    "rewrite_recipe"
+                  ],
+                  "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=False。"
+                },
+                "validation": {
+                  "selected_skill": "validation",
+                  "candidate_skills": [
+                    "validation"
+                  ],
+                  "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=False。"
+                }
+              },
+              "dispatch_modes": {
+                "rewrite_recipe": "write-exclusive",
+                "build": "write-exclusive",
+                "validation": "write-exclusive"
+              }
+            }
+          },
+          "latest_rewrite_plan": {
+            "task_id": "judge-like-v0510-20260509191933-26698",
+            "plan_id": "judge-like-v0510-20260509191933-26698-plan-001",
+            "candidate_ids": [
+              "judge-like-v0510-20260509191933-26698-candidate-003",
+              "judge-like-v0510-20260509191933-26698-candidate-001",
+              "judge-like-v0510-20260509191933-26698-candidate-004"
+            ],
+            "selected_recipe": "semantic_guard_rewrite",
+            "selected_route_family": "semantic_guard",
+            "selected_execution_mode": "semantic_guard",
+            "selected_primitives": [
+              "semantic_guard"
+            ],
+            "target_files": [
+              "drivers/net/hyperv/netvsc.c"
+            ],
+            "rule_hits": [
+              "constraint_review"
+            ],
+            "requires_kernel_scaffold": false,
+            "scaffold_notes": [
+              "优先把官方 patch 收缩为函数局部 guard",
+              "进入构建前需要确认 guard 条件和安全退出路径保留了修复语义"
+            ],
+            "risk_coverage": 0.0,
+            "selection_reason": "优先选择综合得分最高的候选，当前命中 semantic_guard_rewrite，排序得分 0.695",
+            "notes": [
+              "netvsc_device_remove 中存在并发同步缺陷，修复围绕条件 `i < ndev->real_num_rx_queues` 展开。 依据：commit e0526ec5360a48ad3ab2e26e802b0532302a7e11 upstream.",
+              "当前未命中显式热补丁约束，补丁形态满足 direct apply 预检查，可直接进入改写与构建前预检查",
+              "候选数: 3",
+              "命中规则: constraint_review",
+              "路线族: semantic_guard",
+              "执行模式: semantic_guard",
+              "关键条件: netvsc_device_remove: i < ndev->real_num_rx_queues",
+              "关键调用: vmbus_reset_channel_cb，napi_disable，netif_napi_del",
+              "路线提示: 当前未命中显式热补丁约束，涉及函数 netvsc_device_remove，优先走 direct_apply 路线",
+              "修复意图策略: semantic_guard",
+              "guard 条件: netvsc_device_remove: i < ndev->real_num_rx_queues；i < ndev->real_num_rx_queues",
+              "约束首选路线: direct_apply_patch",
+              "候选路线: direct_apply_patch",
+              "排序依据: 预估风险 0.04；语义漂移 0.03；构建代价 0.06；历史成功率 40%；历史失败率 60%"
+            ],
+            "candidate_summaries": [
+              {
+                "candidate_id": "judge-like-v0510-20260509191933-26698-candidate-003",
+                "recipe_name": "semantic_guard_rewrite",
+                "route_family": "semantic_guard",
+                "execution_mode": "semantic_guard",
+                "primitives": [
+                  "semantic_guard"
+                ],
+                "target_functions": [
+                  "netvsc_device_remove"
+                ],
+                "rule_hits": [
+                  "constraint_review"
+                ],
+                "requires_kernel_scaffold": false,
+                "scaffold_notes": [
+                  "优先把官方 patch 收缩为函数局部 guard",
+                  "进入构建前需要确认 guard 条件和安全退出路径保留了修复语义"
+                ],
+                "expected_risk": 0.04,
+                "expected_semantic_drift": 0.03,
+                "expected_build_cost": 0.06,
+                "history_success_rate": 0.4043,
+                "history_failure_rate": 0.5957,
+                "failure_pressure": 0.0,
+                "ranking_score": 0.6949,
+                "ranking_reasons": [
+                  "预估风险 0.04",
+                  "语义漂移 0.03",
+                  "构建代价 0.06",
+                  "历史成功率 40%",
+                  "历史失败率 60%"
+                ]
+              },
+              {
+                "candidate_id": "judge-like-v0510-20260509191933-26698-candidate-001",
+                "recipe_name": "direct_apply_patch",
+                "route_family": "direct_apply",
+                "execution_mode": "direct_patch",
+                "primitives": [
+                  "direct_apply"
+                ],
+                "target_functions": [
+                  "netvsc_device_remove"
+                ],
+                "rule_hits": [
+                  "direct_apply_path"
+                ],
+                "requires_kernel_scaffold": false,
+                "scaffold_notes": [],
+                "expected_risk": 0.08,
+                "expected_semantic_drift": 0.04,
+                "expected_build_cost": 0.08,
+                "history_success_rate": 0.1042,
+                "history_failure_rate": 0.8958,
+                "failure_pressure": 0.0,
+                "ranking_score": 0.5655,
+                "ranking_reasons": [
+                  "预估风险 0.08",
+                  "语义漂移 0.04",
+                  "构建代价 0.08",
+                  "历史成功率 10%",
+                  "历史失败率 90%"
+                ]
+              },
+              {
+                "candidate_id": "judge-like-v0510-20260509191933-26698-candidate-004",
+                "recipe_name": "minimal_livepatch_wrap",
+                "route_family": "wrapper",
+                "execution_mode": "template_wrap",
+                "primitives": [
+                  "wrapper"
+                ],
+                "target_functions": [
+                  "netvsc_device_remove"
+                ],
+                "rule_hits": [
+                  "constraint_review"
+                ],
+                "requires_kernel_scaffold": false,
+                "scaffold_notes": [],
+                "expected_risk": 0.19,
+                "expected_semantic_drift": 0.12,
+                "expected_build_cost": 0.2,
+                "history_success_rate": 0.0,
+                "history_failure_rate": 1.0,
+                "failure_pressure": 0.0,
+                "ranking_score": 0.4506,
+                "ranking_reasons": [
+                  "预估风险 0.19",
+                  "语义漂移 0.12",
+                  "构建代价 0.20",
+                  "历史失败率 100%"
+                ]
+              }
+            ]
+          },
+          "agent_decision_summary": {
+            "task_id": "judge-like-v0510-20260509191933-26698",
+            "attempt_id": "judge-like-v0510-20260509191933-26698-A001",
+            "attempt_no": 1,
+            "repair_intent": {
+              "cve_id": "CVE-2024-26698",
+              "bug_class": "cve_fix",
+              "root_cause": "netvsc_device_remove 中存在并发同步缺陷，修复围绕条件 `i < ndev->real_num_rx_queues` 展开。 依据：commit e0526ec5360a48ad3ab2e26e802b0532302a7e11 upstream.",
+              "vulnerability_conditions": [
+                "netvsc_device_remove: i < ndev->real_num_rx_queues"
+              ],
+              "guard_conditions": [
+                "netvsc_device_remove: i < ndev->real_num_rx_queues",
+                "i < ndev->real_num_rx_queues"
+              ],
+              "guard_sites": [
+                "netvsc_device_remove"
+              ],
+              "safe_exits": [],
+              "preserved_side_effects": [
+                "netvsc_device_remove: 调用 napi_disable(...)",
+                "netvsc_device_remove: 条件 i < ndev->real_num_rx_queues 命中时调用 napi_disable(...)",
+                "napi_disable(&net_device->chan_table[i].napi);"
+              ],
+              "touched_files": [
+                "drivers/net/hyperv/netvsc.c"
+              ],
+              "touched_functions": [
+                "netvsc_device_remove"
+              ],
+              "touched_state": [],
+              "recommended_strategy": "semantic_guard",
+              "confidence": 0.72,
+              "evidence": [
+                "guard 条件: netvsc_device_remove: i < ndev->real_num_rx_queues | i < ndev->real_num_rx_queues",
+                "保留副作用: netvsc_device_remove: 调用 napi_disable(...) | netvsc_device_remove: 条件 i < ndev->real_num_rx_queues 命中时调用 napi_disable(...) | napi_disable(&net_device->chan_table[i].napi);",
+                "推荐策略: semantic_guard"
+              ]
+            },
+            "selected_recipe": "semantic_guard_rewrite",
+            "selected_strategy": null,
+            "strategy": "semantic_guard_rewrite",
+            "strategy_switch": {
+              "repair_intent_strategy": "semantic_guard",
+              "selected_recipe": "semantic_guard_rewrite",
+              "selected_strategy": null,
+              "final_strategy": "semantic_guard_rewrite",
+              "switched": true,
+              "reason": "优先选择综合得分最高的候选，当前命中 semantic_guard_rewrite，排序得分 0.695"
+            },
+            "agent_next_action": "当前任务已具备成功回放闭环，优先固化样例、脚本和验收材料",
+            "failure_type": "none",
+            "failure_record": {
+              "summary": "构建阶段已完成。",
+              "stage_name": "build",
+              "failure_type": "none",
+              "evidence": [],
+              "diagnostic_details": {
+                "route_effectiveness": {
+                  "task_id": "judge-like-v0510-20260509191933-26698",
+                  "attempt_no": 1,
+                  "status": "first_attempt",
+                  "current_recipe": "semantic_guard_rewrite",
+                  "current_patch_hash": "011ad2a234294364eb3469d7abadf115b03e4cf42cf5b9066198207a64773ff9",
+                  "current_changed_line_count": 6,
+                  "summary": "首轮尝试，无上一轮补丁可比较"
+                },
+                "agent_next_action": {
+                  "action": "stop_or_manual_review",
+                  "reason": "none 暂无自动重试策略",
+                  "retry_scope": "manual"
+                }
+              },
+              "raw": {
+                "task_id": "judge-like-v0510-20260509191933-26698",
+                "attempt_id": "judge-like-v0510-20260509191933-26698-A001",
+                "stage_name": "build",
+                "failure_type": "none",
+                "summary": "构建阶段已完成。",
+                "evidence": [],
+                "diagnostic_details": {
+                  "route_effectiveness": {
+                    "task_id": "judge-like-v0510-20260509191933-26698",
+                    "attempt_no": 1,
+                    "status": "first_attempt",
+                    "current_recipe": "semantic_guard_rewrite",
+                    "current_patch_hash": "011ad2a234294364eb3469d7abadf115b03e4cf42cf5b9066198207a64773ff9",
+                    "current_changed_line_count": 6,
+                    "summary": "首轮尝试，无上一轮补丁可比较"
+                  },
+                  "agent_next_action": {
+                    "action": "stop_or_manual_review",
+                    "reason": "none 暂无自动重试策略",
+                    "retry_scope": "manual"
+                  }
+                },
+                "created_at": "2026-05-09T11:21:54.112655Z"
+              }
+            },
+            "diagnostic_details": {
+              "route_effectiveness": {
+                "task_id": "judge-like-v0510-20260509191933-26698",
+                "attempt_no": 1,
+                "status": "first_attempt",
+                "current_recipe": "semantic_guard_rewrite",
+                "current_patch_hash": "011ad2a234294364eb3469d7abadf115b03e4cf42cf5b9066198207a64773ff9",
+                "current_changed_line_count": 6,
+                "summary": "首轮尝试，无上一轮补丁可比较"
+              },
+              "agent_next_action": {
+                "action": "stop_or_manual_review",
+                "reason": "none 暂无自动重试策略",
+                "retry_scope": "manual"
+              }
+            },
+            "state_conflicts": [
+              "failure_record=none",
+              "apply_precheck=target_already_patched"
+            ],
+            "source_paths": {
+              "repair_intent": "workspaces/judge-like-v0510-20260509191933-26698/analysis/repair_intent.json",
+              "rewrite_plan": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewrite_plan.json",
+              "failure_record": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/failure_record.json",
+              "build_summary": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/build_summary.json",
+              "report_json": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json"
+            },
+            "source_exists": {
+              "repair_intent": true,
+              "rewrite_plan": true,
+              "failure_record": true,
+              "build_summary": true,
+              "report_json": true
+            }
+          },
+          "evaluation_summary": {
+            "total_attempts": 1,
+            "built_attempts": 1,
+            "failed_attempts": 0,
+            "success_rate": 1.0,
+            "average_attempt_no": 1.0,
+            "latest_status": "built",
+            "latest_failure_type": null,
+            "failure_breakdown": {},
+            "artifact_type_counts": {
+              "task_context": 1,
+              "raw_patch": 1,
+              "normalized_patch": 1,
+              "patch_bundle": 1,
+              "source_evidence": 1,
+              "source_fetch_trace": 1,
+              "semantic_card": 1,
+              "semantic_card_enrichment": 1,
+              "repair_intent": 2,
+              "constraint_report": 1,
+              "analysis_bootstrap_manifest": 1,
+              "analysis_evidence_bundle": 1,
+              "analysis_context_bundle": 1,
+              "retrieval_skill_route": 1,
+              "retrieval_prompt_packet": 1,
+              "semantic_card_skill_route": 1,
+              "semantic_card_prompt_packet": 1,
+              "constraint_skill_route": 1,
+              "constraint_prompt_packet": 1,
+              "analysis_trace": 1,
+              "rewrite_bootstrap_manifest": 1,
+              "rewrite_evidence_bundle": 1,
+              "rewrite_context_bundle": 1,
+              "rewrite_skill_route": 1,
+              "rewrite_prompt_packet": 1,
+              "rewrite_plan": 1,
+              "planning_hints": 1,
+              "route_effectiveness": 1,
+              "rewritten_patch": 1,
+              "rewrite_reason": 1,
+              "transformation_trace": 1,
+              "apply_precheck": 1,
+              "semantic_guard_rewrite": 1,
+              "environment_check_log": 1,
+              "build_log": 1,
+              "build_precheck": 1,
+              "build_summary": 1,
+              "failure_record": 1,
+              "failure_memory_snapshot": 1,
+              "recipe_memory_snapshot": 1,
+              "validate_log": 1,
+              "semantic_precheck": 1,
+              "semantic_guard": 1,
+              "validation_matrix": 1,
+              "selftest_log": 1,
+              "load_log": 1,
+              "unload_log": 1,
+              "smoke_log": 1,
+              "regression_log": 1,
+              "regression_summary": 1,
+              "validation_report": 1,
+              "validation_evidence_bundle": 1,
+              "validation_context_bundle": 1,
+              "validation_skill_route": 1,
+              "validation_prompt_packet": 1,
+              "attempt_state": 1,
+              "harness_trace": 1
+            }
+          },
+          "reports": {
+            "json_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json",
+            "md_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.md",
+            "evaluation_summary_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/evaluation_summary.json"
+          },
+          "report_closure": {
+            "report_json_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json",
+            "report_md_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.md",
+            "build_log_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log",
+            "validation_report_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+            "trace_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json",
+            "workspace_dir": "workspaces/judge-like-v0510-20260509191933-26698",
+            "closure_ok": true
+          },
+          "replay": {
+            "command": "replay",
+            "task_id": "judge-like-v0510-20260509191933-26698",
+            "latest_attempt_id": "judge-like-v0510-20260509191933-26698-A001",
+            "latest_attempt_status": "built",
+            "latest_failure_type": null,
+            "latest_build_exec_status": "executed",
+            "latest_target_state": null,
+            "trace_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json",
+            "report_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json",
+            "evaluation_summary_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/evaluation_summary.json",
+            "stage_routes": {
+              "rewrite_recipe": {
+                "selected_skill": "rewrite_recipe",
+                "candidate_skills": [
+                  "rewrite_recipe"
+                ],
+                "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=False。"
+              },
+              "validation": {
+                "selected_skill": "validation",
+                "candidate_skills": [
+                  "validation"
+                ],
+                "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=False。"
+              }
+            },
+            "dispatch_modes": {
+              "rewrite_recipe": "write-exclusive",
+              "build": "write-exclusive",
+              "validation": "write-exclusive"
+            },
+            "replay_files": [
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_matrix.json",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/selftest.log",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/load.log",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/unload.log",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/smoke.log",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/regression.log"
+            ],
+            "success_replay_files": [
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_matrix.json",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/selftest.log",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/load.log",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/unload.log",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/smoke.log",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/regression.log"
+            ],
+            "failure_replay_files": [
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/prompt/rewrite_recipe_prompt_packet.json",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/failure_record.json",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/attempt_state.json",
+              "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json"
+            ],
+            "closure_type": "success",
+            "closure_status": "ready",
+            "success_replay_ready": true,
+            "missing_success_evidence": [],
+            "closure_paths": {
+              "task_dir": "workspaces/judge-like-v0510-20260509191933-26698",
+              "report_json": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json",
+              "evaluation_summary": "workspaces/judge-like-v0510-20260509191933-26698/reports/evaluation_summary.json",
+              "latest_build_log": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log",
+              "latest_build_exec_status": "executed",
+              "latest_target_state": null,
+              "validation_status": "passed"
+            },
+            "comparison": {
+              "task_id": "judge-like-v0510-20260509191933-26698",
+              "attempt_count": 1,
+              "latest_attempt": 1,
+              "items": [
+                {
+                  "attempt_no": 1,
+                  "attempt_id": "judge-like-v0510-20260509191933-26698-A001",
+                  "status": "built",
+                  "failure_type": null,
+                  "rewrite_plan_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewrite_plan.json",
+                  "validation_report_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+                  "trace_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json"
+                }
+              ]
+            },
+            "status": "ok"
+          },
+          "process_summary": {
+            "overall_status": "success",
+            "current_stage": "validate",
+            "headline": "热补丁已构建并通过验证",
+            "reached_effect": "已产出构建结果，并完成验证报告。",
+            "missing_effect": "无关键缺口。",
+            "problem": null,
+            "analysis": "最近一轮构建和验证证据均已就绪。",
+            "next_action": "可进入报告、回放和交付展示。",
+            "primary_evidence_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+            "current_attempt_no": 1,
+            "latest_failure_type": "none",
+            "latest_build_exec_status": "executed",
+            "latest_target_state": null,
+            "replay_status": "ok",
+            "state_conflicts": [
+              "failure_record=none",
+              "apply_precheck=target_already_patched"
+            ]
+          },
+          "stage_view": [
+            {
+              "stage": "prepare",
+              "label": "准备",
+              "status": "success",
+              "current_effect": "任务上下文和工作区已建立。",
+              "missing_effect": "无",
+              "problem": null,
+              "analysis": "该阶段只确认任务输入与工作区，不判定补丁是否可修复。",
+              "next_action": "进入来源获取与语义分析。",
+              "evidence_paths": [
+                "workspaces/judge-like-v0510-20260509191933-26698/task_context.json"
+              ],
+              "primary_evidence_path": "workspaces/judge-like-v0510-20260509191933-26698/task_context.json",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/task_context.json"
+            },
+            {
+              "stage": "source",
+              "label": "来源获取",
+              "status": "success",
+              "current_effect": "已获取 CVE 修复来源、patch bundle 和来源证据。",
+              "missing_effect": "无",
+              "problem": null,
+              "analysis": "赛题要求从 CVE 定位上游或 stable 修复补丁，本阶段承接该要求。",
+              "next_action": "进入语义理解和约束诊断。",
+              "evidence_paths": [
+                "workspaces/judge-like-v0510-20260509191933-26698/input/patch_bundle.json",
+                "workspaces/judge-like-v0510-20260509191933-26698/input/source_evidence.json",
+                "workspaces/judge-like-v0510-20260509191933-26698/analysis/trace/source_fetch_trace.json"
+              ],
+              "primary_evidence_path": "workspaces/judge-like-v0510-20260509191933-26698/input/patch_bundle.json",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/input/patch_bundle.json"
+            },
+            {
+              "stage": "analysis",
+              "label": "语义分析",
+              "status": "success",
+              "current_effect": "已生成修复意图和触达对象摘要。",
+              "missing_effect": "无",
+              "problem": null,
+              "analysis": "该阶段用于守住语义一致性，避免后续改写偏离上游修复意图。",
+              "next_action": "进入 kpatch 约束诊断。",
+              "evidence_paths": [
+                "workspaces/judge-like-v0510-20260509191933-26698/analysis/semantic_card.json",
+                "workspaces/judge-like-v0510-20260509191933-26698/analysis/trace/semantic_card_enrichment.json"
+              ],
+              "primary_evidence_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/semantic_card.json",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/semantic_card.json"
+            },
+            {
+              "stage": "diagnose",
+              "label": "约束诊断",
+              "status": "success",
+              "current_effect": "已输出热补丁约束和候选路线。",
+              "missing_effect": "无",
+              "problem": null,
+              "analysis": "该阶段对齐 kpatch 限制，例如 fentry、init、静态数据和 ABI 风险。",
+              "next_action": "进入改写规划。",
+              "evidence_paths": [
+                "workspaces/judge-like-v0510-20260509191933-26698/analysis/constraint_report.json"
+              ],
+              "primary_evidence_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/constraint_report.json",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/constraint_report.json"
+            },
+            {
+              "stage": "plan",
+              "label": "改写规划",
+              "status": "success",
+              "current_effect": "已选择改写 recipe 和候选路径。",
+              "missing_effect": "无",
+              "problem": null,
+              "analysis": "规划层只选择路线，不直接代表构建成功。",
+              "next_action": "输出 rewritten.patch 并执行 apply 预检查。",
+              "evidence_paths": [
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewrite_plan.json"
+              ],
+              "primary_evidence_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewrite_plan.json",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewrite_plan.json"
+            },
+            {
+              "stage": "rewrite",
+              "label": "补丁改写",
+              "status": "success",
+              "current_effect": "已输出 rewritten.patch 和改写留痕。",
+              "missing_effect": "无",
+              "problem": "target_already_patched",
+              "analysis": "本地 apply 预检查显示目标源码已包含该补丁，无需重复应用。",
+              "next_action": "进入构建预检查或真实 kpatch-build。",
+              "evidence_paths": [
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch",
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/apply_precheck.json",
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/transformation_trace.json"
+              ],
+              "primary_evidence_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch"
+            },
+            {
+              "stage": "build",
+              "label": "构建",
+              "status": "success",
+              "current_effect": "真实 kpatch-build 已执行并形成构建成功记录。",
+              "missing_effect": "无",
+              "problem": null,
+              "analysis": "构建成功后仍需验证阶段确认 load/unload/smoke。",
+              "next_action": "进入验证阶段。",
+              "evidence_paths": [
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log",
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/build_summary.json",
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/build_precheck.json"
+              ],
+              "primary_evidence_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log"
+            },
+            {
+              "stage": "failure_analysis",
+              "label": "失败归因",
+              "status": "success",
+              "current_effect": "已形成结构化失败记录。",
+              "missing_effect": "无",
+              "problem": "none",
+              "analysis": "构建阶段已完成。",
+              "next_action": "根据 failure_type 决定下一轮改写或环境修复。",
+              "evidence_paths": [
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/failure_record.json"
+              ],
+              "primary_evidence_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/failure_record.json",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/failure_record.json"
+            },
+            {
+              "stage": "validate",
+              "label": "验证",
+              "status": "success",
+              "current_effect": "验证报告已通过。",
+              "missing_effect": "无",
+              "problem": null,
+              "analysis": "验证阶段必须区分构建未产出模块、配置跳过、目标已修复导致跳过。",
+              "next_action": "构建成功后补齐 load/unload/smoke/semantic_guard 证据。",
+              "evidence_paths": [
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_matrix.json",
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/load.log",
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/unload.log",
+                "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/smoke.log"
+              ],
+              "primary_evidence_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json"
+            },
+            {
+              "stage": "report",
+              "label": "报告与回放",
+              "status": "success",
+              "current_effect": "已生成结构化报告。",
+              "missing_effect": "无",
+              "problem": null,
+              "analysis": "报告阶段应复用主链结论，不重新判定业务状态。",
+              "next_action": "用于演示、回放和阶段验收。",
+              "evidence_paths": [
+                "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json",
+                "workspaces/judge-like-v0510-20260509191933-26698/reports/report.md",
+                "workspaces/judge-like-v0510-20260509191933-26698/reports/evaluation_summary.json"
+              ],
+              "primary_evidence_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json"
+            }
+          ],
+          "timeline": [
+            {
+              "stage": "prepare",
+              "status": "completed",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/task_context.json"
+            },
+            {
+              "stage": "analyze",
+              "status": "completed",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/semantic_card.json"
+            },
+            {
+              "stage": "diagnose",
+              "status": "completed",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/constraint_report.json"
+            },
+            {
+              "stage": "plan",
+              "status": "completed",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewrite_plan.json"
+            },
+            {
+              "stage": "rewrite",
+              "status": "completed",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch"
+            },
+            {
+              "stage": "build",
+              "status": "completed",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log"
+            },
+            {
+              "stage": "classify",
+              "status": "completed",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/failure_record.json"
+            },
+            {
+              "stage": "validate",
+              "status": "completed",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json"
+            },
+            {
+              "stage": "report",
+              "status": "completed",
+              "path": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json"
+            }
+          ],
+          "artifact_index": [
+            {
+              "artifact_type": "task_context",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/task_context.json",
+              "relative_path": "task_context.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "raw_patch",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/input/raw_patch.patch",
+              "relative_path": "input/raw_patch.patch",
+              "summary": ""
+            },
+            {
+              "artifact_type": "normalized_patch",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/normalized/normalized.patch",
+              "relative_path": "normalized/normalized.patch",
+              "summary": ""
+            },
+            {
+              "artifact_type": "patch_bundle",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/input/patch_bundle.json",
+              "relative_path": "input/patch_bundle.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "source_evidence",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/input/source_evidence.json",
+              "relative_path": "input/source_evidence.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "source_fetch_trace",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/trace/source_fetch_trace.json",
+              "relative_path": "analysis/trace/source_fetch_trace.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "semantic_card",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/semantic_card.json",
+              "relative_path": "analysis/semantic_card.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "semantic_card_enrichment",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/trace/semantic_card_enrichment.json",
+              "relative_path": "analysis/trace/semantic_card_enrichment.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "repair_intent",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/repair_intent.json",
+              "relative_path": "analysis/repair_intent.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "constraint_report",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/constraint_report.json",
+              "relative_path": "analysis/constraint_report.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "analysis_bootstrap_manifest",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/bootstrap/bootstrap_manifest.json",
+              "relative_path": "analysis/bootstrap/bootstrap_manifest.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "analysis_evidence_bundle",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/context/evidence_bundle.json",
+              "relative_path": "analysis/context/evidence_bundle.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "analysis_context_bundle",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/context/context_bundle.json",
+              "relative_path": "analysis/context/context_bundle.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "retrieval_skill_route",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/route/retrieval_skill_route.json",
+              "relative_path": "analysis/route/retrieval_skill_route.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "retrieval_prompt_packet",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/prompt/retrieval_prompt_packet.json",
+              "relative_path": "analysis/prompt/retrieval_prompt_packet.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "semantic_card_skill_route",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/route/semantic_card_skill_route.json",
+              "relative_path": "analysis/route/semantic_card_skill_route.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "semantic_card_prompt_packet",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/prompt/semantic_card_prompt_packet.json",
+              "relative_path": "analysis/prompt/semantic_card_prompt_packet.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "constraint_skill_route",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/route/constraint_diagnosis_skill_route.json",
+              "relative_path": "analysis/route/constraint_diagnosis_skill_route.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "constraint_prompt_packet",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/prompt/constraint_diagnosis_prompt_packet.json",
+              "relative_path": "analysis/prompt/constraint_diagnosis_prompt_packet.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "analysis_trace",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/trace/analysis_trace.json",
+              "relative_path": "analysis/trace/analysis_trace.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "rewrite_bootstrap_manifest",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/prompt/bootstrap_manifest.json",
+              "relative_path": "attempts/001/prompt/bootstrap_manifest.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "rewrite_evidence_bundle",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/context/evidence_bundle.json",
+              "relative_path": "attempts/001/context/evidence_bundle.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "rewrite_context_bundle",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/context/context_bundle.json",
+              "relative_path": "attempts/001/context/context_bundle.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "rewrite_skill_route",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/route/rewrite_recipe_skill_route.json",
+              "relative_path": "attempts/001/route/rewrite_recipe_skill_route.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "rewrite_prompt_packet",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/prompt/rewrite_recipe_prompt_packet.json",
+              "relative_path": "attempts/001/prompt/rewrite_recipe_prompt_packet.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "rewrite_plan",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewrite_plan.json",
+              "relative_path": "attempts/001/rewrite/rewrite_plan.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "planning_hints",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/planning_hints.json",
+              "relative_path": "attempts/001/rewrite/planning_hints.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "repair_intent",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/analysis/repair_intent.json",
+              "relative_path": "analysis/repair_intent.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "route_effectiveness",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/route_effectiveness.json",
+              "relative_path": "attempts/001/rewrite/route_effectiveness.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "rewritten_patch",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch",
+              "relative_path": "attempts/001/rewrite/rewritten.patch",
+              "summary": ""
+            },
+            {
+              "artifact_type": "rewrite_reason",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewrite_reason.json",
+              "relative_path": "attempts/001/rewrite/rewrite_reason.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "transformation_trace",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/transformation_trace.json",
+              "relative_path": "attempts/001/rewrite/transformation_trace.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "apply_precheck",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/apply_precheck.json",
+              "relative_path": "attempts/001/rewrite/apply_precheck.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "semantic_guard_rewrite",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/semantic_guard_rewrite.json",
+              "relative_path": "attempts/001/rewrite/semantic_guard_rewrite.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "environment_check_log",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/environment_check.log",
+              "relative_path": "attempts/001/logs/environment_check.log",
+              "summary": ""
+            },
+            {
+              "artifact_type": "build_log",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log",
+              "relative_path": "attempts/001/logs/build.log",
+              "summary": ""
+            },
+            {
+              "artifact_type": "build_precheck",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/build_precheck.json",
+              "relative_path": "attempts/001/artifacts/build_precheck.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "build_summary",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/build_summary.json",
+              "relative_path": "attempts/001/artifacts/build_summary.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "failure_record",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/failure_record.json",
+              "relative_path": "attempts/001/logs/failure_record.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "failure_memory_snapshot",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/failure_memory_snapshot.json",
+              "relative_path": "attempts/001/artifacts/failure_memory_snapshot.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "recipe_memory_snapshot",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/recipe_memory_snapshot.json",
+              "relative_path": "attempts/001/artifacts/recipe_memory_snapshot.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "validate_log",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/validate.log",
+              "relative_path": "attempts/001/logs/validate.log",
+              "summary": ""
+            },
+            {
+              "artifact_type": "semantic_precheck",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/semantic_precheck.json",
+              "relative_path": "attempts/001/artifacts/semantic_precheck.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "semantic_guard",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/semantic_guard.json",
+              "relative_path": "attempts/001/artifacts/semantic_guard.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "validation_matrix",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_matrix.json",
+              "relative_path": "attempts/001/artifacts/validation_matrix.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "selftest_log",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/selftest.log",
+              "relative_path": "attempts/001/logs/selftest.log",
+              "summary": ""
+            },
+            {
+              "artifact_type": "load_log",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/load.log",
+              "relative_path": "attempts/001/logs/load.log",
+              "summary": ""
+            },
+            {
+              "artifact_type": "unload_log",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/unload.log",
+              "relative_path": "attempts/001/logs/unload.log",
+              "summary": ""
+            },
+            {
+              "artifact_type": "smoke_log",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/smoke.log",
+              "relative_path": "attempts/001/logs/smoke.log",
+              "summary": ""
+            },
+            {
+              "artifact_type": "regression_log",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/regression.log",
+              "relative_path": "attempts/001/logs/regression.log",
+              "summary": ""
+            },
+            {
+              "artifact_type": "regression_summary",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/regression_summary.json",
+              "relative_path": "attempts/001/artifacts/regression_summary.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "validation_report",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+              "relative_path": "attempts/001/artifacts/validation_report.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "validation_evidence_bundle",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/context/validation_evidence_bundle.json",
+              "relative_path": "attempts/001/context/validation_evidence_bundle.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "validation_context_bundle",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/context/validation_context_bundle.json",
+              "relative_path": "attempts/001/context/validation_context_bundle.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "validation_skill_route",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/route/validation_skill_route.json",
+              "relative_path": "attempts/001/route/validation_skill_route.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "validation_prompt_packet",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/prompt/validation_prompt_packet.json",
+              "relative_path": "attempts/001/prompt/validation_prompt_packet.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "attempt_state",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/attempt_state.json",
+              "relative_path": "attempts/001/attempt_state.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "harness_trace",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json",
+              "relative_path": "attempts/001/trace/harness_trace.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "reporting_evidence_bundle",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/context/evidence_bundle.json",
+              "relative_path": "reports/context/evidence_bundle.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "reporting_context_bundle",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/context/context_bundle.json",
+              "relative_path": "reports/context/context_bundle.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "reporting_bootstrap_manifest",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/prompt/bootstrap_manifest.json",
+              "relative_path": "reports/prompt/bootstrap_manifest.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "reporting_skill_route",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/route/reporting_skill_route.json",
+              "relative_path": "reports/route/reporting_skill_route.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "reporting_prompt_packet",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/prompt/reporting_prompt_packet.json",
+              "relative_path": "reports/prompt/reporting_prompt_packet.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "evaluation_summary",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/evaluation_summary.json",
+              "relative_path": "reports/evaluation_summary.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "final_report_json",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json",
+              "relative_path": "reports/report.json",
+              "summary": ""
+            },
+            {
+              "artifact_type": "final_report_md",
+              "artifact_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.md",
+              "relative_path": "reports/report.md",
+              "summary": ""
+            }
+          ],
+          "workspace_exists": true
+        }
+      }
+    },
+    {
+      "action": "agent_decision",
+      "dry_run": false,
+      "ok": true,
+      "request": {
+        "method": "GET",
+        "url": "http://10.223.185.3:18084/api/v1/tasks/judge-like-v0510-20260509191933-26698/agent-decision",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "json": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "task_id": "judge-like-v0510-20260509191933-26698",
+          "attempt_id": "judge-like-v0510-20260509191933-26698-A001",
+          "attempt_no": 1,
+          "repair_intent": {
+            "cve_id": "CVE-2024-26698",
+            "bug_class": "cve_fix",
+            "root_cause": "netvsc_device_remove 中存在并发同步缺陷，修复围绕条件 `i < ndev->real_num_rx_queues` 展开。 依据：commit e0526ec5360a48ad3ab2e26e802b0532302a7e11 upstream.",
+            "vulnerability_conditions": [
+              "netvsc_device_remove: i < ndev->real_num_rx_queues"
+            ],
+            "guard_conditions": [
+              "netvsc_device_remove: i < ndev->real_num_rx_queues",
+              "i < ndev->real_num_rx_queues"
+            ],
+            "guard_sites": [
+              "netvsc_device_remove"
+            ],
+            "safe_exits": [],
+            "preserved_side_effects": [
+              "netvsc_device_remove: 调用 napi_disable(...)",
+              "netvsc_device_remove: 条件 i < ndev->real_num_rx_queues 命中时调用 napi_disable(...)",
+              "napi_disable(&net_device->chan_table[i].napi);"
+            ],
+            "touched_files": [
+              "drivers/net/hyperv/netvsc.c"
+            ],
+            "touched_functions": [
+              "netvsc_device_remove"
+            ],
+            "touched_state": [],
+            "recommended_strategy": "semantic_guard",
+            "confidence": 0.72,
+            "evidence": [
+              "guard 条件: netvsc_device_remove: i < ndev->real_num_rx_queues | i < ndev->real_num_rx_queues",
+              "保留副作用: netvsc_device_remove: 调用 napi_disable(...) | netvsc_device_remove: 条件 i < ndev->real_num_rx_queues 命中时调用 napi_disable(...) | napi_disable(&net_device->chan_table[i].napi);",
+              "推荐策略: semantic_guard"
+            ]
+          },
+          "selected_recipe": "semantic_guard_rewrite",
+          "selected_strategy": null,
+          "strategy": "semantic_guard_rewrite",
+          "strategy_switch": {
+            "repair_intent_strategy": "semantic_guard",
+            "selected_recipe": "semantic_guard_rewrite",
+            "selected_strategy": null,
+            "final_strategy": "semantic_guard_rewrite",
+            "switched": true,
+            "reason": "优先选择综合得分最高的候选，当前命中 semantic_guard_rewrite，排序得分 0.695"
+          },
+          "agent_next_action": "当前任务已具备成功回放闭环，优先固化样例、脚本和验收材料",
+          "failure_type": "none",
+          "failure_record": {
+            "summary": "构建阶段已完成。",
+            "stage_name": "build",
+            "failure_type": "none",
+            "evidence": [],
+            "diagnostic_details": {
+              "route_effectiveness": {
+                "task_id": "judge-like-v0510-20260509191933-26698",
+                "attempt_no": 1,
+                "status": "first_attempt",
+                "current_recipe": "semantic_guard_rewrite",
+                "current_patch_hash": "011ad2a234294364eb3469d7abadf115b03e4cf42cf5b9066198207a64773ff9",
+                "current_changed_line_count": 6,
+                "summary": "首轮尝试，无上一轮补丁可比较"
+              },
+              "agent_next_action": {
+                "action": "stop_or_manual_review",
+                "reason": "none 暂无自动重试策略",
+                "retry_scope": "manual"
+              }
+            },
+            "raw": {
+              "task_id": "judge-like-v0510-20260509191933-26698",
+              "attempt_id": "judge-like-v0510-20260509191933-26698-A001",
+              "stage_name": "build",
+              "failure_type": "none",
+              "summary": "构建阶段已完成。",
+              "evidence": [],
+              "diagnostic_details": {
+                "route_effectiveness": {
+                  "task_id": "judge-like-v0510-20260509191933-26698",
+                  "attempt_no": 1,
+                  "status": "first_attempt",
+                  "current_recipe": "semantic_guard_rewrite",
+                  "current_patch_hash": "011ad2a234294364eb3469d7abadf115b03e4cf42cf5b9066198207a64773ff9",
+                  "current_changed_line_count": 6,
+                  "summary": "首轮尝试，无上一轮补丁可比较"
+                },
+                "agent_next_action": {
+                  "action": "stop_or_manual_review",
+                  "reason": "none 暂无自动重试策略",
+                  "retry_scope": "manual"
+                }
+              },
+              "created_at": "2026-05-09T11:21:54.112655Z"
+            }
+          },
+          "diagnostic_details": {
+            "route_effectiveness": {
+              "task_id": "judge-like-v0510-20260509191933-26698",
+              "attempt_no": 1,
+              "status": "first_attempt",
+              "current_recipe": "semantic_guard_rewrite",
+              "current_patch_hash": "011ad2a234294364eb3469d7abadf115b03e4cf42cf5b9066198207a64773ff9",
+              "current_changed_line_count": 6,
+              "summary": "首轮尝试，无上一轮补丁可比较"
+            },
+            "agent_next_action": {
+              "action": "stop_or_manual_review",
+              "reason": "none 暂无自动重试策略",
+              "retry_scope": "manual"
+            }
+          },
+          "state_conflicts": [
+            "failure_record=none",
+            "apply_precheck=target_already_patched"
+          ],
+          "source_paths": {
+            "repair_intent": "workspaces/judge-like-v0510-20260509191933-26698/analysis/repair_intent.json",
+            "rewrite_plan": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewrite_plan.json",
+            "failure_record": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/failure_record.json",
+            "build_summary": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/build_summary.json",
+            "report_json": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json"
+          },
+          "source_exists": {
+            "repair_intent": true,
+            "rewrite_plan": true,
+            "failure_record": true,
+            "build_summary": true,
+            "report_json": true
+          }
+        }
+      }
+    },
+    {
+      "action": "report",
+      "dry_run": false,
+      "ok": true,
+      "request": {
+        "method": "POST",
+        "url": "http://10.223.185.3:18084/api/v1/tasks/judge-like-v0510-20260509191933-26698/report",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "json": {}
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "task_id": "judge-like-v0510-20260509191933-26698",
+          "status": "ok",
+          "detail": {
+            "command": "report",
+            "task_id": "judge-like-v0510-20260509191933-26698",
+            "report_json": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json",
+            "report_md": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.md",
+            "status": "ok"
+          }
+        }
+      }
+    },
+    {
+      "action": "replay",
+      "dry_run": false,
+      "ok": true,
+      "request": {
+        "method": "GET",
+        "url": "http://10.223.185.3:18084/api/v1/tasks/judge-like-v0510-20260509191933-26698/replay",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "json": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "command": "replay",
+          "task_id": "judge-like-v0510-20260509191933-26698",
+          "latest_attempt_id": "judge-like-v0510-20260509191933-26698-A001",
+          "latest_attempt_status": "built",
+          "latest_failure_type": null,
+          "latest_build_exec_status": "executed",
+          "latest_target_state": null,
+          "trace_path": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json",
+          "report_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json",
+          "evaluation_summary_path": "workspaces/judge-like-v0510-20260509191933-26698/reports/evaluation_summary.json",
+          "stage_routes": {
+            "rewrite_recipe": {
+              "selected_skill": "rewrite_recipe",
+              "candidate_skills": [
+                "rewrite_recipe"
+              ],
+              "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=False。"
+            },
+            "validation": {
+              "selected_skill": "validation",
+              "candidate_skills": [
+                "validation"
+              ],
+              "selection_reason": "命中阶段优先级最高的可见 skill，来源=project，只读=False。"
+            }
+          },
+          "dispatch_modes": {
+            "rewrite_recipe": "write-exclusive",
+            "build": "write-exclusive",
+            "validation": "write-exclusive"
+          },
+          "replay_files": [
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_matrix.json",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/selftest.log",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/load.log",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/unload.log",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/smoke.log",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/regression.log"
+          ],
+          "success_replay_files": [
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewritten.patch",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_matrix.json",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/selftest.log",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/load.log",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/unload.log",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/smoke.log",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/regression.log"
+          ],
+          "failure_replay_files": [
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/prompt/rewrite_recipe_prompt_packet.json",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/failure_record.json",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/attempt_state.json",
+            "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json"
+          ],
+          "closure_type": "success",
+          "closure_status": "ready",
+          "success_replay_ready": true,
+          "missing_success_evidence": [],
+          "closure_paths": {
+            "task_dir": "workspaces/judge-like-v0510-20260509191933-26698",
+            "report_json": "workspaces/judge-like-v0510-20260509191933-26698/reports/report.json",
+            "evaluation_summary": "workspaces/judge-like-v0510-20260509191933-26698/reports/evaluation_summary.json",
+            "latest_build_log": "workspaces/judge-like-v0510-20260509191933-26698/attempts/001/logs/build.log",
+            "latest_build_exec_status": "executed",
+            "latest_target_state": null,
+            "validation_status": "passed"
+          },
+          "comparison": {
+            "task_id": "judge-like-v0510-20260509191933-26698",
+            "attempt_count": 1,
+            "latest_attempt": 1,
+            "items": [
+              {
+                "attempt_no": 1,
+                "attempt_id": "judge-like-v0510-20260509191933-26698-A001",
+                "status": "built",
+                "failure_type": null,
+                "rewrite_plan_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/rewrite/rewrite_plan.json",
+                "validation_report_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/artifacts/validation_report.json",
+                "trace_path": "/home/patchweaver/current/workspaces/judge-like-v0510-20260509191933-26698/attempts/001/trace/harness_trace.json"
+              }
+            ]
+          },
+          "status": "ok"
+        }
+      }
+    }
+  ],
+  "limits": [
+    "dry_run mode validates the FC/MCP tool contract but does not prove livepatch build success.",
+    "execute mode validates real gateway-to-API calls; .ko success still requires task artifact checks.",
+    "Secret values are never written to this report."
+  ]
+}

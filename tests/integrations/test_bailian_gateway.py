@@ -205,3 +205,35 @@ def test_cli_create_dry_run_uses_env_base_url(monkeypatch: pytest.MonkeyPatch) -
     assert parsed["request"]["url"] == "http://patchweaver.test/tasks"
     assert parsed["request"]["headers"]["Authorization"] == "Bearer ***"
     assert "secret-value" not in completed.stdout
+
+
+def test_validate_bailian_gateway_e2e_cli_writes_safe_dry_run_report(tmp_path: Path) -> None:
+    output_json = tmp_path / "bailian.json"
+    output_md = tmp_path / "bailian.md"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "scripts/validate_bailian_gateway_e2e.py",
+            "--task-id",
+            "demo-task",
+            "--api-base-url",
+            "http://patchweaver.test/api/v1",
+            "--output-json",
+            str(output_json),
+            "--output-md",
+            str(output_md),
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(output_json.read_text(encoding="utf-8"))
+    assert payload["mode"] == "dry_run"
+    assert payload["summary"]["total"] == 4
+    assert payload["summary"]["ok"] == 4
+    assert payload["summary"]["secrets_written"] is False
+    assert "Bailian / FC / MCP" in output_md.read_text(encoding="utf-8")

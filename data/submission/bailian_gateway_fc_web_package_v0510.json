@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "package_type": "web_function",
+  "package": "data\\submission\\bailian_gateway_fc_web_package_v0510.zip",
+  "runtime": "custom.debian10",
+  "startup_command": "python3 server.py",
+  "listen_port": 9000,
+  "health_path": "/healthz",
+  "plugin_path": "/gateway",
+  "compat_plugin_path": "/api/v1/integrations/bailian/gateway",
+  "files": [
+    "server.py",
+    "bailian_gateway.py",
+    "openapi.json",
+    "README.md"
+  ],
+  "required_environment": [
+    {
+      "name": "PATCHWEAVER_API_BASE_URL",
+      "required": true,
+      "secret": false
+    },
+    {
+      "name": "PATCHWEAVER_GATEWAY_PUBLIC_URL",
+      "required": false,
+      "secret": false
+    },
+    {
+      "name": "PATCHWEAVER_BAILIAN_API_KEY",
+      "required": false,
+      "secret": true
+    },
+    {
+      "name": "PATCHWEAVER_API_TIMEOUT_SECONDS",
+      "required": false,
+      "secret": false
+    }
+  ],
+  "safe_default": "dry_run=true",
+  "generated_at": "2026-05-10T05:22:31.204836+00:00"
+}

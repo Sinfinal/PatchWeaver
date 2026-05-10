@@ -1,0 +1,97 @@
+{
+  "generated_at": "2026-05-10T05:17:30.116289+00:00",
+  "records": [
+    {
+      "cve": "CVE-2024-26643",
+      "task_id": "judge-like-challenge14final-2026050920-26643",
+      "role": "成功样例：kpatch 约束突破",
+      "status": "built",
+      "failure_type": "none",
+      "failure_summary": "构建阶段已完成。",
+      "commit_message": "netfilter: nf_tables: mark set as dead when unbinding anonymous set",
+      "affected_files": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "raw_patch_path": "workspaces/judge-like-challenge14final-2026050920-26643/input/raw_patch.patch",
+      "normalized_patch_path": "workspaces/judge-like-challenge14final-2026050920-26643/normalized/normalized.patch",
+      "semantic_card_path": "workspaces/judge-like-challenge14final-2026050920-26643/analysis/semantic_card.json",
+      "constraint_report_path": "workspaces/judge-like-challenge14final-2026050920-26643/analysis/constraint_report.json",
+      "module_path": "workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2664.ko",
+      "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/rewrite/rewritten.patch",
+      "validation_report_path": "workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/artifacts/validation_report.json",
+      "validation_status": "passed",
+      "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26643/attempts/001/logs/build.log",
+      "repair_intent_observable": true,
+      "report_ok": true
+    },
+    {
+      "cve": "CVE-2024-26726",
+      "task_id": "judge-like-challenge14final-2026050920-26726",
+      "role": "成功样例：kpatch 约束突破",
+      "status": "built",
+      "failure_type": "none",
+      "failure_summary": "构建阶段已完成。",
+      "commit_message": "btrfs: don't drop extent_map for free space inode on write error",
+      "affected_files": [
+        "fs/btrfs/inode.c"
+      ],
+      "raw_patch_path": "workspaces/judge-like-challenge14final-2026050920-26726/input/raw_patch.patch",
+      "normalized_patch_path": "workspaces/judge-like-challenge14final-2026050920-26726/normalized/normalized.patch",
+      "semantic_card_path": "workspaces/judge-like-challenge14final-2026050920-26726/analysis/semantic_card.json",
+      "constraint_report_path": "workspaces/judge-like-challenge14final-2026050920-26726/analysis/constraint_report.json",
+      "module_path": "workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2672.ko",
+      "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/rewrite/rewritten.patch",
+      "validation_report_path": "workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/artifacts/validation_report.json",
+      "validation_status": "passed",
+      "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26726/attempts/001/logs/build.log",
+      "repair_intent_observable": true,
+      "report_ok": true
+    },
+    {
+      "cve": "CVE-2024-26760",
+      "task_id": "judge-like-challenge14final-2026050920-26760",
+      "role": "成功样例：kpatch 约束突破",
+      "status": "built",
+      "failure_type": "none",
+      "failure_summary": "构建阶段已完成。",
+      "commit_message": "scsi: target: pscsi: Fix bio_put() for error case",
+      "affected_files": [
+        "drivers/target/target_core_pscsi.c"
+      ],
+      "raw_patch_path": "workspaces/judge-like-challenge14final-2026050920-26760/input/raw_patch.patch",
+      "normalized_patch_path": "workspaces/judge-like-challenge14final-2026050920-26760/normalized/normalized.patch",
+      "semantic_card_path": "workspaces/judge-like-challenge14final-2026050920-26760/analysis/semantic_card.json",
+      "constraint_report_path": "workspaces/judge-like-challenge14final-2026050920-26760/analysis/constraint_report.json",
+      "module_path": "workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/output/patchweaver-judge-like-challenge14final-2026050920-2676.ko",
+      "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/rewrite/rewritten.patch",
+      "validation_report_path": "workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/artifacts/validation_report.json",
+      "validation_status": "passed",
+      "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26760/attempts/001/logs/build.log",
+      "repair_intent_observable": true,
+      "report_ok": true
+    },
+    {
+      "cve": "CVE-2024-26607",
+      "task_id": "judge-like-challenge14final-2026050920-26607",
+      "role": "失败边界样例：feature_not_enabled",
+      "status": "failed",
+      "failure_type": "feature_not_enabled",
+      "failure_summary": "目标内核配置未启用补丁涉及源码，已在 apply 预检查阶段提前识别",
+      "commit_message": "drm/bridge: sii902x: Fix probing race issue",
+      "affected_files": [
+        "drivers/gpu/drm/bridge/sii902x.c"
+      ],
+      "raw_patch_path": "workspaces/judge-like-challenge14final-2026050920-26607/input/raw_patch.patch",
+      "normalized_patch_path": "workspaces/judge-like-challenge14final-2026050920-26607/normalized/normalized.patch",
+      "semantic_card_path": "workspaces/judge-like-challenge14final-2026050920-26607/analysis/semantic_card.json",
+      "constraint_report_path": "workspaces/judge-like-challenge14final-2026050920-26607/analysis/constraint_report.json",
+      "module_path": null,
+      "rewritten_patch_path": "workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/rewrite/rewritten.patch",
+      "validation_report_path": "workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/artifacts/validation_report.json",
+      "validation_status": "pending",
+      "build_log_path": "workspaces/judge-like-challenge14final-2026050920-26607/attempts/001/logs/build.log",
+      "repair_intent_observable": true,
+      "report_ok": true
+    }
+  ]
+}

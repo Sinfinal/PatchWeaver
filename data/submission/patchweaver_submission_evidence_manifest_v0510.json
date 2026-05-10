@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-10T05:27:08.174395+00:00",
+  "workspace_root": "workspaces",
+  "output_zip": "data/submission/patchweaver_submission_evidence_bundle_v0510.zip",
+  "evaluation_jsons": [],
+  "summary": {
+    "task_count": 10,
+    "workspace_missing": 0,
+    "complete_tasks": 9,
+    "tasks_with_ko": 9,
+    "tasks_with_logs": 10
+  },
+  "tasks": [
+    {
+      "task_id": "TASK-20260510-001",
+      "workspace_dir": "workspaces/TASK-20260510-001",
+      "workspace_exists": true,
+      "file_count": 17,
+      "required": {
+        "ko": true,
+        "report_json": true,
+        "validation_report": true,
+        "rewritten_patch": true,
+        "source_patch": true,
+        "logs": true
+      },
+      "missing_required": []
+    },
+    {
+      "task_id": "judge-like-v0510-20260509191933-26698",
+      "workspace_dir": "workspaces/judge-like-v0510-20260509191933-26698",
+      "workspace_exists": true,
+      "file_count": 21,
+      "required": {
+        "ko": true,
+        "report_json": true,
+        "validation_report": true,
+        "rewritten_patch": true,
+        "source_patch": true,
+        "logs": true
+      },
+      "missing_required": []
+    },
+    {
+      "task_id": "judge-like-v0510-20260509191933-26693",
+      "workspace_dir": "workspaces/judge-like-v0510-20260509191933-26693",
+      "workspace_exists": true,
+      "file_count": 21,
+      "required": {
+        "ko": true,
+        "report_json": true,
+        "validation_report": true,
+        "rewritten_patch": true,
+        "source_patch": true,
+        "logs": true
+      },
+      "missing_required": []
+    },
+    {
+      "task_id": "judge-like-v0510-20260509191933-26694",
+      "workspace_dir": "workspaces/judge-like-v0510-20260509191933-26694",
+      "workspace_exists": true,
+      "file_count": 21,
+      "required": {
+        "ko": true,
+        "report_json": true,
+        "validation_report": true,
+        "rewritten_patch": true,
+        "source_patch": true,
+        "logs": true
+      },
+      "missing_required": []
+    },
+    {
+      "task_id": "judge-like-v0510-20260509191933-26615",
+      "workspace_dir": "workspaces/judge-like-v0510-20260509191933-26615",
+      "workspace_exists": true,
+      "file_count": 21,
+      "required": {
+        "ko": true,
+        "report_json": true,
+        "validation_report": true,
+        "rewritten_patch": true,
+        "source_patch": true,
+        "logs": true
+      },
+      "missing_required": []
+    },
+    {
+      "task_id": "judge-like-v0510-20260509191933-26791",
+      "workspace_dir": "workspaces/judge-like-v0510-20260509191933-26791",
+      "workspace_exists": true,
+      "file_count": 21,
+      "required": {
+        "ko": true,
+        "report_json": true,
+        "validation_report": true,
+        "rewritten_patch": true,
+        "source_patch": true,
+        "logs": true
+      },
+      "missing_required": []
+    },
+    {
+      "task_id": "judge-like-challenge14final-2026050920-26643",
+      "workspace_dir": "workspaces/judge-like-challenge14final-2026050920-26643",
+      "workspace_exists": true,
+      "file_count": 21,
+      "required": {
+        "ko": true,
+        "report_json": true,
+        "validation_report": true,
+        "rewritten_patch": true,
+        "source_patch": true,
+        "logs": true
+      },
+      "missing_required": []
+    },
+    {
+      "task_id": "judge-like-challenge14final-2026050920-26726",
+      "workspace_dir": "workspaces/judge-like-challenge14final-2026050920-26726",
+      "workspace_exists": true,
+      "file_count": 21,
+      "required": {
+        "ko": true,
+        "report_json": true,
+        "validation_report": true,
+        "rewritten_patch": true,
+        "source_patch": true,
+        "logs": true
+      },
+      "missing_required": []
+    },
+    {
+      "task_id": "judge-like-challenge14final-2026050920-26760",
+      "workspace_dir": "workspaces/judge-like-challenge14final-2026050920-26760",
+      "workspace_exists": true,
+      "file_count": 21,
+      "required": {
+        "ko": true,
+        "report_json": true,
+        "validation_report": true,
+        "rewritten_patch": true,
+        "source_patch": true,
+        "logs": true
+      },
+      "missing_required": []
+    },
+    {
+      "task_id": "judge-like-challenge14final-2026050920-26607",
+      "workspace_dir": "workspaces/judge-like-challenge14final-2026050920-26607",
+      "workspace_exists": true,
+      "file_count": 20,
+      "required": {
+        "ko": false,
+        "report_json": true,
+        "validation_report": true,
+        "rewritten_patch": true,
+        "source_patch": true,
+        "logs": true
+      },
+      "missing_required": [
+        "ko"
+      ]
+    }
+  ],
+  "note": "The zip preserves .log and .ko files even when ignored by git."
+}

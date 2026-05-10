@@ -41,19 +41,27 @@ PatchWeaver 面向操作系统内核热补丁生成场景，围绕 `CVE -> Patch
 - `kpatch-build`
 - 与目标内核匹配的源码树、`.config`、`Module.symvers`、`vmlinux`
 
-安装项目：
+评委或部署人员可以先执行一键部署预检查。`dry-run` 只输出检查结果和执行计划，不会安装依赖、初始化数据库或触发构建：
 
 ```bash
-python -m pip install -e . --no-deps
-python -m pip install typer pydantic pyyaml jinja2 unidiff rich paramiko fastapi httpx uvicorn pymilvus
+python scripts/deploy_patchweaver.py --dry-run --json --target-kernel 6.6.102-5.2.an23.x86_64
 ```
 
-初始化运行目录和数据库：
+确认验证机环境无阻塞问题后，再执行最小部署：
 
 ```bash
+python scripts/deploy_patchweaver.py --with-db --target-kernel 6.6.102-5.2.an23.x86_64
+```
+
+如需手动执行，可使用等价命令：
+
+```bash
+python -m pip install -e .
 python -m patchweaver init --with-db --json
 python -m patchweaver doctor --json
 ```
+
+更完整的验证机部署、源码基线、`kpatch-build` 和 Web/API 检查见 `docs/deployment.md`。
 
 运行一个 CVE 任务：
 
@@ -77,18 +85,19 @@ python -m patchweaver serve-api --host 0.0.0.0 --port 18084
 
 ## 效果展示
 
-当前封版验证使用 `v0509` 代表集和 confirmed 正向样例池作为主效果证据；`v0510` 复核证据包用于补充证明近期 7 条真实 full run 均完成 `.ko` 构建与动态验证，且证据缺失数为 0。
+当前封版验证使用 confirmed 正向样例池、Final 风格 holdout 候选和混合 Challenge 批次作为主效果证据。以下结果只代表本项目公开代表集和本轮复测环境，不承诺官方 Final 隐藏集必然取得相同成功率。
 
 ![PatchWeaver 效果展示占位](PatchWeaver 效果展示占位.png)
 
 | 指标 | 当前结果 |
 | --- | --- |
 | confirmed 正向样例池 | `12` 条完整证据 |
-| Final 风格 holdout | `10/10` 完成 `.ko` 构建 |
-| 动态验证 | `10/10` 完成 `load / unload / smoke / selftest` |
-| 代表集成功率 | `100%` |
+| Final 风格 holdout | `5/5` 完成 `.ko` 构建与动态验证 |
+| 混合 Challenge 批次 | `5/14` 成功，其余按边界原因归因 |
+| 动态验证 | 成功样例均完成 `load / unload / smoke / selftest` |
+| 正向代表集成功率 | `100%` |
 | 平均尝试轮次 | `1.0` |
-| 赛题目标参考 | `60%+` 成功率 |
+| 赛题目标参考 | Final 集合 `60%+` 成功率 |
 
 
 
