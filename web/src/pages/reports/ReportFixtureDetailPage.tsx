@@ -34,7 +34,6 @@ export function ReportFixtureDetailPage(): JSX.Element {
     <div className="pw-grid">
       <SectionCard
         title={payload.fixture_id}
-        subtitle={`${payload.display_name} · 单样例详情与回放摘要`}
         actions={
           <div className="pw-btn-row">
             <Link className="pw-btn" to={`/reports/fixtures/${payload.fixture_group}`}>

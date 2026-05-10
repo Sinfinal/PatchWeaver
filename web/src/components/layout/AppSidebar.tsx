@@ -53,7 +53,6 @@ export function AppSidebar(): JSX.Element {
       <div className="pw-sidebar-orb" />
       <div className="pw-sidebar-brand">
         <h1 className="pw-sidebar-title">PatchWeaver</h1>
-        <p className="pw-sidebar-subtitle">补天控制台</p>
         <div className="pw-sidebar-line" />
       </div>
       {navGroups.map((group) => (

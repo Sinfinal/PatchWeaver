@@ -15,7 +15,7 @@ export function SettingsPage(): JSX.Element {
 
   return (
     <div className="pw-grid">
-      <SectionCard title="系统默认值" subtitle="这些值来自当前仓库配置，是前后端联调时最常核对的一批设置。">
+      <SectionCard title="系统默认值">
         <div className="pw-highlight-grid">
           {settingsFacts.map((item) => (
             <div key={item.title} className="pw-mini-card">
@@ -26,7 +26,7 @@ export function SettingsPage(): JSX.Element {
         </div>
       </SectionCard>
 
-      <SectionCard title="运行档位" subtitle="PatchWeaver 通过 dev / demo / full 三档 profile 管理尝试次数与执行强度。">
+      <SectionCard title="运行档位">
         <div className="pw-highlight-grid">
           {buildProfiles.map((profile) => (
             <div key={profile.name} className="pw-mini-card">
@@ -46,7 +46,7 @@ export function SettingsPage(): JSX.Element {
         </div>
       </SectionCard>
 
-      <SectionCard title="实时配置快照" subtitle="来自 `/settings` 接口，适合在联调现场直接确认后端读到的配置。">
+      <SectionCard title="实时配置快照">
         {query.isLoading ? <div className="pw-note-banner">正在加载配置快照...</div> : null}
         {query.isError ? <div className="pw-note-banner">当前无法获取实时配置，只展示静态默认值与 profile 说明。</div> : null}
         <CodePanel title="settings.json" content={query.data ? JSON.stringify(query.data, null, 2) : undefined} emptyText="暂无配置快照。" />

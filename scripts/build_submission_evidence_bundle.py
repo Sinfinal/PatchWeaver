@@ -2,7 +2,7 @@
 
 The bundle intentionally uses an explicit zip manifest instead of relying on
 ``git add`` so that ``*.log`` and generated ``*.ko`` files are preserved for
-judge review without changing repository ignore rules.
+external validation without changing repository ignore rules.
 """
 
 from __future__ import annotations

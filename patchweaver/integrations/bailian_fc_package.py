@@ -302,7 +302,7 @@ def build_bailian_readiness_manifest(
         },
         "delivery_boundary": [
             "The fcapp.run default HTTPS domain is acceptable for controlled smoke tests.",
-            "Bind a custom domain, API Gateway, or ALB if the final judge-facing delivery requires production-grade exposure.",
+            "Bind a custom domain, API Gateway, or ALB if the final external delivery requires production-grade exposure.",
             "Real task execution must stay behind authentication and timeout controls; first-party smoke tests should keep dry_run=true.",
         ],
     }

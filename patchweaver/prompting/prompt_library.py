@@ -18,7 +18,7 @@ class PromptLibrary:
         "rewrite_recipe": "你负责选择最合适的 recipe 和原语组合，目标是输出可 apply、可解释、可构建的改写方案。",
         "failure_analysis": "你负责阅读构建失败证据，区分环境问题、补丁内容问题和 kpatch 约束问题，并给出下一轮最有价值的改进方向。",
         "validation": "你负责整理验证输入，区分语义预检查、加载卸载和冒烟验证的层次，避免把待执行状态误判为成功。",
-        "reporting": "你负责把阶段证据、失败归因和最终状态整理成评委可读的结果摘要，保持证据链完整。",
+        "reporting": "你负责把阶段证据、失败归因和最终状态整理成验收人员可读的结果摘要，保持证据链完整。",
     }
 
     def __init__(self, project_root: Path, loader: TemplateLoader | None = None) -> None:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, TypeVar
@@ -29,6 +30,13 @@ _UNSET = object()
 
 def discover_project_root(start: Path | None = None) -> Path:
     """自当前路径向上查找仓库根目录"""
+
+    env_root = os.getenv("PATCHWEAVER_PROJECT_ROOT", "").strip()
+    if env_root:
+        candidate = Path(env_root).expanduser().resolve()
+        if (candidate / "pyproject.toml").exists() and (candidate / "patchweaver").exists():
+            return candidate
+        raise FileNotFoundError(f"环境变量 PATCHWEAVER_PROJECT_ROOT 指向的路径不是 PatchWeaver 项目根目录：{candidate}")
 
     current = (start or Path(__file__).resolve()).resolve()
     search_root = current if current.is_dir() else current.parent

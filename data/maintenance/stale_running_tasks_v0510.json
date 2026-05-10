@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-05-09T09:54:07.749120+00:00",
-  "reason": "close stale active-state tasks before judge-facing API overview",
+  "reason": "close stale active-state tasks before external API overview",
   "rows": [
     {
       "task_id": "v0429-kconstraint-latest-20260429-154935-26656",

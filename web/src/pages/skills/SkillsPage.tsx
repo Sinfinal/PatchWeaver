@@ -38,7 +38,7 @@ export function SkillsPage(): JSX.Element {
 
   return (
     <div className="pw-grid">
-      <SectionCard title="技能调度设计" subtitle="定义阶段到技能的路由关系，统一主链路的执行入口。">
+      <SectionCard title="技能调度设计">
         <div className="pw-highlight-grid">
           {dispatchFacts.map((item) => (
             <div key={item.title} className="pw-mini-card">
@@ -49,7 +49,7 @@ export function SkillsPage(): JSX.Element {
         </div>
       </SectionCard>
 
-      <SectionCard title="核心技能" subtitle="列出当前启用的阶段技能及其在主链路中的职责。">
+      <SectionCard title="核心技能">
         <div className="pw-highlight-grid">
           {skillHighlights.map((item) => (
             <div key={item.title} className="pw-mini-card">
@@ -65,7 +65,7 @@ export function SkillsPage(): JSX.Element {
         </div>
       </SectionCard>
 
-      <SectionCard title="实时 Skill Registry" subtitle="读取后端注册表，用于核对技能加载状态和来源层级。">
+      <SectionCard title="实时 Skill Registry">
         {query.isLoading ? <div className="pw-note-banner">正在加载技能注册表...</div> : null}
         {query.isError ? <div className="pw-note-banner">当前无法获取实时 Skill Registry，先保留静态调度说明。</div> : null}
         {query.data ? (

@@ -40,7 +40,7 @@ export function RulesPage(): JSX.Element {
 
   return (
     <div className="pw-grid">
-      <SectionCard title="规则体系" subtitle="管理风险规则、原语规则和 Recipe，对改写过程提供约束。">
+      <SectionCard title="规则体系">
         <div className="pw-highlight-grid">
           {ruleHighlights.map((item) => (
             <div key={item.title} className="pw-mini-card">
@@ -51,7 +51,7 @@ export function RulesPage(): JSX.Element {
         </div>
       </SectionCard>
 
-      <SectionCard title="目录约定" subtitle="列出规则与配方在仓库中的固定路径，便于联调和排查。">
+      <SectionCard title="目录约定">
         <div className="pw-kv">
           {directoryFacts.map((item) => (
             <div key={item.label} className="pw-kv-item">
@@ -62,7 +62,7 @@ export function RulesPage(): JSX.Element {
         </div>
       </SectionCard>
 
-      <SectionCard title="实时目录扫描" subtitle="展示当前后端扫描到的规则目录和文件索引。">
+      <SectionCard title="实时目录扫描">
         {query.isLoading ? <div className="pw-note-banner">正在加载规则目录索引...</div> : null}
         {query.isError ? <div className="pw-note-banner">当前无法获取实时规则索引，先保留静态目录说明。</div> : null}
         {query.data ? (
@@ -73,7 +73,8 @@ export function RulesPage(): JSX.Element {
               ))}
             </div>
             {Object.entries(query.data.sections).map(([name, section]) => (
-              <SectionCard key={name} title={sectionLabelMap[name] ?? name} subtitle={section.path}>
+              <SectionCard key={name} title={sectionLabelMap[name] ?? name}>
+                <div className="pw-inline-note">{section.path}</div>
                 {section.files.length > 0 ? (
                   <div className="pw-list">
                     {section.files.map((file) => (

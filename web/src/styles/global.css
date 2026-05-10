@@ -167,14 +167,6 @@ code {
   letter-spacing: -0.03em;
 }
 
-.pw-subtitle {
-  margin: 8px 0 0;
-  color: var(--text-soft);
-  font-size: 14px;
-  max-width: 560px;
-  line-height: 1.6;
-}
-
 .pw-panel {
   position: relative;
   isolation: isolate;
@@ -221,14 +213,6 @@ code {
   margin: 0;
   font-size: 20px;
   letter-spacing: -0.02em;
-}
-
-.pw-section-subtitle {
-  margin: 6px 0 0;
-  color: var(--text-soft);
-  font-size: 13px;
-  line-height: 1.65;
-  max-width: 640px;
 }
 
 .pw-grid {
@@ -869,20 +853,19 @@ code {
 }
 
 .pw-step-progress {
-  display: flex;
-  align-items: stretch;
-  overflow-x: auto;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
   padding: 4px 2px 8px;
-  scrollbar-gutter: stable both-edges;
 }
 
 .pw-step-item {
   position: relative;
-  flex: 0 0 180px;
-  min-width: 180px;
+  min-width: 0;
+  min-height: 108px;
   display: grid;
   gap: 10px;
-  padding: 14px 16px;
+  padding: 13px 14px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -947,13 +930,7 @@ code {
 }
 
 .pw-step-connector {
-  flex: 1 0 44px;
-  min-width: 44px;
-  align-self: flex-start;
-  height: 2px;
-  margin: 27px 8px 0;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  display: none;
 }
 
 .pw-step-item.is-success .pw-step-marker {
@@ -1862,24 +1839,32 @@ button.pw-list-item {
 
 .pw-overview-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.95fr) minmax(320px, 0.95fr);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 16px;
   align-items: start;
 }
 
-.pw-overview-column {
-  min-width: 0;
-  display: grid;
-  gap: 18px;
-  align-content: start;
-}
-
-.pw-overview-column > .pw-section + .pw-section {
-  margin-top: 0;
-}
-
 .pw-overview-panel {
+  grid-column: span 12;
   min-height: 100%;
+}
+
+.pw-overview-panel-task {
+  grid-column: span 12;
+}
+
+.pw-overview-panel-signal,
+.pw-overview-panel-evaluation,
+.pw-overview-panel-release {
+  grid-column: span 4;
+}
+
+.pw-overview-panel-logs {
+  grid-column: span 8;
+}
+
+.pw-overview-panel-events {
+  grid-column: span 4;
 }
 
 .pw-overview-panel .pw-section-header {
@@ -1994,14 +1979,24 @@ button.pw-list-item {
     grid-template-columns: 1fr;
   }
 
-  .pw-overview-column {
-    gap: 18px;
+  .pw-overview-panel,
+  .pw-overview-panel-task,
+  .pw-overview-panel-signal,
+  .pw-overview-panel-evaluation,
+  .pw-overview-panel-release,
+  .pw-overview-panel-logs,
+  .pw-overview-panel-events {
+    grid-column: 1;
   }
 
   .pw-grid.two,
   .pw-grid.detail,
   .pw-hero-grid {
     grid-template-columns: 1fr;
+  }
+
+  .pw-step-progress {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -2034,14 +2029,7 @@ button.pw-list-item {
     grid-template-columns: 1fr;
   }
 
-  .pw-step-item {
-    flex-basis: 160px;
-    min-width: 160px;
-  }
-
-  .pw-step-connector {
-    flex-basis: 28px;
-    min-width: 28px;
-    margin-inline: 6px;
+  .pw-step-progress {
+    grid-template-columns: 1fr;
   }
 }

@@ -20,7 +20,7 @@ export function LogsPage(): JSX.Element {
 
   return (
     <div className="pw-grid">
-      <SectionCard title="排障入口" subtitle="日志页只做两件事：先判断是系统层问题，还是构建链路问题。">
+      <SectionCard title="排障入口">
         <div className="pw-highlight-grid">
           {logGuides.map((item) => (
             <div key={item.title} className="pw-mini-card">

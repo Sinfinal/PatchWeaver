@@ -128,7 +128,6 @@ export function TaskDetailPage(): JSX.Element {
     <div className="pw-grid">
       <SectionCard
         title={detail.task.task_id}
-        subtitle={`${detail.task.cve_id} · ${detail.task.target_kernel}`}
         actions={
           <div className="pw-btn-row">
             <button className="pw-btn" type="button" onClick={() => actionMutation.mutate("analyze")} disabled={actionMutation.isPending}>
@@ -155,6 +154,10 @@ export function TaskDetailPage(): JSX.Element {
         }
       >
         <div className="pw-kv">
+          <div className="pw-kv-item">
+            <span className="pw-kv-label">CVE</span>
+            <div className="pw-kv-value">{detail.task.cve_id}</div>
+          </div>
           <div className="pw-kv-item">
             <span className="pw-kv-label">任务状态</span>
             <div className="pw-kv-value">
@@ -224,21 +227,19 @@ export function TaskDetailPage(): JSX.Element {
 
       <SectionCard
         title="阶段时间线"
-        subtitle="展示任务在主链路中的推进位置及各阶段产物状态。"
       >
         {detail.process_summary ? <ProcessSummaryPanel detail={detail} /> : null}
         <StageTimeline items={detail.stage_view ?? detail.timeline} currentStage={detail.process_summary?.current_stage} />
       </SectionCard>
 
       {detail.agent_decision_summary ? (
-        <SectionCard title="Agent Decision Summary" subtitle="展示 RepairIntent、路线选择、下一步动作和失败归因。">
+        <SectionCard title="Agent Decision Summary">
           <AgentDecisionPanel detail={detail} />
         </SectionCard>
       ) : null}
 
       <SectionCard
         title="任务证据面板"
-        subtitle="按阶段查看任务产物，并在右侧预览对应文件内容。"
       >
         <div className="pw-tabs">
           {tabs.map((item) => (
@@ -254,10 +255,10 @@ export function TaskDetailPage(): JSX.Element {
         </div>
         <div className="pw-grid detail">
           <div className="pw-grid">
-            <SectionCard title="内容摘要" subtitle={getTabSubtitle(selectedTab)}>
+            <SectionCard title="内容摘要">
               {renderTabSummary(detail, selectedTab, currentAttempt, setSelectedAttemptNo, setSelectedPath)}
             </SectionCard>
-            <SectionCard title="候选文件" subtitle="列出当前标签下的可用文件，选中后在右侧加载内容。">
+            <SectionCard title="候选文件">
               {tabFiles.length > 0 ? (
                 <div className="pw-list">
                   {tabFiles.map((path) => (
@@ -614,21 +615,6 @@ function buildTabFiles(
   }
 
   return all.filter(predicateMap[tab]);
-}
-
-function getTabSubtitle(tab: TabKey): string {
-  const subtitles: Record<TabKey, string> = {
-    overview: "查看任务状态、最近失败记录和最新验证结果。",
-    input: "查看输入文件、Patch Bundle 和归一化产物。",
-    analysis: "查看语义卡、约束报告、上下文包和分析轨迹。",
-    attempts: "查看各轮尝试记录，并切换到对应改写产物。",
-    build: "查看构建日志、失败记录和当前轮构建产物。",
-    validate: "查看验证报告、验证日志和语义检查结果。",
-    report: "查看任务报告、Markdown 输出和报告上下文文件。",
-    replay: "查看最近一轮的 trace、attempt_state 和回放摘要。",
-    artifacts: "浏览当前任务工作区内的全部产物文件。",
-  };
-  return subtitles[tab];
 }
 
 function asPrettyJson(value: unknown, emptyText: string): string {

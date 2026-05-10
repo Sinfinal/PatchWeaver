@@ -35,3 +35,34 @@ export type DoctorReport = {
     error: number;
   };
 };
+
+export type DoctorRepairAction = {
+  name: string;
+  label: string;
+  status: string;
+  detail: string;
+  path?: string | null;
+  executed?: boolean;
+  stdout_excerpt?: string;
+  stderr_excerpt?: string;
+};
+
+export type DoctorRepairResult = {
+  started_at: string;
+  finished_at: string;
+  status: string;
+  summary: {
+    before: DoctorReport["summary"];
+    after: DoctorReport["summary"];
+    remaining_error_count: number;
+  };
+  actions: DoctorRepairAction[];
+  remaining_errors: DoctorCheck[];
+  script: {
+    path: string | null;
+    content: string;
+    auto_execute_enabled: boolean;
+    host_repair_executed: boolean;
+  };
+  report: DoctorReport;
+};

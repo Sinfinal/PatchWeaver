@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Judge-facing one-step deployment and environment preflight for PatchWeaver.
+"""External-delivery one-step deployment and environment preflight for PatchWeaver.
 
 The script is intentionally standalone so it can run before PatchWeaver's
 editable install has completed.  Dry-run and print-plan modes never execute
@@ -70,7 +70,7 @@ class Context:
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Deploy PatchWeaver and run judge-facing environment checks.",
+        description="Deploy PatchWeaver and run external-delivery environment checks.",
     )
     parser.add_argument("--dry-run", action="store_true", help="Print the plan and checks without executing mutating commands.")
     parser.add_argument("--print-plan", action="store_true", help="Print the deployment plan and exit without executing it.")
@@ -167,7 +167,7 @@ def resolve_config_path(project_root: Path, raw_value: Any) -> tuple[str, bool] 
         return None
     raw_path = raw_value.strip()
     if raw_path.startswith("/") and os.name == "nt":
-        # Preserve judge-machine POSIX paths when the preflight is previewed on Windows.
+        # Preserve validation-machine POSIX paths when the preflight is previewed on Windows.
         return raw_path, False
     path = Path(raw_path).expanduser()
     resolved = path if path.is_absolute() else (project_root / path)

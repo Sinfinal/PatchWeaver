@@ -12,7 +12,7 @@
     "report_ok": true,
     "replay_ok": true,
     "agent_decision_ok": true,
-    "judge_success_evidence": true
+    "validation_success_evidence": true
   },
   "endpoints": [
     {
@@ -4865,6 +4865,6 @@
   ],
   "limits": [
     "This check validates API evidence for an existing task; it does not rerun kpatch-build.",
-    "Judge success still requires the referenced .ko and validation artifacts to be present on the validation machine."
+    "Validation success still requires the referenced .ko and validation artifacts to be present on the validation machine."
   ]
 }

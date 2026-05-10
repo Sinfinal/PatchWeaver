@@ -32,7 +32,6 @@ export function ReportTaskPage(): JSX.Element {
     <div className="pw-grid">
       <SectionCard
         title={payload.task.task_id}
-        subtitle={`${payload.task.cve_id} · 任务级报告与关键交付证据`}
         actions={
           <div className="pw-btn-row">
             <Link className="pw-btn" to={`/tasks/${payload.task.task_id}`}>
@@ -74,7 +73,7 @@ export function ReportTaskPage(): JSX.Element {
       </SectionCard>
 
       {payload.agent_decision_summary ? (
-        <SectionCard title="Agent Decision Summary" subtitle="报告页直接展示修复意图、策略选择和失败归因。">
+        <SectionCard title="Agent Decision Summary">
           <div className="pw-kv">
             <div className="pw-kv-item">
               <span className="pw-kv-label">RepairIntent 策略</span>
@@ -105,7 +104,7 @@ export function ReportTaskPage(): JSX.Element {
       ) : null}
 
       <div className="pw-grid two">
-        <SectionCard title="Markdown 报告" subtitle="当前先保留原始 Markdown 文本，便于和落盘文件逐项比对。">
+        <SectionCard title="Markdown 报告">
           <CodePanel
             title="report.md"
             path={payload.report.md_path}
@@ -113,7 +112,7 @@ export function ReportTaskPage(): JSX.Element {
             emptyText="当前还没有 report.md 内容。"
           />
         </SectionCard>
-        <SectionCard title="JSON 报告" subtitle="结构化报告内容可直接作为调试和验收的对照依据。">
+        <SectionCard title="JSON 报告">
           <CodePanel
             title="report.json"
             path={payload.report.json_path}

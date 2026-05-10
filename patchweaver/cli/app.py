@@ -448,7 +448,7 @@ def _command_examples(command_path: str) -> list[tuple[str, str]]:
             (f"{command_path} --fixture contest_samples", "按固定样例集输出阶段评测汇总。"),
         ],
         "patchweaver finalize": [
-            (f"{command_path}", "生成 submission 目录和 final manifest。"),
+            (f"{command_path}", "生成 docs/submission 提交快照和 final manifest。"),
         ],
         "patchweaver gate": [
             (f"{command_path}", "执行第四阶段最终门禁检查。"),
@@ -558,7 +558,7 @@ def _render_root_help(ctx: click.Context, command: click.Command) -> str:
         ("patchweaver evaluate --fixture contest_samples", "按固定样例集输出阶段评测汇总。"),
         ("patchweaver models --json", "查看当前模型分工和 API Key 来源。"),
         ("export PATCHWEAVER_BAILIAN_API_KEY='***'", "正式交付时通过环境变量或平台 Secret 注入 API Key。"),
-        ("patchweaver finalize", "生成 submission 目录和 final_manifest。"),
+        ("patchweaver finalize", "生成 docs/submission 提交快照和 final_manifest。"),
         ("patchweaver gate", "执行第四阶段最终门禁检查。"),
     ]
     lines.extend(
@@ -1102,7 +1102,7 @@ def _doctor_payload(
         config_path = runtime.config_dir / filename
         checks.append(_check_item(category="config_file", name=filename, label=f"配置文件 `{filename}`", ok=config_path.exists(), detail=_project_path(runtime.project_root, config_path)))
 
-    submission_root = (runtime.project_root / "submission").resolve()
+    submission_root = (runtime.project_root / "docs" / "submission").resolve()
     checks.extend(
         [
             _check_item(
@@ -1147,7 +1147,7 @@ def _doctor_payload(
             _check_item(
                 category="delivery",
                 name="submission_root",
-                label="submission 根目录",
+                label="docs/submission 提交快照目录",
                 ok=submission_root.exists(),
                 detail=_project_path(runtime.project_root, submission_root),
             ),
@@ -2023,17 +2023,17 @@ def finalize(
     db_path: Annotated[str | None, typer.Option("--db-path", help="覆盖 SQLite 数据库路径。")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="以 JSON 输出，便于脚本解析。")] = False,
 ) -> None:
-    """生成 submission 目录和 final manifest"""
+    """生成 docs/submission 提交快照和 final manifest"""
 
     runtime = _load_runtime(profile=profile, db_path=db_path)
     run_logger = _build_run_logger(runtime)
     payload = _project_payload(runtime.project_root, _build_release_service(runtime).prepare_submission())
-    run_logger.info("cli.finalize", "生成 submission 目录和 final manifest。", manifest=payload["final_manifest_json"])
+    run_logger.info("cli.finalize", "生成 docs/submission 提交快照和 final manifest。", manifest=payload["final_manifest_json"])
     if json_output:
         _emit_json(payload)
         return
 
-    typer.echo(f"submission 根目录: {payload['submission_root']}")
+    typer.echo(f"提交快照目录: {payload['submission_root']}")
     typer.echo(f"final_manifest.json: {payload['final_manifest_json']}")
     typer.echo(f"final_manifest.md: {payload['final_manifest_md']}")
 

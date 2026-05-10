@@ -4,7 +4,7 @@ import { CodePanel } from "../../components/code/CodePanel";
 import { SectionCard } from "../../components/layout/SectionCard";
 import { StatusBadge } from "../../components/status/StatusBadge";
 import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
-import { fetchDoctor, runDoctor } from "../../services/doctor";
+import { fetchDoctor, repairDoctor, runDoctor } from "../../services/doctor";
 import { formatTime } from "../../utils/format";
 
 const runtimeLabelMap: Record<string, string> = {
@@ -35,22 +35,34 @@ export function DoctorPage(): JSX.Element {
       queryClient.invalidateQueries({ queryKey: ["doctor"] });
     },
   });
+  const repairMutation = useMutation({
+    mutationFn: repairDoctor,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["doctor"] });
+    },
+  });
 
   const report = doctorQuery.data;
+  const repairResult = repairMutation.data;
 
   return (
     <div className="pw-grid">
       <SectionCard
         title="环境诊断"
-        subtitle="统一检查运行时依赖、项目目录、本机构建环境和目标内核绑定。"
         actions={
-          <button className="pw-btn primary" type="button" onClick={() => doctorMutation.mutate()}>
-            重新执行诊断
-          </button>
+          <div className="pw-btn-row">
+            <button className="pw-btn" type="button" onClick={() => doctorMutation.mutate()} disabled={doctorMutation.isPending}>
+              {doctorMutation.isPending ? "诊断中..." : "重新执行诊断"}
+            </button>
+            <button className="pw-btn primary" type="button" onClick={() => repairMutation.mutate()} disabled={repairMutation.isPending}>
+              {repairMutation.isPending ? "修复中..." : "一键修复环境"}
+            </button>
+          </div>
         }
       >
         {doctorQuery.isLoading ? <div className="pw-note-banner">正在加载环境诊断报告...</div> : null}
         {doctorQuery.isError ? <div className="pw-note-banner">当前无法获取实时诊断结果，但页面结构已准备好用于联调与验收。</div> : null}
+        {repairMutation.isError ? <div className="pw-note-banner">环境修复接口调用失败，请查看 API 日志。</div> : null}
         {report ? (
           <div className="pw-grid metrics">
             <MetricCard label="检查项总数" value={report.summary.total} />
@@ -61,7 +73,31 @@ export function DoctorPage(): JSX.Element {
         ) : null}
       </SectionCard>
 
-      <SectionCard title="运行时路径与默认值" subtitle="用于核对当前实例实际加载的路径、探测到的目标内核和默认参数。">
+      {repairResult ? (
+        <SectionCard title="修复结果">
+          <div className="pw-grid metrics">
+            <MetricCard label="修复状态" value={repairResult.status} />
+            <MetricCard label="错误数变化" value={`${repairResult.summary.before.error} -> ${repairResult.summary.after.error}`} />
+            <MetricCard label="剩余错误" value={repairResult.summary.remaining_error_count} />
+            <MetricCard label="脚本路径" value={repairResult.script.path ?? "未生成"} />
+          </div>
+          <div className="pw-grid two" style={{ marginTop: 16 }}>
+            <div className="pw-list">
+              {repairResult.actions.map((item) => (
+                <div key={`${item.name}-${item.path ?? item.status}`} className="pw-list-item">
+                  <strong>{item.label}</strong>
+                  <div className="pw-inline-note">状态: {item.status}</div>
+                  <div className="pw-inline-note">{item.detail}</div>
+                  {item.path ? <div className="pw-inline-note">路径: {item.path}</div> : null}
+                </div>
+              ))}
+            </div>
+            <CodePanel title="repair_docker_web_environment.sh" content={repairResult.script.content} emptyText="暂无修复脚本。" />
+          </div>
+        </SectionCard>
+      ) : null}
+
+      <SectionCard title="运行时路径与默认值">
         {report ? (
           <div className="pw-kv">
             {Object.entries(report.runtime).map(([key, value]) => (
@@ -79,7 +115,6 @@ export function DoctorPage(): JSX.Element {
       <div className="pw-grid two pw-doctor-grid">
         <SectionCard
           title="检查项明细"
-          subtitle="按检查项列出状态和结果，便于定位告警项与阻断项。"
           className="pw-doctor-panel"
         >
           {report ? (
@@ -111,7 +146,6 @@ export function DoctorPage(): JSX.Element {
         </SectionCard>
         <SectionCard
           title="构建环境快照"
-          subtitle="展示当前运行机构建环境快照，便于核对源码树、vmlinux 与构建命令。"
           className="pw-doctor-panel"
         >
           <CodePanel
@@ -122,10 +156,7 @@ export function DoctorPage(): JSX.Element {
         </SectionCard>
       </div>
 
-      <SectionCard
-        title="运行机快照"
-        subtitle="展示任务绑定会参考的机器信息，便于排查“配置默认值”和“实际环境”是否一致。"
-      >
+      <SectionCard title="运行机快照">
         <CodePanel
           title="machine_profile"
           content={report?.machine_profile ? JSON.stringify(report.machine_profile, null, 2) : undefined}

@@ -1,0 +1,29 @@
+{
+  "task_id": "local-envroot-smoke-26742",
+  "cve_id": "CVE-2024-26742",
+  "target_kernel": "6.6.102-5.2.an23.x86_64",
+  "target_kernel_source": "config_fallback",
+  "profile_name": "demo",
+  "status": "created",
+  "max_attempts": 1,
+  "current_attempt": 0,
+  "workspace_dir": "workspaces/local-envroot-smoke-26742",
+  "machine_profile": {
+    "machine_system": "Windows",
+    "machine_kernel": "11",
+    "machine_arch": "AMD64",
+    "hostname": "子文的笔记本",
+    "build_target_kernel": null,
+    "build_target_kernel_source": null,
+    "build_backend": "local",
+    "builder_cmd": "kpatch-build",
+    "builder_path": null,
+    "selected_source_dir": null,
+    "selected_source_reason": null,
+    "config_path": null,
+    "vmlinux_path": "/usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux",
+    "detected_at": "2026-05-10T07:17:35.932731Z"
+  },
+  "created_at": "2026-05-10T07:17:35.934290Z",
+  "updated_at": "2026-05-10T07:17:35.934292Z"
+}

@@ -43,7 +43,7 @@ export function ReportsPage(): JSX.Element {
 
   return (
     <div className="pw-grid">
-      <SectionCard title="报告中心" subtitle="围绕任务报告、固定样例和阶段统计组织统一的回看入口。">
+      <SectionCard title="报告中心">
         <div className="pw-highlight-grid">
           {reportHighlights.map((item) => (
             <div key={item.title} className="pw-mini-card">
@@ -54,7 +54,7 @@ export function ReportsPage(): JSX.Element {
         </div>
       </SectionCard>
 
-      <SectionCard title="阶段统计" subtitle="按当前已有评测分组汇总首屏指标，用于阶段汇报和演示核对。">
+      <SectionCard title="阶段统计">
         <div className="pw-grid metrics">
           <MetricCard label="评测分组" value={groups.length} />
           <MetricCard label="样例总数" value={stageStats.totalFixtures} />
@@ -66,7 +66,7 @@ export function ReportsPage(): JSX.Element {
       </SectionCard>
 
       <div className="pw-grid two">
-        <SectionCard title="任务报告" subtitle="优先从这里进入任务级报告页，集中查看 report、验证和回放摘要。">
+        <SectionCard title="任务报告">
           {tasksQuery.isLoading ? <div className="pw-note-banner">正在加载任务清单...</div> : null}
           {tasksQuery.isError ? <div className="pw-note-banner">当前无法读取任务清单，稍后重试即可。</div> : null}
           {recentTasks.length > 0 ? (
@@ -92,7 +92,7 @@ export function ReportsPage(): JSX.Element {
           )}
         </SectionCard>
 
-        <SectionCard title="固定样例分组" subtitle="分组页负责展示 summary.json、summary.md 和单样例入口。">
+        <SectionCard title="固定样例分组">
           {groupsQuery.isLoading ? <div className="pw-note-banner">正在扫描评测分组...</div> : null}
           {groupsQuery.isError ? <div className="pw-note-banner">当前无法读取评测分组，请确认 data/evaluations 是否已有结果。</div> : null}
           {groups.length > 0 ? (
@@ -117,7 +117,7 @@ export function ReportsPage(): JSX.Element {
         </SectionCard>
       </div>
 
-      <SectionCard title="分组口径说明" subtitle="这里保留文档中的常用分组口径，避免联调和汇报时口径混淆。">
+      <SectionCard title="分组口径说明">
         <div className="pw-highlight-grid">
           {reportGroupGuides.map((item) => (
             <div key={item.title} className="pw-mini-card">

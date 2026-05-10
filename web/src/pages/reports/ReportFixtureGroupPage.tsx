@@ -7,7 +7,7 @@ import { SectionCard } from "../../components/layout/SectionCard";
 import { StatusBadge } from "../../components/status/StatusBadge";
 import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
 import { fetchEvaluationGroupSummary } from "../../services/reports";
-import { formatPercent, shortenPath } from "../../utils/format";
+import { formatPercent } from "../../utils/format";
 
 export function ReportFixtureGroupPage(): JSX.Element {
   const params = useParams<{ fixtureGroup: string }>();
@@ -41,7 +41,6 @@ export function ReportFixtureGroupPage(): JSX.Element {
     <div className="pw-grid">
       <SectionCard
         title={payload.display_name}
-        subtitle="当前分组的统计摘要、样例列表和 summary 文件都集中在这个页面。"
         actions={
           <div className="pw-btn-row">
             <Link className="pw-btn" to="/reports">
@@ -61,7 +60,7 @@ export function ReportFixtureGroupPage(): JSX.Element {
       </SectionCard>
 
       <div className="pw-grid two">
-        <SectionCard title="summary.md" subtitle={shortenPath(payload.summary_md_path)}>
+        <SectionCard title="summary.md">
           <CodePanel
             title="summary.md"
             path={payload.summary_md_path}
@@ -69,7 +68,7 @@ export function ReportFixtureGroupPage(): JSX.Element {
             emptyText="当前没有 summary.md 内容。"
           />
         </SectionCard>
-        <SectionCard title="summary.json" subtitle={shortenPath(payload.summary_json_path)}>
+        <SectionCard title="summary.json">
           <CodePanel
             title="summary.json"
             path={payload.summary_json_path}
@@ -80,7 +79,7 @@ export function ReportFixtureGroupPage(): JSX.Element {
       </div>
 
       <div className="pw-grid two">
-        <SectionCard title="失败分布" subtitle="按 summary.json 中的 failure_distribution 展示。">
+        <SectionCard title="失败分布">
           {failureRows.length > 0 ? (
             <div className="pw-list">
               {failureRows.map(([name, total]) => (
@@ -95,7 +94,7 @@ export function ReportFixtureGroupPage(): JSX.Element {
           )}
         </SectionCard>
 
-        <SectionCard title="单样例列表" subtitle="从这里进入单样例详情，或直接跳到任务级报告页。">
+        <SectionCard title="单样例列表">
           {payload.fixtures.length > 0 ? (
             <div className="pw-list">
               {payload.fixtures.map((item) => (

@@ -40,8 +40,8 @@ export function OverviewPage(): JSX.Element {
   const recentEvents = overview?.events?.slice(0, 4) ?? [];
   const focusStats = [
     { label: "构建引擎", value: overview?.metrics.build_backend ?? "等待接口" },
-    { label: "系统状态", value: overview?.metrics.build_ready ? "可执行" : overview ? "待检查" : "等待接口" },
-    { label: "系统状态", value: overview?.metrics.build_ready ? "可执行" : overview ? "待准备" : "等待接口" },
+    { label: "构建状态", value: overview?.metrics.build_ready ? "可执行" : overview ? "待检查" : "等待接口" },
+    { label: "交付状态", value: overview?.metrics.delivery_ready ? "已就绪" : overview ? "待准备" : "等待接口" },
     { label: "默认模型", value: overview?.metrics.selected_model ?? "等待接口" },
     { label: "事件流", value: overview ? `${overview.events.length} 条` : "等待接口" },
   ];
@@ -107,140 +107,135 @@ export function OverviewPage(): JSX.Element {
       </div>
 
       <div className="pw-overview-grid">
-        <div className="pw-overview-column pw-overview-column-main">
-          <SectionCard title="任务队列" subtitle="最近任务、运行任务和失败任务统一从这里回看。" className="pw-overview-panel">
-            {overview ? (
-              <TaskTable items={overview.recent_tasks as TaskListItem[]} />
-            ) : (
-              <div className="pw-empty">后端可用后，这里会显示最近任务与当前状态。</div>
-            )}
-          </SectionCard>
+        <SectionCard title="任务队列" className="pw-overview-panel pw-overview-panel-task">
+          {overview ? (
+            <TaskTable items={overview.recent_tasks as TaskListItem[]} />
+          ) : (
+            <div className="pw-empty">后端可用后，这里会显示最近任务与当前状态。</div>
+          )}
+        </SectionCard>
 
-          <SectionCard title="日志尾流" subtitle="保留系统层与构建层两条快速排障入口。" className="pw-overview-panel">
-            {overview ? (
-              <div className="pw-log-grid pw-log-grid-wide">
-                <div className="pw-log-card">
-                  <span className="pw-log-label">system_log</span>
-                  <pre className="pw-code-content pw-code-compact">{overview.logs_tail.system_log.lines.join("\n") || "暂无日志"}</pre>
-                </div>
-                <div className="pw-log-card">
-                  <span className="pw-log-label">latest_build_log</span>
-                  <pre className="pw-code-content pw-code-compact">
-                    {overview.logs_tail.latest_build_log?.lines.join("\n") || "暂无构建日志"}
-                  </pre>
-                </div>
-              </div>
-            ) : (
-              <div className="pw-empty">后端可用后，这里会展示最近 system/build log 片段。</div>
-            )}
-          </SectionCard>
-        </div>
-
-        <div className="pw-overview-column pw-overview-column-side">
-          <SectionCard title="异常信号" subtitle="按 failure_type 聚合最近失败，用于快速识别风险热点。" className="pw-overview-panel">
-            {failureDistribution.length ? (
-              <div className="pw-signal-stack">
-                {failureDistribution.map((item) => (
-                  <div key={item.failure_type} className="pw-signal-meter">
-                    <div className="pw-signal-meter-copy">
-                      <strong>{item.failure_type}</strong>
-                      <span>{item.total} 次</span>
-                    </div>
-                    <div className="pw-signal-meter-bar">
-                      <span style={{ width: `${(item.total / maxFailureTotal) * 100}%` }} />
-                    </div>
+        <SectionCard title="异常信号" className="pw-overview-panel pw-overview-panel-signal">
+          {failureDistribution.length ? (
+            <div className="pw-signal-stack">
+              {failureDistribution.map((item) => (
+                <div key={item.failure_type} className="pw-signal-meter">
+                  <div className="pw-signal-meter-copy">
+                    <strong>{item.failure_type}</strong>
+                    <span>{item.total} 次</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="pw-empty">暂无失败分布。</div>
-            )}
-          </SectionCard>
+                  <div className="pw-signal-meter-bar">
+                    <span style={{ width: `${(item.total / maxFailureTotal) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="pw-empty">暂无失败分布。</div>
+          )}
+        </SectionCard>
 
-          <SectionCard
-            title="固定样例评测"
-            subtitle="直接联到报告中心中的分组摘要，便于阶段汇报与封版核对。"
-            className="pw-overview-panel"
-          >
-            {evaluationSummaries.length ? (
-              <div className="pw-list">
-                {evaluationSummaries.map((item) => (
-                  <Link
-                    key={item.fixture_name}
-                    className="pw-list-item pw-link-card"
-                    to={`/reports/fixtures/${toFixtureGroupPath(item.fixture_name)}`}
-                  >
-                    <strong>{item.fixture_name}</strong>
-                    <div className="pw-inline-note">
-                      成功 {item.success_count}/{item.matched_fixtures}，成功率 {(item.success_rate * 100).toFixed(2)}%
-                    </div>
-                    <div className="pw-inline-note">
-                      样例 {item.total_fixtures}，缺失 {item.missing_fixtures}，平均尝试 {item.average_attempts}
-                    </div>
-                    <div className="pw-inline-note">摘要路径: {shortenPath(item.summary_json_path)}</div>
-                    <div className="pw-inline-note">更新时间: {formatTime(item.updated_at)}</div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="pw-empty">当前还没有固定样例摘要，执行评测后这里会自动汇总。</div>
-            )}
-          </SectionCard>
-
-          <SectionCard title="封版交付" className="pw-overview-panel">
-            {overview ? (
-              <div className="pw-list">
-                <div className="pw-list-item">
-                  <strong>门禁状态</strong>
-                  <div className="pw-inline-note">{overview.release.final_gate_status ?? "未执行 gate"}</div>
-                </div>
-                <div className="pw-list-item">
-                  <strong>final_manifest</strong>
-                  <div className="pw-inline-note">{shortenPath(overview.release.final_manifest_path ?? "未生成")}</div>
-                </div>
-                <div className="pw-list-item">
-                  <strong>submission 根目录</strong>
-                  <div className="pw-inline-note">{shortenPath(overview.release.submission_root)}</div>
-                </div>
-                <div className="pw-list-item">
-                  <strong>模型口径</strong>
+        <SectionCard
+          title="固定样例评测"
+          className="pw-overview-panel pw-overview-panel-evaluation"
+        >
+          {evaluationSummaries.length ? (
+            <div className="pw-list">
+              {evaluationSummaries.map((item) => (
+                <Link
+                  key={item.fixture_name}
+                  className="pw-list-item pw-link-card"
+                  to={`/reports/fixtures/${toFixtureGroupPath(item.fixture_name)}`}
+                >
+                  <strong>{item.fixture_name}</strong>
                   <div className="pw-inline-note">
-                    主模型 {overview.release.selected_models.primary_model} / 交付 {overview.release.selected_models.delivery_model}
+                    成功 {item.success_count}/{item.matched_fixtures}，成功率 {(item.success_rate * 100).toFixed(2)}%
                   </div>
-                  <div className="pw-inline-note">拓扑: {overview.release.selected_models.topology}</div>
                   <div className="pw-inline-note">
-                    辅助:{" "}
-                    {Object.entries(overview.release.selected_models.helper_models).length
-                      ? Object.entries(overview.release.selected_models.helper_models)
-                          .map(([name, model]) => `${name}=${model}`)
-                          .join("，")
-                      : "未配置"}
+                    样例 {item.total_fixtures}，缺失 {item.missing_fixtures}，平均尝试 {item.average_attempts}
                   </div>
+                  <div className="pw-inline-note">摘要路径: {shortenPath(item.summary_json_path)}</div>
+                  <div className="pw-inline-note">更新时间: {formatTime(item.updated_at)}</div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="pw-empty">当前还没有固定样例摘要，执行评测后这里会自动汇总。</div>
+          )}
+        </SectionCard>
+
+        <SectionCard title="封版交付" className="pw-overview-panel pw-overview-panel-release">
+          {overview ? (
+            <div className="pw-list">
+              <div className="pw-list-item">
+                <strong>门禁状态</strong>
+                <div className="pw-inline-note">{overview.release.final_gate_status ?? "未执行 gate"}</div>
+              </div>
+              <div className="pw-list-item">
+                <strong>final_manifest</strong>
+                <div className="pw-inline-note">{shortenPath(overview.release.final_manifest_path ?? "未生成")}</div>
+              </div>
+              <div className="pw-list-item">
+                <strong>submission 根目录</strong>
+                <div className="pw-inline-note">{shortenPath(overview.release.submission_root)}</div>
+              </div>
+              <div className="pw-list-item">
+                <strong>模型口径</strong>
+                <div className="pw-inline-note">
+                  主模型 {overview.release.selected_models.primary_model} / 交付 {overview.release.selected_models.delivery_model}
+                </div>
+                <div className="pw-inline-note">拓扑: {overview.release.selected_models.topology}</div>
+                <div className="pw-inline-note">
+                  辅助:{" "}
+                  {Object.entries(overview.release.selected_models.helper_models).length
+                    ? Object.entries(overview.release.selected_models.helper_models)
+                        .map(([name, model]) => `${name}=${model}`)
+                        .join("，")
+                    : "未配置"}
                 </div>
               </div>
-            ) : (
-              <div className="pw-empty">后端可用后，这里会展示 final manifest 和最终门禁状态。</div>
-            )}
-          </SectionCard>
+            </div>
+          ) : (
+            <div className="pw-empty">后端可用后，这里会展示 final manifest 和最终门禁状态。</div>
+          )}
+        </SectionCard>
 
-          <SectionCard title="最近事件" subtitle="保留任务级动态，便于答辩时快速定位。" className="pw-overview-panel">
-            {recentEvents.length ? (
-              <div className="pw-event-feed">
-                {recentEvents.map((item) => (
-                  <article key={`${item.kind}-${item.timestamp}-${item.title}`} className="pw-event-feed-item">
-                    <div className="pw-event-feed-meta">
-                      <span className="pw-event-kind">{item.kind}</span>
-                      <span>{formatTime(item.timestamp)}</span>
-                    </div>
-                    <strong>{item.title}</strong>
-                  </article>
-                ))}
+        <SectionCard title="日志尾流" className="pw-overview-panel pw-overview-panel-logs">
+          {overview ? (
+            <div className="pw-log-grid pw-log-grid-wide">
+              <div className="pw-log-card">
+                <span className="pw-log-label">system_log</span>
+                <pre className="pw-code-content pw-code-compact">{overview.logs_tail.system_log.lines.join("\n") || "暂无日志"}</pre>
               </div>
-            ) : (
-              <div className="pw-empty">暂无事件流。</div>
-            )}
-          </SectionCard>
-        </div>
+              <div className="pw-log-card">
+                <span className="pw-log-label">latest_build_log</span>
+                <pre className="pw-code-content pw-code-compact">
+                  {overview.logs_tail.latest_build_log?.lines.join("\n") || "暂无构建日志"}
+                </pre>
+              </div>
+            </div>
+          ) : (
+            <div className="pw-empty">后端可用后，这里会展示最近 system/build log 片段。</div>
+          )}
+        </SectionCard>
+
+        <SectionCard title="最近事件" className="pw-overview-panel pw-overview-panel-events">
+          {recentEvents.length ? (
+            <div className="pw-event-feed">
+              {recentEvents.map((item) => (
+                <article key={`${item.kind}-${item.timestamp}-${item.title}`} className="pw-event-feed-item">
+                  <div className="pw-event-feed-meta">
+                    <span className="pw-event-kind">{item.kind}</span>
+                    <span>{formatTime(item.timestamp)}</span>
+                  </div>
+                  <strong>{item.title}</strong>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="pw-empty">暂无事件流。</div>
+          )}
+        </SectionCard>
       </div>
     </div>
   );

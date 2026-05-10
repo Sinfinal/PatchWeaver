@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import platform
+import stat
+import subprocess
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from patchweaver.api.deps import ApiContext
@@ -31,6 +35,65 @@ class DoctorApiService:
             return json.loads(self.cache_path.read_text(encoding="utf-8"))
         payload = self._build_report()
         self.context.doctor_writer.write(payload, self.cache_path)
+        return payload
+
+    def repair_environment(self) -> dict[str, Any]:
+        """执行 Web 可触发的安全修复，并生成宿主机级修复脚本"""
+
+        started_at = datetime.now(timezone.utc)
+        before = self.get_report(refresh=True)
+        actions: list[dict[str, Any]] = []
+
+        runtime = self.context.runtime
+        directory_targets = [
+            ("workspace_root", "工作区目录", runtime.workspace_root),
+            ("data_dir", "数据目录", runtime.data_dir),
+            ("manifest_dir", "Manifest 目录", runtime.manifest_dir),
+            ("doctor_trace_dir", "诊断缓存目录", runtime.data_dir / "traces"),
+            ("maintenance_dir", "维护脚本目录", runtime.data_dir / "maintenance"),
+            ("workspace_skill_root", "工作区 Skill 目录", self.context.project_root / "workspaces" / "_shared_skills"),
+        ]
+        for name, label, path in directory_targets:
+            actions.append(self._ensure_directory(name=name, label=label, path=path))
+
+        script = self._render_host_repair_script()
+        script_path = (runtime.data_dir / "maintenance" / "repair_docker_web_environment.sh").resolve()
+        actions.append(self._write_repair_script(path=script_path, content=script))
+
+        host_repair_executed = False
+        host_repair_result: dict[str, Any] | None = None
+        if os.environ.get("PATCHWEAVER_ENABLE_DOCTOR_HOST_REPAIR") == "1":
+            host_repair_result = self._try_run_host_repair_script(script_path)
+            host_repair_executed = bool(host_repair_result.get("executed"))
+            actions.append(host_repair_result)
+
+        after = self.get_report(refresh=True)
+        remaining_errors = [item for item in after["checks"] if item.get("status") == "error"]
+        status = "fixed" if not remaining_errors else "requires_host_redeploy"
+        if remaining_errors and host_repair_executed:
+            status = "partial"
+
+        payload = {
+            "started_at": started_at.isoformat(),
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+            "status": status,
+            "summary": {
+                "before": before["summary"],
+                "after": after["summary"],
+                "remaining_error_count": len(remaining_errors),
+            },
+            "actions": actions,
+            "remaining_errors": remaining_errors,
+            "script": {
+                "path": self._path(script_path),
+                "content": script,
+                "auto_execute_enabled": os.environ.get("PATCHWEAVER_ENABLE_DOCTOR_HOST_REPAIR") == "1",
+                "host_repair_executed": host_repair_executed,
+            },
+            "report": after,
+        }
+        result_path = (runtime.data_dir / "maintenance" / "doctor_repair_latest.json").resolve()
+        result_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         return payload
 
     def _build_report(self) -> dict[str, Any]:
@@ -165,6 +228,180 @@ class DoctorApiService:
             ),
         ]
         return checks
+
+    def _ensure_directory(self, *, name: str, label: str, path: Path) -> dict[str, Any]:
+        """确保 Web 进程权限范围内可修复的目录存在"""
+
+        existed = path.exists()
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            return {
+                "name": name,
+                "label": label,
+                "status": "failed",
+                "detail": f"创建失败: {exc}",
+                "path": self._path(path),
+            }
+        return {
+            "name": name,
+            "label": label,
+            "status": "already_ok" if existed else "fixed",
+            "detail": "目录已存在" if existed else "目录已创建",
+            "path": self._path(path),
+        }
+
+    def _write_repair_script(self, *, path: Path, content: str) -> dict[str, Any]:
+        """写入可复制执行的 Docker 环境修复脚本"""
+
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8")
+            path.chmod(path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        except OSError as exc:
+            return {
+                "name": "host_repair_script",
+                "label": "宿主机 Docker 修复脚本",
+                "status": "failed",
+                "detail": f"写入失败: {exc}",
+                "path": self._path(path),
+            }
+        return {
+            "name": "host_repair_script",
+            "label": "宿主机 Docker 修复脚本",
+            "status": "written",
+            "detail": "已生成脚本；如果错误仍然来自缺少 kpatch-build、源码、.config 或 vmlinux，需要用该脚本重启 Docker API/Web 容器。",
+            "path": self._path(path),
+        }
+
+    def _try_run_host_repair_script(self, script_path: Path) -> dict[str, Any]:
+        """在明确开启开关时尝试执行宿主机级修复脚本"""
+
+        docker_socket = Path("/var/run/docker.sock")
+        if not docker_socket.exists():
+            return {
+                "name": "host_repair_execute",
+                "label": "执行宿主机 Docker 修复",
+                "status": "skipped",
+                "executed": False,
+                "detail": "未挂载 /var/run/docker.sock，Web 进程不能直接重启宿主机 Docker 容器。",
+            }
+        command = ["/bin/sh", str(script_path)]
+        try:
+            result = subprocess.run(
+                command,
+                cwd=self.context.project_root,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=180,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return {
+                "name": "host_repair_execute",
+                "label": "执行宿主机 Docker 修复",
+                "status": "failed",
+                "executed": False,
+                "detail": str(exc),
+            }
+        return {
+            "name": "host_repair_execute",
+            "label": "执行宿主机 Docker 修复",
+            "status": "ok" if result.returncode == 0 else "failed",
+            "executed": True,
+            "detail": f"退出码 {result.returncode}",
+            "stdout_excerpt": result.stdout[-4000:],
+            "stderr_excerpt": result.stderr[-4000:],
+        }
+
+    def _render_host_repair_script(self) -> str:
+        """生成带宿主机构建材料挂载的 Docker Web/API 修复脚本"""
+
+        return """#!/usr/bin/env sh
+set -eu
+
+HOST_ROOT="${PATCHWEAVER_HOST_ROOT:-/home/patchweaver/current}"
+NETWORK="${PATCHWEAVER_DOCKER_NETWORK:-patchweaver-net}"
+API_IMAGE="${PATCHWEAVER_API_IMAGE:-patchweaver:local}"
+WEB_IMAGE="${PATCHWEAVER_WEB_IMAGE:-patchweaver-web:local}"
+WEB_PORT="${PATCHWEAVER_WEB_PORT:-18085}"
+API_CONTAINER="${PATCHWEAVER_API_CONTAINER:-patchweaver-api}"
+WEB_CONTAINER="${PATCHWEAVER_WEB_CONTAINER:-patchweaver-web}"
+KERNEL_RELEASE="${PATCHWEAVER_KERNEL_RELEASE:-$(uname -r)}"
+
+require_path() {
+  if [ ! -e "$1" ]; then
+    echo "missing required path: $1" >&2
+    exit 20
+  fi
+}
+
+require_path "$HOST_ROOT"
+require_path /usr/bin/kpatch-build
+require_path /usr/libexec/kpatch
+require_path /usr/share/kpatch
+require_path /opt/kernel-src
+require_path "/usr/src/kernels/$KERNEL_RELEASE"
+require_path "/usr/lib/debug/lib/modules/$KERNEL_RELEASE/vmlinux"
+
+mkdir -p "$HOST_ROOT/data" "$HOST_ROOT/workspaces" "$HOST_ROOT/data/maintenance"
+docker network inspect "$NETWORK" >/dev/null 2>&1 || docker network create "$NETWORK" >/dev/null
+
+docker rm -f "$WEB_CONTAINER" >/dev/null 2>&1 || true
+docker rm -f "$API_CONTAINER" >/dev/null 2>&1 || true
+
+docker run -d \
+  --name "$API_CONTAINER" \
+  --network "$NETWORK" \
+  --privileged \
+  -e PATCHWEAVER_PROFILE="${PATCHWEAVER_PROFILE:-demo}" \
+  -e PYTHONIOENCODING=utf-8 \
+  -e PYTHONUTF8=1 \
+  -v "$HOST_ROOT/data:/app/data" \
+  -v "$HOST_ROOT/workspaces:/app/workspaces" \
+  -v "$HOST_ROOT/config:/app/config:ro" \
+  -v "$HOST_ROOT/evaluations:/app/evaluations:ro" \
+  -v /lib/modules:/lib/modules:ro \
+  -v /usr/src/kernels:/usr/src/kernels:ro \
+  -v /usr/lib/debug:/usr/lib/debug:ro \
+  -v /opt/kernel-src:/opt/kernel-src:ro \
+  -v /home/patchweaver/kernel-src-prepared:/home/patchweaver/kernel-src-prepared:ro \
+  -v /usr/bin/kpatch-build:/usr/bin/kpatch-build:ro \
+  -v /usr/libexec/kpatch:/usr/libexec/kpatch \
+  -v /usr/share/kpatch:/usr/share/kpatch:ro \
+  "$API_IMAGE" \
+  patchweaver serve-api --host 0.0.0.0 --port 18084 --foreground >/dev/null
+
+for i in $(seq 1 40); do
+  if docker run --rm --network "$NETWORK" docker.1ms.run/library/nginx:1.27-alpine wget -qO- "http://$API_CONTAINER:18084/healthz" >/dev/null 2>&1; then
+    break
+  fi
+  if [ "$i" = "40" ]; then
+    docker logs --tail 120 "$API_CONTAINER" || true
+    exit 21
+  fi
+  sleep 1
+done
+
+docker run -d \
+  --name "$WEB_CONTAINER" \
+  --network "$NETWORK" \
+  -p "$WEB_PORT:18085" \
+  "$WEB_IMAGE" >/dev/null
+
+for i in $(seq 1 30); do
+  if curl -fsS "http://127.0.0.1:$WEB_PORT/console/" >/dev/null; then
+    echo "PatchWeaver Web repaired: http://$(hostname -I | awk '{print $1}'):$WEB_PORT/console/"
+    exit 0
+  fi
+  sleep 1
+done
+
+docker logs --tail 120 "$WEB_CONTAINER" || true
+exit 22
+"""
 
     def _check(
         self,

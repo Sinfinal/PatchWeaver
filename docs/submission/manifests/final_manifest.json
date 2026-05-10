@@ -1,0 +1,650 @@
+{
+  "manifest_type": "final_manifest",
+  "generated_at": "2026-05-10T08:36:14.584252+00:00",
+  "project": {
+    "name": "PatchWeaver",
+    "profile": "default",
+    "default_kernel": "6.6.102-5.2.an23.x86_64"
+  },
+  "models": {
+    "provider": "bailian",
+    "endpoint_mode": "openai_compatible",
+    "topology": "single_primary_with_optional_helpers",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "api_key_env": "PATCHWEAVER_BAILIAN_API_KEY",
+    "api_key_source": "missing",
+    "api_key_masked": null,
+    "default_model": "qwen-plus-2025-07-28",
+    "development_model": "qwen-plus-2025-07-28",
+    "delivery_model": "qwen-plus-2025-07-28",
+    "fallback_model": "qwen-plus-2025-07-28",
+    "helper_models": {
+      "code_assistant": "qwen-coder-turbo-0919",
+      "vision": "qwen-vl-plus-2025-05-07",
+      "log_summary": "qwen-plus-2025-07-28"
+    },
+    "helper_notes": {
+      "code_assistant": "用于草拟局部改写提示、模板和代码片段，不直接决定最终放行结果。",
+      "vision": "用于截图识别、页面检查和演示材料辅助场景。",
+      "log_summary": "用于长日志压缩、失败解释和材料摘要，不直接替代构建判定。"
+    },
+    "execution_boundaries": [
+      "模型负责语义分析、草拟和解释，最终执行判定仍由规则、原语、Recipe、构建和验证链负责。",
+      "不采用多模型协同主执行链，不通过多模型投票决定是否放行构建或验证。",
+      "辅助模型只用于解释增强、视觉辅助和摘要压缩，不直接负责最终 patch 定稿。"
+    ]
+  },
+  "submission_layout": {
+    "docs": "docs",
+    "slides": "docs/submission/slides",
+    "video": "docs/submission/video",
+    "evidence": "docs/submission/evidence",
+    "manifests": "docs/submission/manifests"
+  },
+  "documents": [
+    {
+      "name": "PatchWeaver-模型选型说明.md",
+      "version_suffix": "unversioned",
+      "category": "delivery_note",
+      "completed": true,
+      "source_ref": "release_service.generated",
+      "final_path": "docs/PatchWeaver-模型选型说明.md",
+      "manually_reviewed": false
+    },
+    {
+      "name": "PatchWeaver-百炼应用落地说明.md",
+      "version_suffix": "unversioned",
+      "category": "delivery_note",
+      "completed": true,
+      "source_ref": "release_service.generated",
+      "final_path": "docs/PatchWeaver-百炼应用落地说明.md",
+      "manually_reviewed": false
+    },
+    {
+      "name": "deployment.md",
+      "version_suffix": "unversioned",
+      "category": "document",
+      "completed": true,
+      "source_ref": "docs/deployment.md",
+      "final_path": "docs/deployment.md",
+      "manually_reviewed": false
+    },
+    {
+      "name": "web_api_e2e_validation.md",
+      "version_suffix": "unversioned",
+      "category": "document",
+      "completed": true,
+      "source_ref": "docs/web_api_e2e_validation.md",
+      "final_path": "docs/web_api_e2e_validation.md",
+      "manually_reviewed": false
+    },
+    {
+      "name": "README.md",
+      "version_suffix": "unversioned",
+      "category": "readme",
+      "completed": true,
+      "source_ref": "README.md",
+      "final_path": "README.md",
+      "manually_reviewed": false
+    }
+  ],
+  "evaluations": [
+    {
+      "fixture_name": "challenge_positive_pool_confirmed_v0426",
+      "success_count": 0,
+      "matched_fixtures": 0,
+      "missing_fixtures": 1,
+      "success_rate": 0.0,
+      "bucket_order": [
+        "buildable_and_should_pass"
+      ],
+      "bucket_counts": {
+        "buildable_and_should_pass": 1
+      },
+      "bucket_summary": {
+        "buildable_and_should_pass": {
+          "bucket": "buildable_and_should_pass",
+          "label": "正向可构建类",
+          "goal": "看 .ko 产出率和动态验证通过率",
+          "total_fixtures": 1,
+          "matched_fixtures": 0,
+          "missing_fixtures": 1,
+          "success_count": 0,
+          "failed_count": 0,
+          "success_rate": 0.0,
+          "average_attempts": 0.0,
+          "status_distribution": {},
+          "failure_distribution": {},
+          "recognized_count": 0,
+          "explained_count": 0,
+          "module_built_count": 0,
+          "validation_passed_count": 0,
+          "primary_metric": {
+            "name": "validation_passed_rate",
+            "label": "动态验证通过率",
+            "value": 0.0,
+            "display_value": "0.00%",
+            "numerator": 0,
+            "denominator": 0
+          },
+          "secondary_metric": {
+            "name": "module_built_rate",
+            "label": ".ko 产出率",
+            "value": 0.0,
+            "display_value": "0.00%",
+            "numerator": 0,
+            "denominator": 0
+          },
+          "fixture_ids": [
+            "challenge-positive-cve-2024-26742"
+          ]
+        }
+      },
+      "mixed_summary_note": "兼容总成功率只用于存量接口兼容，不再作为固定样例的主结论",
+      "summary_json_path": "data/evaluations/challenge_positive_pool_confirmed_v0426/summary.json",
+      "summary_md_path": "data/evaluations/challenge_positive_pool_confirmed_v0426/summary.md"
+    },
+    {
+      "fixture_name": "challenge_sample_tiers_v0426",
+      "success_count": 0,
+      "matched_fixtures": 0,
+      "missing_fixtures": 14,
+      "success_rate": 0.0,
+      "bucket_order": [
+        "already_patched",
+        "feature_not_enabled",
+        "kpatch_constraint",
+        "buildable_and_should_pass"
+      ],
+      "bucket_counts": {
+        "already_patched": 6,
+        "feature_not_enabled": 4,
+        "kpatch_constraint": 3,
+        "buildable_and_should_pass": 1
+      },
+      "bucket_summary": {
+        "already_patched": {
+          "bucket": "already_patched",
+          "label": "目标已修复类",
+          "goal": "看目标态识别是否准确",
+          "total_fixtures": 6,
+          "matched_fixtures": 0,
+          "missing_fixtures": 6,
+          "success_count": 0,
+          "failed_count": 0,
+          "success_rate": 0.0,
+          "average_attempts": 0.0,
+          "status_distribution": {},
+          "failure_distribution": {},
+          "recognized_count": 0,
+          "explained_count": 0,
+          "module_built_count": 0,
+          "validation_passed_count": 0,
+          "primary_metric": {
+            "name": "recognized_rate",
+            "label": "目标态识别率",
+            "value": 0.0,
+            "display_value": "0.00%",
+            "numerator": 0,
+            "denominator": 0
+          },
+          "secondary_metric": null,
+          "fixture_ids": [
+            "challenge-target-state-cve-2024-26631",
+            "challenge-target-state-cve-2024-26633",
+            "challenge-target-state-cve-2024-26642",
+            "challenge-target-state-cve-2024-26706",
+            "challenge-target-state-cve-2024-26740",
+            "challenge-target-state-cve-2024-26752"
+          ]
+        },
+        "feature_not_enabled": {
+          "bucket": "feature_not_enabled",
+          "label": "配置关闭类",
+          "goal": "看配置门控识别是否准确",
+          "total_fixtures": 4,
+          "matched_fixtures": 0,
+          "missing_fixtures": 4,
+          "success_count": 0,
+          "failed_count": 0,
+          "success_rate": 0.0,
+          "average_attempts": 0.0,
+          "status_distribution": {},
+          "failure_distribution": {},
+          "recognized_count": 0,
+          "explained_count": 0,
+          "module_built_count": 0,
+          "validation_passed_count": 0,
+          "primary_metric": {
+            "name": "recognized_rate",
+            "label": "配置关闭识别率",
+            "value": 0.0,
+            "display_value": "0.00%",
+            "numerator": 0,
+            "denominator": 0
+          },
+          "secondary_metric": null,
+          "fixture_ids": [
+            "challenge-feature-gate-cve-2024-26607",
+            "challenge-feature-gate-cve-2024-26622",
+            "challenge-feature-gate-cve-2024-26625",
+            "challenge-feature-gate-cve-2024-26736"
+          ]
+        },
+        "kpatch_constraint": {
+          "bucket": "kpatch_constraint",
+          "label": "热补丁约束类",
+          "goal": "看约束识别和结构化解释是否完整",
+          "total_fixtures": 3,
+          "matched_fixtures": 0,
+          "missing_fixtures": 3,
+          "success_count": 0,
+          "failed_count": 0,
+          "success_rate": 0.0,
+          "average_attempts": 0.0,
+          "status_distribution": {},
+          "failure_distribution": {},
+          "recognized_count": 0,
+          "explained_count": 0,
+          "module_built_count": 0,
+          "validation_passed_count": 0,
+          "primary_metric": {
+            "name": "explained_rate",
+            "label": "约束解释完整率",
+            "value": 0.0,
+            "display_value": "0.00%",
+            "numerator": 0,
+            "denominator": 0
+          },
+          "secondary_metric": {
+            "name": "recognized_rate",
+            "label": "约束识别率",
+            "value": 0.0,
+            "display_value": "0.00%",
+            "numerator": 0,
+            "denominator": 0
+          },
+          "fixture_ids": [
+            "challenge-kpatch-cve-2024-26643",
+            "challenge-kpatch-cve-2024-26726",
+            "challenge-kpatch-cve-2024-26760"
+          ]
+        },
+        "buildable_and_should_pass": {
+          "bucket": "buildable_and_should_pass",
+          "label": "正向可构建类",
+          "goal": "看 .ko 产出率和动态验证通过率",
+          "total_fixtures": 1,
+          "matched_fixtures": 0,
+          "missing_fixtures": 1,
+          "success_count": 0,
+          "failed_count": 0,
+          "success_rate": 0.0,
+          "average_attempts": 0.0,
+          "status_distribution": {},
+          "failure_distribution": {},
+          "recognized_count": 0,
+          "explained_count": 0,
+          "module_built_count": 0,
+          "validation_passed_count": 0,
+          "primary_metric": {
+            "name": "validation_passed_rate",
+            "label": "动态验证通过率",
+            "value": 0.0,
+            "display_value": "0.00%",
+            "numerator": 0,
+            "denominator": 0
+          },
+          "secondary_metric": {
+            "name": "module_built_rate",
+            "label": ".ko 产出率",
+            "value": 0.0,
+            "display_value": "0.00%",
+            "numerator": 0,
+            "denominator": 0
+          },
+          "fixture_ids": [
+            "challenge-pass-cve-2024-26742"
+          ]
+        }
+      },
+      "mixed_summary_note": "兼容总成功率只用于存量接口兼容，不再作为固定样例的主结论",
+      "summary_json_path": "data/evaluations/challenge_sample_tiers_v0426/summary.json",
+      "summary_md_path": "data/evaluations/challenge_sample_tiers_v0426/summary.md"
+    },
+    {
+      "fixture_name": "contest_samples",
+      "success_count": 0,
+      "matched_fixtures": 2,
+      "missing_fixtures": 0,
+      "success_rate": 0.0,
+      "bucket_order": [],
+      "bucket_counts": {},
+      "bucket_summary": {},
+      "mixed_summary_note": null,
+      "summary_json_path": "data/evaluations/contest_samples/summary.json",
+      "summary_md_path": "data/evaluations/contest_samples/summary.md"
+    },
+    {
+      "fixture_name": "validation_v0509/representative_metrics_report_v0509",
+      "success_count": 10,
+      "matched_fixtures": 10,
+      "missing_fixtures": 0,
+      "success_rate": 1.0,
+      "bucket_order": [
+        "success"
+      ],
+      "bucket_counts": {
+        "success": 10
+      },
+      "bucket_summary": {
+        "ko": {
+          "present": 10,
+          "passed": 10,
+          "total": 10
+        },
+        "load": {
+          "present": 10,
+          "passed": 10,
+          "total": 10
+        },
+        "unload": {
+          "present": 10,
+          "passed": 10,
+          "total": 10
+        },
+        "smoke": {
+          "present": 10,
+          "passed": 10,
+          "total": 10
+        },
+        "selftest": {
+          "present": 10,
+          "passed": 10,
+          "total": 10
+        }
+      },
+      "mixed_summary_note": "代表集 10/10 成功，成功率 100.0%，已达到赛题 60%+ 目标；平均尝试轮次为 1.0。",
+      "summary_json_path": "data/evaluations/validation_v0509/representative_metrics_report_v0509.json",
+      "summary_md_path": "data/evaluations/validation_v0509/representative_metrics_report_v0509.md"
+    },
+    {
+      "fixture_name": "validation_v0509/representative_metrics_v0510",
+      "success_count": 10,
+      "matched_fixtures": 10,
+      "missing_fixtures": 0,
+      "success_rate": 1.0,
+      "bucket_order": [
+        "success"
+      ],
+      "bucket_counts": {
+        "success": 10
+      },
+      "bucket_summary": {
+        "ko": {
+          "present": 10,
+          "passed": 10,
+          "total": 10
+        },
+        "load": {
+          "present": 10,
+          "passed": 10,
+          "total": 10
+        },
+        "unload": {
+          "present": 10,
+          "passed": 10,
+          "total": 10
+        },
+        "smoke": {
+          "present": 10,
+          "passed": 10,
+          "total": 10
+        },
+        "selftest": {
+          "present": 10,
+          "passed": 10,
+          "total": 10
+        }
+      },
+      "mixed_summary_note": "代表集 10/10 成功，成功率 100.0%，已达到赛题 60%+ 目标；平均尝试轮次为 1.0。",
+      "summary_json_path": "data/evaluations/validation_v0509/representative_metrics_v0510.json",
+      "summary_md_path": "data/evaluations/validation_v0509/representative_metrics_v0510.md"
+    },
+    {
+      "fixture_name": "review_v0510/review_26726_full",
+      "success_count": 1,
+      "matched_fixtures": 1,
+      "missing_fixtures": 0,
+      "success_rate": 1.0,
+      "bucket_order": [
+        "buildable_and_should_pass"
+      ],
+      "bucket_counts": {
+        "buildable_and_should_pass": 1
+      },
+      "bucket_summary": {
+        "positive_pool_size": 12,
+        "positive_pool_gap": 0,
+        "livepatchability_tier_counts": {
+          "medium": 1
+        }
+      },
+      "mixed_summary_note": null,
+      "summary_json_path": "data/evaluations/review_v0510/review_26726_full.json",
+      "summary_md_path": "data/evaluations/review_v0510/review_26726_full.md"
+    },
+    {
+      "fixture_name": "review_v0510/review_26742_full",
+      "success_count": 1,
+      "matched_fixtures": 1,
+      "missing_fixtures": 0,
+      "success_rate": 1.0,
+      "bucket_order": [
+        "buildable_and_should_pass"
+      ],
+      "bucket_counts": {
+        "buildable_and_should_pass": 1
+      },
+      "bucket_summary": {
+        "positive_pool_size": 12,
+        "positive_pool_gap": 0,
+        "livepatchability_tier_counts": {
+          "high": 1
+        }
+      },
+      "mixed_summary_note": null,
+      "summary_json_path": "data/evaluations/review_v0510/review_26742_full.json",
+      "summary_md_path": "data/evaluations/review_v0510/review_26742_full.md"
+    },
+    {
+      "fixture_name": "review_v0510/review_complex2_full",
+      "success_count": 2,
+      "matched_fixtures": 2,
+      "missing_fixtures": 0,
+      "success_rate": 1.0,
+      "bucket_order": [
+        "buildable_and_should_pass"
+      ],
+      "bucket_counts": {
+        "buildable_and_should_pass": 2
+      },
+      "bucket_summary": {
+        "positive_pool_size": 12,
+        "positive_pool_gap": 0,
+        "livepatchability_tier_counts": {
+          "high": 2
+        }
+      },
+      "mixed_summary_note": null,
+      "summary_json_path": "data/evaluations/review_v0510/review_complex2_full.json",
+      "summary_md_path": "data/evaluations/review_v0510/review_complex2_full.md"
+    },
+    {
+      "fixture_name": "review_v0510/review_extra3_full",
+      "success_count": 3,
+      "matched_fixtures": 3,
+      "missing_fixtures": 0,
+      "success_rate": 1.0,
+      "bucket_order": [
+        "buildable_and_should_pass"
+      ],
+      "bucket_counts": {
+        "buildable_and_should_pass": 3
+      },
+      "bucket_summary": {
+        "positive_pool_size": 12,
+        "positive_pool_gap": 0,
+        "livepatchability_tier_counts": {
+          "high": 3
+        }
+      },
+      "mixed_summary_note": null,
+      "summary_json_path": "data/evaluations/review_v0510/review_extra3_full.json",
+      "summary_md_path": "data/evaluations/review_v0510/review_extra3_full.md"
+    },
+    {
+      "fixture_name": "validation_v0509/final_holdout10_full_run_v0509",
+      "success_count": 10,
+      "matched_fixtures": 10,
+      "missing_fixtures": 0,
+      "success_rate": 1.0,
+      "bucket_order": [
+        "buildable_and_should_pass"
+      ],
+      "bucket_counts": {
+        "buildable_and_should_pass": 10
+      },
+      "bucket_summary": {
+        "positive_pool_size": 12,
+        "positive_pool_gap": 0,
+        "livepatchability_tier_counts": {
+          "high": 6,
+          "medium": 4
+        }
+      },
+      "mixed_summary_note": null,
+      "summary_json_path": "data/evaluations/validation_v0509/final_holdout10_full_run_v0509.json",
+      "summary_md_path": "data/evaluations/validation_v0509/final_holdout10_full_run_v0509.md"
+    },
+    {
+      "fixture_name": "validation_v0509/final_holdout_full_run_v0509",
+      "success_count": 5,
+      "matched_fixtures": 5,
+      "missing_fixtures": 0,
+      "success_rate": 1.0,
+      "bucket_order": [
+        "buildable_and_should_pass"
+      ],
+      "bucket_counts": {
+        "buildable_and_should_pass": 5
+      },
+      "bucket_summary": {
+        "positive_pool_size": 12,
+        "positive_pool_gap": 0,
+        "livepatchability_tier_counts": {
+          "medium": 5
+        }
+      },
+      "mixed_summary_note": null,
+      "summary_json_path": "data/evaluations/validation_v0509/final_holdout_full_run_v0509.json",
+      "summary_md_path": "data/evaluations/validation_v0509/final_holdout_full_run_v0509.md"
+    }
+  ],
+  "task_closures": [
+    {
+      "task_id": "local-envroot-smoke-26742",
+      "task_status": "created",
+      "current_attempt": 0,
+      "latest_failure_type": null,
+      "report_json_path": null,
+      "report_md_path": null,
+      "build_log_path": null,
+      "validation_report_path": null,
+      "trace_path": null,
+      "workspace_dir": "workspaces/local-envroot-smoke-26742",
+      "closure_ok": false
+    },
+    {
+      "task_id": "local-api-doc-smoke-26742",
+      "task_status": "created",
+      "current_attempt": 0,
+      "latest_failure_type": null,
+      "report_json_path": null,
+      "report_md_path": null,
+      "build_log_path": null,
+      "validation_report_path": null,
+      "trace_path": null,
+      "workspace_dir": "workspaces/local-api-doc-smoke-26742",
+      "closure_ok": false
+    },
+    {
+      "task_id": "local-readme-smoke-26742",
+      "task_status": "created",
+      "current_attempt": 0,
+      "latest_failure_type": null,
+      "report_json_path": null,
+      "report_md_path": null,
+      "build_log_path": null,
+      "validation_report_path": null,
+      "trace_path": null,
+      "workspace_dir": "workspaces/local-readme-smoke-26742",
+      "closure_ok": false
+    },
+    {
+      "task_id": "TASK-SEED-20260420-1086",
+      "task_status": "analyzed",
+      "current_attempt": 0,
+      "latest_failure_type": null,
+      "report_json_path": null,
+      "report_md_path": null,
+      "build_log_path": null,
+      "validation_report_path": null,
+      "trace_path": null,
+      "workspace_dir": "workspaces/TASK-SEED-20260420-1086",
+      "closure_ok": false
+    },
+    {
+      "task_id": "TASK-STAGE-II-20260414-185447",
+      "task_status": "failed",
+      "current_attempt": 1,
+      "latest_failure_type": "patch_apply_failed",
+      "report_json_path": "workspaces/TASK-STAGE-II-20260414-185447/reports/report.json",
+      "report_md_path": "workspaces/TASK-STAGE-II-20260414-185447/reports/report.md",
+      "build_log_path": "workspaces/TASK-STAGE-II-20260414-185447/attempts/001/logs/build.log",
+      "validation_report_path": "workspaces/TASK-STAGE-II-20260414-185447/attempts/001/artifacts/validation_report.json",
+      "trace_path": "workspaces/TASK-STAGE-II-20260414-185447/attempts/001/trace/harness_trace.json",
+      "workspace_dir": "workspaces/TASK-STAGE-II-20260414-185447",
+      "closure_ok": true
+    },
+    {
+      "task_id": "TASK-20260411-001",
+      "task_status": "failed",
+      "current_attempt": 5,
+      "latest_failure_type": "patch_apply_failed",
+      "report_json_path": "workspaces/TASK-20260411-001/reports/report.json",
+      "report_md_path": "workspaces/TASK-20260411-001/reports/report.md",
+      "build_log_path": "workspaces/TASK-20260411-001/attempts/005/logs/build.log",
+      "validation_report_path": "workspaces/TASK-20260411-001/attempts/005/artifacts/validation_report.json",
+      "trace_path": "workspaces/TASK-20260411-001/attempts/005/trace/harness_trace.json",
+      "workspace_dir": "workspaces/TASK-20260411-001",
+      "closure_ok": true
+    },
+    {
+      "task_id": "TASK-20260410-001",
+      "task_status": "failed",
+      "current_attempt": 1,
+      "latest_failure_type": "build_env_missing",
+      "report_json_path": "workspaces/TASK-20260410-001/reports/report.json",
+      "report_md_path": "workspaces/TASK-20260410-001/reports/report.md",
+      "build_log_path": "workspaces/TASK-20260410-001/attempts/001/logs/build.log",
+      "validation_report_path": null,
+      "trace_path": "workspaces/TASK-20260410-001/attempts/001/trace/harness_trace.json",
+      "workspace_dir": "workspaces/TASK-20260410-001",
+      "closure_ok": false
+    }
+  ],
+  "known_limits": [
+    "百炼 API Key 尚未配置，可通过环境变量或 config/models.yaml 补齐。"
+  ]
+}

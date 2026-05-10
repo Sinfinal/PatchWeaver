@@ -1,6 +1,6 @@
 # PatchWeaver Web/API 端到端验收方案
 
-本文面向评委验收口径，说明如何通过 Web/API 与 CLI 形成 `CVE -> task -> analyze/run -> report/replay -> artifact evidence` 的端到端闭环。验收重点不是只看 overview 汇总页，而是逐层核验任务创建、任务执行、报告、回放、Agent 决策、`.ko` 产物和 `validation_report.json`。
+本文面向外部验收口径，说明如何通过 Web/API 与 CLI 形成 `CVE -> task -> analyze/run -> report/replay -> artifact evidence` 的端到端闭环。验收重点不是只看 overview 汇总页，而是逐层核验任务创建、任务执行、报告、回放、Agent 决策、`.ko` 产物和 `validation_report.json`。
 
 ## 验收边界
 
@@ -342,5 +342,5 @@ $ValidationReady = $null -ne $Detail.latest_validation
 1. `.ko` 二进制下载缺口：当前 `artifacts/content` 以文本方式读取文件，不适合下载或校验二进制 `.ko`。现阶段可通过 `module_path`、产物树后缀和大小、build log、validation report 交叉核验；后续建议新增只读安全下载接口。
 2. 运行接口同步执行风险：`POST /tasks/{task_id}/run` 会直接触发单轮执行，长耗时构建可能受 HTTP 超时影响。正式交付建议补充异步 job、队列状态、取消和重试接口。
 3. 关键产物索引仍偏文本证据：`key_artifacts` 已覆盖 report、build log、validation report、trace，但未把 `.ko` 作为显式 key artifact；验收脚本需要遍历 `items` 才能找到 `.ko`。
-4. 报告成功不等于验证成功：当前 API 能查询 `report.json` 和 `validation_report.json`，但评委口径必须区分 report 生成、构建成功和动态验证通过，避免只测 overview 或只测 report。
+4. 报告成功不等于验证成功：当前 API 能查询 `report.json` 和 `validation_report.json`，但验收口径必须区分 report 生成、构建成功和动态验证通过，避免只测 overview 或只测 report。
 5. 认证与审计需按部署补齐：当前文档不写密钥和内网地址；如果对外暴露 API，应由部署层补充鉴权、审计和访问控制。

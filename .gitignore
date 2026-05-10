@@ -19,8 +19,10 @@ tmp_pytest*/
 .coverage
 htmlcov/
 
-# Build artifacts
-build/
+# Build artifacts. The checked-in container definitions live under build/.
+build/lib/
+build/bdist.*/
+build/temp.*/
 dist/
 *.egg-info/
 web/node_modules/
@@ -47,6 +49,9 @@ data/manifests/*
 !data/manifests/.gitkeep
 !data/manifests/*.template.json
 *.log
+
+# Local scratch files created by agents or manual experiments
+tmp/
 
 # Generated workspaces and caches
 

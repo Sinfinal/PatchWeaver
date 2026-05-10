@@ -1,6 +1,6 @@
 # PatchWeaver 部署说明
 
-本文面向评委和验证机部署人员，说明如何在验证机上完成 PatchWeaver 的最小可用部署、环境自检、Web/API 启动和常见问题处理。文档只描述部署流程，不记录任何 IP、密码、API Key 或平台 Token。
+本文面向验收和验证机部署人员，说明如何在验证机上完成 PatchWeaver 的最小可用部署、环境自检、Web/API 启动和常见问题处理。文档只描述部署流程，不记录任何 IP、密码、API Key 或平台 Token。
 
 ## 1. 验证机前置条件
 
@@ -29,6 +29,43 @@ test -f /usr/lib/debug/lib/modules/$(uname -r)/vmlinux
 ## 2. 快速部署命令
 
 以下命令在 PatchWeaver 项目根目录执行。若验证机无法联网，请提前离线准备 Python wheel、Node 依赖和系统包。
+
+推荐对外交付入口优先使用 Docker Compose。默认启动两个容器：
+
+| 容器 | 端口 | 作用 |
+| --- | --- | --- |
+| `patchweaver-api` | `18084` | 后端 API、CLI、任务创建、报告查询 |
+| `patchweaver-web` | `18085` | Web 控制台静态站点，并反向代理 `/api` 到后端 |
+
+```bash
+docker compose -f build/patchweaver/compose.yml up --build patchweaver-api patchweaver-web
+```
+
+部署后检查：
+
+```bash
+curl -fsS http://127.0.0.1:18084/healthz
+curl -fsS http://127.0.0.1:18084/api/v1/overview
+curl -fsS http://127.0.0.1:18085/console/
+curl -fsS http://127.0.0.1:18085/api/v1/overview
+```
+
+浏览器访问地址：
+
+```text
+http://localhost:18085/console/
+http://localhost:18084/docs
+```
+
+如需接触宿主机内核材料，可使用特权验证容器：
+
+```bash
+docker compose -f build/patchweaver/compose.yml --profile validation run --rm patchweaver-validation
+```
+
+容器方式适合 Web/API、报告展示和交付入口。API/Web 容器 smoke 只证明安装、入口和查询链路可用；真实 `.ko` 构建与 `load/unload/smoke/selftest` 仍必须满足宿主机内核、源码树、`vmlinux`、`Module.symvers` 和 `kpatch-build` 条件。
+
+裸机部署方式如下：
 
 ```bash
 cd /path/to/PatchWeaver
@@ -122,7 +159,7 @@ python -m patchweaver check-vendor-baseline \
 
 ## 5. Web/API 启动
 
-临时前台启动，适合评委现场查看日志。监听地址请由现场环境变量提供，不要写入文档或提交记录：
+临时前台启动，适合现场验收时查看日志。监听地址请由现场环境变量提供，不要写入文档或提交记录：
 
 ```bash
 export PATCHWEAVER_API_HOST="<现场监听地址>"

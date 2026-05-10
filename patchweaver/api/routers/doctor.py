@@ -22,3 +22,10 @@ def run_doctor(context: ApiContext = Depends(get_api_context)) -> dict:
     """重新执行一次诊断"""
 
     return DoctorApiService(context).get_report(refresh=True)
+
+
+@router.post("/doctor/repair")
+def repair_doctor(context: ApiContext = Depends(get_api_context)) -> dict:
+    """执行 Web 可触发的环境修复动作"""
+
+    return DoctorApiService(context).repair_environment()

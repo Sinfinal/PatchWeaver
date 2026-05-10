@@ -8,7 +8,7 @@
 - Report OK: `True`
 - Replay OK: `True`
 - Agent decision OK: `True`
-- Judge success evidence: `True`
+- Validation success evidence: `True`
 
 ## Endpoints
 
@@ -24,4 +24,4 @@
 ## Limits
 
 - This check validates API evidence for an existing task; it does not rerun kpatch-build.
-- Judge success still requires the referenced .ko and validation artifacts to be present on the validation machine.
+- Validation success still requires the referenced .ko and validation artifacts to be present on the validation machine.

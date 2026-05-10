@@ -6,7 +6,6 @@ import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from shutil import copy2
 from typing import Any
 
 from patchweaver.builder.orchestrator import BuildOrchestrator
@@ -14,7 +13,7 @@ from patchweaver.utils.path_policy import ensure_within_root, relativize_payload
 
 
 class ReleaseService:
-    """负责整理 submission 目录、final manifest 和最终门禁结果"""
+    """负责整理 docs/submission 目录、final manifest 和最终门禁结果"""
 
     def __init__(
         self,
@@ -38,7 +37,7 @@ class ReleaseService:
         self.artifact_repo = artifact_repo
 
     def prepare_submission(self) -> dict[str, Any]:
-        """创建 submission 结构，并生成最终清单"""
+        """创建 docs/submission 结构，并生成最终清单"""
 
         layout = self._ensure_submission_dirs()
         staged_docs = self._stage_submission_docs(layout)
@@ -162,7 +161,7 @@ class ReleaseService:
                 "submission_layout",
                 all(path.exists() for path in layout.values()),
                 self._path(self._submission_root()),
-                "submission 目录结构已建立。",
+                "docs/submission 目录结构已建立。",
                 "failed",
             ),
             self._check(
@@ -176,14 +175,14 @@ class ReleaseService:
                 "model_statement",
                 (layout["docs"] / "PatchWeaver-模型选型说明.md").exists(),
                 self._path(layout["docs"] / "PatchWeaver-模型选型说明.md"),
-                "模型选型说明已写入 submission/docs。"
+                "模型选型说明已写入 docs。"
                 if (layout["docs"] / "PatchWeaver-模型选型说明.md").exists()
-                else "submission/docs 中缺少模型选型说明。",
+                else "docs 中缺少模型选型说明。",
                 "failed",
             ),
         ]
         # 所有检查项最终落成一份统一报告
-        # CLI、Web 和 submission 都读这份门禁结论
+        # CLI、Web 和 docs/submission 都读这份门禁结论
         summary = self._summarize_checks(checks)
         report = {
             "generated_at": self._now(),
@@ -280,7 +279,7 @@ class ReleaseService:
             f"- 正式交付模型: {manifest['models']['delivery_model']}",
             f"- API Key 来源: {self._api_key_source_label(str(manifest['models']['api_key_source']))}",
             "",
-            "## Submission 目录",
+            "## 提交快照目录",
         ]
         for name, path in manifest["submission_layout"].items():
             lines.append(f"- {name}: {path}")
@@ -406,24 +405,22 @@ class ReleaseService:
         return limits
 
     def _stage_submission_docs(self, layout: dict[str, Path]) -> list[dict[str, Any]]:
-        """把项目文档复制到 submission/docs，并补齐交付说明"""
+        """整理 docs 作为唯一文档源，并补齐生成型交付说明"""
 
         staged_items: list[dict[str, Any]] = []
         docs_root = layout["docs"]
+        docs_root.mkdir(parents=True, exist_ok=True)
         source_items = self._collect_document_sources()
 
         for source_path, relative_name in source_items:
-            target_path = docs_root / relative_name
-            target_path.parent.mkdir(parents=True, exist_ok=True)
-            copy2(source_path, target_path)
             staged_items.append(
                 {
-                    "name": source_path.name,
+                    "name": Path(relative_name).name,
                     "version_suffix": self._extract_version_suffix(source_path.name),
                     "category": self._document_category(relative_name),
                     "completed": True,
                     "source_ref": self._path(source_path),
-                    "final_path": self._path(target_path),
+                    "final_path": self._path(source_path),
                     "manually_reviewed": False,
                 }
             )
@@ -487,9 +484,10 @@ class ReleaseService:
         }
 
     def _collect_document_sources(self) -> list[tuple[Path, str]]:
-        """收集需要进入 submission/docs 的文档源文件"""
+        """收集 docs 统一文档源中的文件"""
 
         items: list[tuple[Path, str]] = []
+        generated_doc_names = {"PatchWeaver-模型选型说明.md", "PatchWeaver-百炼应用落地说明.md"}
         readme_path = self.runtime.project_root / "README.md"
         if readme_path.exists():
             items.append((readme_path, readme_path.name))
@@ -498,6 +496,12 @@ class ReleaseService:
         if docs_root.exists():
             for path in sorted(docs_root.rglob("*.md")):
                 relative_name = str(path.relative_to(docs_root))
+                if relative_name.lower() == "readme.md":
+                    continue
+                if relative_name.replace("\\", "/").startswith("submission/"):
+                    continue
+                if Path(relative_name).name in generated_doc_names:
+                    continue
                 items.append((path, relative_name))
         return items
 
@@ -684,11 +688,11 @@ class ReleaseService:
         }
 
     def _ensure_submission_dirs(self) -> dict[str, Path]:
-        """按第四阶段约定建立 submission 目录结构"""
+        """建立提交证据目录，并把 docs 作为唯一文档源"""
 
         root = self._submission_root()
         layout = {
-            "docs": root / "docs",
+            "docs": self.runtime.project_root / "docs",
             "slides": root / "slides",
             "video": root / "video",
             "evidence": root / "evidence",
@@ -699,9 +703,9 @@ class ReleaseService:
         return layout
 
     def _submission_root(self) -> Path:
-        """返回 submission 根目录"""
+        """返回生成型提交快照根目录"""
 
-        return (self.runtime.project_root / "submission").resolve()
+        return (self.runtime.project_root / "docs" / "submission").resolve()
 
     def _system_log_path(self) -> Path:
         """返回文本日志路径"""
@@ -760,7 +764,7 @@ class ReleaseService:
         return to_project_relative(self.runtime.project_root, value)
 
     def _layout_payload(self, layout: dict[str, Path]) -> dict[str, str | None]:
-        """把 submission 布局转换成相对源码根目录表达"""
+        """把提交快照布局转换成相对源码根目录表达"""
 
         return {name: self._path(path) for name, path in layout.items()}
 

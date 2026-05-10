@@ -17,16 +17,13 @@ export function TaskCreatePage(): JSX.Element {
 
   return (
     <div className="pw-grid detail">
-      <SectionCard
-        title="创建任务"
-        subtitle="新任务会生成独立工作区，并沿着统一主链沉淀日志、报告和回放文件。"
-      >
+      <SectionCard title="创建任务">
         <TaskCreateForm submitting={createMutation.isPending} onSubmit={createMutation.mutateAsync} />
         {createMutation.isError ? <div className="pw-empty">任务创建失败，请检查后端返回的错误信息或配置状态。</div> : null}
       </SectionCard>
 
       <div className="pw-grid">
-        <SectionCard title="推荐默认值" subtitle="当前联调和展示环境默认对齐 Anolis OS 23.4。">
+        <SectionCard title="推荐默认值">
           <div className="pw-list">
             <div className="pw-list-item">
               <strong>目标内核</strong>
@@ -39,7 +36,7 @@ export function TaskCreatePage(): JSX.Element {
           </div>
         </SectionCard>
 
-        <SectionCard title="Profile 说明" subtitle="不同档位主要影响最大尝试轮数与执行强度。">
+        <SectionCard title="Profile 说明">
           <div className="pw-list">
             {buildProfiles.map((profile) => (
               <div key={profile.name} className="pw-list-item">
@@ -52,7 +49,7 @@ export function TaskCreatePage(): JSX.Element {
           </div>
         </SectionCard>
 
-        <SectionCard title="任务会经过什么" subtitle="创建后会沿着这条链路逐步生成可观察证据。">
+        <SectionCard title="任务会经过什么">
           <div className="pw-list">
             {architectureStages.slice(0, 4).map((stage) => (
               <div key={stage.id} className="pw-list-item">

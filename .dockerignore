@@ -1,0 +1,44 @@
+# Version control and editor state
+.git/
+.idea/
+.vscode/
+
+# Local Python and build caches
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.pytest_tmp/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/*
+!build/
+!build/patchweaver/
+!build/patchweaver/Dockerfile
+!build/patchweaver/web.Dockerfile
+!build/patchweaver/web.nginx.conf
+!build/patchweaver/compose.yml
+dist/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Runtime state and heavy evidence
+workspaces/
+submission/
+docs/submission/
+data/cache/
+data/logs/
+data/*.db
+*.log
+
+# Agent scratch files and internal tests
+tmp/
+
+# Frontend dependencies and build cache
+web/node_modules/
+web/dist/.vite/
+*.tsbuildinfo
