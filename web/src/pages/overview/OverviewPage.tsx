@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { SectionCard } from "../../components/layout/SectionCard";
 import { TaskTable } from "../../components/tables/TaskTable";
@@ -53,7 +53,7 @@ export function OverviewPage(): JSX.Element {
           <div className="pw-overview-hero-copy">
             <div className="pw-overview-eyebrow">{projectSummary.alias} / Livepatch Console</div>
             <h3 className="pw-overview-headline">{projectSummary.title}</h3>
-            <p className="pw-overview-lead">{projectSummary.subtitle}</p>
+            {projectSummary.subtitle ? <p className="pw-overview-lead">{projectSummary.subtitle}</p> : null}
             <div className="pw-pill-row">
               <span className="pw-chip">Anolis OS 23.4</span>
               <span className="pw-chip">kpatch-build</span>
@@ -61,8 +61,8 @@ export function OverviewPage(): JSX.Element {
               <span className="pw-chip">可回放证据</span>
             </div>
             <div className="pw-btn-row">
-              <Link className="pw-btn primary" to="/tasks/new">
-                创建任务
+              <Link className="pw-btn primary" to="/tasks">
+                任务中心
               </Link>
               <Link className="pw-btn" to="/reports">
                 报告中心
@@ -72,11 +72,11 @@ export function OverviewPage(): JSX.Element {
               </Link>
             </div>
             {overviewQuery.isLoading ? <div className="pw-note-banner">正在同步总览数据...</div> : null}
-            {overviewQuery.isError ? <div className="pw-note-banner">当前无法连接后端，页面已回退到静态布局。</div> : null}
+            {overviewQuery.isError ? <div className="pw-note-banner">当前无法连接后端，页面已回退到静态布局</div> : null}
           </div>
           <aside className="pw-overview-focus-card">
             <span className="pw-overview-focus-kicker">Console Focus</span>
-            <strong className="pw-overview-focus-title">把最关键的运行、排障与交付视图留在首屏</strong>
+            <strong className="pw-overview-focus-title">运行、排障与交付留在首屏</strong>
             <div className="pw-overview-focus-grid">
               {focusStats.map((item) => (
                 <article key={item.label} className="pw-overview-focus-stat">
@@ -111,7 +111,7 @@ export function OverviewPage(): JSX.Element {
           {overview ? (
             <TaskTable items={overview.recent_tasks as TaskListItem[]} />
           ) : (
-            <div className="pw-empty">后端可用后，这里会显示最近任务与当前状态。</div>
+            <div className="pw-empty">后端可用后，这里会显示最近任务与当前状态</div>
           )}
         </SectionCard>
 
@@ -131,7 +131,7 @@ export function OverviewPage(): JSX.Element {
               ))}
             </div>
           ) : (
-            <div className="pw-empty">暂无失败分布。</div>
+            <div className="pw-empty">暂无失败分布</div>
           )}
         </SectionCard>
 
@@ -160,7 +160,7 @@ export function OverviewPage(): JSX.Element {
               ))}
             </div>
           ) : (
-            <div className="pw-empty">当前还没有固定样例摘要，执行评测后这里会自动汇总。</div>
+            <div className="pw-empty">当前还没有固定样例摘要，执行评测后这里会自动汇总</div>
           )}
         </SectionCard>
 
@@ -196,7 +196,7 @@ export function OverviewPage(): JSX.Element {
               </div>
             </div>
           ) : (
-            <div className="pw-empty">后端可用后，这里会展示 final manifest 和最终门禁状态。</div>
+            <div className="pw-empty">后端可用后，这里会展示 final manifest 和最终门禁状态</div>
           )}
         </SectionCard>
 
@@ -215,7 +215,7 @@ export function OverviewPage(): JSX.Element {
               </div>
             </div>
           ) : (
-            <div className="pw-empty">后端可用后，这里会展示最近 system/build log 片段。</div>
+            <div className="pw-empty">后端可用后，这里会展示最近 system/build log 片段</div>
           )}
         </SectionCard>
 
@@ -233,7 +233,7 @@ export function OverviewPage(): JSX.Element {
               ))}
             </div>
           ) : (
-            <div className="pw-empty">暂无事件流。</div>
+            <div className="pw-empty">暂无事件流</div>
           )}
         </SectionCard>
       </div>

@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-HOST_ROOT="${PATCHWEAVER_HOST_ROOT:-/home/patchweaver/current}"
+HOST_ROOT="${PATCHWEAVER_DOCKER_ROOT:-${PATCHWEAVER_HOST_ROOT:-/usr/local/patchweaver}}"
 NETWORK="${PATCHWEAVER_DOCKER_NETWORK:-patchweaver-net}"
 API_IMAGE="${PATCHWEAVER_API_IMAGE:-patchweaver:local}"
 WEB_IMAGE="${PATCHWEAVER_WEB_IMAGE:-patchweaver-web:local}"
@@ -18,12 +18,12 @@ require_path() {
 }
 
 require_path "$HOST_ROOT"
-require_path /usr/bin/kpatch-build
-require_path /usr/libexec/kpatch
-require_path /usr/share/kpatch
-require_path /opt/kernel-src
-require_path "/usr/src/kernels/$KERNEL_RELEASE"
-require_path "/usr/lib/debug/lib/modules/$KERNEL_RELEASE/vmlinux"
+require_path "$HOST_ROOT/host/usr/bin/kpatch-build"
+require_path "$HOST_ROOT/host/usr/libexec/kpatch"
+require_path "$HOST_ROOT/host/usr/share/kpatch"
+require_path "$HOST_ROOT/host/opt/kernel-src"
+require_path "$HOST_ROOT/host/usr/src/kernels/$KERNEL_RELEASE"
+require_path "$HOST_ROOT/host/usr/lib/debug/lib/modules/$KERNEL_RELEASE/vmlinux"
 
 mkdir -p "$HOST_ROOT/data" "$HOST_ROOT/workspaces" "$HOST_ROOT/data/maintenance"
 docker network inspect "$NETWORK" >/dev/null 2>&1 || docker network create "$NETWORK" >/dev/null
@@ -41,16 +41,17 @@ docker run -d \
   -e PYTHONUTF8=1 \
   -v "$HOST_ROOT/data:/app/data" \
   -v "$HOST_ROOT/workspaces:/app/workspaces" \
+  -v "$HOST_ROOT/docs/submission:/app/docs/submission" \
   -v "$HOST_ROOT/config:/app/config:ro" \
   -v "$HOST_ROOT/evaluations:/app/evaluations:ro" \
-  -v /lib/modules:/lib/modules:ro \
-  -v /usr/src/kernels:/usr/src/kernels:ro \
-  -v /usr/lib/debug:/usr/lib/debug:ro \
-  -v /opt/kernel-src:/opt/kernel-src:ro \
-  -v /home/patchweaver/kernel-src-prepared:/home/patchweaver/kernel-src-prepared:ro \
-  -v /usr/bin/kpatch-build:/usr/bin/kpatch-build:ro \
-  -v /usr/libexec/kpatch:/usr/libexec/kpatch \
-  -v /usr/share/kpatch:/usr/share/kpatch:ro \
+  -v "$HOST_ROOT/host/lib/modules:/lib/modules:ro" \
+  -v "$HOST_ROOT/host/usr/src/kernels:/usr/src/kernels:ro" \
+  -v "$HOST_ROOT/host/usr/lib/debug:/usr/lib/debug:ro" \
+  -v "$HOST_ROOT/host/opt/kernel-src:/opt/kernel-src:ro" \
+  -v "$HOST_ROOT/host/home/patchweaver/kernel-src-prepared:/home/patchweaver/kernel-src-prepared:ro" \
+  -v "$HOST_ROOT/host/usr/bin/kpatch-build:/usr/bin/kpatch-build:ro" \
+  -v "$HOST_ROOT/host/usr/libexec/kpatch:/usr/libexec/kpatch" \
+  -v "$HOST_ROOT/host/usr/share/kpatch:/usr/share/kpatch:ro" \
   "$API_IMAGE" \
   patchweaver serve-api --host 0.0.0.0 --port 18084 --foreground >/dev/null
 

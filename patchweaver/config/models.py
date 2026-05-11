@@ -93,6 +93,8 @@ class BuildConfig(ConfigModel):
     create_diff_object_path: str = "/usr/libexec/kpatch/create-diff-object"
     vmlinux_path: str = "/usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux"
     kpatch_build_cmd: str = "kpatch-build"
+    kpatch_build_extra_args: list[str] = Field(default_factory=list)
+    kpatch_build_env: dict[str, str] = Field(default_factory=dict)
     build_timeout_sec: int = 3600
 
 

@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from patchweaver.api.deps import ApiContext
+from patchweaver.agent.actions import AgentActionName
+from patchweaver.agent.health import evaluate_agent_health
 from patchweaver.config.resolver import resolve_runtime
 from patchweaver.harness.workspace_guard import WorkspaceGuard
 from patchweaver.models.task import TaskContext
@@ -148,6 +150,18 @@ class TaskQueryService:
 
         items = []
         for row in rows:
+            task_for_health = self.context.task_repo.get_task(row["task_id"])
+            attempts_for_health = self.context.attempt_repo.list_attempts(row["task_id"]) if task_for_health is not None else []
+            agent_health = (
+                evaluate_agent_health(
+                    task=task_for_health,
+                    attempts=attempts_for_health,
+                    project_root=self.context.project_root,
+                    write=False,
+                )
+                if task_for_health is not None
+                else None
+            )
             fixture_binding = self._resolve_fixture_binding(
                 fixture_catalog,
                 cve_id=row["cve_id"],
@@ -170,6 +184,7 @@ class TaskQueryService:
                     "latest_build_exec_status": row["latest_build_exec_status"],
                     "latest_target_state": row["latest_target_state"],
                     "attempts_count": row["attempts_count"],
+                    "agent_health": agent_health,
                     "fixture_group": fixture_binding["fixture_group"] if fixture_binding else None,
                     "fixture_id": fixture_binding["fixture_id"] if fixture_binding else None,
                 }
@@ -185,6 +200,7 @@ class TaskQueryService:
         max_attempts: int | None = None,
         note: str | None = None,
         force_new: bool = False,
+        auto_run: bool = False,
     ) -> dict[str, Any]:
         """创建任务并准备工作区骨架"""
 
@@ -219,6 +235,14 @@ class TaskQueryService:
             )
             if existing_task is not None:
                 latest_attempt = self.context.attempt_repo.get_latest_attempt(existing_task.task_id)
+                existing_failure = None
+                if latest_attempt is None:
+                    existing_failure = self._load_json(existing_task.workspace_dir.resolve() / "analysis" / "trace" / "failure_record.json")
+                existing_task_payload = self._task_payload(
+                    existing_task,
+                    latest_attempt=latest_attempt,
+                    latest_failure=existing_failure,
+                )
                 duplicate_notice = build_duplicate_task_notice(existing_task, latest_attempt)
                 self.run_logger.info(
                     "web.create_task_duplicate",
@@ -237,7 +261,8 @@ class TaskQueryService:
                     "recommended_action": duplicate_notice["recommended_action"],
                     "next_steps": duplicate_notice["next_steps"],
                     "duplicate_scope": duplicate_scope,
-                    "existing_task": self._task_payload(existing_task, latest_attempt=latest_attempt),
+                    "task": existing_task_payload,
+                    "existing_task": existing_task_payload,
                 }
 
         task = TaskContext(
@@ -273,6 +298,7 @@ class TaskQueryService:
             "profile": profile,
             "max_attempts": task.max_attempts,
             "note": note,
+            "auto_run": auto_run,
             "machine_profile": machine_profile.model_dump(mode="json"),
         }
         request_path.write_text(json.dumps(request_payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -295,11 +321,55 @@ class TaskQueryService:
         return {
             "status": "ok",
             "created": True,
+            "auto_run": auto_run,
+            "auto_run_status": "scheduled" if auto_run else "disabled",
             "task": self._task_payload(task),
             "next_attempt_dir": self._path(task_dir / "attempts" / "001"),
             "prepared_attempt_dir": self._path(task_dir / "attempts" / "001"),
             "request_path": self._path(request_path),
         }
+
+    def auto_run_task(self, task_id: str) -> dict[str, Any]:
+        """按受控 Agent action 顺序推进任务主链。"""
+
+        task = self._require_task(task_id)
+        runner = self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts)
+        registry = runner.build_action_registry()
+        task_dir = task.workspace_dir.resolve()
+        trace_path = task_dir / "agent" / "auto_workflow_trace.json"
+        trace_path.parent.mkdir(parents=True, exist_ok=True)
+
+        results: list[dict[str, Any]] = []
+        for action in [
+            AgentActionName.ANALYZE_TASK,
+            AgentActionName.RUN_TASK,
+            AgentActionName.REPORT_TASK,
+            AgentActionName.REPLAY_TASK,
+        ]:
+            result = registry.execute(action, task_id)
+            result_payload = result.model_dump(mode="json")
+            results.append(result_payload)
+            if result.status == "failed":
+                break
+            if action == AgentActionName.ANALYZE_TASK and result.payload.get("status") == "failed":
+                break
+            if action == AgentActionName.RUN_TASK and result.payload.get("status") in {"created", "running"}:
+                break
+
+        payload = {
+            "task_id": task_id,
+            "status": "ok" if results and results[-1].get("status") != "failed" else "failed",
+            "actions": results,
+        }
+        trace_path.write_text(json.dumps(relativize_payload(payload, self.context.project_root), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        self.context.artifact_repo.add_artifact(
+            task_id=task_id,
+            artifact_type="agent_auto_workflow_trace",
+            artifact_path=trace_path,
+            metadata={"summary": "Web 自动运行入口动作轨迹"},
+        )
+        self.run_logger.info("web.auto_run_task", "Web 自动运行入口已推进主链", task_id=task_id, status=payload["status"])
+        return payload
 
     def get_task_detail(self, task_id: str) -> dict[str, Any]:
         """返回任务详情页需要的聚合数据"""
@@ -329,6 +399,10 @@ class TaskQueryService:
             latest_rewrite_plan_path = attempt_dir / "rewrite" / "rewrite_plan.json"
             latest_apply_precheck_path = attempt_dir / "rewrite" / "apply_precheck.json"
             latest_build_summary_path = attempt_dir / "artifacts" / "build_summary.json"
+        else:
+            analysis_failure_path = task_dir / "analysis" / "trace" / "failure_record.json"
+            if analysis_failure_path.exists():
+                latest_failure_path = analysis_failure_path
 
         # replay 会顺着 attempts、trace 和报告再做一次归并
         # 没有尝试记录时直接给空结果，避免详情页首开就走一串无效读取
@@ -365,11 +439,16 @@ class TaskQueryService:
             latest_apply_precheck=latest_apply_precheck,
             latest_build_summary=latest_build_summary,
         )
+        agent_health = evaluate_agent_health(
+            task=task,
+            attempts=attempts,
+            project_root=self.context.project_root,
+        )
 
         return {
             # task 是顶部摘要
             # analysis、attempts、reports、replay 对应页面里的四块主视图
-            "task": self._task_payload(task, latest_attempt=latest_attempt),
+            "task": self._task_payload(task, latest_attempt=latest_attempt, latest_failure=latest_failure, agent_health=agent_health),
             "patch_bundle": self._load_json(task_dir / "input" / "patch_bundle.json"),
             "analysis": {
                 "semantic_card_path": self._path(task_dir / "analysis" / "semantic_card.json"),
@@ -384,6 +463,7 @@ class TaskQueryService:
             "latest_trace": latest_trace,
             "latest_rewrite_plan": latest_rewrite_plan,
             "agent_decision_summary": agent_decision_summary,
+            "agent_health": agent_health,
             "evaluation_summary": self._load_json(task_dir / "reports" / "evaluation_summary.json"),
             "reports": {
                 "json_path": self._path(task_dir / "reports" / "report.json"),
@@ -510,8 +590,10 @@ class TaskQueryService:
 
         repair_intent_path = task_dir / "analysis" / "repair_intent.json"
         report_path = task_dir / "reports" / "report.json"
+        agent_workflow_trace_path = task_dir / "agent" / "agent_workflow_trace.json"
         repair_intent = self._load_json(repair_intent_path)
         report_json = self._load_json(report_path)
+        agent_workflow_trace = self._load_json(agent_workflow_trace_path)
         latest_failure_type = self._latest_failure_type(latest_attempt, latest_failure, latest_build_summary, latest_apply_precheck)
         latest_build_exec_status = self._latest_build_exec_status(latest_attempt, latest_build_summary, latest_apply_precheck)
         selected_recipe = self._first_present(
@@ -553,6 +635,11 @@ class TaskQueryService:
             }
 
         attempt_dir = task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" if latest_attempt else None
+        failure_record_path = (
+            attempt_dir / "logs" / "failure_record.json"
+            if attempt_dir
+            else task_dir / "analysis" / "trace" / "failure_record.json"
+        )
         repair_intent_summary = None
         if repair_intent is not None:
             repair_intent_summary = {
@@ -594,6 +681,10 @@ class TaskQueryService:
                 "reason": self._first_present(latest_rewrite_plan, report_json, keys=("selection_reason", "strategy_reason", "reason")),
             },
             "agent_next_action": agent_next_action,
+            "workflow_trace": self._agent_workflow_trace_summary(
+                agent_workflow_trace,
+                trace_path=agent_workflow_trace_path,
+            ),
             "failure_type": latest_failure_type,
             "failure_record": {
                 "summary": (latest_failure or {}).get("summary"),
@@ -613,17 +704,47 @@ class TaskQueryService:
             "source_paths": {
                 "repair_intent": self._path(repair_intent_path),
                 "rewrite_plan": self._path(attempt_dir / "rewrite" / "rewrite_plan.json") if attempt_dir else None,
-                "failure_record": self._path(attempt_dir / "logs" / "failure_record.json") if attempt_dir else None,
+                "failure_record": self._path(failure_record_path),
                 "build_summary": self._path(attempt_dir / "artifacts" / "build_summary.json") if attempt_dir else None,
                 "report_json": self._path(report_path),
+                "agent_workflow_trace": self._path(agent_workflow_trace_path),
             },
             "source_exists": {
                 "repair_intent": repair_intent_path.exists(),
                 "rewrite_plan": bool(attempt_dir and (attempt_dir / "rewrite" / "rewrite_plan.json").exists()),
-                "failure_record": bool(attempt_dir and (attempt_dir / "logs" / "failure_record.json").exists()),
+                "failure_record": failure_record_path.exists(),
                 "build_summary": bool(attempt_dir and (attempt_dir / "artifacts" / "build_summary.json").exists()),
                 "report_json": report_path.exists(),
+                "agent_workflow_trace": agent_workflow_trace_path.exists(),
             },
+        }
+
+    def _agent_workflow_trace_summary(
+        self,
+        payload: dict[str, Any] | None,
+        *,
+        trace_path: Path,
+    ) -> dict[str, Any]:
+        """整理 Agent workflow trace 给 Web/API 展示。"""
+
+        if not isinstance(payload, dict):
+            return {
+                "present": False,
+                "trace_path": self._path(trace_path),
+                "latest_decision": None,
+                "terminal_stop_reason": None,
+            }
+        decisions = payload.get("decisions")
+        latest = decisions[-1] if isinstance(decisions, list) and decisions else None
+        latest_decision = latest if isinstance(latest, dict) else None
+        return {
+            "present": True,
+            "trace_path": self._path(trace_path),
+            "decision_count": len(decisions) if isinstance(decisions, list) else 0,
+            "latest_decision": latest_decision,
+            "terminal_stop_reason": latest_decision.get("reason")
+            if latest_decision is not None and bool(latest_decision.get("terminal"))
+            else None,
         }
 
     def _first_present(self, *sources: dict[str, Any] | None, keys: tuple[str, ...]) -> Any | None:
@@ -638,7 +759,13 @@ class TaskQueryService:
                     return value
         return None
 
-    def _task_payload(self, task: TaskContext, latest_attempt=None) -> dict[str, Any]:
+    def _task_payload(
+        self,
+        task: TaskContext,
+        latest_attempt=None,
+        latest_failure: dict[str, Any] | None = None,
+        agent_health: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """把任务对象转成接口返回结构"""
 
         fixture_binding = self._resolve_fixture_binding(
@@ -659,9 +786,10 @@ class TaskQueryService:
             "machine_profile": task.machine_profile.model_dump(mode="json") if task.machine_profile is not None else None,
             "created_at": task.created_at.isoformat(),
             "updated_at": task.updated_at.isoformat(),
-            "latest_failure_type": latest_attempt.failure_type if latest_attempt is not None else None,
+            "latest_failure_type": latest_attempt.failure_type if latest_attempt is not None else (latest_failure or {}).get("failure_type"),
             "latest_build_exec_status": latest_attempt.build_exec_status if latest_attempt is not None else None,
             "latest_target_state": latest_attempt.target_state if latest_attempt is not None else None,
+            "agent_health": agent_health,
             "fixture_group": fixture_binding["fixture_group"] if fixture_binding else None,
             "fixture_id": fixture_binding["fixture_id"] if fixture_binding else None,
         }
@@ -744,6 +872,16 @@ class TaskQueryService:
             analysis = "按控制面和报告文档口径，该状态应作为 target_already_patched 展示。"
             next_action = "切换未修复源码树或保留该任务作为已修复态样例。"
             primary_evidence_path = self._path(task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" / "logs" / "failure_record.json") if latest_attempt else None
+        elif latest_attempt is None and latest_failure_type:
+            overall_status = "failed"
+            current_stage = str((latest_failure or {}).get("stage_name") or "analysis")
+            headline = "任务在构建前已明确失败"
+            reached_effect = "已完成前置检查并形成结构化失败归因。"
+            missing_effect = "未进入改写、构建和动态验证。"
+            problem = latest_failure_type
+            analysis = str((latest_failure or {}).get("summary") or "构建前失败，未产生 attempt。")
+            next_action = self._next_action_for_failure(latest_failure_type, latest_build_exec_status)
+            primary_evidence_path = self._path(task_dir / "analysis" / "trace" / "failure_record.json")
         elif latest_attempt is None:
             overall_status = "pending"
             current_stage = "prepare"
@@ -843,8 +981,14 @@ class TaskQueryService:
         target_already_patched = latest_target_state == "target_already_patched" or latest_failure_type == "target_already_patched"
 
         validation_status = str((latest_validation or {}).get("status") or "")
+        source_failure_path = task_dir / "analysis" / "trace" / "failure_record.json"
+        source_fetch_trace = self._load_json(task_dir / "analysis" / "trace" / "source_fetch_trace.json")
+        source_failed = latest_failure_type == "source_unavailable" or (source_fetch_trace or {}).get("status") == "failed"
+        report_json_path = task_dir / "reports" / "report.json"
+        report_has_real_input = latest_attempt is not None or latest_failure is not None or (task_dir / "analysis" / "semantic_card.json").exists()
+        report_complete = report_json_path.exists() and report_has_real_input
 
-        return [
+        stage_nodes = [
             self._stage_node(
                 stage="prepare",
                 label="准备",
@@ -859,27 +1003,28 @@ class TaskQueryService:
             self._stage_node(
                 stage="source",
                 label="来源获取",
-                status="success" if (task_dir / "input" / "patch_bundle.json").exists() else "pending",
-                current_effect="已获取 CVE 修复来源、patch bundle 和来源证据。" if (task_dir / "input" / "patch_bundle.json").exists() else "尚未获取 patch bundle。",
-                missing_effect="无" if (task_dir / "input" / "patch_bundle.json").exists() else "缺少 patch_bundle/source_evidence/raw_patch。",
-                problem=None,
-                analysis="赛题要求从 CVE 定位上游或 stable 修复补丁，本阶段承接该要求。",
-                next_action="进入语义理解和约束诊断。",
+                status="failed" if source_failed else ("success" if (task_dir / "input" / "patch_bundle.json").exists() else "pending"),
+                current_effect="来源解析失败，未找到可下载 patch。" if source_failed else ("已获取 CVE 修复来源、patch bundle 和来源证据。" if (task_dir / "input" / "patch_bundle.json").exists() else "尚未获取 patch bundle。"),
+                missing_effect="缺少可用于改写的 stable/upstream patch。" if source_failed else ("无" if (task_dir / "input" / "patch_bundle.json").exists() else "缺少 patch_bundle/source_evidence/raw_patch。"),
+                problem="source_unavailable" if source_failed else None,
+                analysis=str((latest_failure or {}).get("summary") or "赛题要求从 CVE 定位上游或 stable 修复补丁，本阶段承接该要求。"),
+                next_action=self._next_action_for_failure("source_unavailable", None) if source_failed else "进入语义理解和约束诊断。",
                 evidence_paths=[
                     task_dir / "input" / "patch_bundle.json",
                     task_dir / "input" / "source_evidence.json",
                     task_dir / "analysis" / "trace" / "source_fetch_trace.json",
+                    source_failure_path,
                 ],
             ),
             self._stage_node(
                 stage="analysis",
                 label="语义分析",
-                status="success" if (task_dir / "analysis" / "semantic_card.json").exists() else "pending",
-                current_effect="已生成修复意图和触达对象摘要。" if (task_dir / "analysis" / "semantic_card.json").exists() else "尚未形成语义卡片。",
-                missing_effect="无" if (task_dir / "analysis" / "semantic_card.json").exists() else "缺少 semantic_card.json。",
-                problem=None,
+                status="skipped" if source_failed else ("success" if (task_dir / "analysis" / "semantic_card.json").exists() else "pending"),
+                current_effect="来源不可用，语义分析未执行。" if source_failed else ("已生成修复意图和触达对象摘要。" if (task_dir / "analysis" / "semantic_card.json").exists() else "尚未形成语义卡片。"),
+                missing_effect="未获得 patch，无法生成 semantic_card。" if source_failed else ("无" if (task_dir / "analysis" / "semantic_card.json").exists() else "缺少 semantic_card.json。"),
+                problem="source_unavailable" if source_failed else None,
                 analysis="该阶段用于守住语义一致性，避免后续改写偏离上游修复意图。",
-                next_action="进入 kpatch 约束诊断。",
+                next_action="先解决来源获取问题。" if source_failed else "进入 kpatch 约束诊断。",
                 evidence_paths=[
                     task_dir / "analysis" / "semantic_card.json",
                     task_dir / "analysis" / "trace" / "semantic_card_enrichment.json",
@@ -888,12 +1033,12 @@ class TaskQueryService:
             self._stage_node(
                 stage="diagnose",
                 label="约束诊断",
-                status="success" if (task_dir / "analysis" / "constraint_report.json").exists() else "pending",
-                current_effect="已输出热补丁约束和候选路线。" if (task_dir / "analysis" / "constraint_report.json").exists() else "尚未形成约束报告。",
-                missing_effect="无" if (task_dir / "analysis" / "constraint_report.json").exists() else "缺少 constraint_report.json。",
-                problem=None,
+                status="skipped" if source_failed else ("success" if (task_dir / "analysis" / "constraint_report.json").exists() else "pending"),
+                current_effect="来源不可用，约束诊断未执行。" if source_failed else ("已输出热补丁约束和候选路线。" if (task_dir / "analysis" / "constraint_report.json").exists() else "尚未形成约束报告。"),
+                missing_effect="未获得 patch，无法诊断 kpatch 约束。" if source_failed else ("无" if (task_dir / "analysis" / "constraint_report.json").exists() else "缺少 constraint_report.json。"),
+                problem="source_unavailable" if source_failed else None,
                 analysis="该阶段对齐 kpatch 限制，例如 fentry、init、静态数据和 ABI 风险。",
-                next_action="进入改写规划。",
+                next_action="先解决来源获取问题。" if source_failed else "进入改写规划。",
                 evidence_paths=[task_dir / "analysis" / "constraint_report.json"],
             ),
             self._stage_node(
@@ -934,23 +1079,23 @@ class TaskQueryService:
             self._stage_node(
                 stage="failure_analysis",
                 label="失败归因",
-                status="success" if attempt_dir and (attempt_dir / "logs" / "failure_record.json").exists() else ("skipped" if latest_attempt and latest_attempt.status == "built" else "pending"),
-                current_effect="已形成结构化失败记录。" if attempt_dir and (attempt_dir / "logs" / "failure_record.json").exists() else "当前没有失败归因记录。",
-                missing_effect="无" if attempt_dir and (attempt_dir / "logs" / "failure_record.json").exists() else "失败时应补齐 failure_record.json。",
+                status="success" if latest_failure else ("skipped" if latest_attempt and latest_attempt.status == "built" else "pending"),
+                current_effect="已形成结构化失败记录。" if latest_failure else "当前没有失败归因记录。",
+                missing_effect="无" if latest_failure else "失败时应补齐 failure_record.json。",
                 problem=latest_failure_type,
                 analysis=str((latest_failure or {}).get("summary") or "失败归因阶段只读取主链失败证据。"),
                 next_action="根据 failure_type 决定下一轮改写或环境修复。",
-                evidence_paths=[attempt_dir / "logs" / "failure_record.json"] if attempt_dir else [],
+                evidence_paths=[attempt_dir / "logs" / "failure_record.json"] if attempt_dir else [source_failure_path],
             ),
             self._stage_node(
                 stage="validate",
                 label="验证",
-                status=self._validation_stage_status(latest_attempt, latest_validation, target_already_patched),
-                current_effect=self._validation_current_effect(latest_validation, target_already_patched),
-                missing_effect=self._validation_missing_effect(latest_attempt, latest_validation, target_already_patched),
+                status="skipped" if source_failed else self._validation_stage_status(latest_attempt, latest_validation, target_already_patched),
+                current_effect="来源不可用，未产出 .ko，动态验证未执行。" if source_failed else self._validation_current_effect(latest_validation, target_already_patched),
+                missing_effect="未产出可加载模块，load/unload/smoke 未执行。" if source_failed else self._validation_missing_effect(latest_attempt, latest_validation, target_already_patched),
                 problem=None if validation_status in {"", "passed", "pending"} else validation_status,
                 analysis="验证阶段必须区分构建未产出模块、配置跳过、目标已修复导致跳过。",
-                next_action="构建成功后补齐 load/unload/smoke/semantic_guard 证据。",
+                next_action="先解决来源获取问题。" if source_failed else "构建成功后补齐 load/unload/smoke/semantic_guard 证据。",
                 evidence_paths=[
                     attempt_dir / "artifacts" / "validation_report.json",
                     attempt_dir / "artifacts" / "validation_matrix.json",
@@ -962,12 +1107,12 @@ class TaskQueryService:
             self._stage_node(
                 stage="report",
                 label="报告与回放",
-                status="success" if (task_dir / "reports" / "report.json").exists() else "pending",
-                current_effect="已生成结构化报告。" if (task_dir / "reports" / "report.json").exists() else "尚未生成最终报告。",
-                missing_effect="无" if (task_dir / "reports" / "report.json").exists() else "缺少 report.json/report.md。",
-                problem=None,
+                status="success" if report_complete else ("pending" if report_json_path.exists() else "pending"),
+                current_effect="已生成结构化报告。" if report_complete else ("已有骨架报告，但缺少 attempt 或失败归因，不能视为完整闭环。" if report_json_path.exists() else "尚未生成最终报告。"),
+                missing_effect="无" if report_complete else ("缺少主链证据，报告不完整。" if report_json_path.exists() else "缺少 report.json/report.md。"),
+                problem=None if report_complete else ("incomplete_report" if report_json_path.exists() else None),
                 analysis="报告阶段应复用主链结论，不重新判定业务状态。",
-                next_action="用于演示、回放和阶段验收。",
+                next_action="用于演示、回放和阶段验收。" if report_complete else "先执行分析或补齐失败归因，再生成报告。",
                 evidence_paths=[
                     task_dir / "reports" / "report.json",
                     task_dir / "reports" / "report.md",
@@ -975,6 +1120,7 @@ class TaskQueryService:
                 ],
             ),
         ]
+        return self._linearize_stage_view(stage_nodes)
 
     def _build_stage_node(
         self,
@@ -990,12 +1136,20 @@ class TaskQueryService:
         """生成构建阶段节点"""
 
         if latest_attempt is None:
-            status = "pending"
-            current_effect = "尚未进入构建阶段。"
-            missing_effect = "未执行 apply 预检查和 kpatch-build。"
-            problem = None
-            analysis = "没有 attempt 记录，不能判定构建结果。"
-            next_action = "执行一轮尝试。"
+            if latest_failure_type == "source_unavailable":
+                status = "skipped"
+                current_effect = "来源不可用，构建阶段未执行。"
+                missing_effect = "未获得可改写 patch，未执行 apply 预检查和 kpatch-build。"
+                problem = "source_unavailable"
+                analysis = str((latest_failure or {}).get("summary") or "没有可构建输入。")
+                next_action = self._next_action_for_failure(latest_failure_type, latest_build_exec_status)
+            else:
+                status = "pending"
+                current_effect = "尚未进入构建阶段。"
+                missing_effect = "未执行 apply 预检查和 kpatch-build。"
+                problem = None
+                analysis = "没有 attempt 记录，不能判定构建结果。"
+                next_action = "执行一轮尝试。"
         elif target_already_patched:
             status = "skipped"
             current_effect = "已完成目标源码状态判定。"
@@ -1040,6 +1194,31 @@ class TaskQueryService:
                 attempt_dir / "artifacts" / "build_precheck.json",
             ] if attempt_dir else [],
         )
+
+    def _linearize_stage_view(self, nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """按主链首个失败阶段截断后续阶段展示，避免后处理产物被误读为成功"""
+
+        failure_index = next((index for index, node in enumerate(nodes) if node.get("status") == "failed"), None)
+        if failure_index is None:
+            return nodes
+
+        failed_node = nodes[failure_index]
+        failed_label = str(failed_node.get("label") or failed_node.get("stage") or "前置阶段")
+        failed_problem = str(failed_node.get("problem") or "blocked_by_previous_failure")
+        failed_next_action = str(failed_node.get("next_action") or "先处理前置失败")
+        linearized = nodes[: failure_index + 1]
+
+        for node in nodes[failure_index + 1 :]:
+            blocked_node = dict(node)
+            blocked_node["status"] = "blocked"
+            blocked_node["current_effect"] = f"主链已在{failed_label}阶段失败，本阶段未进入成功链路"
+            blocked_node["missing_effect"] = "前置失败未解决，不能判定本阶段成功"
+            blocked_node["problem"] = blocked_node.get("problem") or failed_problem
+            blocked_node["analysis"] = "线性时间轴按首个失败阶段截断，后处理产物不计为阶段成功"
+            blocked_node["next_action"] = failed_next_action
+            linearized.append(blocked_node)
+
+        return linearized
 
     def _stage_node(
         self,
@@ -1164,6 +1343,8 @@ class TaskQueryService:
     def _next_action_for_failure(self, failure_type: str | None, build_exec_status: str | None) -> str:
         """把失败类型映射成用户可执行的下一步"""
 
+        if failure_type == "source_unavailable":
+            return "该 CVE 没有解析到可下载的 stable/upstream patch 来源；请换有明确修复提交的 CVE，或补充来源映射后重试。"
         if failure_type == "patch_apply_failed":
             return "优先检查 rewritten.patch 与目标源码树上下文，必要时做 backport 适配。"
         if failure_type == "compile_failed" and build_exec_status == "executed":

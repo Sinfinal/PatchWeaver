@@ -72,6 +72,22 @@ class FailureClassifier:
             failure_type = "patch_apply_failed"
         elif not executed_build and ("can't find file to patch" in lowered_log or "patch failed" in lowered_log):
             failure_type = "patch_apply_failed"
+        elif "command not found" in lowered_relevant:
+            failure_type = "build_env_missing"
+        elif "gcc/kernel version mismatch" in lowered_relevant or "matching gcc version" in lowered_relevant:
+            failure_type = "build_env_missing"
+        elif "gelf.h: no such file" in lowered_relevant or "libelf.h: no such file" in lowered_relevant:
+            failure_type = "build_env_missing"
+        elif "bc: not found" in lowered_relevant or "/bc: not found" in lowered_relevant:
+            failure_type = "build_env_missing"
+        elif "can not be used when making a pie object" in lowered_relevant:
+            failure_type = "build_env_missing"
+        elif "failed to set dynamic section sizes" in lowered_relevant:
+            failure_type = "build_env_missing"
+        elif "modpost:" in lowered_relevant and "undefined!" in lowered_relevant:
+            failure_type = "dependency_gap"
+        elif "kpatch_populate_mcount_sections" in lowered_relevant or "pre-allocated __pfe" in lowered_relevant:
+            failure_type = "kpatch_constraint"
         elif "kpatch_bundle_symbols" in lowered_relevant or "symbol" in lowered_relevant and "expected 0" in lowered_relevant:
             failure_type = "kpatch_symbol_bundle_constraint"
         elif ".rela.call_sites" in lowered_relevant:
@@ -84,8 +100,6 @@ class FailureClassifier:
             failure_type = "kpatch_constraint"
         elif "unsupported" in lowered_relevant and "kpatch" in lowered_relevant:
             failure_type = "kpatch_constraint"
-        elif "command not found" in lowered_relevant:
-            failure_type = "build_env_missing"
 
         summary = self._pick_summary(lines=lines, failure_type=failure_type, executed_build=executed_build)
 
@@ -128,6 +142,12 @@ class FailureClassifier:
                 for line in lines
                 if "源码树缺少模块构建缓存" in line or "缺失文件" in line or "prepare-build-tree" in line
             ][:3] or evidence
+        elif failure_type == "dependency_gap":
+            evidence = [
+                line
+                for line in lines
+                if "modpost:" in line.lower() and "undefined" in line.lower()
+            ][:3] or evidence
         elif failure_type in {"kpatch_constraint", "kpatch_symbol_bundle_constraint", "kpatch_section_symbol_offset_constraint"}:
             evidence = [
                 line
@@ -137,6 +157,8 @@ class FailureClassifier:
                 or "section mismatch" in line.lower()
                 or "unsupported section change" in line.lower()
                 or "kpatch_bundle_symbols" in line.lower()
+                or "kpatch_populate_mcount_sections" in line.lower()
+                or "__pfe" in line.lower()
                 or ("symbol" in line.lower() and "expected 0" in line.lower())
                 or "unsupported" in line.lower()
             ][:3] or evidence
@@ -147,6 +169,14 @@ class FailureClassifier:
                 if "构建命令超时" in line
                 or "error" in line.lower()
                 or "failed" in line.lower()
+                or "gcc/kernel version mismatch" in line.lower()
+                or "matching gcc version" in line.lower()
+                or "skip-compiler-check" in line.lower()
+                or "gelf.h" in line.lower()
+                or "libelf.h" in line.lower()
+                or "bc: not found" in line.lower()
+                or "pie object" in line.lower()
+                or "failed to set dynamic section sizes" in line.lower()
                 or "kernelversion is not set" in line.lower()
                 or "退出码" in line
             ][:3] or evidence
@@ -211,9 +241,25 @@ class FailureClassifier:
                     return line
 
         if executed_build:
+            if failure_type == "build_env_missing":
+                for marker in [
+                    "gcc/kernel version mismatch",
+                    "matching gcc version",
+                    "gelf.h: no such file",
+                    "libelf.h: no such file",
+                    "bc: not found",
+                    "can not be used when making a pie object",
+                    "failed to set dynamic section sizes",
+                    "command not found",
+                ]:
+                    for line in lines:
+                        if marker in line.lower():
+                            return line
             if failure_type == "kpatch_constraint":
                 for marker in [
                     "kpatch_bundle_symbols",
+                    "kpatch_populate_mcount_sections",
+                    "__pfe",
                     "expected 0",
                     "unsupported section change",
                     "unreconcilable difference",

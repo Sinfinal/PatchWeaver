@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { CodePanel } from "../../components/code/CodePanel";
 import { SectionCard } from "../../components/layout/SectionCard";
 import { buildProfiles, settingsFacts } from "../../content/projectContent";
@@ -48,8 +48,8 @@ export function SettingsPage(): JSX.Element {
 
       <SectionCard title="实时配置快照">
         {query.isLoading ? <div className="pw-note-banner">正在加载配置快照...</div> : null}
-        {query.isError ? <div className="pw-note-banner">当前无法获取实时配置，只展示静态默认值与 profile 说明。</div> : null}
-        <CodePanel title="settings.json" content={query.data ? JSON.stringify(query.data, null, 2) : undefined} emptyText="暂无配置快照。" />
+        {query.isError ? <div className="pw-note-banner">当前无法获取实时配置，只展示静态默认值与 profile 说明</div> : null}
+        <CodePanel title="settings.json" content={query.data ? JSON.stringify(query.data, null, 2) : undefined} emptyText="暂无配置快照" />
       </SectionCard>
     </div>
   );

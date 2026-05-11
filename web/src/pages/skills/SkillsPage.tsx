@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { MetricCard } from "../../components/cards/MetricCard";
 import { SectionCard } from "../../components/layout/SectionCard";
 import { StatusBadge } from "../../components/status/StatusBadge";
@@ -67,7 +67,7 @@ export function SkillsPage(): JSX.Element {
 
       <SectionCard title="实时 Skill Registry">
         {query.isLoading ? <div className="pw-note-banner">正在加载技能注册表...</div> : null}
-        {query.isError ? <div className="pw-note-banner">当前无法获取实时 Skill Registry，先保留静态调度说明。</div> : null}
+        {query.isError ? <div className="pw-note-banner">当前无法获取实时 Skill Registry，先保留静态调度说明</div> : null}
         {query.data ? (
           <div className="pw-grid">
             <div className="pw-grid metrics">

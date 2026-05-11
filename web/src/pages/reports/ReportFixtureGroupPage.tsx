@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { CodePanel } from "../../components/code/CodePanel";
@@ -32,7 +32,7 @@ export function ReportFixtureGroupPage(): JSX.Element {
   }
 
   if (query.isError || !query.data) {
-    return <div className="pw-empty">当前无法读取固定样例分组摘要，请确认 summary.json 已生成。</div>;
+    return <div className="pw-empty">当前无法读取固定样例分组摘要，请确认 summary.json 已生成</div>;
   }
 
   const payload = query.data;
@@ -65,7 +65,7 @@ export function ReportFixtureGroupPage(): JSX.Element {
             title="summary.md"
             path={payload.summary_md_path}
             content={payload.summary_markdown ?? undefined}
-            emptyText="当前没有 summary.md 内容。"
+            emptyText="当前没有 summary.md 内容"
           />
         </SectionCard>
         <SectionCard title="summary.json">
@@ -73,7 +73,7 @@ export function ReportFixtureGroupPage(): JSX.Element {
             title="summary.json"
             path={payload.summary_json_path}
             content={JSON.stringify(payload.summary, null, 2)}
-            emptyText="当前没有 summary.json 内容。"
+            emptyText="当前没有 summary.json 内容"
           />
         </SectionCard>
       </div>
@@ -90,7 +90,7 @@ export function ReportFixtureGroupPage(): JSX.Element {
               ))}
             </div>
           ) : (
-            <div className="pw-empty">当前没有 failure_distribution 统计。</div>
+            <div className="pw-empty">当前没有 failure_distribution 统计</div>
           )}
         </SectionCard>
 
@@ -120,7 +120,7 @@ export function ReportFixtureGroupPage(): JSX.Element {
               ))}
             </div>
           ) : (
-            <div className="pw-empty">当前分组还没有可展示的样例列表。</div>
+            <div className="pw-empty">当前分组还没有可展示的样例列表</div>
           )}
         </SectionCard>
       </div>

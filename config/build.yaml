@@ -81,5 +81,15 @@ vmlinux_path: /usr/lib/debug/lib/modules/6.6.102-5.2.an23.x86_64/vmlinux
 # kpatch-build 命令
 kpatch_build_cmd: kpatch-build
 
+# 额外 kpatch-build 参数。
+# 默认保持为空；容器化 dev smoke 若无法安装目标内核完全一致的 GCC，可临时通过环境变量
+# PATCHWEAVER_KPATCH_BUILD_EXTRA_ARGS=--skip-compiler-check 打开跳过编译器版本检查。
+kpatch_build_extra_args: []
+
+# 额外 kpatch-build 环境变量。
+# 默认保持为空；容器化 dev smoke 若遇到发行版 GCC 默认 PIE 链接策略，可临时设置
+# HOSTLDFLAGS=-no-pie。
+kpatch_build_env: {}
+
 # 单次构建超时时间（秒）
 build_timeout_sec: 3600

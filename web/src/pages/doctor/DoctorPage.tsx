@@ -1,10 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { MetricCard } from "../../components/cards/MetricCard";
 import { CodePanel } from "../../components/code/CodePanel";
 import { SectionCard } from "../../components/layout/SectionCard";
 import { StatusBadge } from "../../components/status/StatusBadge";
 import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
 import { fetchDoctor, repairDoctor, runDoctor } from "../../services/doctor";
+import type { DoctorRepairResult } from "../../types/doctor";
 import { formatTime } from "../../utils/format";
 
 const runtimeLabelMap: Record<string, string> = {
@@ -24,6 +26,7 @@ const runtimeLabelMap: Record<string, string> = {
 export function DoctorPage(): JSX.Element {
   const queryClient = useQueryClient();
   const liveQueryOptions = useLiveQueryOptions();
+  const [repairDialogOpen, setRepairDialogOpen] = useState(false);
   const doctorQuery = useQuery({
     queryKey: ["doctor"],
     queryFn: fetchDoctor,
@@ -38,7 +41,11 @@ export function DoctorPage(): JSX.Element {
   const repairMutation = useMutation({
     mutationFn: repairDoctor,
     onSuccess: () => {
+      setRepairDialogOpen(true);
       queryClient.invalidateQueries({ queryKey: ["doctor"] });
+    },
+    onError: () => {
+      setRepairDialogOpen(true);
     },
   });
 
@@ -61,8 +68,8 @@ export function DoctorPage(): JSX.Element {
         }
       >
         {doctorQuery.isLoading ? <div className="pw-note-banner">正在加载环境诊断报告...</div> : null}
-        {doctorQuery.isError ? <div className="pw-note-banner">当前无法获取实时诊断结果，但页面结构已准备好用于联调与验收。</div> : null}
-        {repairMutation.isError ? <div className="pw-note-banner">环境修复接口调用失败，请查看 API 日志。</div> : null}
+        {doctorQuery.isError ? <div className="pw-note-banner">当前无法获取实时诊断结果，但页面结构已准备好用于联调与验收</div> : null}
+        {repairMutation.isError ? <div className="pw-note-banner">环境修复接口调用失败，请查看 API 日志</div> : null}
         {report ? (
           <div className="pw-grid metrics">
             <MetricCard label="检查项总数" value={report.summary.total} />
@@ -72,30 +79,6 @@ export function DoctorPage(): JSX.Element {
           </div>
         ) : null}
       </SectionCard>
-
-      {repairResult ? (
-        <SectionCard title="修复结果">
-          <div className="pw-grid metrics">
-            <MetricCard label="修复状态" value={repairResult.status} />
-            <MetricCard label="错误数变化" value={`${repairResult.summary.before.error} -> ${repairResult.summary.after.error}`} />
-            <MetricCard label="剩余错误" value={repairResult.summary.remaining_error_count} />
-            <MetricCard label="脚本路径" value={repairResult.script.path ?? "未生成"} />
-          </div>
-          <div className="pw-grid two" style={{ marginTop: 16 }}>
-            <div className="pw-list">
-              {repairResult.actions.map((item) => (
-                <div key={`${item.name}-${item.path ?? item.status}`} className="pw-list-item">
-                  <strong>{item.label}</strong>
-                  <div className="pw-inline-note">状态: {item.status}</div>
-                  <div className="pw-inline-note">{item.detail}</div>
-                  {item.path ? <div className="pw-inline-note">路径: {item.path}</div> : null}
-                </div>
-              ))}
-            </div>
-            <CodePanel title="repair_docker_web_environment.sh" content={repairResult.script.content} emptyText="暂无修复脚本。" />
-          </div>
-        </SectionCard>
-      ) : null}
 
       <SectionCard title="运行时路径与默认值">
         {report ? (
@@ -108,7 +91,7 @@ export function DoctorPage(): JSX.Element {
             ))}
           </div>
         ) : (
-          <div className="pw-empty">诊断报告可用后，这里会展示项目根目录、工作区、数据库、探测目标内核和当前运行机信息。</div>
+          <div className="pw-empty">诊断报告可用后，这里会展示项目根目录、工作区、数据库、探测目标内核和当前运行机信息</div>
         )}
       </SectionCard>
 
@@ -141,7 +124,7 @@ export function DoctorPage(): JSX.Element {
               </table>
             </div>
           ) : (
-            <div className="pw-empty">实时报告返回后，这里会列出每一条 doctor check 的状态与细节。</div>
+            <div className="pw-empty">实时报告返回后，这里会列出每一条 doctor check 的状态与细节</div>
           )}
         </SectionCard>
         <SectionCard
@@ -151,7 +134,7 @@ export function DoctorPage(): JSX.Element {
           <CodePanel
             title="build_env"
             content={report ? JSON.stringify(report.build_env, null, 2) : undefined}
-            emptyText="暂无 build_env 快照。"
+            emptyText="暂无 build_env 快照"
           />
         </SectionCard>
       </div>
@@ -160,9 +143,93 @@ export function DoctorPage(): JSX.Element {
         <CodePanel
           title="machine_profile"
           content={report?.machine_profile ? JSON.stringify(report.machine_profile, null, 2) : undefined}
-          emptyText="暂无 machine_profile 快照。"
+          emptyText="暂无 machine_profile 快照"
         />
       </SectionCard>
+
+      {repairDialogOpen ? (
+        <RepairResultDialog
+          repairResult={repairMutation.isError ? undefined : repairResult}
+          hasError={repairMutation.isError}
+          onClose={() => setRepairDialogOpen(false)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+type RepairResultDialogProps = {
+  repairResult?: DoctorRepairResult;
+  hasError: boolean;
+  onClose: () => void;
+};
+
+function RepairResultDialog({ repairResult, hasError, onClose }: RepairResultDialogProps): JSX.Element {
+  return (
+    <div className="pw-modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        className="pw-modal pw-doctor-repair-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="doctor-repair-dialog-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="pw-modal-header">
+          <div>
+            <span className="pw-kicker">Repair Result</span>
+            <h3 id="doctor-repair-dialog-title">修复结果</h3>
+          </div>
+          <button className="pw-icon-btn" type="button" aria-label="关闭修复结果弹窗" onClick={onClose}>
+            ×
+          </button>
+        </div>
+
+        {hasError && !repairResult ? (
+          <div className="pw-note-banner">环境修复接口调用失败，请查看 API 日志</div>
+        ) : null}
+
+        {repairResult ? (
+          <div className="pw-section-stack">
+            <div className="pw-grid metrics">
+              <MetricCard label="修复状态" value={repairResult.status} />
+              <MetricCard label="错误数变化" value={`${repairResult.summary.before.error} -> ${repairResult.summary.after.error}`} />
+              <MetricCard label="剩余错误" value={repairResult.summary.remaining_error_count} />
+              <MetricCard label="脚本路径" value={repairResult.script.path ?? "未生成"} />
+            </div>
+
+            {repairResult.remaining_errors.length > 0 ? (
+              <div className="pw-note-banner">
+                仍有 {repairResult.remaining_errors.length} 个错误未解除，需要检查宿主机依赖或重新部署容器
+              </div>
+            ) : (
+              <div className="pw-note-banner">本轮修复后未发现剩余错误</div>
+            )}
+
+            <div className="pw-doctor-repair-grid">
+              <div className="pw-list">
+                {repairResult.actions.map((item) => (
+                  <div key={`${item.name}-${item.path ?? item.status}`} className="pw-list-item">
+                    <strong>{item.label}</strong>
+                    <div className="pw-inline-note">状态: {item.status}</div>
+                    <div className="pw-inline-note">{item.detail}</div>
+                    {item.path ? <div className="pw-inline-note">路径: {item.path}</div> : null}
+                    {item.executed !== undefined ? <div className="pw-inline-note">已执行: {item.executed ? "是" : "否"}</div> : null}
+                    {item.stdout_excerpt ? <div className="pw-inline-note">输出: {item.stdout_excerpt}</div> : null}
+                    {item.stderr_excerpt ? <div className="pw-inline-note">错误输出: {item.stderr_excerpt}</div> : null}
+                  </div>
+                ))}
+              </div>
+              <CodePanel title="repair_docker_web_environment.sh" content={repairResult.script.content} emptyText="暂无修复脚本" />
+            </div>
+
+            <div className="pw-btn-row">
+              <button className="pw-btn primary" type="button" onClick={onClose}>
+                知道了
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </section>
     </div>
   );
 }

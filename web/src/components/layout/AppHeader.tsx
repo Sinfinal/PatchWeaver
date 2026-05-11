@@ -5,11 +5,7 @@ import { useUiStore } from "../../store/uiStore";
 
 const pageMeta = [
   {
-    match: /^\/tasks\/new$/,
-    title: "创建任务",
-  },
-  {
-    match: /^\/tasks\/[^/]+$/,
+    match: /^\/tasks\/(?!new(?:\/|$))[^/]+$/,
     title: "任务详情",
   },
   {

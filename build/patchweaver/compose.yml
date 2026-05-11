@@ -12,23 +12,23 @@ services:
     environment:
       PATCHWEAVER_PROFILE: "${PATCHWEAVER_PROFILE:-demo}"
       PATCHWEAVER_BAILIAN_API_KEY: "${PATCHWEAVER_BAILIAN_API_KEY:-}"
-      PATCHWEAVER_HOST_ROOT: "${PATCHWEAVER_HOST_ROOT:-/home/patchweaver/current}"
+      PATCHWEAVER_HOST_ROOT: "${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}"
       PYTHONIOENCODING: utf-8
       PYTHONUTF8: "1"
     volumes:
-      - ../../data:/app/data
-      - ../../workspaces:/app/workspaces
-      - ../../docs/submission:/app/docs/submission
-      - ../../config:/app/config:ro
-      - ../../evaluations:/app/evaluations:ro
-      - /lib/modules:/lib/modules:ro
-      - /usr/src/kernels:/usr/src/kernels:ro
-      - /usr/lib/debug:/usr/lib/debug:ro
-      - /opt/kernel-src:/opt/kernel-src:ro
-      - /home/patchweaver/kernel-src-prepared:/home/patchweaver/kernel-src-prepared:ro
-      - /usr/bin/kpatch-build:/usr/bin/kpatch-build:ro
-      - /usr/libexec/kpatch:/usr/libexec/kpatch
-      - /usr/share/kpatch:/usr/share/kpatch:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/data:/app/data
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/workspaces:/app/workspaces
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/docs/submission:/app/docs/submission
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/config:/app/config:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/evaluations:/app/evaluations:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/lib/modules:/lib/modules:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/src/kernels:/usr/src/kernels:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/lib/debug:/usr/lib/debug:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/opt/kernel-src:/opt/kernel-src:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/home/patchweaver/kernel-src-prepared:/home/patchweaver/kernel-src-prepared:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/bin/kpatch-build:/usr/bin/kpatch-build:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/libexec/kpatch:/usr/libexec/kpatch
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/share/kpatch:/usr/share/kpatch:ro
     command: ["patchweaver", "serve-api", "--host", "0.0.0.0", "--port", "18084", "--foreground"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:18084/healthz', timeout=3).read()"]
@@ -76,13 +76,13 @@ services:
       PYTHONIOENCODING: utf-8
       PYTHONUTF8: "1"
     volumes:
-      - ../../data:/app/data
-      - ../../workspaces:/app/workspaces
-      - ../../docs/submission:/app/docs/submission
-      - ../../config:/app/config
-      - ../../evaluations:/app/evaluations:ro
-      - /lib/modules:/lib/modules:ro
-      - /usr/src/kernels:/usr/src/kernels:ro
-      - /usr/lib/debug:/usr/lib/debug:ro
-      - /opt/kernel-src:/opt/kernel-src
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/data:/app/data
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/workspaces:/app/workspaces
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/docs/submission:/app/docs/submission
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/config:/app/config
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/evaluations:/app/evaluations:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/lib/modules:/lib/modules:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/src/kernels:/usr/src/kernels:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/lib/debug:/usr/lib/debug:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/opt/kernel-src:/opt/kernel-src
     command: ["patchweaver", "doctor", "--json"]

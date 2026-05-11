@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { CodePanel } from "../../components/code/CodePanel";
 import { SectionCard } from "../../components/layout/SectionCard";
@@ -24,7 +24,7 @@ export function ReportFixtureDetailPage(): JSX.Element {
   }
 
   if (query.isError || !query.data) {
-    return <div className="pw-empty">当前无法读取样例详情，请确认分组和 fixture_id 是否正确。</div>;
+    return <div className="pw-empty">当前无法读取样例详情，请确认分组和 fixture_id 是否正确</div>;
   }
 
   const payload = query.data;
@@ -78,7 +78,7 @@ export function ReportFixtureDetailPage(): JSX.Element {
           <CodePanel
             title="task_summary"
             content={payload.detail.task_summary ? JSON.stringify(payload.detail.task_summary, null, 2) : undefined}
-            emptyText="当前没有 task_summary。"
+            emptyText="当前没有 task_summary"
           />
         </SectionCard>
         <SectionCard title="回放对比摘要">
@@ -87,7 +87,7 @@ export function ReportFixtureDetailPage(): JSX.Element {
             content={
               payload.detail.replay_comparison ? JSON.stringify(payload.detail.replay_comparison, null, 2) : undefined
             }
-            emptyText="当前没有 replay_comparison。"
+            emptyText="当前没有 replay_comparison"
           />
         </SectionCard>
       </div>
@@ -97,7 +97,7 @@ export function ReportFixtureDetailPage(): JSX.Element {
           title="fixture_detail.json"
           path={payload.detail_path}
           content={JSON.stringify(payload.detail, null, 2)}
-          emptyText="当前没有样例详情内容。"
+          emptyText="当前没有样例详情内容"
         />
       </SectionCard>
     </div>

@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "../status/StatusBadge";
 import { formatTime } from "../../utils/format";
 import type { TaskListItem } from "../../types/tasks";
@@ -11,7 +11,7 @@ export function TaskTable({ items }: TaskTableProps): JSX.Element {
   const navigate = useNavigate();
 
   if (items.length === 0) {
-    return <div className="pw-empty">当前没有可展示的任务记录。</div>;
+    return <div className="pw-empty">当前没有可展示的任务记录</div>;
   }
 
   return (

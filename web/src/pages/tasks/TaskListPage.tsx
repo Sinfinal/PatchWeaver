@@ -1,12 +1,16 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+﻿import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { TaskCreateForm } from "../../components/forms/TaskCreateForm";
 import { SectionCard } from "../../components/layout/SectionCard";
 import { TaskTable } from "../../components/tables/TaskTable";
 import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
-import { fetchTasks } from "../../services/tasks";
+import { createTask, fetchTasks } from "../../services/tasks";
+import type { CreateTaskPayload } from "../../types/tasks";
 
 export function TaskListPage(): JSX.Element {
+  const navigate = useNavigate();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [filters, setFilters] = useState({
     cve_id: "",
     status: "",
@@ -39,15 +43,29 @@ export function TaskListPage(): JSX.Element {
       }),
     ...liveQueryOptions,
   });
+  const createMutation = useMutation({
+    mutationFn: (payload: CreateTaskPayload) => createTask(payload),
+    onSuccess: (data) => {
+      const targetTask = data.task ?? data.existing_task;
+      setCreateDialogOpen(false);
+      if (targetTask?.task_id) {
+        navigate(`/tasks/${targetTask.task_id}`);
+      }
+    },
+  });
+  const closeCreateDialog = () => {
+    createMutation.reset();
+    setCreateDialogOpen(false);
+  };
 
   return (
     <div className="pw-grid">
       <SectionCard
         title="任务中心"
         actions={
-          <Link className="pw-btn primary" to="/tasks/new">
+          <button className="pw-btn primary" type="button" onClick={() => setCreateDialogOpen(true)}>
             创建任务
-          </Link>
+          </button>
         }
       >
         <div className="pw-grid two" style={{ marginBottom: 18 }}>
@@ -117,14 +135,42 @@ export function TaskListPage(): JSX.Element {
         {tasksQuery.isLoading ? (
           <div className="pw-note-banner">正在加载任务列表...</div>
         ) : tasksQuery.isError || !tasksQuery.data ? (
-          <div className="pw-empty">当前无法获取任务列表，请确认后端 API 已启动。</div>
+          <div className="pw-empty">当前无法获取任务列表，请确认后端 API 已启动</div>
         ) : (
           <div className="pw-section-stack">
-            <div className="pw-inline-note">共返回 {tasksQuery.data.total} 条任务记录。</div>
+            <div className="pw-inline-note">共返回 {tasksQuery.data.total} 条任务记录</div>
             <TaskTable items={tasksQuery.data.items} />
           </div>
         )}
       </SectionCard>
+      {createDialogOpen ? (
+        <div className="pw-modal-backdrop" role="presentation" onMouseDown={closeCreateDialog}>
+          <section
+            className="pw-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="task-create-dialog-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="pw-modal-header">
+              <div>
+                <span className="pw-kicker">Task Launch</span>
+                <h3 id="task-create-dialog-title">创建任务</h3>
+              </div>
+              <button
+                className="pw-icon-btn"
+                type="button"
+                aria-label="关闭创建任务弹窗"
+                onClick={closeCreateDialog}
+              >
+                ×
+              </button>
+            </div>
+            <TaskCreateForm submitting={createMutation.isPending} onSubmit={createMutation.mutateAsync} />
+            {createMutation.isError ? <div className="pw-empty">任务创建失败，请检查后端返回的错误信息或配置状态</div> : null}
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

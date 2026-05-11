@@ -16,8 +16,18 @@ WORKDIR /app
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
       ca-certificates \
+      binutils \
+      bc \
+      bison \
+      build-essential \
       curl \
+      file \
+      flex \
+      gawk \
       git \
+      kmod \
+      libelf-dev \
+      libssl-dev \
       patch \
     && rm -rf /var/lib/apt/lists/*
 

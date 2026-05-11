@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { CodePanel } from "../../components/code/CodePanel";
 import { SectionCard } from "../../components/layout/SectionCard";
@@ -23,7 +23,7 @@ export function ReportTaskPage(): JSX.Element {
   }
 
   if (query.isError || !query.data) {
-    return <div className="pw-empty">当前无法获取任务报告，请确认任务编号和报告产物是否存在。</div>;
+    return <div className="pw-empty">当前无法获取任务报告，请确认任务编号和报告产物是否存在</div>;
   }
 
   const payload = query.data;
@@ -73,7 +73,7 @@ export function ReportTaskPage(): JSX.Element {
       </SectionCard>
 
       {payload.agent_decision_summary ? (
-        <SectionCard title="Agent Decision Summary">
+        <SectionCard title="智能体决策摘要">
           <div className="pw-kv">
             <div className="pw-kv-item">
               <span className="pw-kv-label">RepairIntent 策略</span>
@@ -109,7 +109,7 @@ export function ReportTaskPage(): JSX.Element {
             title="report.md"
             path={payload.report.md_path}
             content={payload.report.markdown ?? undefined}
-            emptyText="当前还没有 report.md 内容。"
+            emptyText="当前还没有 report.md 内容"
           />
         </SectionCard>
         <SectionCard title="JSON 报告">
@@ -117,7 +117,7 @@ export function ReportTaskPage(): JSX.Element {
             title="report.json"
             path={payload.report.json_path}
             content={payload.report.json ? JSON.stringify(payload.report.json, null, 2) : undefined}
-            emptyText="当前还没有 report.json 内容。"
+            emptyText="当前还没有 report.json 内容"
           />
         </SectionCard>
       </div>
@@ -127,14 +127,14 @@ export function ReportTaskPage(): JSX.Element {
           <CodePanel
             title="latest_failure"
             content={payload.latest_failure ? JSON.stringify(payload.latest_failure, null, 2) : undefined}
-            emptyText="当前没有 failure_record。"
+            emptyText="当前没有 failure_record"
           />
         </SectionCard>
         <SectionCard title="最新验证结果">
           <CodePanel
             title="latest_validation"
             content={payload.latest_validation ? JSON.stringify(payload.latest_validation, null, 2) : undefined}
-            emptyText="当前没有 validation_report。"
+            emptyText="当前没有 validation_report"
           />
         </SectionCard>
       </div>
@@ -144,11 +144,11 @@ export function ReportTaskPage(): JSX.Element {
           <CodePanel
             title="evaluation_summary"
             content={payload.evaluation_summary ? JSON.stringify(payload.evaluation_summary, null, 2) : undefined}
-            emptyText="当前没有 evaluation_summary。"
+            emptyText="当前没有 evaluation_summary"
           />
         </SectionCard>
         <SectionCard title="回放摘要">
-          <CodePanel title="replay" content={JSON.stringify(payload.replay, null, 2)} emptyText="当前没有 replay 内容。" />
+          <CodePanel title="replay" content={JSON.stringify(payload.replay, null, 2)} emptyText="当前没有 replay 内容" />
         </SectionCard>
       </div>
     </div>

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 
 from patchweaver.api.deps import ApiContext, get_api_context
 from patchweaver.api.schemas import ArtifactContentResponse, CreateTaskRequest, TaskActionResponse
@@ -45,18 +45,27 @@ def list_tasks(
 
 
 @router.post("/tasks")
-def create_task(request: CreateTaskRequest, context: ApiContext = Depends(get_api_context)) -> dict:
+def create_task(
+    request: CreateTaskRequest,
+    background_tasks: BackgroundTasks,
+    context: ApiContext = Depends(get_api_context),
+) -> dict:
     """创建任务并初始化工作区"""
 
     try:
-        return TaskQueryService(context).create_task(
+        service = TaskQueryService(context)
+        payload = service.create_task(
             cve_id=request.cve_id,
             target_kernel=request.target_kernel,
             profile=request.profile,
             max_attempts=request.max_attempts,
             note=request.note,
             force_new=request.force_new,
+            auto_run=request.auto_run,
         )
+        if request.auto_run and payload.get("created") and payload.get("task", {}).get("task_id"):
+            background_tasks.add_task(service.auto_run_task, payload["task"]["task_id"])
+        return payload
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

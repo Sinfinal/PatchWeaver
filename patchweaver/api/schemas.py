@@ -16,6 +16,7 @@ class CreateTaskRequest(BaseModel):
     max_attempts: int | None = None
     note: str | None = None
     force_new: bool = False
+    auto_run: bool = False
 
 
 class TaskActionResponse(BaseModel):

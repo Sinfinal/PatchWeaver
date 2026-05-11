@@ -37,11 +37,11 @@ function mapStatusTheme(value?: string | null): string {
   ) {
     return "running";
   }
-  if (["warn", "partial", "pending", "queued", "skipped", "degraded"].includes(normalized)) {
+  if (["warn", "partial", "pending", "queued", "skipped", "degraded", "blocked", "terminal", "retry_loop"].includes(normalized)) {
     return "warn";
   }
   if (
-    ["failed", "error", "danger", "disabled", "missing", "unsupported", "unreachable", "unmatched"].includes(
+    ["failed", "error", "danger", "disabled", "missing", "unsupported", "unreachable", "unmatched", "stale", "evidence_missing"].includes(
       normalized,
     )
   ) {
@@ -78,6 +78,11 @@ function formatStatusLabel(value?: string | null): string {
     queued: "排队中",
     skipped: "已跳过",
     degraded: "降级",
+    blocked: "阻塞",
+    terminal: "已终止",
+    retry_loop: "重试循环",
+    stale: "卡住",
+    evidence_missing: "证据缺失",
     failed: "失败",
     error: "错误",
     danger: "风险",

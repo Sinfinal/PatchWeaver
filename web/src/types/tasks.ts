@@ -33,6 +33,7 @@ export type TaskListItem = {
   attempts_count: number;
   fixture_group?: string | null;
   fixture_id?: string | null;
+  agent_health?: AgentHealth | null;
 };
 
 export type TaskListResponse = {
@@ -56,6 +57,7 @@ export type TaskSummary = {
   latest_failure_type?: string | null;
   latest_build_exec_status?: string | null;
   latest_target_state?: string | null;
+  agent_health?: AgentHealth | null;
   fixture_group?: string | null;
   fixture_id?: string | null;
 };
@@ -141,6 +143,19 @@ export type AgentDecisionSummary = {
     reason?: string | null;
   };
   agent_next_action?: string | null;
+  workflow_trace?: {
+    present?: boolean;
+    trace_path?: string | null;
+    decision_count?: number;
+    latest_decision?: {
+      selected_action?: string;
+      reason?: string;
+      terminal?: boolean;
+      retry?: boolean;
+      risk?: string;
+    } | null;
+    terminal_stop_reason?: string | null;
+  };
   failure_type?: string | null;
   failure_record: {
     summary?: string | null;
@@ -154,6 +169,25 @@ export type AgentDecisionSummary = {
   state_conflicts: string[];
   source_paths: Record<string, string | null | undefined>;
   source_exists: Record<string, boolean>;
+};
+
+export type AgentHealthStatus = "healthy" | "stale" | "evidence_missing" | "terminal" | "unknown" | "retry_loop";
+
+export type AgentHealth = {
+  task_id: string;
+  status: AgentHealthStatus;
+  signals: string[];
+  recommendations: string[];
+  latest_failure_type?: string | null;
+  latest_attempt_no?: number | null;
+  latest_trace_decision_count?: number;
+  checked_at: string;
+  evidence: Array<{
+    path: string | null;
+    exists: boolean;
+    mtime?: string | null;
+  }>;
+  source_paths: Record<string, string | null | undefined>;
 };
 
 export type ArtifactIndexItem = {
@@ -191,6 +225,7 @@ export type TaskDetailResponse = {
   latest_trace?: Record<string, unknown> | null;
   latest_rewrite_plan?: Record<string, unknown> | null;
   agent_decision_summary?: AgentDecisionSummary;
+  agent_health?: AgentHealth;
   evaluation_summary?: Record<string, unknown> | null;
   reports: {
     json_path: string;
@@ -211,6 +246,8 @@ export type CreateTaskPayload = {
   profile?: string;
   max_attempts?: number;
   note?: string;
+  force_new?: boolean;
+  auto_run?: boolean;
 };
 
 export type TaskActionResponse = {

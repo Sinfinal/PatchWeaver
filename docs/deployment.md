@@ -37,6 +37,13 @@ test -f /usr/lib/debug/lib/modules/$(uname -r)/vmlinux
 | `patchweaver-api` | `18084` | 后端 API、CLI、任务创建、报告查询 |
 | `patchweaver-web` | `18085` | Web 控制台静态站点，并反向代理 `/api` 到后端 |
 
+Compose 的宿主机挂载统一收敛到 `/usr/local/patchweaver`，不再从项目目录、系统目录和用户目录分散挂载。首次启动前先准备该根目录：
+
+```bash
+sudo PATCHWEAVER_DOCKER_ROOT=/usr/local/patchweaver \
+  bash scripts/prepare_docker_host_root.sh
+```
+
 ```bash
 docker compose -f build/patchweaver/compose.yml up --build patchweaver-api patchweaver-web
 ```

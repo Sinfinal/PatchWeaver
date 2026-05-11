@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { CodePanel } from "../../components/code/CodePanel";
 import { SectionCard } from "../../components/layout/SectionCard";
 import { logGuides } from "../../content/projectContent";
@@ -32,7 +32,7 @@ export function LogsPage(): JSX.Element {
       </SectionCard>
 
       {query.isLoading ? <div className="pw-note-banner">正在拉取日志尾流...</div> : null}
-      {query.isError ? <div className="pw-note-banner">当前无法获取日志接口数据，日志面板会在后端可用后自动填充。</div> : null}
+      {query.isError ? <div className="pw-note-banner">当前无法获取日志接口数据，日志面板会在后端可用后自动填充</div> : null}
 
       <div className="pw-grid two">
         <SectionCard title="系统日志">
@@ -40,7 +40,7 @@ export function LogsPage(): JSX.Element {
             title="system_log"
             path={query.data?.system_log.path}
             content={query.data?.system_log.lines.join("\n")}
-            emptyText="暂无系统日志内容。"
+            emptyText="暂无系统日志内容"
           />
         </SectionCard>
         <SectionCard title="最近一次构建日志">
@@ -48,7 +48,7 @@ export function LogsPage(): JSX.Element {
             title="latest_build_log"
             path={query.data?.latest_build_log?.path}
             content={query.data?.latest_build_log?.lines.join("\n")}
-            emptyText="暂无最近一次构建日志。"
+            emptyText="暂无最近一次构建日志"
           />
         </SectionCard>
       </div>

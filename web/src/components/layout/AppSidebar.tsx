@@ -7,10 +7,7 @@ const navGroups = [
   },
   {
     title: "任务",
-    items: [
-      { to: "/tasks", label: "任务中心" },
-      { to: "/tasks/new", label: "创建任务" },
-    ],
+    items: [{ to: "/tasks", label: "任务中心" }],
   },
   {
     title: "报告",
@@ -40,10 +37,7 @@ export function AppSidebar(): JSX.Element {
       return pathname === "/" || pathname === "/overview";
     }
     if (to === "/tasks") {
-      return pathname === "/tasks" || /^\/tasks\/(?!new$)[^/]+$/.test(pathname);
-    }
-    if (to === "/tasks/new") {
-      return pathname === "/tasks/new";
+      return pathname === "/tasks" || /^\/tasks\/[^/]+$/.test(pathname);
     }
     return pathname === to || pathname.startsWith(`${to}/`);
   };

@@ -33,21 +33,20 @@ const stageLabelMap: Record<string, string> = {
 };
 
 const progressStages: ProgressStage[] = [
-  { stage: "prepare", label: "准备", fallbackDescription: "等待任务上下文和基础输入就绪。" },
-  { stage: "source", label: "来源获取", fallbackDescription: "等待 CVE 来源链和补丁来源就绪。" },
-  { stage: "analysis", label: "语义分析", fallbackDescription: "等待语义分析和约束理解完成。" },
-  { stage: "diagnose", label: "约束诊断", fallbackDescription: "等待热补丁约束诊断结果。" },
-  { stage: "plan", label: "改写规划", fallbackDescription: "等待改写路线和 recipe 选择。" },
-  { stage: "rewrite", label: "补丁改写", fallbackDescription: "等待 rewritten.patch 和改写留痕。" },
-  { stage: "build", label: "构建预检", fallbackDescription: "等待构建预检查或真实构建结果。" },
-  { stage: "validate", label: "动态验证", fallbackDescription: "等待验证报告和动态验证证据。" },
-  { stage: "classify", label: "失败归因", fallbackDescription: "等待失败归因或目标态分类结果。" },
-  { stage: "report", label: "报告与回放", fallbackDescription: "等待结构化报告和回放摘要生成。" },
+  { stage: "prepare", label: "准备", fallbackDescription: "等待任务上下文和基础输入就绪" },
+  { stage: "source", label: "来源获取", fallbackDescription: "等待 CVE 来源链和补丁来源就绪" },
+  { stage: "analysis", label: "语义分析", fallbackDescription: "等待语义分析和约束理解完成" },
+  { stage: "diagnose", label: "约束诊断", fallbackDescription: "等待热补丁约束诊断结果" },
+  { stage: "plan", label: "改写规划", fallbackDescription: "等待改写路线和 recipe 选择" },
+  { stage: "rewrite", label: "补丁改写", fallbackDescription: "等待 rewritten.patch 和改写留痕" },
+  { stage: "build", label: "构建预检", fallbackDescription: "等待构建预检查或真实构建结果" },
+  { stage: "validate", label: "动态验证", fallbackDescription: "等待验证报告和动态验证证据" },
+  { stage: "report", label: "报告与回放", fallbackDescription: "等待结构化报告和回放摘要生成" },
 ];
 
 export function StageTimeline({ items, currentStage }: StageTimelineProps): JSX.Element {
   if (items.length === 0) {
-    return <div className="pw-empty">当前任务还没有生成阶段时间线。</div>;
+    return <div className="pw-empty">当前任务还没有生成阶段时间线</div>;
   }
 
   const progressItems = buildProgressItems(items);
@@ -60,6 +59,7 @@ export function StageTimeline({ items, currentStage }: StageTimelineProps): JSX.
           <StageTimelineNode
             key={item.stage}
             item={item}
+            index={index}
             isCurrent={index === currentIndex}
           />
         ))}
@@ -71,7 +71,7 @@ export function StageTimeline({ items, currentStage }: StageTimelineProps): JSX.
 function buildProgressItems(items: TimelineNode[]): TimelineNode[] {
   const stageMap = new Map(items.map((item) => [item.stage, item]));
 
-  return progressStages.map((progressStage) => {
+  const progressItems = progressStages.map((progressStage) => {
     const matchedItem = resolveProgressSource(progressStage.stage, stageMap);
     if (!matchedItem) {
       return {
@@ -88,13 +88,17 @@ function buildProgressItems(items: TimelineNode[]): TimelineNode[] {
       label: progressStage.label,
     };
   });
+
+  return linearizeProgressItems(progressItems);
 }
 
 function StageTimelineNode({
   item,
+  index,
   isCurrent,
 }: {
   item: TimelineNode;
+  index: number;
   isCurrent: boolean;
 }): JSX.Element {
   const normalizedStatus = normalizeProgressStatus(item.status);
@@ -103,6 +107,7 @@ function StageTimelineNode({
 
   return (
     <div className={itemClass} aria-current={isCurrent ? "step" : undefined}>
+      <span className="pw-timeline-marker">{String(index + 1).padStart(2, "0")}</span>
       <div className="pw-stage-heading">
         <strong>{label}</strong>
         <StatusBadge value={item.status} />
@@ -128,6 +133,11 @@ function resolveCurrentIndex(items: TimelineNode[], currentStage?: string | null
     }
   }
 
+  const failedIndex = items.findIndex((item) => normalizeProgressStatus(item.status) === "failed");
+  if (failedIndex >= 0) {
+    return failedIndex;
+  }
+
   const currentIndex = items.findIndex((item) => !isSettledStatus(item.status));
   return currentIndex >= 0 ? currentIndex : Math.max(items.length - 1, 0);
 }
@@ -145,7 +155,7 @@ function normalizeCurrentStage(currentStage?: string | null): string | null {
     constraint_diagnosis: "diagnose",
     rewrite_recipe: "rewrite",
     build_precheck: "build",
-    failure_analysis: "classify",
+    failure_analysis: "build",
     replay: "report",
   };
 
@@ -153,7 +163,7 @@ function normalizeCurrentStage(currentStage?: string | null): string | null {
 }
 
 function isSettledStatus(status?: string | null): boolean {
-  return ["success", "skipped"].includes(normalizeProgressStatus(status));
+  return ["success", "skipped", "blocked"].includes(normalizeProgressStatus(status));
 }
 
 function normalizeProgressStatus(status?: string | null): string {
@@ -170,6 +180,9 @@ function normalizeProgressStatus(status?: string | null): string {
   if (["skipped"].includes(normalized)) {
     return "skipped";
   }
+  if (["blocked"].includes(normalized)) {
+    return "blocked";
+  }
   return "pending";
 }
 
@@ -182,10 +195,36 @@ function resolveProgressSource(stage: string, stageMap: Map<string, TimelineNode
     plan: ["plan"],
     rewrite: ["rewrite", "rewrite_recipe"],
     build: ["build"],
-    classify: ["classify", "failure_analysis"],
     validate: ["validate"],
     report: ["report", "replay"],
   };
 
   return (stageAliases[stage] ?? [stage]).map((alias) => stageMap.get(alias)).find((item) => item !== undefined);
+}
+
+function linearizeProgressItems(items: TimelineNode[]): TimelineNode[] {
+  const failureIndex = items.findIndex((item) => normalizeProgressStatus(item.status) === "failed");
+  if (failureIndex < 0) {
+    return items;
+  }
+
+  const failedItem = items[failureIndex];
+  const failedLabel = failedItem.label ?? stageLabelMap[failedItem.stage] ?? failedItem.stage;
+  const failedProblem = failedItem.problem ?? "blocked_by_previous_failure";
+  const failedNextAction = failedItem.next_action ?? "先处理前置失败";
+
+  return items.map((item, index) => {
+    if (index <= failureIndex) {
+      return item;
+    }
+    return {
+      ...item,
+      status: "blocked",
+      current_effect: `主链已在${failedLabel}失败，本阶段未进入成功链路`,
+      missing_effect: "前置失败未解决，不能判定本阶段成功",
+      problem: item.problem ?? failedProblem,
+      analysis: "线性时间轴按首个失败阶段截断，后处理产物不计为阶段成功",
+      next_action: failedNextAction,
+    };
+  });
 }

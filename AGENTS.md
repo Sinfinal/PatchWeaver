@@ -44,6 +44,11 @@ Use installed Codex skills proactively. Do not wait for the user to name a skill
 - Project documents should avoid committee-specific wording that makes the text look prompt-driven. Use neutral terms such as `验收人员`, `使用者`, `外部验收`, `提交验收`, or `测评环境` instead.
 - Historical task IDs or artifact paths may keep their original values if renaming them would break evidence traceability, but new documents, examples, and task prefixes should not introduce committee-specific wording.
 
+## Web Copywriting Policy
+
+- Do not use the Chinese full stop character U+3002 in Web-visible copy. Keep UI labels, hints, empty states, notes, and banners concise, and omit terminal punctuation when possible.
+- This rule applies to source files under `web/src` and any maintained Web copy source. Runtime JSON evidence can preserve original punctuation because it reflects task artifacts rather than UI copy.
+
 ## Secrets And Platform Access
 
 - Never commit or document plaintext API keys, root passwords, platform tokens, or private cookies.
@@ -65,3 +70,12 @@ Use installed Codex skills proactively. Do not wait for the user to name a skill
 - Do not create ad-hoc temporary scripts in the repository root, `scripts/`, `tests/`, `docs/`, or `patchweaver/` unless they are intended to become maintained project files.
 - If a temporary script becomes reusable or part of delivery, promote it deliberately into the proper project directory and add tests/docs as needed.
 - Keep `tmp/` out of committed deliverables except for `tmp/README.md` and `tmp/.gitkeep`.
+
+## Validation Machine Docker Channels
+
+- Treat the validation machine `patchweaver:test` and `patchweaver-web:test` images as the manual acceptance channel.
+- Do not sync new development code into the test channel or replace running test containers unless the user explicitly asks for it.
+- Use `/home/patchweaver/dev`, `patchweaver:dev`, and `patchweaver-web:dev` for development verification after local changes.
+- The running development containers are `patchweaver-dev-api` on host port `18086` and `patchweaver-dev-web` on host port `18087`.
+- The running manual acceptance containers are `patchweaver-api` and `patchweaver-web` on host ports `18084` and `18085`.
+- Development verification may build, run, or remove temporary dev containers, but it must not restart or retag the test containers.

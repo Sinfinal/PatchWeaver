@@ -12,8 +12,24 @@ export function fetchTasks(params?: Record<string, string | number | undefined>)
   return apiGet<TaskListResponse>("/tasks", params);
 }
 
-export function createTask(payload: CreateTaskPayload): Promise<{ task: TaskDetailResponse["task"] }> {
-  return apiPost<{ task: TaskDetailResponse["task"] }>("/tasks", payload);
+export function createTask(payload: CreateTaskPayload): Promise<{
+  status?: string;
+  created?: boolean;
+  auto_run?: boolean;
+  auto_run_status?: string;
+  message?: string;
+  task: TaskDetailResponse["task"];
+  existing_task?: TaskDetailResponse["task"];
+}> {
+  return apiPost<{
+    status?: string;
+    created?: boolean;
+    auto_run?: boolean;
+    auto_run_status?: string;
+    message?: string;
+    task: TaskDetailResponse["task"];
+    existing_task?: TaskDetailResponse["task"];
+  }>("/tasks", payload);
 }
 
 export function fetchTaskDetail(taskId: string): Promise<TaskDetailResponse> {

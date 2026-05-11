@@ -627,8 +627,10 @@ class BuildOrchestrator:
             rewritten_patch_path=rewritten_patch_path,
         )
         # 输出目录固定在 attempt 目录下，方便 report/replay 直接定位本轮产物
+        extra_args = self._kpatch_build_extra_args()
         command = [
             builder_cmd,
+            *extra_args,
             "-s",
             str(selected_source_dir),
             "-c",
@@ -644,6 +646,11 @@ class BuildOrchestrator:
             command.extend(["-t", build_target])
         command.append(str(rewritten_patch_path.resolve()))
         command_text = " ".join(shlex.quote(part) for part in command)
+        if extra_args:
+            lines.extend(["", "[kpatch build extra args]", " ".join(shlex.quote(part) for part in extra_args)])
+        extra_env = self._kpatch_build_env()
+        if extra_env:
+            lines.extend(["", "[kpatch build env]", *self._format_build_env(extra_env)])
         if build_targets:
             lines.extend(["", "[build targets]", ", ".join(build_targets)])
         missing_cache_files = self._missing_module_build_cache_files(
@@ -707,6 +714,7 @@ class BuildOrchestrator:
             command=command,
             cwd=selected_source_dir,
             timeout_sec=self.build_config.build_timeout_sec,
+            extra_env=extra_env,
         )
         stdout_text = command_result["stdout"].strip()
         stderr_text = command_result["stderr"].strip()
@@ -744,6 +752,11 @@ class BuildOrchestrator:
             local_kpatch_log = self._read_local_kpatch_log()
             if local_kpatch_log:
                 lines.extend(["", "[local kpatch log]", local_kpatch_log])
+                if failure_type == "compile_failed":
+                    failure_type = self._classify_command_failure(
+                        stdout_text=f"{stdout_text}\n{local_kpatch_log}",
+                        stderr_text=stderr_text,
+                    )
 
         lines.extend(self._cleanup_generated_source_tree(generated_source_dir))
 
@@ -1908,6 +1921,7 @@ exec "$REAL" "${{args[@]}}"
         command: list[str],
         cwd: Path,
         timeout_sec: int,
+        extra_env: dict[str, str] | None = None,
     ) -> dict[str, object]:
         """执行构建命令并在超时时清理整棵子进程树"""
 
@@ -1918,9 +1932,14 @@ exec "$REAL" "${{args[@]}}"
         else:
             start_new_session = True
 
+        process_env = os.environ.copy()
+        if extra_env:
+            process_env.update(extra_env)
+
         process = subprocess.Popen(
             command,
             cwd=str(cwd),
+            env=process_env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -2083,6 +2102,18 @@ exec "$REAL" "${{args[@]}}"
             return "patch_apply_failed"
         if "command not found" in combined:
             return "build_env_missing"
+        if "gcc/kernel version mismatch" in combined or "matching gcc version" in combined:
+            return "build_env_missing"
+        if "gelf.h: no such file" in combined or "libelf.h: no such file" in combined:
+            return "build_env_missing"
+        if "bc: not found" in combined or "/bc: not found" in combined:
+            return "build_env_missing"
+        if "can not be used when making a pie object" in combined or "failed to set dynamic section sizes" in combined:
+            return "build_env_missing"
+        if "modpost:" in combined and "undefined!" in combined:
+            return "dependency_gap"
+        if "kpatch_populate_mcount_sections" in combined or "pre-allocated __pfe" in combined:
+            return "kpatch_constraint"
         if "kpatch_bundle_symbols" in combined or "expected 0" in combined and "symbol" in combined:
             return "kpatch_symbol_bundle_constraint"
         if "unreconcilable difference" in combined or "fentry" in combined or "init section" in combined:
@@ -2092,6 +2123,40 @@ exec "$REAL" "${{args[@]}}"
         if "section mismatch" in combined or "unsupported" in combined and "kpatch" in combined:
             return "kpatch_constraint"
         return "compile_failed"
+
+    def _kpatch_build_extra_args(self) -> list[str]:
+        """读取受控的 kpatch-build 附加参数"""
+
+        args = list(getattr(self.build_config, "kpatch_build_extra_args", []) or [])
+        env_value = os.environ.get("PATCHWEAVER_KPATCH_BUILD_EXTRA_ARGS", "").strip()
+        if env_value:
+            args.extend(shlex.split(env_value))
+        return [arg for arg in args if str(arg).strip()]
+
+    def _kpatch_build_env(self) -> dict[str, str]:
+        """读取受控的 kpatch-build 环境变量覆盖"""
+
+        env = {str(key): str(value) for key, value in (getattr(self.build_config, "kpatch_build_env", {}) or {}).items()}
+        env_value = os.environ.get("PATCHWEAVER_KPATCH_BUILD_ENV", "").strip()
+        if env_value:
+            for item in shlex.split(env_value):
+                if "=" not in item:
+                    continue
+                key, value = item.split("=", 1)
+                if key:
+                    env[key] = value
+        return {key: value for key, value in env.items() if key.strip()}
+
+    def _format_build_env(self, env: dict[str, str]) -> list[str]:
+        """格式化构建环境变量，并避免泄露敏感值"""
+
+        sensitive_markers = ("SECRET", "TOKEN", "PASSWORD", "KEY")
+        lines: list[str] = []
+        for key in sorted(env):
+            value = env[key]
+            display_value = "<redacted>" if any(marker in key.upper() for marker in sensitive_markers) else value
+            lines.append(f"{key}={display_value}")
+        return lines
 
     def _find_local_module(self, output_dir: Path) -> Path | None:
         """在输出目录中查找构建生成的模块"""

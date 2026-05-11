@@ -48,7 +48,14 @@ PatchWeaver 面向操作系统内核热补丁生成场景，围绕 `CVE -> Patch
 - `patchweaver-api`：后端 API、CLI、任务创建、报告查询和百炼/FC/MCP 网关联调。
 - `patchweaver-web`：前端 Web 控制台静态站点，基于 Nginx 暴露 `/console/`，并把 `/api` 反向代理到 `patchweaver-api`。
 
-该方式会构建标准运行镜像，并把 `data/`、`workspaces/`、`docs/submission/` 挂载到 API 容器内，便于复现任务、查看报告和对接百炼/FC/MCP 网关。
+该方式会构建标准运行镜像，并把宿主机运行根目录统一放在 `/usr/local/patchweaver`。业务数据、工作区、提交证据、配置、评测集和内核材料入口都从这个根目录映射到容器内，避免挂载路径散落在多个位置。
+
+首次启动前先准备统一宿主机根目录：
+
+```bash
+sudo PATCHWEAVER_DOCKER_ROOT=/usr/local/patchweaver \
+  bash scripts/prepare_docker_host_root.sh
+```
 
 ```bash
 docker compose -f build/patchweaver/compose.yml up --build patchweaver-api patchweaver-web
@@ -99,13 +106,14 @@ docker rm -f patchweaver-api 2>/dev/null || true
 docker run -d --name patchweaver-api -p 18084:18084 \
   -e PATCHWEAVER_PROFILE=demo \
   -e PATCHWEAVER_BAILIAN_API_KEY="${PATCHWEAVER_BAILIAN_API_KEY:-}" \
+  -e PATCHWEAVER_HOST_ROOT=/usr/local/patchweaver \
   -e PYTHONIOENCODING=utf-8 \
   -e PYTHONUTF8=1 \
-  -v "$(pwd)/data:/app/data" \
-  -v "$(pwd)/workspaces:/app/workspaces" \
-  -v "$(pwd)/docs/submission:/app/docs/submission" \
-  -v "$(pwd)/config:/app/config:ro" \
-  -v "$(pwd)/evaluations:/app/evaluations:ro" \
+  -v /usr/local/patchweaver/data:/app/data \
+  -v /usr/local/patchweaver/workspaces:/app/workspaces \
+  -v /usr/local/patchweaver/docs/submission:/app/docs/submission \
+  -v /usr/local/patchweaver/config:/app/config:ro \
+  -v /usr/local/patchweaver/evaluations:/app/evaluations:ro \
   patchweaver:local
 ```
 

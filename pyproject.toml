@@ -34,7 +34,9 @@ dependencies = [
   #API 服务启动
   "uvicorn>=0.30",
   #Milvus 向量数据库客户端
-  "pymilvus>=2.6"
+  "pymilvus>=2.6",
+  #可选Agent状态图编排适配
+  "langgraph>=1.1"
 ]
 
 # 命令入口

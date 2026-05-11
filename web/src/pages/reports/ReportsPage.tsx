@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { MetricCard } from "../../components/cards/MetricCard";
@@ -68,7 +68,7 @@ export function ReportsPage(): JSX.Element {
       <div className="pw-grid two">
         <SectionCard title="任务报告">
           {tasksQuery.isLoading ? <div className="pw-note-banner">正在加载任务清单...</div> : null}
-          {tasksQuery.isError ? <div className="pw-note-banner">当前无法读取任务清单，稍后重试即可。</div> : null}
+          {tasksQuery.isError ? <div className="pw-note-banner">当前无法读取任务清单，稍后重试即可</div> : null}
           {recentTasks.length > 0 ? (
             <div className="pw-list">
               {recentTasks.map((task) => (
@@ -88,13 +88,13 @@ export function ReportsPage(): JSX.Element {
               ))}
             </div>
           ) : (
-            <div className="pw-empty">当前还没有任务报告可展示。</div>
+            <div className="pw-empty">当前还没有任务报告可展示</div>
           )}
         </SectionCard>
 
         <SectionCard title="固定样例分组">
           {groupsQuery.isLoading ? <div className="pw-note-banner">正在扫描评测分组...</div> : null}
-          {groupsQuery.isError ? <div className="pw-note-banner">当前无法读取评测分组，请确认 data/evaluations 是否已有结果。</div> : null}
+          {groupsQuery.isError ? <div className="pw-note-banner">当前无法读取评测分组，请确认 data/evaluations 是否已有结果</div> : null}
           {groups.length > 0 ? (
             <div className="pw-list">
               {groups.map((group) => (
@@ -112,7 +112,7 @@ export function ReportsPage(): JSX.Element {
               ))}
             </div>
           ) : (
-            <div className="pw-empty">当前还没有固定样例结果目录。</div>
+            <div className="pw-empty">当前还没有固定样例结果目录</div>
           )}
         </SectionCard>
       </div>

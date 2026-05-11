@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { CodePanel } from "../../components/code/CodePanel";
@@ -119,7 +119,7 @@ export function TaskDetailPage(): JSX.Element {
   }
 
   if (detailQuery.isError || !detailQuery.data) {
-    return <div className="pw-empty">当前无法获取任务详情，请确认任务存在且后端接口可用。</div>;
+    return <div className="pw-empty">当前无法获取任务详情，请确认任务存在且后端接口可用</div>;
   }
 
   const detail = detailQuery.data;
@@ -232,8 +232,12 @@ export function TaskDetailPage(): JSX.Element {
         <StageTimeline items={detail.stage_view ?? detail.timeline} currentStage={detail.process_summary?.current_stage} />
       </SectionCard>
 
+      <SectionCard title="Agent 工作状态">
+        <AgentWorkStatusPanel detail={detail} />
+      </SectionCard>
+
       {detail.agent_decision_summary ? (
-        <SectionCard title="Agent Decision Summary">
+        <SectionCard title="智能体决策摘要">
           <AgentDecisionPanel detail={detail} />
         </SectionCard>
       ) : null}
@@ -274,7 +278,7 @@ export function TaskDetailPage(): JSX.Element {
                   ))}
                 </div>
               ) : (
-                <div className="pw-empty">当前标签下还没有匹配到可预览的产物文件。</div>
+                <div className="pw-empty">当前标签下还没有匹配到可预览的产物文件</div>
               )}
             </SectionCard>
           </div>
@@ -282,7 +286,7 @@ export function TaskDetailPage(): JSX.Element {
             title="产物预览"
             path={selectedPath ?? undefined}
             content={contentQuery.isLoading ? "正在加载内容..." : contentQuery.data?.content}
-            emptyText="选择左侧候选文件后，这里会展示对应 artifact 的文本内容。"
+            emptyText="选择左侧候选文件后，这里会展示对应 artifact 的文本内容"
             actions={
               selectedPath ? (
                 <div className="pw-btn-row">
@@ -299,6 +303,57 @@ export function TaskDetailPage(): JSX.Element {
   );
 }
 
+function AgentWorkStatusPanel({ detail }: { detail: TaskDetailResponse }): JSX.Element {
+  const health = detail.agent_health ?? detail.task.agent_health;
+  const summary = detail.agent_decision_summary;
+  const latestDecision = summary?.workflow_trace?.latest_decision;
+
+  return (
+    <div className="pw-process-summary">
+      <div className="pw-process-heading">
+        <div>
+          <strong>Agent 当前状态</strong>
+          <div className="pw-inline-note">状态来自后端 Agent Health 与 workflow trace</div>
+        </div>
+        <StatusBadge value={health?.status ?? "unknown"} />
+      </div>
+      <div className="pw-process-grid">
+        <div>
+          <span className="pw-process-label">Observation</span>
+          <div>{detail.process_summary?.problem ?? detail.task.latest_failure_type ?? "暂无关键问题"}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">Decision</span>
+          <div>{latestDecision?.selected_action ?? summary?.agent_next_action ?? "未记录"}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">Action</span>
+          <div>{latestDecision?.retry ? "继续重试并切换策略" : latestDecision?.terminal ? "停止自动执行" : "按当前主链推进"}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">Reduction</span>
+          <div>{health?.status ?? detail.process_summary?.overall_status ?? "unknown"}</div>
+        </div>
+      </div>
+      {health?.signals?.length ? (
+        <div className="pw-inline-note">健康信号：{health.signals.join(" / ")}</div>
+      ) : (
+        <div className="pw-inline-note">健康信号：未记录</div>
+      )}
+      {health?.recommendations?.length ? (
+        <div className="pw-process-conflict">建议动作：{health.recommendations.join("；")}</div>
+      ) : null}
+      {latestDecision?.reason ? <div className="pw-process-conflict">决策理由：{latestDecision.reason}</div> : null}
+      {health?.source_paths?.agent_health ? (
+        <div className="pw-inline-note">AgentHealth: {shortenPath(health.source_paths.agent_health)}</div>
+      ) : null}
+      {summary?.workflow_trace?.trace_path ? (
+        <div className="pw-inline-note">AgentTrace: {shortenPath(summary.workflow_trace.trace_path)}</div>
+      ) : null}
+    </div>
+  );
+}
+
 function AgentDecisionPanel({ detail }: { detail: TaskDetailResponse }): JSX.Element | null {
   const summary = detail.agent_decision_summary;
   if (!summary) {
@@ -308,6 +363,7 @@ function AgentDecisionPanel({ detail }: { detail: TaskDetailResponse }): JSX.Ele
     typeof summary.repair_intent?.recommended_strategy === "string"
       ? summary.repair_intent.recommended_strategy
       : summary.strategy_switch.repair_intent_strategy;
+  const latestDecision = summary.workflow_trace?.latest_decision;
 
   return (
     <div className="pw-process-summary">
@@ -336,10 +392,22 @@ function AgentDecisionPanel({ detail }: { detail: TaskDetailResponse }): JSX.Ele
           <span className="pw-process-label">下一步动作</span>
           <div>{summary.agent_next_action ?? "未记录"}</div>
         </div>
+        <div>
+          <span className="pw-process-label">Agent 当前决策</span>
+          <div>{latestDecision?.selected_action ?? "未记录"}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">终止原因</span>
+          <div>{summary.workflow_trace?.terminal_stop_reason ?? "未终止"}</div>
+        </div>
       </div>
       <div className="pw-inline-note">RepairIntent: {shortenPath(summary.source_paths.repair_intent)}</div>
       <div className="pw-inline-note">FailureRecord: {shortenPath(summary.source_paths.failure_record)}</div>
+      {summary.workflow_trace?.trace_path ? (
+        <div className="pw-inline-note">AgentTrace: {shortenPath(summary.workflow_trace.trace_path)}</div>
+      ) : null}
       {summary.failure_record.summary ? <div className="pw-process-conflict">归因摘要：{summary.failure_record.summary}</div> : null}
+      {latestDecision?.reason ? <div className="pw-process-conflict">决策理由：{latestDecision.reason}</div> : null}
     </div>
   );
 }
@@ -400,13 +468,13 @@ function renderTabSummary(
         <div className="pw-list-item">
           <strong>最新失败记录</strong>
           <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 240 }}>
-            {asPrettyJson(detail.latest_failure, "暂无 failure_record。")}
+            {asPrettyJson(detail.latest_failure, "暂无 failure_record")}
           </pre>
         </div>
         <div className="pw-list-item">
           <strong>最新验证结果</strong>
           <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 240 }}>
-            {asPrettyJson(detail.latest_validation, "暂无 validation_report。")}
+            {asPrettyJson(detail.latest_validation, "暂无 validation_report")}
           </pre>
         </div>
       </div>
@@ -419,12 +487,12 @@ function renderTabSummary(
         <div className="pw-list-item">
           <strong>Patch Bundle 摘要</strong>
           <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 220 }}>
-            {asPrettyJson(detail.patch_bundle, "暂无 patch_bundle 内容。")}
+            {asPrettyJson(detail.patch_bundle, "暂无 patch_bundle 内容")}
           </pre>
         </div>
         <div className="pw-list-item">
           <strong>建议查看文件</strong>
-          <div className="pw-inline-note">优先关注 `task_context.json`、`input/` 与 `normalized/` 下的归一化输入。</div>
+          <div className="pw-inline-note">优先关注 `task_context.json`、`input/` 与 `normalized/` 下的归一化输入</div>
         </div>
       </div>
     );
@@ -443,13 +511,13 @@ function renderTabSummary(
         <div className="pw-list-item">
           <strong>最近一次改写计划</strong>
           <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 220 }}>
-            {asPrettyJson(detail.latest_rewrite_plan, "暂无 rewrite_plan。")}
+            {asPrettyJson(detail.latest_rewrite_plan, "暂无 rewrite_plan")}
           </pre>
         </div>
         <div className="pw-list-item">
           <strong>阶段评测摘要</strong>
           <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 240 }}>
-            {asPrettyJson(detail.evaluation_summary, "暂无阶段评测摘要。")}
+            {asPrettyJson(detail.evaluation_summary, "暂无阶段评测摘要")}
           </pre>
         </div>
       </div>
@@ -483,7 +551,7 @@ function renderTabSummary(
         ))}
       </div>
     ) : (
-      <div className="pw-empty">当前任务还没有任何尝试轮记录。</div>
+      <div className="pw-empty">当前任务还没有任何尝试轮记录</div>
     );
   }
 
@@ -510,7 +578,7 @@ function renderTabSummary(
         <div className="pw-list-item">
           <strong>最新验证结果</strong>
           <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 240 }}>
-            {asPrettyJson(detail.latest_validation, "暂无 validation_report。")}
+            {asPrettyJson(detail.latest_validation, "暂无 validation_report")}
           </pre>
         </div>
         <div className="pw-list-item">
@@ -531,7 +599,7 @@ function renderTabSummary(
         </div>
         <div className="pw-list-item">
           <strong>建议查看文件</strong>
-          <div className="pw-inline-note">优先阅读 `reports/report.json`、`reports/report.md` 与 `reports/context/`。</div>
+          <div className="pw-inline-note">优先阅读 `reports/report.json`、`reports/report.md` 与 `reports/context/`</div>
         </div>
       </div>
     );
@@ -543,7 +611,7 @@ function renderTabSummary(
         <div className="pw-list-item">
           <strong>回放摘要</strong>
           <pre className="pw-code-content" style={{ padding: 0, marginTop: 10, maxHeight: 240 }}>
-            {asPrettyJson(detail.replay, "暂无 replay 数据。")}
+            {asPrettyJson(detail.replay, "暂无 replay 数据")}
           </pre>
         </div>
       </div>
@@ -555,7 +623,7 @@ function renderTabSummary(
       <div className="pw-list">
         <div className="pw-list-item">
           <strong>全量产物浏览</strong>
-          <div className="pw-inline-note">这个标签会加载任务工作区下的完整 artifact 树，适合精细排障与答辩回放。</div>
+          <div className="pw-inline-note">这个标签会加载任务工作区下的完整 artifact 树，适合精细排障与答辩回放</div>
         </div>
       </div>
     );
@@ -568,7 +636,7 @@ function renderTabSummary(
         <div className="pw-inline-note">
           {currentAttempt
             ? `第 ${currentAttempt.attempt_no} 轮 · ${currentAttempt.status} · ${currentAttempt.failure_type ?? "无失败类型"}`
-            : "当前还没有可供查看的尝试轮。"}
+            : "当前还没有可供查看的尝试轮"}
         </div>
       </div>
     </div>

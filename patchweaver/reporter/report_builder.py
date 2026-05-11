@@ -46,6 +46,7 @@ class ReportBuilder:
             "feature_not_enabled": ("kernel_profile", "当前验证内核未启用目标子系统；请切换内核配置或更换样例"),
             "target_arch_mismatch": ("kernel_profile", "补丁目标架构与当前验证内核不一致；请切换目标架构或从正向池剔除"),
             "build_cache_incomplete": ("build_env", "prepared source tree 构建缓存不完整；请预热 vmlinux 或同步完整缓存"),
+            "dependency_gap": ("build_target", "modpost 存在未解析依赖符号；请补齐依赖模块构建目标后重试"),
             "compile_failed": ("compile", "分析编译报错并收缩改写范围"),
             "kpatch_constraint": ("kpatch_constraint", "根据 kpatch 约束调整原语和改写策略"),
         }
@@ -239,11 +240,17 @@ class ReportBuilder:
             "build_summary",
             attempt_dir / "artifacts" / "build_summary.json" if attempt_dir else None,
         )
+        agent_workflow_trace_path = self._artifact_or_default(
+            artifact_lookup,
+            "agent_workflow_trace",
+            task.workspace_dir / "agent" / "agent_workflow_trace.json",
+        )
 
         repair_intent = self._read_json_payload(repair_intent_path)
         rewrite_plan = self._read_json_payload(rewrite_plan_path)
         failure_record = self._read_json_payload(failure_record_path)
         build_summary = self._read_json_payload(build_summary_path)
+        agent_workflow_trace = self._read_json_payload(agent_workflow_trace_path)
 
         intent_strategy = self._first_present(
             repair_intent,
@@ -306,18 +313,55 @@ class ReportBuilder:
                 ),
                 "diagnostic_details": diagnostic_details,
             },
+            "workflow_trace": self._agent_workflow_trace_summary(
+                agent_workflow_trace,
+                trace_path=agent_workflow_trace_path,
+            ),
             "source_paths": {
                 "repair_intent": self._path(repair_intent_path),
                 "rewrite_plan": self._path(rewrite_plan_path),
                 "failure_record": self._path(failure_record_path),
                 "build_summary": self._path(build_summary_path),
+                "agent_workflow_trace": self._path(agent_workflow_trace_path),
             },
             "source_exists": {
                 "repair_intent": bool(repair_intent_path and repair_intent_path.exists()),
                 "rewrite_plan": bool(rewrite_plan_path and rewrite_plan_path.exists()),
                 "failure_record": bool(failure_record_path and failure_record_path.exists()),
                 "build_summary": bool(build_summary_path and build_summary_path.exists()),
+                "agent_workflow_trace": bool(agent_workflow_trace_path and agent_workflow_trace_path.exists()),
             },
+        }
+
+    def _agent_workflow_trace_summary(
+        self,
+        payload: dict[str, Any] | None,
+        *,
+        trace_path: Path | None,
+    ) -> dict[str, Any]:
+        """Reduce the Agent workflow trace to report-visible stop/retry evidence."""
+
+        if not isinstance(payload, dict):
+            return {
+                "present": False,
+                "trace_path": self._path(trace_path),
+                "latest_decision": None,
+                "terminal_stop_reason": None,
+            }
+        decisions = payload.get("decisions")
+        latest = decisions[-1] if isinstance(decisions, list) and decisions else None
+        latest_decision = latest if isinstance(latest, dict) else None
+        terminal_stop_reason = (
+            latest_decision.get("reason")
+            if latest_decision is not None and bool(latest_decision.get("terminal"))
+            else None
+        )
+        return {
+            "present": True,
+            "trace_path": self._path(trace_path),
+            "decision_count": len(decisions) if isinstance(decisions, list) else 0,
+            "latest_decision": latest_decision,
+            "terminal_stop_reason": terminal_stop_reason,
         }
 
     def _repair_intent_summary(self, payload: dict[str, Any] | None, *, task: TaskContext) -> dict[str, Any] | None:

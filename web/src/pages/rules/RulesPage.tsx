@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { MetricCard } from "../../components/cards/MetricCard";
 import { SectionCard } from "../../components/layout/SectionCard";
 import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
@@ -64,7 +64,7 @@ export function RulesPage(): JSX.Element {
 
       <SectionCard title="实时目录扫描">
         {query.isLoading ? <div className="pw-note-banner">正在加载规则目录索引...</div> : null}
-        {query.isError ? <div className="pw-note-banner">当前无法获取实时规则索引，先保留静态目录说明。</div> : null}
+        {query.isError ? <div className="pw-note-banner">当前无法获取实时规则索引，先保留静态目录说明</div> : null}
         {query.data ? (
           <div className="pw-grid">
             <div className="pw-grid metrics">
@@ -85,7 +85,7 @@ export function RulesPage(): JSX.Element {
                     ))}
                   </div>
                 ) : (
-                  <div className="pw-empty">当前目录下还没有可展示的规则文件。</div>
+                  <div className="pw-empty">当前目录下还没有可展示的规则文件</div>
                 )}
               </SectionCard>
             ))}

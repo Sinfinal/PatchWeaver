@@ -10,6 +10,10 @@ from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
+from patchweaver.agent.planning import merge_agent_policy_hints
+from patchweaver.agent.policy import DecisionPolicy
+from patchweaver.agent.state import AgentObservation, reduce_observation
+from patchweaver.agent.trace import append_agent_workflow_trace
 from patchweaver.analyzer.repair_intent_service import RepairIntentBuilder
 from patchweaver.builder.source_preparer import prepare_stable_source_baseline
 from patchweaver.context.bootstrap_registry import BootstrapRegistry
@@ -112,6 +116,7 @@ class CoordinatorSupport:
         self.report_builder = services.report_builder
         self.rag_context_injector = services.rag_context_injector
         self.repair_intent_builder = RepairIntentBuilder()
+        self.decision_policy = DecisionPolicy()
 
     def build_bootstrap_manifest(self) -> BootstrapManifest:
         """按当前配置整理 bootstrap 片段"""
@@ -279,7 +284,17 @@ class AnalysisService(CoordinatorSupport):
         # 先把最原始的 patch 输入固定下来
         # 后面改写、构建、报告都复用这组分析输入
         raw_patch_path = task_dir / "input" / "raw_patch.patch"
-        bundle = self.retriever.fetch_patch_bundle(task=task, raw_patch_path=raw_patch_path)
+        try:
+            bundle = self.retriever.fetch_patch_bundle(task=task, raw_patch_path=raw_patch_path)
+        except Exception as exc:
+            source_fetch_trace_path = getattr(self.retriever, "last_fetch_trace_path", None)
+            failure_record = self._record_source_unavailable_failure(
+                task=task,
+                task_dir=task_dir,
+                source_fetch_trace_path=source_fetch_trace_path,
+                error=exc,
+            )
+            raise ValueError(failure_record.summary) from exc
         source_fetch_trace_path = getattr(self.retriever, "last_fetch_trace_path", None)
         normalized_patch_path = task_dir / "normalized" / "normalized.patch"
         self.patch_normalizer.normalize(raw_patch_path, normalized_patch_path)
@@ -547,6 +562,106 @@ class AnalysisService(CoordinatorSupport):
             payload["source_fetch_trace_path"] = to_project_relative(self.runtime.project_root, source_fetch_trace_path)
         return payload
 
+    def _record_source_unavailable_failure(
+        self,
+        *,
+        task: TaskContext,
+        task_dir: Path,
+        source_fetch_trace_path: Path | None,
+        error: Exception,
+    ) -> FailureRecord:
+        """把来源解析失败收口成结构化任务失败，避免任务长期停在 created。"""
+
+        trace_payload: dict[str, Any] = {}
+        if source_fetch_trace_path is not None and source_fetch_trace_path.exists():
+            try:
+                trace_payload = json.loads(source_fetch_trace_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                trace_payload = {}
+
+        trace_error = str(trace_payload.get("error") or error)
+        summary = f"{task.cve_id} 未找到可下载的 stable/upstream patch 来源，无法进入改写和构建。"
+        evidence: list[str] = []
+        if trace_error:
+            evidence.append(trace_error)
+        selected_patch_source = trace_payload.get("selected_patch_source") if isinstance(trace_payload, dict) else None
+        if selected_patch_source is None:
+            evidence.append("selected_patch_source=null")
+        summary_payload = trace_payload.get("summary") if isinstance(trace_payload, dict) else {}
+        if isinstance(summary_payload, dict):
+            evidence.append(
+                "source_fetch_summary="
+                + json.dumps(
+                    {
+                        "request_count": summary_payload.get("request_count"),
+                        "success_count": summary_payload.get("success_count"),
+                        "cache_hit_count": summary_payload.get("cache_hit_count"),
+                    },
+                    ensure_ascii=False,
+                )
+            )
+
+        failure_record = FailureRecord(
+            task_id=task.task_id,
+            attempt_id=f"{task.task_id}-analysis",
+            stage_name="source",
+            failure_type="source_unavailable",
+            summary=summary,
+            evidence=evidence[:6],
+            diagnostic_details={
+                "source_fetch_trace_path": to_project_relative(self.runtime.project_root, source_fetch_trace_path)
+                if source_fetch_trace_path is not None
+                else None,
+                "agent_next_action": {
+                    "action": "stop_source_unavailable",
+                    "reason": "没有可下载的 stable/upstream patch 来源，当前 CVE 不能进入热补丁构建链路",
+                    "retry_scope": "source_metadata",
+                    "retryable_after_environment_update": False,
+                },
+                "raw_error": trace_error,
+            },
+        )
+        failure_path = task_dir / "analysis" / "trace" / "failure_record.json"
+        self.json_writer.write_model(failure_record, failure_path)
+        observation = AgentObservation.from_runtime(
+            task=task,
+            latest_attempt=None,
+            failure_record=failure_record,
+            validation_report=None,
+            memory_hints=[],
+        )
+        decision = self.decision_policy.decide(observation)
+        reduction = reduce_observation(observation, decision)
+        agent_trace_path = append_agent_workflow_trace(
+            task=task,
+            observation=observation,
+            decision=decision,
+            reduction=reduction,
+            project_root=self.runtime.project_root,
+        )
+        self.attempt_repo.save_failure_record(failure_record)
+        self.task_repo.update_task_status(task.task_id, status="failed", current_attempt=0)
+        if source_fetch_trace_path is not None and source_fetch_trace_path.exists():
+            self.artifact_repo.add_artifact(
+                task_id=task.task_id,
+                artifact_type="source_fetch_trace",
+                artifact_path=source_fetch_trace_path,
+                metadata={"summary": "来源抓取失败轨迹"},
+            )
+        self.artifact_repo.add_artifact(
+            task_id=task.task_id,
+            artifact_type="analysis_failure_record",
+            artifact_path=failure_path,
+            metadata={"summary": "来源不可用失败归因"},
+        )
+        self.artifact_repo.add_artifact(
+            task_id=task.task_id,
+            artifact_type="agent_workflow_trace",
+            artifact_path=agent_trace_path,
+            metadata={"summary": "Agent 来源失败决策轨迹"},
+        )
+        return failure_record
+
 
 class AttemptExecutionService(CoordinatorSupport):
     """负责单轮尝试的执行与落盘"""
@@ -565,6 +680,10 @@ class AttemptExecutionService(CoordinatorSupport):
         saw_already_patched_fallback = (
             build_summary is not None
             and build_summary.build_exec_status == "not_run"
+            and (
+                attempt_record.failure_type == "target_already_patched"
+                or build_summary.failure_type == "target_already_patched"
+            )
             and "当前源码树已命中 target_already_patched" in build_log
         )
         if target_state is None and saw_already_patched_fallback:
@@ -1146,6 +1265,12 @@ class AttemptExecutionService(CoordinatorSupport):
         ranking_hints = self.dual_memory.build_ranking_hints(
             task_id=task.task_id,
             risk_types=[item.risk_type for item in constraint_report.risk_items]
+        )
+        ranking_hints = merge_agent_policy_hints(
+            base_hints=ranking_hints,
+            task_dir=task_dir,
+            attempt_no=attempt_no,
+            project_root=self.runtime.project_root,
         )
         planning_hints_path = attempt_dir / "rewrite" / "planning_hints.json"
         planning_hints_path.parent.mkdir(parents=True, exist_ok=True)
