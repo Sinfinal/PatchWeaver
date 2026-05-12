@@ -208,9 +208,10 @@ class ReleaseService:
     def snapshot(self) -> dict[str, Any]:
         """返回控制台展示用的交付快照"""
 
-        submission_root = self._submission_root()
-        final_manifest_path = submission_root / "manifests" / "final_manifest.json"
-        final_gate_path = submission_root / "manifests" / "final_gate_report.json"
+        manifest_dir = self._snapshot_manifest_dir()
+        submission_root = manifest_dir.parent
+        final_manifest_path = manifest_dir / "final_manifest.json"
+        final_gate_path = manifest_dir / "final_gate_report.json"
         final_gate = self._read_json(final_gate_path)
         return {
             "submission_root": self._path(submission_root),
@@ -228,6 +229,22 @@ class ReleaseService:
                 "api_key_source": self._api_key_source(),
             },
         }
+
+    def _snapshot_manifest_dir(self) -> Path:
+        """返回交付快照可用的 manifest 目录，兼容旧版 runtime.manifest_dir。"""
+
+        primary_dir = self._submission_root() / "manifests"
+        candidates = [primary_dir]
+        runtime_manifest_dir = getattr(self.runtime, "manifest_dir", None)
+        if runtime_manifest_dir is not None:
+            candidate = Path(runtime_manifest_dir)
+            if candidate not in candidates:
+                candidates.append(candidate)
+
+        for candidate in candidates:
+            if (candidate / "final_gate_report.json").exists() or (candidate / "final_manifest.json").exists():
+                return candidate.resolve()
+        return primary_dir.resolve()
 
     def _build_final_manifest(self, layout: dict[str, Path], staged_docs: list[dict[str, Any]]) -> dict[str, Any]:
         """整理当前版本的最终提交清单"""

@@ -37,7 +37,7 @@ def evaluate_agent_health(
     latest_attempt = attempts[-1] if attempts else None
     latest_failure = _latest_failure(task_dir, latest_attempt)
     latest_failure_type = _latest_failure_type(latest_attempt, latest_failure)
-    trace_path = task_dir / "agent" / "agent_workflow_trace.json"
+    trace_path = _select_agent_trace_path(task_dir)
     trace_payload = _load_json(trace_path)
     report_json_path = task_dir / "reports" / "report.json"
     report_md_path = task_dir / "reports" / "report.md"
@@ -113,6 +113,7 @@ def evaluate_agent_health(
         "evidence": evidence,
         "source_paths": {
             "agent_workflow_trace": to_project_relative(project_root, trace_path),
+            "agent_auto_workflow_trace": to_project_relative(project_root, task_dir / "agent" / "agent_auto_workflow_trace.json"),
             "report_json": to_project_relative(project_root, report_json_path),
             "report_md": to_project_relative(project_root, report_md_path),
             "agent_health": to_project_relative(project_root, task_dir / "agent" / "agent_health.json"),
@@ -238,6 +239,8 @@ def _attempt_signature(task_dir: Path, attempt: Any) -> dict[str, str | None]:
 def _health_evidence_paths(task_dir: Path, latest_attempt: Any | None) -> list[Path]:
     paths = [
         task_dir / "agent" / "agent_workflow_trace.json",
+        task_dir / "agent" / "agent_auto_workflow_trace.json",
+        task_dir / "agent" / "auto_workflow_trace.json",
         task_dir / "agent" / "agent_health.json",
         task_dir / "reports" / "report.json",
         task_dir / "reports" / "report.md",
@@ -287,8 +290,29 @@ def _load_json(path: Path) -> dict[str, Any] | None:
 
 
 def _decision_count(payload: dict[str, Any] | None) -> int:
-    decisions = (payload or {}).get("decisions")
-    return len(decisions) if isinstance(decisions, list) else 0
+    payload = payload or {}
+    decisions = payload.get("decisions")
+    if isinstance(decisions, list):
+        return len(decisions)
+    plans = payload.get("plans")
+    if isinstance(plans, list):
+        return len(plans)
+    nodes = payload.get("nodes")
+    if isinstance(nodes, list):
+        return sum(1 for item in nodes if isinstance(item, dict) and item.get("node") == "plan")
+    return 0
+
+
+def _select_agent_trace_path(task_dir: Path) -> Path:
+    candidates = [
+        task_dir / "agent" / "agent_workflow_trace.json",
+        task_dir / "agent" / "agent_auto_workflow_trace.json",
+        task_dir / "agent" / "auto_workflow_trace.json",
+    ]
+    for path in candidates:
+        if path.exists():
+            return path
+    return candidates[0]
 
 
 def _sha256_file(path: Path) -> str | None:

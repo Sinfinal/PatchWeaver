@@ -9,6 +9,7 @@ from typing import Any
 from patchweaver.agent.actions import AgentActionName
 from patchweaver.agent.policy import DecisionPolicy
 from patchweaver.agent.registry import AgentActionRegistry
+from patchweaver.agent.reflection import build_memory_hints_from_reflections, load_reflections_for_next_attempt
 from patchweaver.agent.state import AgentDecision, AgentObservation, reduce_observation
 from patchweaver.agent.trace import append_agent_workflow_trace
 from patchweaver.analyzer.constraint_service import ConstraintDiagnoser
@@ -104,7 +105,7 @@ class TaskRunner:
             planner=JointPlanner(),
             rewriter=RewriteExecutor(runtime.project_root),
             builder=BuildOrchestrator(build_config),
-            failure_classifier=FailureClassifier(),
+            failure_classifier=FailureClassifier(models_config=models_config),
             validator=Validator(
                 verify_config=verify_config,
                 build_config=build_config,
@@ -211,12 +212,13 @@ class TaskRunner:
             task=observation_task,
             latest_attempt=latest_attempt,
         )
+        memory_hints = self._memory_hints_for_task(observation_task)
         observation = AgentObservation.from_runtime(
             task=observation_task,
             latest_attempt=latest_attempt,
             failure_record=failure_record,
             validation_report=validation_report,
-            memory_hints=[],
+            memory_hints=memory_hints,
         )
         policy = getattr(self, "decision_policy", DecisionPolicy())
         agent_decision = policy.decide(observation)
@@ -336,12 +338,13 @@ class TaskRunner:
             task=observation_task,
             latest_attempt=latest_attempt,
         )
+        memory_hints = self._memory_hints_for_task(observation_task)
         observation = AgentObservation.from_runtime(
             task=observation_task,
             latest_attempt=latest_attempt,
             failure_record=failure_record,
             validation_report=validation_report,
-            memory_hints=[],
+            memory_hints=memory_hints,
         )
         policy = getattr(self, "decision_policy", DecisionPolicy())
         agent_decision = policy.decide(observation)
@@ -397,6 +400,14 @@ class TaskRunner:
             current_attempt=int(getattr(task, "current_attempt", latest_payload.get("attempt_no") or 0) or 0),
             workspace_dir=Path(getattr(task, "workspace_dir", ".")).resolve(),
         )
+
+    def _memory_hints_for_task(self, task: TaskContext) -> list[dict[str, Any]]:
+        """Load reflection-backed memory hints for Agent retry decisions."""
+
+        services = getattr(self, "services", None)
+        memory = getattr(services, "dual_memory", None)
+        reflections = load_reflections_for_next_attempt(task.workspace_dir, memory)
+        return build_memory_hints_from_reflections(reflections)
 
     def _latest_attempt_from_runtime(
         self,

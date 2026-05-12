@@ -375,6 +375,24 @@ code {
   background: rgba(255, 255, 255, 0.04);
 }
 
+.pw-failure-cell {
+  display: grid;
+  gap: 5px;
+  max-width: 260px;
+}
+
+.pw-failure-cell strong {
+  color: #f4fbff;
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.pw-failure-cell span {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .pw-metric-card {
   position: relative;
   padding: 20px 18px 18px;
@@ -1027,6 +1045,38 @@ select option:checked {
   font-size: 13px;
   line-height: 1.6;
   word-break: break-word;
+}
+
+.pw-agent-trace {
+  display: grid;
+  gap: 12px;
+}
+
+.pw-agent-step {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(97, 184, 255, 0.14);
+  background:
+    radial-gradient(circle at top right, rgba(83, 210, 178, 0.08), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent),
+    rgba(16, 25, 46, 0.86);
+}
+
+.pw-agent-step-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pw-agent-step-index {
+  color: var(--accent-main);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
 }
 
 .pw-tabs {
@@ -1876,6 +1926,12 @@ button.pw-list-item {
 .pw-event-feed-meta span {
   color: var(--text-soft);
   font-size: 12px;
+}
+
+.pw-signal-meter-meaning {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .pw-signal-meter-bar {

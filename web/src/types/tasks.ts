@@ -28,6 +28,8 @@ export type TaskListItem = {
   updated_at: string;
   latest_failure_type?: string | null;
   latest_failure_summary?: string | null;
+  latest_failure_explanation?: string | null;
+  latest_failure_explanation_source?: string | null;
   latest_build_exec_status?: string | null;
   latest_target_state?: string | null;
   attempts_count: number;
@@ -190,6 +192,40 @@ export type AgentHealth = {
   source_paths: Record<string, string | null | undefined>;
 };
 
+export type AgentTraceStep = {
+  step_index: number;
+  goal?: string | null;
+  selected_action?: string | null;
+  reason_summary?: string | null;
+  evidence_refs: string[];
+  alternatives?: string[];
+  guard_result?: string | null;
+  tool_action?: string | null;
+  tool_result_status?: string | null;
+  reflection_summary?: string | null;
+  next_strategy_hint?: string | null;
+  terminal_reason?: string | null;
+  checkpoint_status?: string | null;
+};
+
+export type AgentTrace = {
+  present: boolean;
+  runtime?: string | null;
+  goal: {
+    task_id: string;
+    cve_id: string;
+    target_kernel: string;
+    status?: string | null;
+  };
+  steps: AgentTraceStep[];
+  trace_path?: string | null;
+  checkpoint_path?: string | null;
+  checkpoint_exists: boolean;
+  resumed_from_checkpoint: boolean;
+  terminal_reason?: string | null;
+  raw_node_count?: number;
+};
+
 export type ArtifactIndexItem = {
   artifact_type: string;
   artifact_path: string;
@@ -225,6 +261,7 @@ export type TaskDetailResponse = {
   latest_trace?: Record<string, unknown> | null;
   latest_rewrite_plan?: Record<string, unknown> | null;
   agent_decision_summary?: AgentDecisionSummary;
+  agent_trace?: AgentTrace;
   agent_health?: AgentHealth;
   evaluation_summary?: Record<string, unknown> | null;
   reports: {

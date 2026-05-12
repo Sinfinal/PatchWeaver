@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -10,14 +11,17 @@ from typing import Any
 from patchweaver.api.deps import ApiContext
 from patchweaver.agent.actions import AgentActionName
 from patchweaver.agent.health import evaluate_agent_health
+from patchweaver.agent.langgraph_runtime import LangGraphRuntime
+from patchweaver.api.services.failure_explanation_service import FailureExplanationService
 from patchweaver.config.resolver import resolve_runtime
+from patchweaver.memory.dual_memory import DualMemory
 from patchweaver.harness.workspace_guard import WorkspaceGuard
 from patchweaver.models.task import TaskContext
 from patchweaver.observability.run_logger import RunLogger
 from patchweaver.runtime_inspector import resolve_task_binding
 from patchweaver.task_creation_policy import build_duplicate_scope, build_duplicate_task_notice
 from patchweaver.storage.sqlite import connect_sqlite
-from patchweaver.utils.path_policy import relativize_payload, to_project_relative
+from patchweaver.utils.path_policy import relativize_payload, resolve_project_path, to_project_relative
 
 
 class TaskQueryService:
@@ -28,6 +32,9 @@ class TaskQueryService:
 
         self.context = context
         self.run_logger = RunLogger(context.project_root, context.logging_config)
+        self.failure_explainer = FailureExplanationService(
+            models_config=getattr(context, "models_config", None),
+        )
 
     def list_tasks(
         self,
@@ -162,6 +169,13 @@ class TaskQueryService:
                 if task_for_health is not None
                 else None
             )
+            latest_failure_payload = self._load_latest_failure_payload(task_for_health, attempts_for_health)
+            failure_explanation = self._failure_explanation_payload(
+                failure_type=row["latest_failure_type"],
+                summary=row["latest_failure_summary"],
+                task_workspace=task_for_health.workspace_dir if task_for_health is not None else resolve_project_path(self.context.project_root, row["workspace_dir"]),
+                latest_failure=latest_failure_payload,
+            )
             fixture_binding = self._resolve_fixture_binding(
                 fixture_catalog,
                 cve_id=row["cve_id"],
@@ -181,6 +195,8 @@ class TaskQueryService:
                     "updated_at": row["updated_at"],
                     "latest_failure_type": row["latest_failure_type"],
                     "latest_failure_summary": row["latest_failure_summary"],
+                    "latest_failure_explanation": failure_explanation.get("explanation") if failure_explanation else None,
+                    "latest_failure_explanation_source": failure_explanation.get("source") if failure_explanation else None,
                     "latest_build_exec_status": row["latest_build_exec_status"],
                     "latest_target_state": row["latest_target_state"],
                     "attempts_count": row["attempts_count"],
@@ -335,6 +351,31 @@ class TaskQueryService:
         task = self._require_task(task_id)
         runner = self.context.build_task_runner(profile_name=task.profile_name, max_attempts=task.max_attempts)
         registry = runner.build_action_registry()
+        runtime_mode = os.getenv("PATCHWEAVER_AGENT_RUNTIME", "legacy").strip().lower() or "legacy"
+        if runtime_mode == "langgraph":
+            memory = getattr(getattr(runner, "services", None), "dual_memory", None)
+            if memory is None:
+                runtime_data_dir = getattr(getattr(self.context, "runtime", None), "data_dir", None)
+                memory_root = Path(runtime_data_dir) / "memory" if runtime_data_dir is not None else self.context.project_root / "data" / "memory"
+                memory = DualMemory(memory_root)
+            payload = LangGraphRuntime(
+                task_repo=self.context.task_repo,
+                attempt_repo=self.context.attempt_repo,
+                action_registry=registry,
+                artifact_repo=self.context.artifact_repo,
+                project_root=self.context.project_root,
+                models_config=self.context.models_config,
+                memory=memory,
+                max_steps=8,
+            ).run(task_id)
+            self.run_logger.info(
+                "web.auto_run_task",
+                "Web 自动运行入口已由 LangGraph dev runtime 推进",
+                task_id=task_id,
+                status=payload["status"],
+            )
+            return payload
+
         task_dir = task.workspace_dir.resolve()
         trace_path = task_dir / "agent" / "auto_workflow_trace.json"
         trace_path.parent.mkdir(parents=True, exist_ok=True)
@@ -358,6 +399,7 @@ class TaskQueryService:
 
         payload = {
             "task_id": task_id,
+            "runtime": "legacy",
             "status": "ok" if results and results[-1].get("status") != "failed" else "failed",
             "actions": results,
         }
@@ -444,6 +486,7 @@ class TaskQueryService:
             attempts=attempts,
             project_root=self.context.project_root,
         )
+        agent_trace = self._build_agent_trace(task=task, task_dir=task_dir)
 
         return {
             # task 是顶部摘要
@@ -463,6 +506,7 @@ class TaskQueryService:
             "latest_trace": latest_trace,
             "latest_rewrite_plan": latest_rewrite_plan,
             "agent_decision_summary": agent_decision_summary,
+            "agent_trace": agent_trace,
             "agent_health": agent_health,
             "evaluation_summary": self._load_json(task_dir / "reports" / "evaluation_summary.json"),
             "reports": {
@@ -523,6 +567,143 @@ class TaskQueryService:
             ],
             "workspace_exists": task_dir.exists(),
         }
+
+    def _build_agent_trace(self, *, task: TaskContext, task_dir: Path) -> dict[str, Any]:
+        """Build the structured Agent trace view for Web/API without exposing raw model reasoning."""
+
+        auto_trace_path = task_dir / "agent" / "agent_auto_workflow_trace.json"
+        legacy_trace_path = task_dir / "agent" / "auto_workflow_trace.json"
+        checkpoint_path = task_dir / "agent" / "langgraph_checkpoint.json"
+        payload = self._load_json(auto_trace_path)
+        trace_path = auto_trace_path
+        if payload is None:
+            payload = self._load_json(legacy_trace_path)
+            trace_path = legacy_trace_path
+
+        if not isinstance(payload, dict):
+            return {
+                "present": False,
+                "runtime": None,
+                "goal": {
+                    "task_id": task.task_id,
+                    "cve_id": task.cve_id,
+                    "target_kernel": task.target_kernel,
+                },
+                "steps": [],
+                "trace_path": self._path(auto_trace_path),
+                "checkpoint_path": self._path(checkpoint_path),
+                "checkpoint_exists": checkpoint_path.exists(),
+                "resumed_from_checkpoint": False,
+            }
+
+        steps = self._agent_trace_steps(payload)
+        checkpoint = self._load_json(checkpoint_path)
+        return {
+            "present": True,
+            "runtime": payload.get("runtime") or "legacy",
+            "goal": {
+                "task_id": task.task_id,
+                "cve_id": task.cve_id,
+                "target_kernel": task.target_kernel,
+                "status": task.status,
+            },
+            "steps": steps,
+            "trace_path": self._path(trace_path),
+            "checkpoint_path": self._path(checkpoint_path),
+            "checkpoint_exists": checkpoint_path.exists(),
+            "resumed_from_checkpoint": bool(
+                payload.get("summary", {}).get("resumed_from_checkpoint")
+                if isinstance(payload.get("summary"), dict)
+                else False
+            ),
+            "terminal_reason": self._agent_trace_terminal_reason(steps),
+            "raw_node_count": len(payload.get("nodes")) if isinstance(payload.get("nodes"), list) else 0,
+        }
+
+    def _agent_trace_steps(self, payload: dict[str, Any]) -> list[dict[str, Any]]:
+        """Group graph nodes into display-ready Agent decision steps."""
+
+        nodes = payload.get("nodes")
+        if not isinstance(nodes, list):
+            actions = payload.get("actions")
+            if not isinstance(actions, list):
+                return []
+            return [
+                {
+                    "step_index": index,
+                    "goal": None,
+                    "selected_action": ((item or {}).get("payload") or {}).get("action_name") if isinstance(item, dict) else None,
+                    "reason_summary": "legacy action sequence",
+                    "evidence_refs": [],
+                    "guard_result": "legacy",
+                    "tool_result_status": (item or {}).get("status") if isinstance(item, dict) else None,
+                    "reflection_summary": None,
+                    "terminal_reason": None,
+                    "checkpoint_status": "legacy",
+                }
+                for index, item in enumerate(actions, start=1)
+            ]
+
+        grouped: dict[int, dict[str, Any]] = {}
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            step_index = int(node.get("step_index") or 0)
+            if step_index <= 0:
+                continue
+            node_name = str(node.get("node") or "")
+            step = grouped.setdefault(
+                step_index,
+                {
+                    "step_index": step_index,
+                    "goal": None,
+                    "selected_action": None,
+                    "reason_summary": None,
+                    "evidence_refs": [],
+                    "guard_result": None,
+                    "tool_result_status": None,
+                    "reflection_summary": None,
+                    "terminal_reason": None,
+                    "checkpoint_status": None,
+                },
+            )
+            node_payload = node.get("payload") if isinstance(node.get("payload"), dict) else {}
+            if node_name == "plan":
+                plan = node_payload.get("plan") if isinstance(node_payload, dict) else None
+                if isinstance(plan, dict):
+                    step["goal"] = plan.get("goal_id")
+                    step["selected_action"] = plan.get("selected_action")
+                    step["reason_summary"] = plan.get("reason_summary")
+                    step["evidence_refs"] = plan.get("evidence_refs") or []
+                    step["alternatives"] = plan.get("alternatives") or []
+            elif node_name == "guard":
+                guard = node_payload.get("guard") if isinstance(node_payload, dict) else None
+                if isinstance(guard, dict):
+                    step["guard_result"] = "allowed" if guard.get("allowed") else guard.get("reject_reason") or "rejected"
+            elif node_name == "execute":
+                result = node_payload.get("tool_result") if isinstance(node_payload, dict) else None
+                if isinstance(result, dict):
+                    step["tool_result_status"] = result.get("status")
+                    metadata = result.get("metadata") if isinstance(result.get("metadata"), dict) else {}
+                    step["tool_action"] = metadata.get("executable_action") or result.get("action_name")
+            elif node_name == "reflect":
+                reflection = node_payload.get("reflection") if isinstance(node_payload, dict) else None
+                if isinstance(reflection, dict):
+                    step["reflection_summary"] = reflection.get("what_to_avoid") or reflection.get("next_strategy_hint")
+                    step["next_strategy_hint"] = reflection.get("next_strategy_hint")
+            elif node_name == "route":
+                route = node_payload.get("route") if isinstance(node_payload, dict) else None
+                if isinstance(route, dict):
+                    step["terminal_reason"] = route.get("reason") if route.get("terminal") else None
+                    step["checkpoint_status"] = route.get("status")
+        return [grouped[key] for key in sorted(grouped)]
+
+    def _agent_trace_terminal_reason(self, steps: list[dict[str, Any]]) -> str | None:
+        for step in reversed(steps):
+            reason = step.get("terminal_reason")
+            if reason:
+                return str(reason)
+        return None
 
     def get_agent_decision_summary(self, task_id: str) -> dict[str, Any]:
         """返回任务级 Agent 决策摘要，供 Web/API 和百炼入口直接展示"""
@@ -590,7 +771,7 @@ class TaskQueryService:
 
         repair_intent_path = task_dir / "analysis" / "repair_intent.json"
         report_path = task_dir / "reports" / "report.json"
-        agent_workflow_trace_path = task_dir / "agent" / "agent_workflow_trace.json"
+        agent_workflow_trace_path = self._select_agent_workflow_trace_path(task_dir)
         repair_intent = self._load_json(repair_intent_path)
         report_json = self._load_json(report_path)
         agent_workflow_trace = self._load_json(agent_workflow_trace_path)
@@ -735,17 +916,39 @@ class TaskQueryService:
                 "terminal_stop_reason": None,
             }
         decisions = payload.get("decisions")
+        if not isinstance(decisions, list):
+            decisions = payload.get("plans")
         latest = decisions[-1] if isinstance(decisions, list) and decisions else None
         latest_decision = latest if isinstance(latest, dict) else None
+        summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
+        is_terminal = bool(summary.get("terminal")) or (
+            latest_decision is not None
+            and (
+                bool(latest_decision.get("terminal"))
+                or latest_decision.get("terminal_condition") == "terminal"
+                or latest_decision.get("selected_action") == "stop_manual_review"
+            )
+        )
         return {
             "present": True,
             "trace_path": self._path(trace_path),
             "decision_count": len(decisions) if isinstance(decisions, list) else 0,
             "latest_decision": latest_decision,
-            "terminal_stop_reason": latest_decision.get("reason")
-            if latest_decision is not None and bool(latest_decision.get("terminal"))
+            "terminal_stop_reason": (latest_decision.get("reason") or latest_decision.get("reason_summary"))
+            if latest_decision is not None and is_terminal
             else None,
         }
+
+    def _select_agent_workflow_trace_path(self, task_dir: Path) -> Path:
+        candidates = [
+            task_dir / "agent" / "agent_workflow_trace.json",
+            task_dir / "agent" / "agent_auto_workflow_trace.json",
+            task_dir / "agent" / "auto_workflow_trace.json",
+        ]
+        for path in candidates:
+            if path.exists():
+                return path
+        return candidates[0]
 
     def _first_present(self, *sources: dict[str, Any] | None, keys: tuple[str, ...]) -> Any | None:
         """按优先级从多个 JSON 产物读取第一个非空字段"""
@@ -835,6 +1038,44 @@ class TaskQueryService:
         try:
             return json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
+            return None
+
+    def _load_latest_failure_payload(self, task: TaskContext | None, attempts: list[Any]) -> dict[str, Any] | None:
+        """读取最近 failure_record，用于生成 Web 短解释"""
+
+        if task is None:
+            return None
+        task_dir = task.workspace_dir.resolve()
+        if attempts:
+            latest_attempt = attempts[-1]
+            payload = self._load_json(task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" / "logs" / "failure_record.json")
+            if payload is not None:
+                return payload
+        return self._load_json(task_dir / "analysis" / "trace" / "failure_record.json")
+
+    def _failure_explanation_payload(
+        self,
+        *,
+        failure_type: str | None,
+        summary: str | None,
+        task_workspace: Path | None,
+        latest_failure: dict[str, Any] | None,
+    ) -> dict[str, Any] | None:
+        """为任务列表生成短失败解释"""
+
+        if not failure_type:
+            return None
+        diagnostics = latest_failure.get("diagnostic_details") if isinstance(latest_failure, dict) else None
+        if not isinstance(diagnostics, dict):
+            diagnostics = {}
+        try:
+            return self.failure_explainer.explain(
+                failure_type=failure_type,
+                summary=summary or (latest_failure or {}).get("summary"),
+                diagnostics=diagnostics,
+                task_workspace=task_workspace,
+            )
+        except (OSError, ValueError, TypeError):
             return None
 
     def _build_process_summary(

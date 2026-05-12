@@ -5,7 +5,15 @@
       "WebFetch(domain:langchain-ai.github.io)",
       "WebFetch(domain:arxiv.org)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:swe-agent.com)"
+      "WebFetch(domain:swe-agent.com)",
+      "Bash(bash *)",
+      "Bash(python -m pytest tmp/tests/agent -q --tb=short)",
+      "Bash(python -m pytest tmp/tests/api -q --tb=short)",
+      "Bash(python -m pytest tmp/tests/analyzer -q --tb=short)",
+      "Bash(npm run *)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(python -m pytest tmp/tests/agent/test_langgraph_runtime.py tmp/tests/agent/test_llm_planner.py tmp/tests/agent/test_reflection_memory.py tmp/tests/api/test_auto_run_langgraph_runtime.py -v --tb=short)",
+      "Bash(xargs wc -l)"
     ]
   }
 }

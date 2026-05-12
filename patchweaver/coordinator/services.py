@@ -12,6 +12,12 @@ from pydantic import BaseModel
 
 from patchweaver.agent.planning import merge_agent_policy_hints
 from patchweaver.agent.policy import DecisionPolicy
+from patchweaver.agent.reflection import (
+    build_memory_hints_from_reflections,
+    generate_reflection,
+    load_reflections_for_next_attempt,
+    save_reflection,
+)
 from patchweaver.agent.state import AgentObservation, reduce_observation
 from patchweaver.agent.trace import append_agent_workflow_trace
 from patchweaver.analyzer.repair_intent_service import RepairIntentBuilder
@@ -630,6 +636,17 @@ class AnalysisService(CoordinatorSupport):
             validation_report=None,
             memory_hints=[],
         )
+        reflection = generate_reflection(observation)
+        dual_memory = getattr(self, "dual_memory", None)
+        reflection_path = save_reflection(
+            reflection,
+            task.workspace_dir,
+            memory=dual_memory,
+            task=task,
+            failure_record=failure_record,
+        )
+        reflections = load_reflections_for_next_attempt(task.workspace_dir, dual_memory)
+        observation = observation.model_copy(update={"memory_hints": build_memory_hints_from_reflections(reflections)})
         decision = self.decision_policy.decide(observation)
         reduction = reduce_observation(observation, decision)
         agent_trace_path = append_agent_workflow_trace(
@@ -653,6 +670,12 @@ class AnalysisService(CoordinatorSupport):
             artifact_type="analysis_failure_record",
             artifact_path=failure_path,
             metadata={"summary": "来源不可用失败归因"},
+        )
+        self.artifact_repo.add_artifact(
+            task_id=task.task_id,
+            artifact_type="agent_reflection",
+            artifact_path=reflection_path,
+            metadata={"summary": "Agent 失败反思记忆"},
         )
         self.artifact_repo.add_artifact(
             task_id=task.task_id,
@@ -1476,6 +1499,26 @@ class AttemptExecutionService(CoordinatorSupport):
         self.attempt_repo.save_attempt(attempt_record)
         self.attempt_repo.save_failure_record(failure_record)
         failure_record_path = self.json_writer.write_model(failure_record, attempt_dir / "logs" / "failure_record.json")
+        reflection_path: Path | None = None
+        if failure_record.failure_type not in {"", "none"}:
+            previous_reflections = load_reflections_for_next_attempt(task.workspace_dir, self.dual_memory)
+            reflection_observation = AgentObservation.from_runtime(
+                task=task,
+                latest_attempt=attempt_record,
+                failure_record=failure_record,
+                validation_report=None,
+                memory_hints=build_memory_hints_from_reflections(previous_reflections),
+            )
+            reflection = generate_reflection(reflection_observation)
+            reflection_path = save_reflection(
+                reflection,
+                task.workspace_dir,
+                memory=self.dual_memory,
+                task=task,
+                failure_record=failure_record,
+                recipe_name=plan.selected_recipe,
+                candidate_id=attempt_record.candidate_id,
+            )
         # builder 理论上应该总能给出 build_summary
         # 这里补一个兜底，保证后面的验证和报告还能继续读
         if build_summary is None:
@@ -1769,6 +1812,8 @@ class AttemptExecutionService(CoordinatorSupport):
         ]
         if failover_record_path is not None:
             trace_artifacts.append(("failover_record", failover_record_path, "窄状态回退建议"))
+        if reflection_path is not None:
+            trace_artifacts.append(("agent_reflection", reflection_path, "Agent 失败反思记忆"))
         if rewrite_meta.get("section_change_avoidance") is not None:
             trace_artifacts.append(
                 ("section_change_avoidance", rewrite_meta["section_change_avoidance"], "section change 专项收缩改写结果")
@@ -1812,6 +1857,7 @@ class AttemptExecutionService(CoordinatorSupport):
             ("build_precheck", build_precheck_path),
             ("build_summary", build_summary_path),
             ("failure_record", failure_record_path),
+            ("agent_reflection", reflection_path),
             ("failure_memory_snapshot", failure_memory_snapshot_path),
             ("recipe_memory_snapshot", recipe_memory_snapshot_path),
             ("validate_log", validate_log_path),

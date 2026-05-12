@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
+from patchweaver.agent.planning_contracts import ReflectionRecord
 from patchweaver.models.attempt import AttemptRecord, FailureRecord
 from patchweaver.models.evidence import EvidenceBundle
+from patchweaver.models.memory import FailureMemoryEntry, RecipeMemoryEntry
 from patchweaver.models.rewrite import RewritePlan
 from patchweaver.models.task import TaskContext
 from patchweaver.models.validation import ValidationReport
@@ -77,6 +80,91 @@ class DualMemory:
             "failure_memory": self.failure_memory.snapshot(),
             "recipe_memory": self.recipe_memory.snapshot(),
         }
+
+    def record_reflection(
+        self,
+        reflection: ReflectionRecord,
+        *,
+        task: TaskContext | None = None,
+        failure_record: FailureRecord | None = None,
+        recipe_name: str | None = None,
+        candidate_id: str | None = None,
+    ) -> dict[str, object]:
+        """Mirror Agent reflections into failure and recipe memory."""
+
+        failure_entries = self.repository.load_failure_entries()
+        reflection_id = self._reflection_id(reflection)
+        attempt_id = failure_record.attempt_id if failure_record is not None else reflection_id
+        task_id = task.task_id if task is not None else "unknown"
+        cve_id = task.cve_id if task is not None else "unknown"
+        if not any(entry.entry_id == f"FM-{reflection_id}" for entry in failure_entries):
+            failure_entries.append(
+                FailureMemoryEntry(
+                    entry_id=f"FM-{reflection_id}",
+                    task_id=task_id,
+                    cve_id=cve_id,
+                    attempt_id=attempt_id,
+                    stage_name=failure_record.stage_name if failure_record is not None else "agent_reflection",
+                    failure_type=reflection.failure_type,
+                    summary=reflection.what_failed,
+                    recipe_name=recipe_name or self._first_disabled_strategy(reflection),
+                    candidate_id=candidate_id,
+                    evidence=[
+                        reflection.what_to_avoid,
+                        reflection.next_strategy_hint,
+                        *reflection.evidence_refs,
+                    ][:8],
+                    keywords=self._reflection_keywords(reflection),
+                )
+            )
+            self.repository.save_failure_entries(failure_entries)
+
+        recipe = recipe_name or self._first_disabled_strategy(reflection)
+        if recipe:
+            recipe_entries = self.repository.load_recipe_entries()
+            entry_id = f"RM-{reflection_id}-{recipe}"
+            matched = next((entry for entry in recipe_entries if entry.entry_id == entry_id), None)
+            if matched is None:
+                matched = RecipeMemoryEntry(
+                    entry_id=entry_id,
+                    recipe_name=recipe,
+                    risk_types=[reflection.failure_type],
+                    primitives=[],
+                    candidate_id=candidate_id,
+                    last_task_id=task_id,
+                    last_attempt_id=attempt_id,
+                )
+                recipe_entries.append(matched)
+            matched.attempts = max(1, matched.attempts)
+            matched.failures = max(1, matched.failures)
+            matched.last_status = "reflection_failed"
+            matched.last_summary = reflection.what_failed
+            matched.last_task_id = task_id
+            matched.last_attempt_id = attempt_id
+            self.repository.save_recipe_entries(recipe_entries)
+
+        self._save_reflection_memory(reflection)
+        return self.repository.snapshot()
+
+    def load_reflections(self, *, limit: int = 8) -> list[ReflectionRecord]:
+        """Load memory-backed Agent reflections."""
+
+        path = self.repository.root_dir / "reflection_memory.json"
+        if not path.exists():
+            return []
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8") or "[]")
+        except (OSError, ValueError):
+            return []
+        if not isinstance(raw, list):
+            return []
+        reflections: list[ReflectionRecord] = []
+        for item in raw:
+            try:
+                reflections.append(ReflectionRecord.model_validate(item))
+            except ValueError:
+                continue
+        return reflections[-limit:]
 
     def recall(self, *, stage_name: str, evidence_bundle: EvidenceBundle, limit: int = 3) -> list[str]:
         """按阶段召回经验摘要"""
@@ -189,6 +277,48 @@ class DualMemory:
             "smpl_primary_rewrite": "上一轮命中 kpatch 约束，优先尝试结构化改写",
             "minimal_livepatch_wrap": "上一轮命中 kpatch 约束，保留最小 wrapper 对照路线",
         }
+
+    def _save_reflection_memory(self, reflection: ReflectionRecord) -> None:
+        """Persist a compact reflection ledger beside existing memory files."""
+
+        path = self.repository.root_dir / "reflection_memory.json"
+        if path.exists():
+            try:
+                raw = json.loads(path.read_text(encoding="utf-8") or "[]")
+            except (OSError, ValueError):
+                raw = []
+        else:
+            raw = []
+        if not isinstance(raw, list):
+            raw = []
+        reflection_id = self._reflection_id(reflection)
+        entries = [item for item in raw if not isinstance(item, dict) or item.get("reflection_id") != reflection_id]
+        entries.append(reflection.model_dump(mode="json"))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    def _reflection_id(self, reflection: ReflectionRecord) -> str:
+        return reflection.reflection_id or f"reflection-{reflection.attempt_no or 'unknown'}-{reflection.failure_type}"
+
+    def _first_disabled_strategy(self, reflection: ReflectionRecord) -> str | None:
+        return reflection.disabled_strategies[0] if reflection.disabled_strategies else None
+
+    def _reflection_keywords(self, reflection: ReflectionRecord) -> list[str]:
+        keywords = {reflection.failure_type, "agent_reflection"}
+        keywords.update(reflection.disabled_strategies)
+        combined = " ".join([reflection.what_failed, reflection.what_to_avoid, reflection.next_strategy_hint]).lower()
+        for token in [
+            "stable_source_baseline",
+            "reverse_unpatch",
+            "context_adapter",
+            "semantic_guard_rewrite",
+            "section_change_avoidance",
+            "ineffective_retry",
+            "terminal",
+        ]:
+            if token in combined:
+                keywords.add(token)
+        return sorted(keywords)
 
     def _keywords(self, evidence_bundle: EvidenceBundle) -> list[str]:
         """从证据中提取最小关键字集合"""

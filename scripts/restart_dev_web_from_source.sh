@@ -23,6 +23,9 @@ if [[ ! -f "${PROJECT_ROOT}/web/dist/index.html" ]]; then
 fi
 
 docker network inspect "${DEV_NETWORK}" >/dev/null 2>&1 || docker network create "${DEV_NETWORK}" >/dev/null
+if docker ps -a --format '{{.Names}}' | grep -Fxq "${API_CONTAINER}"; then
+  docker network connect "${DEV_NETWORK}" "${API_CONTAINER}" >/dev/null 2>&1 || true
+fi
 
 if docker ps -a --format '{{.Names}}' | grep -Fxq "${WEB_CONTAINER}"; then
   docker rm -f "${WEB_CONTAINER}" >/dev/null

@@ -21,6 +21,7 @@ from patchweaver.agent.state import (
     StateReduction,
     sanitize_agent_payload,
 )
+from patchweaver.models.task import TaskContext
 
 _SINK_ENV = "PATCHWEAVER_OBSERVABILITY_SINK"
 _LANGSMITH_TRACING_ENV = "LANGSMITH_TRACING"
@@ -158,6 +159,55 @@ def build_observability_event(
     )
 
 
+def build_langgraph_observability_event(
+    *,
+    node: str,
+    step_index: int,
+    status: str,
+    payload: dict[str, Any],
+    task: TaskContext | None = None,
+    task_id: str | None = None,
+    cve_id: str | None = None,
+    target_kernel: str | None = None,
+    trace_path: str | None = None,
+) -> ObservabilityEvent:
+    """Build one sanitized LangGraph node event for optional mirrors.
+
+    This mirrors only structured node summaries. The task workspace trace remains
+    the source of truth and raw logs are intentionally excluded.
+    """
+
+    effective_task_id = task.task_id if task is not None else task_id
+    effective_cve_id = task.cve_id if task is not None else cve_id
+    effective_target_kernel = task.target_kernel if task is not None else target_kernel
+    if not effective_task_id or not effective_cve_id or not effective_target_kernel:
+        raise ValueError("LangGraph observability event requires task_id, cve_id and target_kernel")
+
+    clean_payload = redact_observability_payload(
+        {
+            "node": node,
+            "step_index": step_index,
+            "status": status,
+            "payload": payload,
+        }
+    )
+    return ObservabilityEvent(
+        event_type="agent_langgraph_node",
+        task_id=effective_task_id,
+        cve_id=effective_cve_id,
+        target_kernel=effective_target_kernel,
+        status=status,
+        action_name=_langgraph_action_name(node=node, payload=clean_payload),
+        failure_type=_langgraph_failure_type(clean_payload),
+        stage=node,
+        terminal=_langgraph_terminal(clean_payload),
+        retry=_langgraph_retry(clean_payload),
+        remaining_attempts=_langgraph_remaining_attempts(clean_payload),
+        trace_path=trace_path,
+        payload=clean_payload,
+    )
+
+
 def emit_observability_event(
     *,
     event: ObservabilityEvent,
@@ -225,3 +275,71 @@ def _scrub_values(value: Any) -> Any:
 
 def _enum_value(value: Any) -> str:
     return str(getattr(value, "value", value))
+
+
+def _langgraph_action_name(*, node: str, payload: dict[str, Any]) -> str:
+    raw_payload = payload.get("payload") if isinstance(payload, dict) else {}
+    if not isinstance(raw_payload, dict):
+        return node
+    for container_name in ("plan", "tool_result", "guard", "reflection", "route"):
+        container = raw_payload.get(container_name)
+        if not isinstance(container, dict):
+            continue
+        for key in ("selected_action", "action_name", "executable_action"):
+            value = container.get(key)
+            if value:
+                return _enum_value(value)
+    return node
+
+
+def _langgraph_failure_type(payload: dict[str, Any]) -> str | None:
+    raw_payload = payload.get("payload") if isinstance(payload, dict) else {}
+    if not isinstance(raw_payload, dict):
+        return None
+    for container_name in ("observation", "reflection", "reduction"):
+        container = raw_payload.get(container_name)
+        if isinstance(container, dict):
+            value = container.get("failure_type")
+            if value:
+                return str(value)
+    return None
+
+
+def _langgraph_terminal(payload: dict[str, Any]) -> bool:
+    raw_payload = payload.get("payload") if isinstance(payload, dict) else {}
+    if not isinstance(raw_payload, dict):
+        return False
+    for container_name in ("guard", "tool_result", "reflection", "reduction", "route"):
+        container = raw_payload.get(container_name)
+        if isinstance(container, dict) and bool(container.get("terminal")):
+            return True
+    return False
+
+
+def _langgraph_retry(payload: dict[str, Any]) -> bool:
+    raw_payload = payload.get("payload") if isinstance(payload, dict) else {}
+    if not isinstance(raw_payload, dict):
+        return False
+    plan = raw_payload.get("plan")
+    if isinstance(plan, dict) and plan.get("selected_action") == "retry_with_strategy":
+        return True
+    return _langgraph_action_name(node="", payload=payload) == "retry_with_strategy"
+
+
+def _langgraph_remaining_attempts(payload: dict[str, Any]) -> int | None:
+    raw_payload = payload.get("payload") if isinstance(payload, dict) else {}
+    if not isinstance(raw_payload, dict):
+        return None
+    for container_name in ("plan", "reduction"):
+        container = raw_payload.get(container_name)
+        if not isinstance(container, dict):
+            continue
+        budget = container.get("budget")
+        if isinstance(budget, dict):
+            value = budget.get("remaining_attempts")
+            if isinstance(value, int):
+                return value
+        value = container.get("remaining_attempts")
+        if isinstance(value, int):
+            return value
+    return None

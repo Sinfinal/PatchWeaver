@@ -1,0 +1,23 @@
+# Optional Agent observability configuration.
+#
+# The task-local trace files remain the source of truth:
+# - agent_workflow_trace.json
+# - agent_auto_workflow_trace.json
+#
+# Enable mirrors through environment variables only:
+# - PATCHWEAVER_OBSERVABILITY_SINK=off|local|langsmith
+# - LANGSMITH_TRACING=true
+# - LANGSMITH_PROJECT=patchweaver-dev
+
+default_sink: off
+truth_source: task_workspace_trace
+structured_events_only: true
+redaction:
+  redact_secret_keys: true
+  redact_bearer_tokens: true
+  max_string_length: 800
+langsmith:
+  enabled_by_env: true
+  project_env: LANGSMITH_PROJECT
+  tracing_env: LANGSMITH_TRACING
+  success_judgement: disabled

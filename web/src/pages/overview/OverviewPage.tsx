@@ -6,6 +6,7 @@ import { controlPlanes, projectSummary } from "../../content/projectContent";
 import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
 import { fetchOverview } from "../../services/overview";
 import type { TaskListItem } from "../../types/tasks";
+import { failureSignalMeaning } from "../../utils/failureSignals";
 import { formatTime, shortenPath, toFixtureGroupPath } from "../../utils/format";
 
 export function OverviewPage(): JSX.Element {
@@ -124,6 +125,7 @@ export function OverviewPage(): JSX.Element {
                     <strong>{item.failure_type}</strong>
                     <span>{item.total} 次</span>
                   </div>
+                  <div className="pw-signal-meter-meaning">含义：{failureSignalMeaning(item)}</div>
                   <div className="pw-signal-meter-bar">
                     <span style={{ width: `${(item.total / maxFailureTotal) * 100}%` }} />
                   </div>

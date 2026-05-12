@@ -49,6 +49,34 @@ if [[ -d "${PROJECT_ROOT}/docs/submission" ]]; then
   sync_tree "${PROJECT_ROOT}/docs/submission" "${DOCKER_ROOT}/docs/submission"
 fi
 
+KERNEL_RELEASE="${PATCHWEAVER_KERNEL_RELEASE:-$(uname -r)}"
+PREPARED_SOURCE="/home/patchweaver/kernel-src-prepared/${KERNEL_RELEASE}"
+if [[ -d "${PREPARED_SOURCE}" && -f "${PREPARED_SOURCE}/Module.symvers" ]]; then
+  python3 - "${DOCKER_ROOT}/config/build.yaml" "${PREPARED_SOURCE}" <<'PY'
+from pathlib import Path
+import sys
+import yaml
+
+config_path = Path(sys.argv[1])
+prepared_source = sys.argv[2]
+payload = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+payload["prepared_kernel_src_dir"] = prepared_source
+priority = list(payload.get("build_source_priority") or [])
+if "prepared_kernel_src_dir" not in priority:
+    insert_at = priority.index("clean_kernel_src_dir") + 1 if "clean_kernel_src_dir" in priority else 0
+    priority.insert(insert_at, "prepared_kernel_src_dir")
+payload["build_source_priority"] = priority
+extra_args = list(payload.get("kpatch_build_extra_args") or [])
+if "--skip-compiler-check" not in extra_args:
+    extra_args.append("--skip-compiler-check")
+payload["kpatch_build_extra_args"] = extra_args
+extra_env = dict(payload.get("kpatch_build_env") or {})
+extra_env.setdefault("HOSTLDFLAGS", "-no-pie")
+payload["kpatch_build_env"] = extra_env
+config_path.write_text(yaml.safe_dump(payload, allow_unicode=True, sort_keys=False), encoding="utf-8")
+PY
+fi
+
 link_path /lib/modules "${DOCKER_ROOT}/host/lib/modules"
 link_path /usr/src/kernels "${DOCKER_ROOT}/host/usr/src/kernels"
 link_path /usr/lib/debug "${DOCKER_ROOT}/host/usr/lib/debug"

@@ -26,6 +26,9 @@ export type OverviewTask = {
 export type FailureDistributionItem = {
   failure_type: string;
   total: number;
+  meaning?: string | null;
+  description?: string | null;
+  label?: string | null;
 };
 
 export type EvaluationSummaryItem = {

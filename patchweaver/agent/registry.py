@@ -74,6 +74,7 @@ class AgentActionRegistry:
         failure_record: FailureRecord | None = None,
         validation_report: ValidationReport | None = None,
         memory_hints: list[dict[str, Any]] | None = None,
+        single_attempt: bool = False,
     ) -> AgentActionResult:
         """Execute a registered action and return a normalized observation."""
 
@@ -94,7 +95,10 @@ class AgentActionRegistry:
                 require_write=action.require_write,
                 enable_read_parallel=self.enable_read_parallel,
             )
-            payload = action.handler(task_id)
+            if single_attempt and normalized_name == AgentActionName.RUN_TASK and hasattr(self.task_runner, "attempt_service"):
+                payload = self.task_runner.attempt_service.run(task_id)
+            else:
+                payload = action.handler(task_id)
             if action.terminal:
                 status = str(payload.get("status") or "stopped")
         except Exception as exc:

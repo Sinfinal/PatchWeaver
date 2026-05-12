@@ -2,15 +2,72 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
 from pathlib import Path
+from typing import Any
 
+from pydantic import BaseModel, Field, ValidationError
+
+from patchweaver.config.models import ModelsConfig
 from patchweaver.harness.livepatchability import analyze_patch_shape, classify_kpatch_constraint_rewrite
 from patchweaver.models.attempt import FailureRecord
+from patchweaver.prompting.model_client import ModelClientError, OpenAICompatibleChatClient
 from unidiff import PatchSet
 
 
-class FailureClassifier:
+KNOWN_FAILURE_TYPES = {
+    "unknown",
+    "compile_failed",
+    "build_env_missing",
+    "kernel_src_missing",
+    "kernel_config_missing",
+    "vmlinux_missing",
+    "target_already_patched",
+    "feature_not_enabled",
+    "target_arch_mismatch",
+    "build_cache_incomplete",
+    "patch_apply_failed",
+    "dependency_gap",
+    "kpatch_constraint",
+    "kpatch_symbol_bundle_constraint",
+    "kpatch_section_symbol_offset_constraint",
+    "unsupported_livepatch",
+    "unfixable_by_livepatch",
+}
+
+KNOWN_CONSTRAINT_TYPES = [
+    "unsupported_section_change",
+    "rela_call_sites",
+    "symbol_bundle_offset",
+    "fentry_constraint",
+    "section_mismatch",
+    "init_section",
+    "call_sites_metadata",
+    "dependency_gap",
+    "toolchain_missing",
+    "source_alignment",
+]
+
+_SECRET_PATTERNS = [
+    re.compile(r"(?i)(api[_-]?key|token|password|passwd|credential|secret)\s*[:=]\s*[^ \n\r\t]+"),
+    re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]{12,}"),
+    re.compile(r"sk-[A-Za-z0-9_-]{8,}"),
+]
+
+
+class LLMFailureClassification(BaseModel):
+    """Structured output returned by the LLM failure classifier."""
+
+    failure_type: str
+    summary: str
+    evidence: list[str] = Field(default_factory=list)
+    diagnostic_details: dict[str, Any] = Field(default_factory=dict)
+    confidence: float | None = None
+
+
+class RuleFailureClassifier:
     """负责把构建失败整理为结构化归因"""
 
     def classify(self, *, task_id: str, attempt_id: str, stage_name: str, summary: str) -> FailureRecord:
@@ -629,3 +686,304 @@ class FailureClassifier:
             if "目标态结论:" in line:
                 return line.split("目标态结论:", 1)[-1].strip() or None
         return None
+
+
+class LLMFailureClassifier:
+    """Classify build failures with structured LLM output and rule fallback."""
+
+    def __init__(
+        self,
+        *,
+        models_config: ModelsConfig | None = None,
+        chat_client: OpenAICompatibleChatClient | None = None,
+        rule_classifier: RuleFailureClassifier | None = None,
+        prompt_path: Path | None = None,
+        max_log_chars: int = 6000,
+        max_patch_chars: int = 3000,
+    ) -> None:
+        self.models_config = models_config
+        self.chat_client = chat_client or self._build_default_client(self.models_config)
+        self.rule_classifier = rule_classifier or RuleFailureClassifier()
+        self.prompt_path = prompt_path or Path(__file__).resolve().parents[1] / "agent" / "prompts" / "failure_classifier_system.md"
+        self.max_log_chars = max_log_chars
+        self.max_patch_chars = max_patch_chars
+
+    def classify_build_log(
+        self,
+        *,
+        task_id: str,
+        attempt_id: str,
+        build_log: str,
+        build_exec_status: str | None = None,
+        failure_type_hint: str | None = None,
+        rewritten_patch_path: Path | None = None,
+        patch_diff: str | None = None,
+        known_constraint_types: list[str] | None = None,
+    ) -> FailureRecord:
+        """Classify a build log, falling back to the deterministic rule classifier."""
+
+        rule_record = self.rule_classifier.classify_build_log(
+            task_id=task_id,
+            attempt_id=attempt_id,
+            build_log=build_log,
+            build_exec_status=build_exec_status,
+            failure_type_hint=failure_type_hint,
+            rewritten_patch_path=rewritten_patch_path,
+        )
+        mode = os.getenv("PATCHWEAVER_FAILURE_CLASSIFIER", "llm").strip().lower() or "llm"
+        if mode == "rule":
+            return self._with_classifier_mode(rule_record, mode="rule")
+        if mode != "llm":
+            return self._with_classifier_mode(
+                rule_record,
+                mode="fallback_rule",
+                reason=f"未知 PATCHWEAVER_FAILURE_CLASSIFIER={mode}",
+            )
+        if self.chat_client is None:
+            return self._with_classifier_mode(
+                rule_record,
+                mode="fallback_rule",
+                reason="缺少可用模型客户端或 API Key",
+            )
+
+        try:
+            response = self.chat_client.chat_json(
+                model=self._model_name(),
+                system_prompt=self._system_prompt(),
+                user_prompt=self._user_prompt(
+                    build_log=build_log,
+                    patch_diff=patch_diff if patch_diff is not None else self._read_patch_diff(rewritten_patch_path),
+                    failure_type_hint=failure_type_hint,
+                    build_exec_status=build_exec_status,
+                    known_constraint_types=known_constraint_types or KNOWN_CONSTRAINT_TYPES,
+                    rule_record=rule_record,
+                ),
+                temperature=0.0,
+            )
+            classification = LLMFailureClassification.model_validate(response.payload)
+            return self._record_from_llm(
+                task_id=task_id,
+                attempt_id=attempt_id,
+                stage_name="build",
+                classification=classification,
+                rule_record=rule_record,
+                model_name=response.model_name or self._model_name(),
+                usage=response.usage,
+                known_constraint_types=known_constraint_types or KNOWN_CONSTRAINT_TYPES,
+            )
+        except (ModelClientError, ValidationError, ValueError, KeyError, TypeError) as exc:
+            return self._with_classifier_mode(
+                rule_record,
+                mode="fallback_rule",
+                reason=f"LLM failure classifier unavailable: {exc}",
+            )
+
+    def classify(self, *, task_id: str, attempt_id: str, stage_name: str, summary: str) -> FailureRecord:
+        """Keep the minimal non-build failure API compatible."""
+
+        record = self.rule_classifier.classify(
+            task_id=task_id,
+            attempt_id=attempt_id,
+            stage_name=stage_name,
+            summary=summary,
+        )
+        return self._with_classifier_mode(record, mode="rule")
+
+    def diagnose_patch_apply_failure(self, *, build_log: str) -> dict[str, object]:
+        """Delegate patch-apply diagnostics to the deterministic classifier."""
+
+        return self.rule_classifier.diagnose_patch_apply_failure(build_log=build_log)
+
+    def _record_from_llm(
+        self,
+        *,
+        task_id: str,
+        attempt_id: str,
+        stage_name: str,
+        classification: LLMFailureClassification,
+        rule_record: FailureRecord,
+        model_name: str,
+        usage: dict[str, Any],
+        known_constraint_types: list[str],
+    ) -> FailureRecord:
+        failure_type = classification.failure_type.strip() or rule_record.failure_type
+        if failure_type not in KNOWN_FAILURE_TYPES:
+            failure_type = rule_record.failure_type if rule_record.failure_type != "unknown" else "compile_failed"
+
+        diagnostic_details = dict(classification.diagnostic_details or {})
+        if failure_type in {
+            "kpatch_constraint",
+            "kpatch_symbol_bundle_constraint",
+            "kpatch_section_symbol_offset_constraint",
+        } and "kpatch_constraint" not in diagnostic_details:
+            rule_constraint = rule_record.diagnostic_details.get("kpatch_constraint")
+            if rule_constraint is not None:
+                diagnostic_details["kpatch_constraint"] = rule_constraint
+        if failure_type == "patch_apply_failed" and "patch_apply" not in diagnostic_details:
+            rule_apply = rule_record.diagnostic_details.get("patch_apply")
+            if rule_apply is not None:
+                diagnostic_details["patch_apply"] = rule_apply
+
+        diagnostic_details["classifier_mode"] = "llm"
+        diagnostic_details["llm_failure_classifier"] = {
+            "model_name": model_name,
+            "confidence": classification.confidence,
+            "known_constraint_types": known_constraint_types,
+            "usage": usage,
+            "input_redacted": True,
+            "full_build_log_sent": False,
+        }
+        return FailureRecord(
+            task_id=task_id,
+            attempt_id=attempt_id,
+            stage_name=stage_name,
+            failure_type=failure_type,
+            summary=classification.summary.strip() or rule_record.summary,
+            evidence=list(classification.evidence or rule_record.evidence)[:5],
+            diagnostic_details=diagnostic_details,
+        )
+
+    def _with_classifier_mode(self, record: FailureRecord, *, mode: str, reason: str | None = None) -> FailureRecord:
+        diagnostic_details = dict(record.diagnostic_details or {})
+        diagnostic_details["classifier_mode"] = mode
+        if reason:
+            diagnostic_details["classifier_fallback_reason"] = reason
+        return record.model_copy(update={"diagnostic_details": diagnostic_details})
+
+    def _system_prompt(self) -> str:
+        if self.prompt_path.exists():
+            return self.prompt_path.read_text(encoding="utf-8")
+        return (
+            "You are PatchWeaver's failure classifier. Return one JSON object compatible with FailureRecord: "
+            "failure_type, summary, evidence, diagnostic_details, confidence."
+        )
+
+    def _user_prompt(
+        self,
+        *,
+        build_log: str,
+        patch_diff: str | None,
+        failure_type_hint: str | None,
+        build_exec_status: str | None,
+        known_constraint_types: list[str],
+        rule_record: FailureRecord,
+    ) -> str:
+        payload = {
+            "schema": {
+                "failure_type": sorted(KNOWN_FAILURE_TYPES),
+                "summary": "short human-readable root cause",
+                "evidence": "array of exact short evidence lines from sanitized excerpt",
+                "diagnostic_details": "JSON object, compatible with downstream policy.py",
+                "confidence": "0.0-1.0",
+            },
+            "known_constraint_types": known_constraint_types,
+            "failure_type_hint": failure_type_hint,
+            "build_exec_status": build_exec_status,
+            "rule_classifier_baseline": self._redact_payload(
+                {
+                    "failure_type": rule_record.failure_type,
+                    "summary": rule_record.summary,
+                    "evidence": rule_record.evidence,
+                    "diagnostic_details": rule_record.diagnostic_details,
+                }
+            ),
+            "sanitized_build_log_excerpt": self._clip_text(self._redact_text(build_log), self.max_log_chars),
+            "sanitized_patch_diff_excerpt": self._clip_text(self._redact_text(patch_diff or ""), self.max_patch_chars),
+            "privacy_constraints": {
+                "full_build_log_sent": False,
+                "secrets_redacted": True,
+                "do_not_request_credentials": True,
+            },
+        }
+        return json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+    def _read_patch_diff(self, rewritten_patch_path: Path | None) -> str | None:
+        if rewritten_patch_path is None or not rewritten_patch_path.exists():
+            return None
+        return rewritten_patch_path.read_text(encoding="utf-8", errors="replace")
+
+    def _redact_text(self, text: str) -> str:
+        redacted = text
+        for pattern in _SECRET_PATTERNS:
+            redacted = pattern.sub(lambda match: f"{match.group(1) if match.groups() else 'secret'}[REDACTED]", redacted)
+        return redacted
+
+    def _redact_payload(self, value: Any) -> Any:
+        if isinstance(value, str):
+            return self._redact_text(value)
+        if isinstance(value, dict):
+            return {str(key): self._redact_payload(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [self._redact_payload(item) for item in value]
+        if isinstance(value, tuple):
+            return [self._redact_payload(item) for item in value]
+        return value
+
+    def _clip_text(self, text: str, limit: int) -> str:
+        if len(text) <= limit:
+            return text
+        head = text[: max(0, limit // 2)]
+        tail = text[-max(0, limit // 2) :]
+        return f"{head}\n...[truncated {len(text) - len(head) - len(tail)} chars]...\n{tail}"
+
+    def _model_name(self) -> str:
+        if self.models_config is None:
+            return "unknown"
+        return self.models_config.helper_models.get("log_summary") or self.models_config.development_model or self.models_config.default_model
+
+    def _build_default_client(self, models_config: ModelsConfig | None) -> OpenAICompatibleChatClient | None:
+        if models_config is None:
+            return None
+        if models_config.endpoint_mode != "openai_compatible":
+            return None
+        api_key = models_config.resolve_api_key()
+        if not api_key:
+            return None
+        return OpenAICompatibleChatClient(base_url=models_config.base_url, api_key=api_key)
+
+
+class FailureClassifier:
+    """Backward-compatible facade: LLM-first classification with rule fallback."""
+
+    def __init__(
+        self,
+        *,
+        models_config: ModelsConfig | None = None,
+        chat_client: OpenAICompatibleChatClient | None = None,
+    ) -> None:
+        self.rule_classifier = RuleFailureClassifier()
+        self.llm_classifier = LLMFailureClassifier(
+            models_config=models_config,
+            chat_client=chat_client,
+            rule_classifier=self.rule_classifier,
+        )
+
+    def classify(self, *, task_id: str, attempt_id: str, stage_name: str, summary: str) -> FailureRecord:
+        return self.llm_classifier.classify(
+            task_id=task_id,
+            attempt_id=attempt_id,
+            stage_name=stage_name,
+            summary=summary,
+        )
+
+    def classify_build_log(
+        self,
+        *,
+        task_id: str,
+        attempt_id: str,
+        build_log: str,
+        build_exec_status: str | None = None,
+        failure_type_hint: str | None = None,
+        rewritten_patch_path: Path | None = None,
+    ) -> FailureRecord:
+        return self.llm_classifier.classify_build_log(
+            task_id=task_id,
+            attempt_id=attempt_id,
+            build_log=build_log,
+            build_exec_status=build_exec_status,
+            failure_type_hint=failure_type_hint,
+            rewritten_patch_path=rewritten_patch_path,
+        )
+
+    def diagnose_patch_apply_failure(self, *, build_log: str) -> dict[str, object]:
+        return self.rule_classifier.diagnose_patch_apply_failure(build_log=build_log)

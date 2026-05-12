@@ -52,7 +52,17 @@ export function TaskTable({ items }: TaskTableProps): JSX.Element {
               <div>{item.fixture_group ?? "-"}</div>
               <div className="pw-inline-note">{item.fixture_id ?? "未绑定样例"}</div>
             </td>
-            <td>{item.latest_failure_type ?? item.latest_failure_summary ?? "-"}</td>
+            <td>
+              {item.latest_failure_type ? (
+                <div className="pw-failure-cell">
+                  <strong>{item.latest_failure_type}</strong>
+                  {item.latest_failure_explanation ? <span>{item.latest_failure_explanation}</span> : null}
+                  {item.latest_failure_summary ? <span>{item.latest_failure_summary}</span> : null}
+                </div>
+              ) : (
+                item.latest_failure_summary ?? "-"
+              )}
+            </td>
             <td>{formatTime(item.updated_at)}</td>
           </tr>
         ))}

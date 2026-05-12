@@ -236,6 +236,10 @@ export function TaskDetailPage(): JSX.Element {
         <AgentWorkStatusPanel detail={detail} />
       </SectionCard>
 
+      <SectionCard title="Agent 决策轨迹">
+        <AgentDecisionTimeline detail={detail} />
+      </SectionCard>
+
       {detail.agent_decision_summary ? (
         <SectionCard title="智能体决策摘要">
           <AgentDecisionPanel detail={detail} />
@@ -299,6 +303,77 @@ export function TaskDetailPage(): JSX.Element {
           />
         </div>
       </SectionCard>
+    </div>
+  );
+}
+
+function AgentDecisionTimeline({ detail }: { detail: TaskDetailResponse }): JSX.Element {
+  const trace = detail.agent_trace;
+  if (!trace?.present || trace.steps.length === 0) {
+    return (
+      <div className="pw-process-summary">
+        <div className="pw-process-heading">
+          <div>
+            <strong>暂无 Agent 自动编排轨迹</strong>
+            <div className="pw-inline-note">启用 PATCHWEAVER_AGENT_RUNTIME=langgraph 并通过 Web 自动运行后会生成轨迹</div>
+          </div>
+          <StatusBadge value="idle" />
+        </div>
+        <div className="pw-inline-note">目标：{detail.task.cve_id} / {detail.task.target_kernel}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pw-process-summary">
+      <div className="pw-process-heading">
+        <div>
+          <strong>目标 {trace.goal.cve_id}</strong>
+          <div className="pw-inline-note">
+            Runtime {trace.runtime ?? "unknown"} / checkpoint {trace.checkpoint_exists ? "已写入" : "未写入"} / resume{" "}
+            {trace.resumed_from_checkpoint ? "已恢复" : "未触发"}
+          </div>
+        </div>
+        <StatusBadge value={trace.terminal_reason ? "terminal" : "running"} />
+      </div>
+      <div className="pw-agent-trace">
+        {trace.steps.map((step) => (
+          <div className="pw-agent-step" key={step.step_index}>
+            <div className="pw-agent-step-head">
+              <span className="pw-agent-step-index">STEP {step.step_index}</span>
+              <strong>{step.selected_action ?? "未记录动作"}</strong>
+              <StatusBadge value={step.guard_result === "allowed" ? "success" : step.guard_result ? "warn" : "unknown"} />
+            </div>
+            <div className="pw-process-grid">
+              <div>
+                <span className="pw-process-label">Planner 理由</span>
+                <div>{step.reason_summary ?? "未记录"}</div>
+              </div>
+              <div>
+                <span className="pw-process-label">PolicyGuard</span>
+                <div>{step.guard_result ?? "未记录"}</div>
+              </div>
+              <div>
+                <span className="pw-process-label">ToolResult</span>
+                <div>{step.tool_action ?? step.tool_result_status ?? "未执行"}</div>
+              </div>
+              <div>
+                <span className="pw-process-label">Checkpoint</span>
+                <div>{step.checkpoint_status ?? "未记录"}</div>
+              </div>
+            </div>
+            {step.alternatives?.length ? (
+              <div className="pw-inline-note">候选策略：{step.alternatives.join(" / ")}</div>
+            ) : null}
+            {step.reflection_summary ? <div className="pw-process-conflict">Reflection：{step.reflection_summary}</div> : null}
+            {step.next_strategy_hint ? <div className="pw-inline-note">下一策略：{step.next_strategy_hint}</div> : null}
+            {step.terminal_reason ? <div className="pw-process-conflict">终止原因：{step.terminal_reason}</div> : null}
+            {step.evidence_refs.length ? <div className="pw-inline-note">证据：{step.evidence_refs.join(" / ")}</div> : null}
+          </div>
+        ))}
+      </div>
+      <div className="pw-inline-note">Trace: {shortenPath(trace.trace_path)}</div>
+      <div className="pw-inline-note">Checkpoint: {shortenPath(trace.checkpoint_path)}</div>
     </div>
   );
 }
