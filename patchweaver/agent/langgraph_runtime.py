@@ -27,9 +27,22 @@ from patchweaver.config.models import ModelsConfig
 from patchweaver.memory.dual_memory import DualMemory
 from patchweaver.models.attempt import FailureRecord
 from patchweaver.models.task import TaskContext
+from patchweaver.models.validation import ValidationReport
 from patchweaver.utils.path_policy import to_project_relative
 
 GRAPH_NODES = ["observe", "plan", "guard", "execute", "reflect", "reduce", "route"]
+AUTO_RUN_AVAILABLE_ACTIONS = [
+    AgentActionName.ANALYZE_SOURCE,
+    AgentActionName.ANALYZE_TASK,
+    AgentActionName.RUN_ATTEMPT,
+    AgentActionName.RUN_TASK,
+    AgentActionName.REPORT,
+    AgentActionName.REPORT_TASK,
+    AgentActionName.REPLAY,
+    AgentActionName.REPLAY_TASK,
+    AgentActionName.RETRY_WITH_STRATEGY,
+    AgentActionName.STOP_MANUAL_REVIEW,
+]
 
 
 class LangGraphRuntimeResult(BaseModel):
@@ -66,7 +79,6 @@ class LangGraphRuntime:
 
     TERMINAL_ACTIONS = {
         AgentActionName.STOP_MANUAL_REVIEW,
-        AgentActionName.REPORT_TASK,
         AgentActionName.REPLAY_TASK,
     }
 
@@ -133,10 +145,12 @@ class LangGraphRuntime:
             self._write_trace(trace_path, trace)
 
             goal = AgentGoal.from_task_context(self._require_task(task_id))
-            plan = self.planner.plan(
+            planner = self._planner_for_task(task)
+            plan = planner.plan(
                 observation=observation,
                 goal=goal,
                 memory_hints=observation.memory_hints,
+                available_actions=AUTO_RUN_AVAILABLE_ACTIONS,
                 reflections=reflections,
             )
             last_plan = plan
@@ -200,6 +214,7 @@ class LangGraphRuntime:
                         "progress_made": progress_made,
                         "after_failure_type": after_observation.failure_type,
                         "after_task_status": after_observation.task_status,
+                        "after_validation_status": after_observation.validation_status,
                     },
                 )
                 terminal = bool(getattr(action_result, "terminal", False)) or action_name in self.TERMINAL_ACTIONS
@@ -307,23 +322,37 @@ class LangGraphRuntime:
         trace["last_guard"] = last_guard.model_dump(mode="json") if last_guard is not None else None
         trace["last_tool_result"] = last_tool_result.model_dump(mode="json") if last_tool_result is not None else None
         self._write_trace(trace_path, trace)
-        self._add_trace_artifact(task_id=task_id, trace_path=trace_path, checkpoint_path=checkpoint_path)
+        self._add_trace_artifact(
+            task_id=task_id,
+            trace_path=trace_path,
+            checkpoint_path=checkpoint_path,
+            planner_trace_path=task.workspace_dir / "agent" / "agent_planner_trace.json",
+        )
         return payload
+
+    def _planner_for_task(self, task: TaskContext) -> Any:
+        if isinstance(self.planner, LLMPlanner):
+            self.planner.trace_path = task.workspace_dir / "agent" / "agent_planner_trace.json"
+        return self.planner
 
     def _observe(self, task_id: str) -> tuple[AgentObservation, FailureRecord | None, list[ReflectionRecord]]:
         task = self._require_task(task_id)
         attempts = self._list_attempts(task_id)
         latest_attempt = attempts[-1] if attempts else None
         failure_record = self._load_failure_record(task=task, latest_attempt=latest_attempt)
+        validation_report = self._load_validation_report(task=task, latest_attempt=latest_attempt)
         reflections = load_reflections_for_next_attempt(task.workspace_dir, self.memory)
         memory_hints = build_memory_hints_from_reflections(reflections)
         observation = AgentObservation.from_runtime(
             task=task,
             latest_attempt=latest_attempt,
             failure_record=failure_record,
-            validation_report=None,
+            validation_report=validation_report,
             memory_hints=memory_hints,
         )
+        diagnostics = dict(observation.diagnostics)
+        diagnostics["artifact_state"] = self._artifact_state(task=task)
+        observation = observation.model_copy(update={"diagnostics": sanitize_agent_payload(diagnostics)})
         return observation, failure_record, reflections
 
     def _reflect(
@@ -377,7 +406,7 @@ class LangGraphRuntime:
         step_index: int,
     ) -> dict[str, Any]:
         if terminal:
-            return {"status": "terminal", "terminal": True, "reason": "terminal action or guard result"}
+            return {"status": "terminal", "terminal": True, "reason": "流程已到终止动作或安全检查终止"}
         if tool_result.status in {"failed", "rejected"}:
             if (
                 tool_result.action_name == AgentActionName.ANALYZE_TASK
@@ -393,17 +422,17 @@ class LangGraphRuntime:
                 return {
                     "status": "continue",
                     "terminal": False,
-                    "reason": "analysis produced terminal failure observation for Planner review",
+                    "reason": "分析阶段生成终止型失败观察，交由规划器复核",
                 }
             return {"status": "terminal", "terminal": True, "reason": tool_result.error or tool_result.status}
         if (
             tool_result.action_name == AgentActionName.RUN_TASK
             and tool_result.metadata.get("progress_made") is False
         ):
-            return {"status": "no_progress", "terminal": True, "reason": "run_task did not change observation state"}
+            return {"status": "no_progress", "terminal": True, "reason": "构建动作未带来新的任务状态变化"}
         if step_index >= self.max_steps:
-            return {"status": "max_steps", "terminal": True, "reason": "max_steps reached"}
-        return {"status": "continue", "terminal": False, "reason": f"planner selected {plan.selected_action.value}"}
+            return {"status": "max_steps", "terminal": True, "reason": "自动编排达到最大步数"}
+        return {"status": "continue", "terminal": False, "reason": f"规划器选择 {plan.selected_action.value}"}
 
     def _progress_made(self, *, before: AgentObservation, after: AgentObservation) -> bool:
         before_key = (
@@ -412,6 +441,8 @@ class LangGraphRuntime:
             before.latest_attempt_no,
             before.latest_status,
             before.failure_type,
+            before.validation_status,
+            before.diagnostics.get("artifact_state"),
             tuple(before.evidence_refs),
         )
         after_key = (
@@ -420,6 +451,8 @@ class LangGraphRuntime:
             after.latest_attempt_no,
             after.latest_status,
             after.failure_type,
+            after.validation_status,
+            after.diagnostics.get("artifact_state"),
             tuple(after.evidence_refs),
         )
         return before_key != after_key
@@ -451,6 +484,44 @@ class LangGraphRuntime:
             except (OSError, ValueError, json.JSONDecodeError):
                 continue
         return None
+
+    def _load_validation_report(self, *, task: TaskContext, latest_attempt: Any | None) -> ValidationReport | None:
+        if latest_attempt is None:
+            return None
+        attempt_no = getattr(latest_attempt, "attempt_no", None)
+        if attempt_no is None:
+            return None
+        path = task.workspace_dir / "attempts" / f"{int(attempt_no):03d}" / "artifacts" / "validation_report.json"
+        if not path.exists():
+            return None
+        try:
+            return ValidationReport.model_validate_json(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, json.JSONDecodeError):
+            return None
+
+    def _artifact_state(self, *, task: TaskContext) -> dict[str, Any]:
+        trace_path = task.workspace_dir / "agent" / "agent_auto_workflow_trace.json"
+        replay_recorded = False
+        if trace_path.exists():
+            try:
+                trace = json.loads(trace_path.read_text(encoding="utf-8") or "{}")
+            except (OSError, json.JSONDecodeError):
+                trace = {}
+            nodes = trace.get("nodes") if isinstance(trace, dict) else None
+            if isinstance(nodes, list):
+                replay_recorded = any(
+                    isinstance(node, dict)
+                    and node.get("node") == "execute"
+                    and (((node.get("payload") or {}).get("tool_result") or {}).get("action_name") == "replay_task")
+                    for node in nodes
+                )
+        reports_dir = task.workspace_dir / "reports"
+        return {
+            "report_json_exists": (reports_dir / "report.json").exists(),
+            "report_md_exists": (reports_dir / "report.md").exists(),
+            "evaluation_summary_exists": (reports_dir / "evaluation_summary.json").exists(),
+            "replay_recorded": replay_recorded,
+        }
 
     def _load_trace(self, *, task: TaskContext, trace_path: Path) -> dict[str, Any]:
         if trace_path.exists():
@@ -553,7 +624,14 @@ class LangGraphRuntime:
             encoding="utf-8",
         )
 
-    def _add_trace_artifact(self, *, task_id: str, trace_path: Path, checkpoint_path: Path) -> None:
+    def _add_trace_artifact(
+        self,
+        *,
+        task_id: str,
+        trace_path: Path,
+        checkpoint_path: Path,
+        planner_trace_path: Path,
+    ) -> None:
         if self.artifact_repo is None or not hasattr(self.artifact_repo, "add_artifact"):
             return
         self.artifact_repo.add_artifact(
@@ -568,3 +646,10 @@ class LangGraphRuntime:
             artifact_path=checkpoint_path,
             metadata={"summary": "LangGraph dev checkpoint"},
         )
+        if planner_trace_path.exists():
+            self.artifact_repo.add_artifact(
+                task_id=task_id,
+                artifact_type="agent_planner_trace",
+                artifact_path=planner_trace_path,
+                metadata={"summary": "Planner 结构化决策轨迹"},
+            )

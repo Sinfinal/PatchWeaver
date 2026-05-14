@@ -60,6 +60,7 @@ docker run -d \
   -v "${DOCKER_ROOT}/config:/app/config:ro" \
   -v "${DOCKER_ROOT}/evaluations:/app/evaluations:ro" \
   -v "${DOCKER_ROOT}/host/lib/modules:/lib/modules:ro" \
+  -v "${DOCKER_ROOT}/host/usr/include:/usr/include:ro" \
   -v "${DOCKER_ROOT}/host/usr/src/kernels:/usr/src/kernels:ro" \
   -v "${DOCKER_ROOT}/host/usr/lib/debug:/usr/lib/debug:ro" \
   -v "${DOCKER_ROOT}/host/opt/kernel-src:/opt/kernel-src:ro" \

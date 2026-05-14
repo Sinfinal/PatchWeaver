@@ -15,6 +15,7 @@ router = APIRouter(tags=["tasks"])
 @router.get("/tasks")
 def list_tasks(
     limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     cve_id: str | None = None,
     status: str | None = None,
     failure_type: str | None = None,
@@ -31,6 +32,7 @@ def list_tasks(
 
     return TaskQueryService(context).list_tasks(
         limit=limit,
+        offset=offset,
         cve_id=cve_id,
         status=status,
         failure_type=failure_type,

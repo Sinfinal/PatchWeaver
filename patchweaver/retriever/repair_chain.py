@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import socket
+import subprocess
 import time
 from copy import deepcopy
 from pathlib import Path
@@ -13,6 +15,7 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from patchweaver.config.loader import load_build_config
 from patchweaver.models.patch import SourceEvidence
 from patchweaver.retriever.source_router import RetrieverSourceRouter
 
@@ -20,7 +23,12 @@ from patchweaver.retriever.source_router import RetrieverSourceRouter
 class RepairChainResolver:
     """负责生成最小修复链路信息"""
 
-    def __init__(self, *, cache_dir: Path | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        cache_dir: Path | None = None,
+        stable_source_git_dir: Path | str | None = None,
+    ) -> None:
         """初始化来源路由器"""
 
         self.router = RetrieverSourceRouter()
@@ -31,6 +39,7 @@ class RepairChainResolver:
         self.cache_dir = cache_dir.resolve() if cache_dir is not None else None
         self.cache_ttl_sec = 6 * 3600
         self.stale_cache_ttl_sec = 30 * 24 * 3600
+        self.stable_source_git_dir = self._resolve_stable_source_git_dir(stable_source_git_dir)
         self._fetch_trace: dict[str, Any] = {}
 
     def latest_fetch_trace(self) -> dict[str, Any] | None:
@@ -39,6 +48,28 @@ class RepairChainResolver:
         if not self._fetch_trace:
             return None
         return deepcopy(self._fetch_trace)
+
+    def _resolve_stable_source_git_dir(self, configured: Path | str | None) -> Path | None:
+        """解析本地 linux-stable git mirror 路径"""
+
+        candidates: list[str] = []
+        if configured is not None:
+            candidates.append(str(configured))
+        env_value = os.getenv("PATCHWEAVER_STABLE_SOURCE_GIT_DIR", "").strip()
+        if env_value:
+            candidates.append(env_value)
+        try:
+            build_config = load_build_config()
+            if build_config.stable_source_git_dir:
+                candidates.append(build_config.stable_source_git_dir)
+        except Exception:
+            pass
+
+        for candidate in candidates:
+            path = Path(candidate).expanduser()
+            if path.is_dir() and (path / ".git").exists():
+                return path.resolve()
+        return None
 
     def resolve(self, cve_id: str, *, target_kernel: str | None = None) -> dict[str, object]:
         """解析真实的 CVE 元数据、来源链与 patch 文本"""
@@ -471,6 +502,17 @@ class RepairChainResolver:
     def _stable_commit_kernel_release(self, commit_id: str) -> str:
         """读取 stable commit 所属的内核版本号"""
 
+        local_makefile = self._git_show_text(
+            source_name="linux-stable",
+            commit_ref=commit_id,
+            pathspec="Makefile",
+            stage="patch_metadata",
+        )
+        if local_makefile is not None:
+            release = self._parse_makefile_kernel_release(local_makefile)
+            if release is not None:
+                return release
+
         makefile_url = (
             "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/"
             f"plain/Makefile?id={commit_id}"
@@ -665,6 +707,10 @@ class RepairChainResolver:
     def _fetch_patch_text(self, selected_ref: dict[str, str | None]) -> str:
         """按来源优先级依次尝试下载 patch 文本"""
 
+        local_patch_text = self._fetch_patch_text_from_local_git(selected_ref)
+        if local_patch_text is not None:
+            return local_patch_text
+
         patch_urls = [str(item) for item in selected_ref.get("patch_urls") or [] if item]
         if not patch_urls and selected_ref.get("patch_url"):
             patch_urls = [str(selected_ref["patch_url"])]
@@ -689,6 +735,125 @@ class RepairChainResolver:
             "补丁下载失败，已尝试全部候选地址: "
             + " | ".join(errors)
         )
+
+    def _fetch_patch_text_from_local_git(self, selected_ref: dict[str, str | None]) -> str | None:
+        """优先从本地 linux-stable mirror 生成 patch，避免 clean-state 依赖外网缓存"""
+
+        source_name = str(selected_ref.get("source_name") or "")
+        commit_id = selected_ref.get("commit_id")
+        if source_name != "linux-stable" or not commit_id:
+            return None
+
+        patch_text = self._git_format_patch(
+            source_name=source_name,
+            commit_ref=str(commit_id),
+            stage="patch",
+        )
+        if patch_text is None:
+            return None
+
+        selected_ref["selected_patch_url"] = f"local-git://linux-stable/{commit_id}"
+        selected_ref["selected_patch_index"] = "0"
+        return patch_text
+
+    def _git_format_patch(self, *, source_name: str, commit_ref: str, stage: str) -> str | None:
+        """从本地 git mirror 生成邮件格式 patch"""
+
+        repo_dir = self._local_git_dir_for_source(source_name)
+        if repo_dir is None:
+            return None
+        return self._run_git_text(
+            repo_dir=repo_dir,
+            args=["format-patch", "-1", "--stdout", commit_ref],
+            source_name=source_name,
+            stage=stage,
+            url=f"local-git://{source_name}/{commit_ref}",
+        )
+
+    def _git_show_text(
+        self,
+        *,
+        source_name: str,
+        commit_ref: str,
+        pathspec: str,
+        stage: str,
+    ) -> str | None:
+        """从本地 git mirror 读取指定 revision 的文件内容"""
+
+        repo_dir = self._local_git_dir_for_source(source_name)
+        if repo_dir is None:
+            return None
+        return self._run_git_text(
+            repo_dir=repo_dir,
+            args=["show", f"{commit_ref}:{pathspec}"],
+            source_name=source_name,
+            stage=stage,
+            url=f"local-git://{source_name}/{commit_ref}:{pathspec}",
+        )
+
+    def _local_git_dir_for_source(self, source_name: str) -> Path | None:
+        """返回指定来源对应的本地 git mirror"""
+
+        if source_name == "linux-stable":
+            return self.stable_source_git_dir
+        return None
+
+    def _run_git_text(
+        self,
+        *,
+        repo_dir: Path,
+        args: list[str],
+        source_name: str,
+        stage: str,
+        url: str,
+    ) -> str | None:
+        """执行受控 git 只读命令，并写入来源 trace"""
+
+        started_at = time.monotonic()
+        try:
+            result = subprocess.run(
+                ["git", "-C", str(repo_dir), *args],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            self._record_fetch_event(
+                source_name=source_name,
+                stage=stage,
+                url=url,
+                attempt_no=0,
+                outcome="local_git_error",
+                elapsed_ms=self._elapsed_ms(started_at),
+                error=self._shorten(str(exc), limit=240),
+                retry_allowed=False,
+            )
+            return None
+
+        if result.returncode != 0 or not result.stdout.strip():
+            error = result.stderr.strip() or result.stdout.strip() or f"git exited {result.returncode}"
+            self._record_fetch_event(
+                source_name=source_name,
+                stage=stage,
+                url=url,
+                attempt_no=0,
+                outcome="local_git_error",
+                elapsed_ms=self._elapsed_ms(started_at),
+                error=self._shorten(error, limit=240),
+                retry_allowed=False,
+            )
+            return None
+
+        self._record_fetch_event(
+            source_name=source_name,
+            stage=stage,
+            url=url,
+            attempt_no=0,
+            outcome="local_git_success",
+            elapsed_ms=self._elapsed_ms(started_at),
+        )
+        return result.stdout
 
     def _fetch_json(self, url: str, *, source_name: str, stage: str) -> dict[str, Any]:
         """读取 JSON 内容"""
@@ -836,6 +1001,7 @@ class RepairChainResolver:
             "max_request_retries": self.max_request_retries,
             "cache_enabled": self.cache_dir is not None,
             "cache_dir": str(self.cache_dir) if self.cache_dir is not None else None,
+            "stable_source_git_dir": str(self.stable_source_git_dir) if self.stable_source_git_dir is not None else None,
             "events": [],
             "summary": {
                 "request_count": 0,
@@ -881,7 +1047,7 @@ class RepairChainResolver:
 
         summary = self._fetch_trace.setdefault("summary", {})
         summary["request_count"] = int(summary.get("request_count", 0)) + 1
-        if outcome == "success":
+        if outcome in {"success", "local_git_success"}:
             summary["success_count"] = int(summary.get("success_count", 0)) + 1
         elif outcome == "cache_hit":
             summary["cache_hit_count"] = int(summary.get("cache_hit_count", 0)) + 1

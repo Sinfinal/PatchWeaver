@@ -100,11 +100,67 @@ class LLMPlanner:
                 temperature=0.0,
             )
             plan = self._parse_plan(response.payload, available_actions=normalized_actions)
+            if self._repeats_completed_analysis(plan, observation):
+                plan = self._fallback_plan(
+                    observation=observation,
+                    goal=goal,
+                    reason="模型重复选择已完成的分析动作，使用 DecisionPolicy fallback",
+                )
+                self._write_trace(
+                    observation=observation,
+                    goal=goal,
+                    plan=plan,
+                    mode="fallback_rule_plan",
+                    memory_hints=memory_hints or [],
+                    rag_hints=rag_hints or [],
+                    available_actions=normalized_actions,
+                    reflections=reflections,
+                    error="repeated_completed_analysis",
+                )
+                return plan
+            if self._repeats_after_validation_result(plan, observation):
+                plan = self._fallback_plan(
+                    observation=observation,
+                    goal=goal,
+                    reason="模型在已有验证结果后仍选择继续消耗 attempt，使用 DecisionPolicy fallback",
+                )
+                self._write_trace(
+                    observation=observation,
+                    goal=goal,
+                    plan=plan,
+                    mode="fallback_rule_plan",
+                    memory_hints=memory_hints or [],
+                    rag_hints=rag_hints or [],
+                    available_actions=normalized_actions,
+                    reflections=reflections,
+                    error="attempt_consuming_after_validation_result",
+                )
+                return plan
         except ModelClientError as exc:
             plan = self._fallback_plan(
                 observation=observation,
                 goal=goal,
                 reason=f"模型规划失败，使用 DecisionPolicy fallback: {exc}",
+            )
+            self._write_trace(
+                observation=observation,
+                goal=goal,
+                plan=plan,
+                mode="fallback_rule_plan",
+                memory_hints=memory_hints or [],
+                rag_hints=rag_hints or [],
+                available_actions=normalized_actions,
+                reflections=reflections,
+                error=str(exc),
+            )
+            return plan
+        except ValueError as exc:
+            if "Planner 输出未注册 action" not in str(exc):
+                raise
+            plan = self._fallback_plan(
+                observation=observation,
+                goal=goal,
+                reason=f"模型选择了当前 runtime 不开放的 action，使用 DecisionPolicy fallback: {exc}",
             )
             self._write_trace(
                 observation=observation,
@@ -141,6 +197,54 @@ class LLMPlanner:
         return plan
 
     def _fallback_plan(self, *, observation: AgentObservation, goal: AgentGoal, reason: str) -> TaskPlan:
+        artifact_state = observation.diagnostics.get("artifact_state")
+        artifact_state = artifact_state if isinstance(artifact_state, dict) else {}
+        if self._should_replay_after_report(observation=observation, artifact_state=artifact_state):
+            return TaskPlan(
+                goal_id=goal.goal_id,
+                selected_action=AgentActionName.REPLAY_TASK,
+                alternatives=["replay_task"],
+                reason_summary=f"{reason}; 终止态报告已存在，下一步补齐 replay 证据闭环",
+                evidence_refs=list(observation.evidence_refs),
+                risk="manual" if observation.failure_type else "low",
+                budget={
+                    "plan_mode": "fallback_rule_plan",
+                    "remaining_attempts": max(0, observation.max_attempts - observation.current_attempt),
+                },
+                terminal_condition="replay 输出后停止自动流程，等待提交或人工复核",
+                used_reflections=[],
+            )
+        if observation.validation_status in {"passed", "failed", "partial"} or observation.latest_status == "built":
+            if artifact_state.get("report_json_exists") and not artifact_state.get("replay_recorded"):
+                return TaskPlan(
+                    goal_id=goal.goal_id,
+                    selected_action=AgentActionName.REPLAY_TASK,
+                    alternatives=["replay_task"],
+                    reason_summary=f"{reason}; 已有报告或验证结果，下一步补齐 replay 证据闭环",
+                    evidence_refs=list(observation.evidence_refs),
+                    risk="low" if observation.validation_status == "passed" else "manual",
+                    budget={
+                        "plan_mode": "fallback_rule_plan",
+                        "remaining_attempts": max(0, observation.max_attempts - observation.current_attempt),
+                    },
+                    terminal_condition="replay 输出后停止自动流程，等待提交或人工复核",
+                    used_reflections=[],
+                )
+            return TaskPlan(
+                goal_id=goal.goal_id,
+                selected_action=AgentActionName.REPORT_TASK,
+                alternatives=["report_task", "replay_task"],
+                reason_summary=f"{reason}; 当前已有构建/验证结果，应先生成 report 而不是继续消耗 attempt",
+                evidence_refs=list(observation.evidence_refs),
+                risk="low" if observation.validation_status == "passed" else "manual",
+                budget={
+                    "plan_mode": "fallback_rule_plan",
+                    "remaining_attempts": max(0, observation.max_attempts - observation.current_attempt),
+                },
+                terminal_condition="report 生成后进入 replay 证据闭环",
+                used_reflections=[],
+            )
+
         if self._needs_source_analysis(observation):
             return TaskPlan(
                 goal_id=goal.goal_id,
@@ -193,6 +297,36 @@ class LLMPlanner:
             terminal_condition="terminal" if decision.terminal else "执行本轮策略后重新观察构建与验证结果",
             used_reflections=[],
         )
+
+    def _should_replay_after_report(self, *, observation: AgentObservation, artifact_state: dict[str, Any]) -> bool:
+        if not artifact_state.get("report_json_exists"):
+            return False
+        if artifact_state.get("replay_recorded"):
+            return False
+        if observation.validation_status in {"passed", "failed", "partial"}:
+            return True
+        if observation.latest_status in {"built", "target_state"}:
+            return True
+        if observation.task_status in {"built", "target_state", "failed"} and observation.failure_type is not None:
+            return True
+        return False
+
+    def _repeats_completed_analysis(self, plan: TaskPlan, observation: AgentObservation) -> bool:
+        return (
+            plan.selected_action in {AgentActionName.ANALYZE_SOURCE, AgentActionName.ANALYZE_TASK}
+            and observation.task_status == "analyzed"
+            and observation.failure_type is None
+            and observation.latest_attempt_no is None
+            and observation.current_attempt == 0
+        )
+
+    def _repeats_after_validation_result(self, plan: TaskPlan, observation: AgentObservation) -> bool:
+        attempt_consuming = {
+            AgentActionName.RUN_ATTEMPT,
+            AgentActionName.RUN_TASK,
+            AgentActionName.RETRY_WITH_STRATEGY,
+        }
+        return plan.selected_action in attempt_consuming and observation.validation_status in {"passed", "failed", "partial"}
 
     def _looks_confirmed_positive(self, observation: AgentObservation) -> bool:
         if observation.validation_status == "passed" or observation.latest_status == "built":

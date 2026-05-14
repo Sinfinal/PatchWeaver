@@ -26,6 +26,7 @@ services:
       - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/config:/app/config:ro
       - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/evaluations:/app/evaluations:ro
       - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/lib/modules:/lib/modules:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/include:/usr/include:ro
       - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/src/kernels:/usr/src/kernels:ro
       - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/lib/debug:/usr/lib/debug:ro
       - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/opt/kernel-src:/opt/kernel-src:ro
@@ -89,6 +90,7 @@ services:
       - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/config:/app/config
       - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/evaluations:/app/evaluations:ro
       - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/lib/modules:/lib/modules:ro
+      - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/include:/usr/include:ro
       - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/src/kernels:/usr/src/kernels:ro
       - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/usr/lib/debug:/usr/lib/debug:ro
       - ${PATCHWEAVER_DOCKER_ROOT:-/usr/local/patchweaver}/host/opt/kernel-src:/opt/kernel-src

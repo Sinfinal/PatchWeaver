@@ -48,6 +48,7 @@ Use installed Codex skills proactively. Do not wait for the user to name a skill
 
 - Do not use the Chinese full stop character U+3002 in Web-visible copy. Keep UI labels, hints, empty states, notes, and banners concise, and omit terminal punctuation when possible.
 - This rule applies to source files under `web/src` and any maintained Web copy source. Runtime JSON evidence can preserve original punctuation because it reflects task artifacts rather than UI copy.
+- Web-facing copy should use engineering/control-plane wording. Prefer concise state labels such as `任务状态`, `失败归因`, `验证证据`, `环境诊断`, and `构建状态`; avoid AI or marketing phrasing such as `运行、排障与交付留在首屏`, `留在首屏`, `首屏`, `智能`, `赋能`, `一屏可读`, or similar unless the term is technically precise and backed by the feature behavior.
 
 ## Secrets And Platform Access
 

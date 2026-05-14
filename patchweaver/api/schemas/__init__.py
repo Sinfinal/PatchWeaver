@@ -6,6 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from patchweaver.api.schemas.chat import ChatRequest, ChatResponse, SuggestedAction, ToolCallTrace
+
 
 class CreateTaskRequest(BaseModel):
     """Request payload for creating a task."""
@@ -160,3 +162,23 @@ class RagReindexResponse(BaseModel):
     imported: int
     drop_existing: bool
     detail: str | None = None
+
+
+__all__ = [
+    "ArtifactContentResponse",
+    "ChatRequest",
+    "ChatResponse",
+    "CreateTaskRequest",
+    "HealthResponse",
+    "RagHealthResponse",
+    "RagImportStatusResponse",
+    "RagReindexRequest",
+    "RagReindexResponse",
+    "RagSearchHit",
+    "RagSearchRequest",
+    "RagSearchResponse",
+    "RagStatsResponse",
+    "SuggestedAction",
+    "TaskActionResponse",
+    "ToolCallTrace",
+]

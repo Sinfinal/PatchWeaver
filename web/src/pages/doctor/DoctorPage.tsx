@@ -1,12 +1,12 @@
 ﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MetricCard } from "../../components/cards/MetricCard";
 import { CodePanel } from "../../components/code/CodePanel";
 import { SectionCard } from "../../components/layout/SectionCard";
 import { StatusBadge } from "../../components/status/StatusBadge";
 import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
 import { fetchDoctor, repairDoctor, runDoctor } from "../../services/doctor";
-import type { DoctorRepairResult } from "../../types/doctor";
+import type { DoctorCheck, DoctorRepairResult } from "../../types/doctor";
 import { formatTime } from "../../utils/format";
 
 const runtimeLabelMap: Record<string, string> = {
@@ -27,6 +27,8 @@ export function DoctorPage(): JSX.Element {
   const queryClient = useQueryClient();
   const liveQueryOptions = useLiveQueryOptions();
   const [repairDialogOpen, setRepairDialogOpen] = useState(false);
+  const [modelConfigDialogOpen, setModelConfigDialogOpen] = useState(false);
+  const [autoOpenedModelConfigSignature, setAutoOpenedModelConfigSignature] = useState<string | null>(null);
   const doctorQuery = useQuery({
     queryKey: ["doctor"],
     queryFn: fetchDoctor,
@@ -51,6 +53,24 @@ export function DoctorPage(): JSX.Element {
 
   const report = doctorQuery.data;
   const repairResult = repairMutation.data;
+  const modelBackendFailure = report?.checks.find(
+    (item) => item.category === "model_backend" && item.name === "bailian_chat" && item.status !== "ok",
+  );
+  const modelBackendFailureSignature = modelBackendFailure
+    ? `${modelBackendFailure.status}:${modelBackendFailure.detail}`
+    : null;
+
+  useEffect(() => {
+    if (!modelBackendFailure || !modelBackendFailureSignature) {
+      setAutoOpenedModelConfigSignature(null);
+      return;
+    }
+
+    if (autoOpenedModelConfigSignature !== modelBackendFailureSignature) {
+      setModelConfigDialogOpen(true);
+      setAutoOpenedModelConfigSignature(modelBackendFailureSignature);
+    }
+  }, [autoOpenedModelConfigSignature, modelBackendFailure, modelBackendFailureSignature]);
 
   return (
     <div className="pw-grid">
@@ -58,6 +78,11 @@ export function DoctorPage(): JSX.Element {
         title="环境诊断"
         actions={
           <div className="pw-btn-row">
+            {modelBackendFailure ? (
+              <button className="pw-btn warn" type="button" onClick={() => setModelConfigDialogOpen(true)}>
+                模型配置指引
+              </button>
+            ) : null}
             <button className="pw-btn" type="button" onClick={() => doctorMutation.mutate()} disabled={doctorMutation.isPending}>
               {doctorMutation.isPending ? "诊断中..." : "重新执行诊断"}
             </button>
@@ -154,8 +179,175 @@ export function DoctorPage(): JSX.Element {
           onClose={() => setRepairDialogOpen(false)}
         />
       ) : null}
+
+      {modelConfigDialogOpen && modelBackendFailure ? (
+        <ModelConfigDialog check={modelBackendFailure} onClose={() => setModelConfigDialogOpen(false)} />
+      ) : null}
     </div>
   );
+}
+
+type ModelConfigDialogProps = {
+  check: DoctorCheck;
+  onClose: () => void;
+};
+
+function ModelConfigDialog({ check, onClose }: ModelConfigDialogProps): JSX.Element {
+  const remediation = normalizeRemediation(check);
+  const envVar = remediation.env_var ?? "PATCHWEAVER_BAILIAN_API_KEY";
+  const restartCommands = remediation.commands?.length
+    ? remediation.commands.join("\n")
+    : [
+        `export ${envVar}="<your-bailian-api-key>"`,
+        "docker restart patchweaver-dev-api",
+        "docker restart patchweaver-api",
+        "systemctl daemon-reload && systemctl restart patchweaver-api",
+      ].join("\n");
+
+  return (
+    <div className="pw-modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        className="pw-modal pw-doctor-model-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="doctor-model-config-dialog-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="pw-modal-header">
+          <div>
+            <span className="pw-kicker">Model Backend</span>
+            <h3 id="doctor-model-config-dialog-title">模型配置指引</h3>
+          </div>
+          <button className="pw-icon-btn" type="button" aria-label="关闭模型配置指引" onClick={onClose}>
+            ×
+          </button>
+        </div>
+
+        <div className="pw-section-stack">
+          <div className="pw-note-banner">检测到 Bailian Chat 健康检查未通过，请先确认 API 进程可读取环境变量</div>
+
+          <div className="pw-doctor-model-summary">
+            <div className="pw-list-item">
+              <strong>失败详情</strong>
+              <div className="pw-inline-note">检查项: {check.label}</div>
+              <div className="pw-inline-note">状态: {check.status}</div>
+              <div className="pw-inline-note">{check.detail}</div>
+            </div>
+            <div className="pw-list-item">
+              <strong>环境变量名</strong>
+              <code className="pw-doctor-env-name">{envVar}</code>
+              <div className="pw-inline-note">只注入运行时环境，不在页面展示真实 key，不要求写入配置文件</div>
+            </div>
+          </div>
+
+          <RemediationContent remediation={remediation} />
+
+          <div className="pw-step-grid pw-doctor-model-steps">
+            <div className="pw-step-card">
+              <strong>1. 准备凭据</strong>
+              <div className="pw-inline-note">从 Bailian 控制台确认可用 key，保存到本机 shell、Docker env 或 systemd Environment</div>
+            </div>
+            <div className="pw-step-card">
+              <strong>2. 注入 API 运行环境</strong>
+              <div className="pw-inline-note">确保启动 API 的进程能读取 {envVar}，避免把真实 key 写入仓库配置</div>
+            </div>
+            <div className="pw-step-card">
+              <strong>3. 重启服务</strong>
+              <div className="pw-inline-note">重启 API、Docker 服务或 systemd unit，让新环境变量进入进程</div>
+            </div>
+            <div className="pw-step-card">
+              <strong>4. 重新诊断</strong>
+              <div className="pw-inline-note">关闭弹窗后点击重新执行诊断，确认 bailian_chat 状态恢复为 ok</div>
+            </div>
+          </div>
+
+          <CodePanel title="restart_examples" content={restartCommands} />
+
+          <div className="pw-btn-row">
+            <button className="pw-btn primary" type="button" onClick={onClose}>
+              关闭
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+type RemediationContentProps = {
+  remediation: {
+    title: string;
+    env_var?: string;
+    steps: string[];
+    commands: string[];
+    notes: string[];
+  };
+};
+
+function RemediationContent({ remediation }: RemediationContentProps): JSX.Element {
+  return (
+    <div className="pw-doctor-remediation-grid">
+      <div className="pw-list-item">
+        <strong>{remediation.title}</strong>
+        <div className="pw-list pw-doctor-remediation-list">
+          {remediation.steps.map((item) => (
+            <div key={item} className="pw-inline-note">
+              {item}
+            </div>
+          ))}
+        </div>
+      </div>
+      {remediation.notes.length > 0 ? (
+        <div className="pw-list-item">
+          <strong>注意事项</strong>
+          <div className="pw-list pw-doctor-remediation-list">
+            {remediation.notes.map((item) => (
+              <div key={item} className="pw-inline-note">
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function normalizeRemediation(check: DoctorCheck): RemediationContentProps["remediation"] {
+  const fallback = {
+    title: "大模型连接配置",
+    env_var: String(check.metadata?.api_key_env ?? "PATCHWEAVER_BAILIAN_API_KEY"),
+    steps: [
+      "在启动 PatchWeaver API 的宿主机或容器环境中设置环境变量",
+      "重启 API 服务或 Docker 容器，让新环境变量进入进程环境",
+      "回到环境诊断页面，点击重新执行诊断确认模型响应正常",
+    ],
+    commands: [
+      `export ${String(check.metadata?.api_key_env ?? "PATCHWEAVER_BAILIAN_API_KEY")}="<your-bailian-api-key>"`,
+      "docker restart patchweaver-dev-api",
+      "docker restart patchweaver-api",
+      "systemctl daemon-reload && systemctl restart patchweaver-api",
+    ],
+    notes: ["不要把 API Key 写入仓库或报告"],
+  };
+
+  const value = check.remediation;
+  if (!value) {
+    return fallback;
+  }
+  if (typeof value === "string") {
+    return { ...fallback, steps: [value] };
+  }
+  if (Array.isArray(value)) {
+    return { ...fallback, steps: value };
+  }
+  return {
+    title: value.title ?? fallback.title,
+    env_var: value.env_var ?? fallback.env_var,
+    steps: value.steps?.length ? value.steps : fallback.steps,
+    commands: value.commands?.length ? value.commands : fallback.commands,
+    notes: value.notes ?? fallback.notes,
+  };
 }
 
 type RepairResultDialogProps = {

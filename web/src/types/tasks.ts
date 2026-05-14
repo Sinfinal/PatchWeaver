@@ -41,6 +41,12 @@ export type TaskListItem = {
 export type TaskListResponse = {
   items: TaskListItem[];
   total: number;
+  limit: number;
+  offset: number;
+  page: number;
+  page_count: number;
+  has_prev: boolean;
+  has_next: boolean;
 };
 
 export type TaskSummary = {

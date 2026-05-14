@@ -85,6 +85,206 @@ code {
   font-family: var(--font-mono);
 }
 
+.pw-chat-bubble {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 70;
+  width: 58px;
+  height: 58px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(83, 210, 178, 0.42);
+  border-radius: 22px;
+  color: #07111c;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(83, 210, 178, 0.88)),
+    var(--accent-main);
+  box-shadow: 0 22px 54px rgba(3, 7, 18, 0.42), 0 0 0 8px rgba(83, 210, 178, 0.08);
+}
+
+.pw-chat-bubble span {
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.pw-chat-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(3, 7, 18, 0.32);
+  backdrop-filter: blur(2px);
+}
+
+.pw-chat-drawer {
+  width: min(420px, calc(100vw - 24px));
+  height: calc(100vh - 24px);
+  margin: 12px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 16% 0, rgba(83, 210, 178, 0.16), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    rgba(10, 16, 30, 0.97);
+  box-shadow: 0 28px 80px rgba(3, 7, 18, 0.56);
+}
+
+.pw-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pw-chat-header strong {
+  display: block;
+  font-size: 17px;
+}
+
+.pw-chat-header span {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.pw-chat-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pw-chat-list {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 16px;
+  overflow: auto;
+}
+
+.pw-chat-empty,
+.pw-chat-loading,
+.pw-chat-error {
+  padding: 14px;
+  border-radius: 16px;
+  color: var(--text-soft);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pw-chat-error {
+  margin: 0 16px 12px;
+  color: #ffd0d0;
+  border: 1px solid rgba(255, 107, 107, 0.28);
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.pw-chat-message {
+  display: grid;
+  gap: 8px;
+  max-width: 92%;
+  padding: 12px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.pw-chat-message.user {
+  justify-self: end;
+  background: rgba(83, 210, 178, 0.14);
+}
+
+.pw-chat-message.assistant {
+  justify-self: start;
+}
+
+.pw-chat-message-role {
+  color: var(--accent-main);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pw-chat-message-content {
+  white-space: pre-wrap;
+  line-height: 1.58;
+}
+
+.pw-chat-risk {
+  padding: 8px 10px;
+  border-radius: 12px;
+  color: #ffd0d0;
+  background: rgba(255, 107, 107, 0.12);
+}
+
+.pw-chat-tool-row,
+.pw-chat-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pw-chat-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-soft);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pw-chat-tool.success {
+  color: #c8f7e8;
+}
+
+.pw-chat-tool.error {
+  color: #ffd0d0;
+}
+
+.pw-chat-evidence {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.pw-chat-evidence ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.pw-chat-evidence li {
+  word-break: break-all;
+}
+
+.pw-chat-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pw-chat-input-row textarea {
+  min-height: 46px;
+  max-height: 138px;
+  resize: vertical;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px 13px;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .pw-shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
@@ -303,6 +503,51 @@ code {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.pw-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
+  box-shadow: none;
+}
+
+.pw-btn:disabled:hover {
+  border-color: var(--border-strong);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+    transparent;
+}
+
+.pw-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.pw-pagination-summary {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.pw-pagination-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pw-pagination-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-soft);
+  font-size: 13px;
 }
 
 .pw-kv {
@@ -1999,6 +2244,51 @@ button.pw-list-item {
   width: min(1040px, calc(100vw - 48px));
 }
 
+.pw-doctor-model-modal {
+  width: min(980px, calc(100vw - 48px));
+}
+
+.pw-doctor-model-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 14px;
+}
+
+.pw-doctor-env-name {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 8px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(97, 184, 255, 0.18);
+  background: rgba(97, 184, 255, 0.08);
+  color: #d9ebff;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.pw-doctor-model-steps {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.pw-doctor-model-steps .pw-step-card {
+  min-height: 150px;
+}
+
+.pw-doctor-model-modal .pw-code-panel {
+  min-height: 220px;
+}
+
+.pw-doctor-remediation-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr);
+  gap: 14px;
+}
+
+.pw-doctor-remediation-list {
+  gap: 6px;
+}
+
 .pw-doctor-repair-grid {
   display: grid;
   grid-template-columns: minmax(260px, 0.92fr) minmax(360px, 1.08fr);
@@ -2077,6 +2367,9 @@ button.pw-list-item {
 
   .pw-grid.two,
   .pw-grid.detail,
+  .pw-doctor-model-summary,
+  .pw-doctor-model-steps,
+  .pw-doctor-remediation-grid,
   .pw-hero-grid {
     grid-template-columns: 1fr;
   }

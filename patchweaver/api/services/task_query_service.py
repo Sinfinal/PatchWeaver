@@ -40,6 +40,7 @@ class TaskQueryService:
         self,
         *,
         limit: int = 50,
+        offset: int = 0,
         cve_id: str | None = None,
         status: str | None = None,
         failure_type: str | None = None,
@@ -106,12 +107,21 @@ class TaskQueryService:
                 fixture_clauses.append("(t.cve_id = ?)")
                 parameters.append(item["cve_id"])
             if not fixture_clauses:
-                return {"items": [], "total": 0}
+                return {
+                    "items": [],
+                    "total": 0,
+                    "limit": limit,
+                    "offset": offset,
+                    "page": (offset // limit) + 1,
+                    "page_count": 1,
+                    "has_prev": offset > 0,
+                    "has_next": False,
+                }
             conditions.append(f"({' OR '.join(fixture_clauses)})")
 
         where_sql = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
-        sql = f"""
+        with_sql = """
         WITH latest_attempt AS (
             SELECT a.task_id, a.build_exec_status, a.target_state
             FROM attempts a
@@ -135,6 +145,17 @@ class TaskQueryService:
                 GROUP BY task_ref
             ) latest ON latest.task_ref = fr.task_ref AND latest.max_id = fr.id
         )
+        """
+        count_sql = f"""
+        {with_sql}
+        SELECT COUNT(*) AS total
+        FROM tasks t
+        LEFT JOIN latest_failure lf ON lf.task_ref = t.task_id
+        LEFT JOIN latest_attempt la ON la.task_id = t.id
+        {where_sql}
+        """
+        sql = f"""
+        {with_sql}
         SELECT t.task_id, t.cve_id, t.target_kernel, t.target_kernel_source, t.status, t.current_attempt, t.max_attempts,
                t.workspace_dir, t.created_at, t.updated_at,
                lf.failure_type AS latest_failure_type,
@@ -149,11 +170,13 @@ class TaskQueryService:
         {where_sql}
         ORDER BY t.updated_at DESC
         LIMIT ?
+        OFFSET ?
         """
-        parameters.append(limit)
 
         with connect_sqlite(self.context.runtime.database_path) as connection:
-            rows = connection.execute(sql, tuple(parameters)).fetchall()
+            total_row = connection.execute(count_sql, tuple(parameters)).fetchone()
+            rows = connection.execute(sql, tuple([*parameters, limit, offset])).fetchall()
+        total = int(total_row["total"]) if total_row is not None else 0
 
         items = []
         for row in rows:
@@ -205,7 +228,16 @@ class TaskQueryService:
                     "fixture_id": fixture_binding["fixture_id"] if fixture_binding else None,
                 }
             )
-        return {"items": items, "total": len(items)}
+        return {
+            "items": items,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "page": (offset // limit) + 1,
+            "page_count": max(1, (total + limit - 1) // limit),
+            "has_prev": offset > 0,
+            "has_next": offset + len(items) < total,
+        }
 
     def create_task(
         self,
@@ -633,7 +665,7 @@ class TaskQueryService:
                     "step_index": index,
                     "goal": None,
                     "selected_action": ((item or {}).get("payload") or {}).get("action_name") if isinstance(item, dict) else None,
-                    "reason_summary": "legacy action sequence",
+                    "reason_summary": "旧版动作序列",
                     "evidence_refs": [],
                     "guard_result": "legacy",
                     "tool_result_status": (item or {}).get("status") if isinstance(item, dict) else None,
@@ -673,7 +705,7 @@ class TaskQueryService:
                 if isinstance(plan, dict):
                     step["goal"] = plan.get("goal_id")
                     step["selected_action"] = plan.get("selected_action")
-                    step["reason_summary"] = plan.get("reason_summary")
+                    step["reason_summary"] = self._agent_display_reason(plan.get("reason_summary"))
                     step["evidence_refs"] = plan.get("evidence_refs") or []
                     step["alternatives"] = plan.get("alternatives") or []
             elif node_name == "guard":
@@ -694,7 +726,7 @@ class TaskQueryService:
             elif node_name == "route":
                 route = node_payload.get("route") if isinstance(node_payload, dict) else None
                 if isinstance(route, dict):
-                    step["terminal_reason"] = route.get("reason") if route.get("terminal") else None
+                    step["terminal_reason"] = self._agent_display_reason(route.get("reason")) if route.get("terminal") else None
                     step["checkpoint_status"] = route.get("status")
         return [grouped[key] for key in sorted(grouped)]
 
@@ -704,6 +736,81 @@ class TaskQueryService:
             if reason:
                 return str(reason)
         return None
+
+    def _agent_display_reason(self, value: Any) -> str | None:
+        """把 Agent trace 中的英文运行时短语转成中文展示文案。"""
+
+        if value is None:
+            return None
+        text = str(value).strip()
+        if not text:
+            return None
+        if not self._contains_latin(text):
+            return text
+
+        raw_lower = " ".join(text.split()).lower()
+        lower = " ".join(text.replace("_", " ").split()).lower()
+        exact_matches = {
+            "legacy action sequence": "旧版动作序列",
+            "terminal action": "流程已到终止动作",
+            "terminal action or guard result": "流程已到终止动作或安全检查终止",
+            "analysis produced terminal failure observation for planner review": "分析阶段生成终止型失败观察，交由规划器复核",
+            "run task did not change observation state": "构建动作未带来新的任务状态变化",
+            "max steps reached": "自动编排达到最大步数",
+            "kpatch constraint needs a different strategy": "热补丁约束需要切换改写策略",
+            "source unavailable requires source mapping": "补丁来源不可用，需要补充来源映射",
+            "do not consume attempts": "不要继续消耗构建尝试次数",
+        }
+        if lower in exact_matches:
+            return exact_matches[lower]
+        normalized_action = lower.replace(" ", "_")
+        action_label = self._agent_action_display_name(normalized_action)
+        if normalized_action in {item.value for item in AgentActionName}:
+            return action_label
+        if raw_lower.startswith("planner selected "):
+            action_name = raw_lower.removeprefix("planner selected ").strip().split()[0]
+            return f"规划器选择{self._agent_action_display_name(action_name)}"
+        if lower.startswith("规划器选择 "):
+            action_name = text.split("规划器选择", 1)[1].strip().split()[0]
+            return f"规划器选择{self._agent_action_display_name(action_name)}"
+        if "kpatch constraint" in lower:
+            return "热补丁约束需要切换改写策略"
+        if "source unavailable" in lower or "source mapping" in lower:
+            return "补丁来源不可用，需要补充来源映射"
+        if "target already patched" in lower:
+            return "目标源码已包含修复，需要切换未修复基线"
+        if "context mismatch" in lower or "patch apply" in lower:
+            return "补丁上下文不匹配，需要先对齐源码基线"
+        if "build env" in lower or "environment" in lower:
+            return "构建环境缺失，需要先修复环境"
+        if "report generation" in lower or "ready for report" in lower:
+            return "补丁证据已具备报告生成条件"
+        if "validation" in lower:
+            return "验证证据已更新，需要进入报告或回放"
+        if "retry" in lower:
+            return "上一轮结果需要切换策略后重试"
+        return "已完成动作选择，详见证据引用"
+
+    @staticmethod
+    def _contains_latin(text: str) -> bool:
+        return any(("A" <= char <= "Z") or ("a" <= char <= "z") for char in text)
+
+    @staticmethod
+    def _agent_action_display_name(action_name: str) -> str:
+        labels = {
+            AgentActionName.GET_TASK_DETAIL.value: "任务详情查询",
+            AgentActionName.ANALYZE_SOURCE.value: "源码分析",
+            AgentActionName.ANALYZE_TASK.value: "任务分析",
+            AgentActionName.RUN_ATTEMPT.value: "单轮构建验证",
+            AgentActionName.RUN_TASK.value: "构建验证",
+            AgentActionName.REPORT.value: "报告生成",
+            AgentActionName.REPORT_TASK.value: "任务报告生成",
+            AgentActionName.REPLAY.value: "回放校验",
+            AgentActionName.REPLAY_TASK.value: "任务回放校验",
+            AgentActionName.RETRY_WITH_STRATEGY.value: "策略切换重试",
+            AgentActionName.STOP_MANUAL_REVIEW.value: "停止自动执行并转人工复核",
+        }
+        return labels.get(action_name, "受控动作")
 
     def get_agent_decision_summary(self, task_id: str) -> dict[str, Any]:
         """返回任务级 Agent 决策摘要，供 Web/API 和百炼入口直接展示"""
@@ -919,7 +1026,10 @@ class TaskQueryService:
         if not isinstance(decisions, list):
             decisions = payload.get("plans")
         latest = decisions[-1] if isinstance(decisions, list) and decisions else None
-        latest_decision = latest if isinstance(latest, dict) else None
+        latest_decision = dict(latest) if isinstance(latest, dict) else None
+        if latest_decision is not None:
+            latest_decision["reason"] = self._agent_display_reason(latest_decision.get("reason"))
+            latest_decision["reason_summary"] = self._agent_display_reason(latest_decision.get("reason_summary"))
         summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
         is_terminal = bool(summary.get("terminal")) or (
             latest_decision is not None

@@ -232,11 +232,11 @@ export function TaskDetailPage(): JSX.Element {
         <StageTimeline items={detail.stage_view ?? detail.timeline} currentStage={detail.process_summary?.current_stage} />
       </SectionCard>
 
-      <SectionCard title="Agent 工作状态">
+      <SectionCard title="智能体工作状态">
         <AgentWorkStatusPanel detail={detail} />
       </SectionCard>
 
-      <SectionCard title="Agent 决策轨迹">
+      <SectionCard title="智能体决策轨迹">
         <AgentDecisionTimeline detail={detail} />
       </SectionCard>
 
@@ -314,7 +314,7 @@ function AgentDecisionTimeline({ detail }: { detail: TaskDetailResponse }): JSX.
       <div className="pw-process-summary">
         <div className="pw-process-heading">
           <div>
-            <strong>暂无 Agent 自动编排轨迹</strong>
+            <strong>暂无智能体自动编排轨迹</strong>
             <div className="pw-inline-note">启用 PATCHWEAVER_AGENT_RUNTIME=langgraph 并通过 Web 自动运行后会生成轨迹</div>
           </div>
           <StatusBadge value="idle" />
@@ -330,7 +330,7 @@ function AgentDecisionTimeline({ detail }: { detail: TaskDetailResponse }): JSX.
         <div>
           <strong>目标 {trace.goal.cve_id}</strong>
           <div className="pw-inline-note">
-            Runtime {trace.runtime ?? "unknown"} / checkpoint {trace.checkpoint_exists ? "已写入" : "未写入"} / resume{" "}
+            运行时 {trace.runtime ?? "未知"} / 检查点 {trace.checkpoint_exists ? "已写入" : "未写入"} / 恢复{" "}
             {trace.resumed_from_checkpoint ? "已恢复" : "未触发"}
           </div>
         </div>
@@ -340,42 +340,62 @@ function AgentDecisionTimeline({ detail }: { detail: TaskDetailResponse }): JSX.
         {trace.steps.map((step) => (
           <div className="pw-agent-step" key={step.step_index}>
             <div className="pw-agent-step-head">
-              <span className="pw-agent-step-index">STEP {step.step_index}</span>
-              <strong>{step.selected_action ?? "未记录动作"}</strong>
+              <span className="pw-agent-step-index">步骤 {step.step_index}</span>
+              <strong>{formatAgentAction(step.selected_action) ?? "未记录动作"}</strong>
               <StatusBadge value={step.guard_result === "allowed" ? "success" : step.guard_result ? "warn" : "unknown"} />
             </div>
             <div className="pw-process-grid">
               <div>
-                <span className="pw-process-label">Planner 理由</span>
+                <span className="pw-process-label">规划理由</span>
                 <div>{step.reason_summary ?? "未记录"}</div>
               </div>
               <div>
-                <span className="pw-process-label">PolicyGuard</span>
+                <span className="pw-process-label">安全检查</span>
                 <div>{step.guard_result ?? "未记录"}</div>
               </div>
               <div>
-                <span className="pw-process-label">ToolResult</span>
-                <div>{step.tool_action ?? step.tool_result_status ?? "未执行"}</div>
+                <span className="pw-process-label">工具结果</span>
+                <div>{formatAgentAction(step.tool_action) ?? step.tool_result_status ?? "未执行"}</div>
               </div>
               <div>
-                <span className="pw-process-label">Checkpoint</span>
+                <span className="pw-process-label">检查点</span>
                 <div>{step.checkpoint_status ?? "未记录"}</div>
               </div>
             </div>
             {step.alternatives?.length ? (
               <div className="pw-inline-note">候选策略：{step.alternatives.join(" / ")}</div>
             ) : null}
-            {step.reflection_summary ? <div className="pw-process-conflict">Reflection：{step.reflection_summary}</div> : null}
+            {step.reflection_summary ? <div className="pw-process-conflict">反思记录：{step.reflection_summary}</div> : null}
             {step.next_strategy_hint ? <div className="pw-inline-note">下一策略：{step.next_strategy_hint}</div> : null}
             {step.terminal_reason ? <div className="pw-process-conflict">终止原因：{step.terminal_reason}</div> : null}
             {step.evidence_refs.length ? <div className="pw-inline-note">证据：{step.evidence_refs.join(" / ")}</div> : null}
           </div>
         ))}
       </div>
-      <div className="pw-inline-note">Trace: {shortenPath(trace.trace_path)}</div>
-      <div className="pw-inline-note">Checkpoint: {shortenPath(trace.checkpoint_path)}</div>
+      <div className="pw-inline-note">轨迹文件：{shortenPath(trace.trace_path)}</div>
+      <div className="pw-inline-note">检查点文件：{shortenPath(trace.checkpoint_path)}</div>
     </div>
   );
+}
+
+function formatAgentAction(action?: string | null): string | null {
+  if (!action) {
+    return null;
+  }
+  const labels: Record<string, string> = {
+    get_task_detail: "查询任务详情",
+    analyze_source: "分析源码",
+    analyze_task: "分析任务",
+    run_attempt: "执行单轮构建验证",
+    run_task: "执行构建验证",
+    report: "生成报告",
+    report_task: "生成任务报告",
+    replay: "执行回放",
+    replay_task: "执行任务回放",
+    retry_with_strategy: "切换策略重试",
+    stop_manual_review: "停止自动执行并转人工复核",
+  };
+  return labels[action] ?? action;
 }
 
 function AgentWorkStatusPanel({ detail }: { detail: TaskDetailResponse }): JSX.Element {
@@ -387,8 +407,8 @@ function AgentWorkStatusPanel({ detail }: { detail: TaskDetailResponse }): JSX.E
     <div className="pw-process-summary">
       <div className="pw-process-heading">
         <div>
-          <strong>Agent 当前状态</strong>
-          <div className="pw-inline-note">状态来自后端 Agent Health 与 workflow trace</div>
+          <strong>智能体当前状态</strong>
+          <div className="pw-inline-note">状态来自后端健康检查与工作流轨迹</div>
         </div>
         <StatusBadge value={health?.status ?? "unknown"} />
       </div>
@@ -420,10 +440,10 @@ function AgentWorkStatusPanel({ detail }: { detail: TaskDetailResponse }): JSX.E
       ) : null}
       {latestDecision?.reason ? <div className="pw-process-conflict">决策理由：{latestDecision.reason}</div> : null}
       {health?.source_paths?.agent_health ? (
-        <div className="pw-inline-note">AgentHealth: {shortenPath(health.source_paths.agent_health)}</div>
+        <div className="pw-inline-note">健康文件：{shortenPath(health.source_paths.agent_health)}</div>
       ) : null}
       {summary?.workflow_trace?.trace_path ? (
-        <div className="pw-inline-note">AgentTrace: {shortenPath(summary.workflow_trace.trace_path)}</div>
+        <div className="pw-inline-note">轨迹文件：{shortenPath(summary.workflow_trace.trace_path)}</div>
       ) : null}
     </div>
   );
@@ -468,8 +488,8 @@ function AgentDecisionPanel({ detail }: { detail: TaskDetailResponse }): JSX.Ele
           <div>{summary.agent_next_action ?? "未记录"}</div>
         </div>
         <div>
-          <span className="pw-process-label">Agent 当前决策</span>
-          <div>{latestDecision?.selected_action ?? "未记录"}</div>
+          <span className="pw-process-label">智能体当前决策</span>
+          <div>{formatAgentAction(latestDecision?.selected_action) ?? "未记录"}</div>
         </div>
         <div>
           <span className="pw-process-label">终止原因</span>
@@ -479,7 +499,7 @@ function AgentDecisionPanel({ detail }: { detail: TaskDetailResponse }): JSX.Ele
       <div className="pw-inline-note">RepairIntent: {shortenPath(summary.source_paths.repair_intent)}</div>
       <div className="pw-inline-note">FailureRecord: {shortenPath(summary.source_paths.failure_record)}</div>
       {summary.workflow_trace?.trace_path ? (
-        <div className="pw-inline-note">AgentTrace: {shortenPath(summary.workflow_trace.trace_path)}</div>
+        <div className="pw-inline-note">轨迹文件：{shortenPath(summary.workflow_trace.trace_path)}</div>
       ) : null}
       {summary.failure_record.summary ? <div className="pw-process-conflict">归因摘要：{summary.failure_record.summary}</div> : null}
       {latestDecision?.reason ? <div className="pw-process-conflict">决策理由：{latestDecision.reason}</div> : null}

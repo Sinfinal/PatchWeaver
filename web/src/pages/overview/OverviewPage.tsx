@@ -76,8 +76,8 @@ export function OverviewPage(): JSX.Element {
             {overviewQuery.isError ? <div className="pw-note-banner">当前无法连接后端，页面已回退到静态布局</div> : null}
           </div>
           <aside className="pw-overview-focus-card">
-            <span className="pw-overview-focus-kicker">Console Focus</span>
-            <strong className="pw-overview-focus-title">运行、排障与交付留在首屏</strong>
+            <span className="pw-overview-focus-kicker">执行状态</span>
+            <strong className="pw-overview-focus-title">任务状态 / 失败归因 / 验证证据</strong>
             <div className="pw-overview-focus-grid">
               {focusStats.map((item) => (
                 <article key={item.label} className="pw-overview-focus-stat">

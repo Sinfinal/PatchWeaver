@@ -1,5 +1,13 @@
 import type { MachineProfile } from "./tasks";
 
+export type DoctorRemediation = {
+  title?: string;
+  env_var?: string;
+  steps?: string[];
+  commands?: string[];
+  notes?: string[];
+};
+
 export type DoctorCheck = {
   category: string;
   name: string;
@@ -7,6 +15,8 @@ export type DoctorCheck = {
   ok: boolean;
   status: string;
   detail: string;
+  remediation?: string | string[] | DoctorRemediation | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 export type DoctorReport = {

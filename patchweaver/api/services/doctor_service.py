@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import platform
+import re
 import stat
 import subprocess
 from datetime import datetime, timezone
@@ -14,9 +15,16 @@ from typing import Any
 
 from patchweaver.api.deps import ApiContext
 from patchweaver.builder.orchestrator import BuildOrchestrator
+from patchweaver.prompting.model_client import ModelClientError, OpenAICompatibleChatClient
 from patchweaver.runtime_inspector import collect_machine_profile
 from patchweaver.skills.source_policy import resolve_skill_roots
 from patchweaver.utils.path_policy import to_project_relative
+
+_SECRET_PATTERNS = [
+    re.compile(r"(?i)(api[_-]?key|token|password|passwd|credential|secret)\s*[:=]\s*[^ \n\r\t]+"),
+    re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]{12,}"),
+    re.compile(r"sk-[A-Za-z0-9_-]{8,}"),
+]
 
 
 class DoctorApiService:
@@ -32,10 +40,22 @@ class DoctorApiService:
         """读取最近一次诊断结果，必要时重新生成"""
 
         if not refresh and self.cache_path.exists():
-            return json.loads(self.cache_path.read_text(encoding="utf-8"))
+            payload = json.loads(self.cache_path.read_text(encoding="utf-8"))
+            if self._cached_report_is_current(payload):
+                return payload
         payload = self._build_report()
         self.context.doctor_writer.write(payload, self.cache_path)
         return payload
+
+    def _cached_report_is_current(self, payload: dict[str, Any]) -> bool:
+        """判断缓存报告是否包含当前 Web 诊断需要的检查项"""
+
+        if getattr(self.context, "models_config", None) is None:
+            return True
+        checks = payload.get("checks")
+        if not isinstance(checks, list):
+            return False
+        return any(item.get("category") == "model_backend" and item.get("name") == "bailian_chat" for item in checks if isinstance(item, dict))
 
     def repair_environment(self) -> dict[str, Any]:
         """执行 Web 可触发的安全修复，并生成宿主机级修复脚本"""
@@ -161,6 +181,7 @@ class DoctorApiService:
             )
 
         checks.extend(self._build_backend_checks(build_env))
+        checks.extend(self._model_backend_checks())
         summary = {
             "total": len(checks),
             "ok": sum(1 for item in checks if item["status"] == "ok"),
@@ -228,6 +249,139 @@ class DoctorApiService:
             ),
         ]
         return checks
+
+    def _model_backend_checks(self) -> list[dict[str, Any]]:
+        """检查 Web/Agent 依赖的大模型后端是否可用"""
+
+        models_config = getattr(self.context, "models_config", None)
+        if models_config is None:
+            return []
+
+        env_var = str(getattr(models_config, "api_key_env", "PATCHWEAVER_BAILIAN_API_KEY"))
+        remediation = self._model_backend_remediation(env_var)
+        metadata_base = {
+            "provider": getattr(models_config, "provider", "unknown"),
+            "endpoint_mode": getattr(models_config, "endpoint_mode", "unknown"),
+            "base_url": getattr(models_config, "base_url", ""),
+            "api_key_env": env_var,
+            "input_redacted": True,
+            "full_log_sent": False,
+        }
+
+        api_key_status = models_config.api_key_status()
+        metadata_base["api_key_source"] = api_key_status.get("api_key_source")
+        metadata_base["api_key_ready"] = bool(api_key_status.get("api_key_ready"))
+        api_key = models_config.resolve_api_key()
+        if not api_key:
+            return [
+                self._check(
+                    "model_backend",
+                    "bailian_chat",
+                    "大模型响应",
+                    False,
+                    f"未检测到环境变量 {env_var}，模型能力不可用",
+                    failed_status="error",
+                    remediation=remediation,
+                    metadata=metadata_base,
+                )
+            ]
+
+        if getattr(models_config, "endpoint_mode", None) != "openai_compatible":
+            return [
+                self._check(
+                    "model_backend",
+                    "bailian_chat",
+                    "大模型响应",
+                    False,
+                    "当前模型 endpoint_mode 暂不支持 Web 健康探测",
+                    failed_status="warn",
+                    remediation=remediation,
+                    metadata=metadata_base,
+                )
+            ]
+
+        model_name = (
+            getattr(models_config, "development_model", "")
+            or getattr(models_config, "default_model", "")
+            or getattr(models_config, "delivery_model", "")
+        )
+        timeout_sec = self._model_probe_timeout_sec()
+        metadata = {**metadata_base, "model": model_name, "timeout_sec": timeout_sec}
+        try:
+            client = OpenAICompatibleChatClient(
+                base_url=str(getattr(models_config, "base_url", "")),
+                api_key=api_key,
+                timeout_sec=timeout_sec,
+            )
+            result = client.chat_json(
+                model=model_name,
+                system_prompt="Return one JSON object only. The object must be {\"ok\": true}.",
+                user_prompt='{"check":"patchweaver_model_health","expected":"json_ok"}',
+                temperature=0.0,
+            )
+            metadata["response_id"] = result.response_id
+            metadata["model_name"] = result.model_name or model_name
+            metadata["usage"] = result.usage
+            return [
+                self._check(
+                    "model_backend",
+                    "bailian_chat",
+                    "大模型响应",
+                    True,
+                    f"模型响应正常，model={metadata['model_name']}",
+                    remediation=remediation,
+                    metadata=metadata,
+                )
+            ]
+        except (ModelClientError, OSError, TimeoutError, ValueError, TypeError) as exc:
+            safe_detail = self._redact_secret_text(str(exc))[:500]
+            metadata["failure_reason"] = safe_detail
+            return [
+                self._check(
+                    "model_backend",
+                    "bailian_chat",
+                    "大模型响应",
+                    False,
+                    f"模型接口未响应或返回异常: {safe_detail}",
+                    failed_status="error",
+                    remediation=remediation,
+                    metadata=metadata,
+                )
+            ]
+
+    def _model_probe_timeout_sec(self) -> int:
+        """读取模型健康探测超时时间，避免 doctor 长时间阻塞"""
+
+        raw_value = os.environ.get("PATCHWEAVER_DOCTOR_MODEL_TIMEOUT_SEC", "12").strip()
+        try:
+            return max(3, min(30, int(raw_value)))
+        except ValueError:
+            return 12
+
+    def _model_backend_remediation(self, env_var: str) -> dict[str, Any]:
+        """返回 Web 弹窗可直接展示的大模型配置修复步骤"""
+
+        return {
+            "title": "大模型连接配置",
+            "env_var": env_var,
+            "steps": [
+                f"在启动 PatchWeaver API 的宿主机或容器环境中设置 {env_var}",
+                "重启 API 服务或 Docker 容器，让新环境变量进入进程环境",
+                "如使用 systemd，请执行 daemon-reload 后 restart 对应服务",
+                "回到环境诊断页面，点击重新执行诊断确认模型响应正常",
+            ],
+            "commands": [
+                f"export {env_var}='<your-bailian-api-key>'",
+                "docker restart patchweaver-dev-api",
+                "docker restart patchweaver-api",
+                "systemctl daemon-reload && systemctl restart patchweaver-api",
+            ],
+            "notes": [
+                "不要把 API Key 写入仓库或报告",
+                "如果使用 compose 部署，请把环境变量加入 API 服务的 environment 或 env_file",
+                "Web 容器只负责展示，关键是重启 API 容器",
+            ],
+        }
 
     def _ensure_directory(self, *, name: str, label: str, path: Path) -> dict[str, Any]:
         """确保 Web 进程权限范围内可修复的目录存在"""
@@ -412,10 +566,12 @@ exit 22
         detail: str,
         *,
         failed_status: str = "warn",
+        remediation: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """构造单条诊断项"""
 
-        return {
+        payload = {
             "category": category,
             "name": name,
             "label": label,
@@ -423,6 +579,19 @@ exit 22
             "status": "ok" if ok else failed_status,
             "detail": detail,
         }
+        if remediation is not None:
+            payload["remediation"] = remediation
+        if metadata is not None:
+            payload["metadata"] = metadata
+        return payload
+
+    def _redact_secret_text(self, text: str) -> str:
+        """清理可能来自异常文本的密钥片段"""
+
+        redacted = text
+        for pattern in _SECRET_PATTERNS:
+            redacted = pattern.sub(lambda match: f"{match.group(1) if match.groups() else 'secret'}[REDACTED]", redacted)
+        return redacted.replace("。", "")
 
     def _path(self, value) -> str | None:
         """把项目内路径转换成相对源码根目录表达"""

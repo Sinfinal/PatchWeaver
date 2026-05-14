@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { ChatBubble } from "../chat/ChatBubble";
 import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
 
@@ -10,6 +11,7 @@ export function AppShell(): JSX.Element {
         <AppHeader />
         <Outlet />
       </main>
+      <ChatBubble />
     </div>
   );
 }

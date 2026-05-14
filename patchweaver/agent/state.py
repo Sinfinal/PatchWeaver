@@ -76,6 +76,8 @@ class AgentObservation(BaseModel):
             evidence_refs.append(str(latest_attempt.build_log_path))
 
         validation_results: dict[str, Any] = {}
+        validation_evidence: list[str] = []
+        validation_failure_detail: str | None = None
         if validation_report is not None:
             validation_results = {
                 "semantic_precheck": validation_report.semantic_precheck_result.model_dump(mode="json"),
@@ -86,6 +88,8 @@ class AgentObservation(BaseModel):
                 "regression": validation_report.regression_result.model_dump(mode="json"),
                 "semantic_guard": validation_report.semantic_guard_result.model_dump(mode="json"),
             }
+            validation_evidence = _validation_evidence_refs(validation_report)
+            validation_failure_detail = _validation_failure_detail(validation_report)
 
         failure_type = (
             failure_record.failure_type
@@ -94,6 +98,11 @@ class AgentObservation(BaseModel):
             if latest_attempt is not None
             else None
         )
+        if failure_type in {"", "none", "None"}:
+            failure_type = None
+        if failure_type is None and validation_report is not None and validation_report.status == "failed":
+            failure_type = "validation_failed"
+        evidence_refs.extend(validation_evidence)
         return cls(
             task_id=task.task_id,
             cve_id=task.cve_id,
@@ -105,8 +114,8 @@ class AgentObservation(BaseModel):
             latest_attempt_id=latest_attempt.attempt_id if latest_attempt is not None else None,
             latest_status=latest_attempt.status if latest_attempt is not None else None,
             failure_type=failure_type,
-            stage=failure_record.stage_name if failure_record is not None else None,
-            failure_summary=failure_record.summary if failure_record is not None else None,
+            stage=failure_record.stage_name if failure_record is not None else "validation" if failure_type == "validation_failed" else None,
+            failure_summary=failure_record.summary if failure_record is not None else validation_failure_detail,
             diagnostics=sanitize_agent_payload(failure_record.diagnostic_details if failure_record is not None else {}),
             validation_status=validation_report.status if validation_report is not None else None,
             validation_results=sanitize_agent_payload(validation_results),
@@ -183,3 +192,39 @@ def reduce_observation(observation: AgentObservation, decision: AgentDecision) -
         selected_action=decision.selected_action,
         disabled_strategies=list(decision.disabled_strategies),
     )
+
+
+def _validation_evidence_refs(validation_report: ValidationReport) -> list[str]:
+    refs: list[str] = []
+    for item in (
+        validation_report.semantic_precheck_result,
+        validation_report.load_result,
+        validation_report.unload_result,
+        validation_report.smoke_result,
+        validation_report.selftest_result,
+        validation_report.regression_result,
+        validation_report.semantic_guard_result,
+    ):
+        if item.log_path:
+            refs.append(item.log_path)
+    for entry in validation_report.validation_matrix:
+        if entry.log_path:
+            refs.append(entry.log_path)
+    return list(dict.fromkeys(refs))
+
+
+def _validation_failure_detail(validation_report: ValidationReport) -> str | None:
+    if validation_report.status != "failed":
+        return None
+    for name, item in (
+        ("load", validation_report.load_result),
+        ("unload", validation_report.unload_result),
+        ("smoke", validation_report.smoke_result),
+        ("selftest", validation_report.selftest_result),
+        ("semantic_guard", validation_report.semantic_guard_result),
+        ("regression", validation_report.regression_result),
+        ("semantic_precheck", validation_report.semantic_precheck_result),
+    ):
+        if item.status == "failed":
+            return f"{name}: {item.detail}"
+    return "validation_report status failed"

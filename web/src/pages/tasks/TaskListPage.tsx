@@ -1,5 +1,6 @@
 ﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { TaskCreateForm } from "../../components/forms/TaskCreateForm";
 import { SectionCard } from "../../components/layout/SectionCard";
@@ -8,9 +9,13 @@ import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
 import { createTask, fetchTasks } from "../../services/tasks";
 import type { CreateTaskPayload } from "../../types/tasks";
 
+const PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
+
 export function TaskListPage(): JSX.Element {
   const navigate = useNavigate();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(20);
   const [filters, setFilters] = useState({
     cve_id: "",
     status: "",
@@ -26,10 +31,11 @@ export function TaskListPage(): JSX.Element {
 
   const liveQueryOptions = useLiveQueryOptions();
   const tasksQuery = useQuery({
-    queryKey: ["tasks", filters],
+    queryKey: ["tasks", filters, page, pageSize],
     queryFn: () =>
       fetchTasks({
-        limit: 80,
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
         cve_id: filters.cve_id || undefined,
         status: filters.status || undefined,
         failure_type: filters.failure_type || undefined,
@@ -43,6 +49,27 @@ export function TaskListPage(): JSX.Element {
       }),
     ...liveQueryOptions,
   });
+  const pagination = tasksQuery.data;
+  const pageCount = pagination?.page_count ?? 1;
+  const pageStart = pagination && pagination.total > 0 ? pagination.offset + 1 : 0;
+  const pageEnd = pagination ? Math.min(pagination.offset + pagination.items.length, pagination.total) : 0;
+
+  useEffect(() => {
+    if (tasksQuery.data && page > tasksQuery.data.page_count) {
+      setPage(tasksQuery.data.page_count);
+    }
+  }, [page, tasksQuery.data]);
+
+  const updateFilter = (key: keyof typeof filters, value: string) => {
+    setFilters((current) => ({ ...current, [key]: value }));
+    setPage(1);
+  };
+
+  const updatePageSize = (value: string) => {
+    setPageSize(Number(value) as (typeof PAGE_SIZE_OPTIONS)[number]);
+    setPage(1);
+  };
+
   const createMutation = useMutation({
     mutationFn: (payload: CreateTaskPayload) => createTask(payload),
     onSuccess: (data) => {
@@ -73,43 +100,43 @@ export function TaskListPage(): JSX.Element {
             className="pw-input"
             placeholder="按 CVE 过滤，例如 CVE-2024-1086"
             value={filters.cve_id}
-            onChange={(event) => setFilters((current) => ({ ...current, cve_id: event.target.value }))}
+            onChange={(event) => updateFilter("cve_id", event.target.value)}
           />
           <input
             className="pw-input"
             placeholder="按状态过滤，例如 running / failed / reported"
             value={filters.status}
-            onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
+            onChange={(event) => updateFilter("status", event.target.value)}
           />
           <input
             className="pw-input"
             placeholder="按失败类型过滤，例如 patch_apply_failed"
             value={filters.failure_type}
-            onChange={(event) => setFilters((current) => ({ ...current, failure_type: event.target.value }))}
+            onChange={(event) => updateFilter("failure_type", event.target.value)}
           />
           <input
             className="pw-input"
             placeholder="按目标内核过滤，例如 6.6.102-5.2.an23.x86_64"
             value={filters.target_kernel}
-            onChange={(event) => setFilters((current) => ({ ...current, target_kernel: event.target.value }))}
+            onChange={(event) => updateFilter("target_kernel", event.target.value)}
           />
           <input
             className="pw-input"
             placeholder="按构建执行态过滤，例如 executed / not_run"
             value={filters.build_exec_status}
-            onChange={(event) => setFilters((current) => ({ ...current, build_exec_status: event.target.value }))}
+            onChange={(event) => updateFilter("build_exec_status", event.target.value)}
           />
           <input
             className="pw-input"
             placeholder="按目标态过滤，例如 target_already_patched"
             value={filters.target_state}
-            onChange={(event) => setFilters((current) => ({ ...current, target_state: event.target.value }))}
+            onChange={(event) => updateFilter("target_state", event.target.value)}
           />
           <input
             className="pw-input"
             placeholder="按固定样例分组过滤，例如 challenge_dev / holdout"
             value={filters.fixture_group}
-            onChange={(event) => setFilters((current) => ({ ...current, fixture_group: event.target.value }))}
+            onChange={(event) => updateFilter("fixture_group", event.target.value)}
           />
           <input
             className="pw-input"
@@ -117,19 +144,19 @@ export function TaskListPage(): JSX.Element {
             min={0}
             placeholder="按当前尝试轮过滤，例如 1"
             value={filters.current_attempt}
-            onChange={(event) => setFilters((current) => ({ ...current, current_attempt: event.target.value }))}
+            onChange={(event) => updateFilter("current_attempt", event.target.value)}
           />
           <input
             className="pw-input"
             type="datetime-local"
             value={filters.created_at_from}
-            onChange={(event) => setFilters((current) => ({ ...current, created_at_from: event.target.value }))}
+            onChange={(event) => updateFilter("created_at_from", event.target.value)}
           />
           <input
             className="pw-input"
             type="datetime-local"
             value={filters.created_at_to}
-            onChange={(event) => setFilters((current) => ({ ...current, created_at_to: event.target.value }))}
+            onChange={(event) => updateFilter("created_at_to", event.target.value)}
           />
         </div>
         {tasksQuery.isLoading ? (
@@ -138,7 +165,35 @@ export function TaskListPage(): JSX.Element {
           <div className="pw-empty">当前无法获取任务列表，请确认后端 API 已启动</div>
         ) : (
           <div className="pw-section-stack">
-            <div className="pw-inline-note">共返回 {tasksQuery.data.total} 条任务记录</div>
+            <div className="pw-pagination">
+              <div className="pw-pagination-summary">
+                共 {tasksQuery.data.total} 条，当前显示 {pageStart}-{pageEnd}，第 {tasksQuery.data.page}/{pageCount} 页
+              </div>
+              <div className="pw-pagination-controls" aria-label="任务分页">
+                <label className="pw-pagination-size">
+                  每页
+                  <select className="pw-select pw-select-inline" value={pageSize} onChange={(event) => updatePageSize(event.target.value)}>
+                    {PAGE_SIZE_OPTIONS.map((value) => (
+                      <option key={value} value={value}>
+                        {value}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button className="pw-btn" type="button" onClick={() => setPage(1)} disabled={!tasksQuery.data.has_prev}>
+                  首页
+                </button>
+                <button className="pw-btn" type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={!tasksQuery.data.has_prev}>
+                  上一页
+                </button>
+                <button className="pw-btn" type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={!tasksQuery.data.has_next}>
+                  下一页
+                </button>
+                <button className="pw-btn" type="button" onClick={() => setPage(pageCount)} disabled={!tasksQuery.data.has_next}>
+                  末页
+                </button>
+              </div>
+            </div>
             <TaskTable items={tasksQuery.data.items} />
           </div>
         )}

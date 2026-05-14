@@ -1155,16 +1155,22 @@ class BuildOrchestrator:
             ]
 
         marker = "PATCHWEAVER_CALL_SITES_SECTION_COMPAT"
+        debug_marker = "PATCHWEAVER_DEBUG_SECTION_COMPAT"
         try:
-            current_head = tool_path.read_bytes()[:4096]
+            current_text = tool_path.read_text(encoding="utf-8", errors="replace")
         except OSError as exc:
             return ["[kpatch compat]", f"call_sites section 兼容处理跳过: 无法读取 {tool_path}: {exc}"]
-        if marker.encode("utf-8") in current_head:
+        if marker in current_text and debug_marker in current_text:
             return ["[kpatch compat]", f"call_sites section 兼容 wrapper 已存在: {tool_path}"]
 
         real_path = tool_path.with_name(tool_path.name + ".real-patchweaver")
+        upgrading_existing_wrapper = marker in current_text
+        if upgrading_existing_wrapper:
+            parsed_real_path = self._parse_create_diff_object_wrapper_real_path(current_text)
+            if parsed_real_path is not None and parsed_real_path.exists():
+                real_path = parsed_real_path
         try:
-            if not real_path.exists():
+            if not real_path.exists() and not upgrading_existing_wrapper:
                 shutil.copy2(tool_path, real_path)
             tool_path.write_text(
                 self._render_call_sites_section_wrapper(real_path=real_path),
@@ -1180,15 +1186,34 @@ class BuildOrchestrator:
 
         return [
             "[kpatch compat]",
-            f"call_sites section 兼容 wrapper 已安装: {tool_path}",
+            f"call_sites section 兼容 wrapper 已{'升级' if upgrading_existing_wrapper else '安装'}: {tool_path}",
             f"原始 create-diff-object 备份: {real_path}",
         ]
+
+    def _parse_create_diff_object_wrapper_real_path(self, wrapper_text: str) -> Path | None:
+        """从已安装 wrapper 里恢复真实 create-diff-object 路径"""
+
+        for raw_line in wrapper_text.splitlines():
+            line = raw_line.strip()
+            if not line.startswith("REAL="):
+                continue
+            value = line.split("=", 1)[1].strip()
+            try:
+                parts = shlex.split(value)
+            except ValueError:
+                parts = []
+            if not parts and value:
+                parts = [value.strip("'\"")]
+            if parts:
+                return Path(parts[0])
+        return None
 
     def _render_call_sites_section_wrapper(self, *, real_path: Path) -> str:
         """生成 create-diff-object wrapper 脚本"""
 
         return f"""#!/usr/bin/env bash
 # PATCHWEAVER_CALL_SITES_SECTION_COMPAT
+# PATCHWEAVER_DEBUG_SECTION_COMPAT
 set -u
 REAL={shlex.quote(str(real_path))}
 args=("$@")
@@ -1212,6 +1237,8 @@ if [ "${{#nonopt[@]}}" -ge 2 ]; then
     objcopy --remove-section=.call_sites "$obj" 2>/dev/null || true
     objcopy --remove-section=.rela.static_call_sites "$obj" 2>/dev/null || true
     objcopy --remove-section=.static_call_sites "$obj" 2>/dev/null || true
+    objcopy --remove-section=.rela.debug_* "$obj" 2>/dev/null || true
+    objcopy --remove-section=.debug_* "$obj" 2>/dev/null || true
   done
   args[$orig_idx]="$tmp/orig.o"
   args[$patched_idx]="$tmp/patched.o"
@@ -1641,6 +1668,7 @@ exec "$REAL" "${{args[@]}}"
             return None, lines
 
         lines.extend(self._normalize_x86_function_padding(reverse_source_dir))
+        lines.extend(self._patch_modpost_thin_archive_listing(reverse_source_dir))
         lines.append("反向源码树生成完成，继续在该源码树上执行 apply precheck")
         return reverse_source_dir, lines
 
@@ -1677,6 +1705,73 @@ exec "$REAL" "${{args[@]}}"
 
         makefile_path.write_text(normalized, encoding="utf-8")
         lines.append("已将 -fpatchable-function-entry 第二参数归零")
+        return lines
+
+    def _patch_modpost_thin_archive_listing(self, source_dir: Path) -> list[str]:
+        """让 modpost 在 thin archive 缺少历史成员时仍能生成 .vmlinux.objs"""
+
+        makefile_path = source_dir / "scripts" / "Makefile.modpost"
+        helper_path = source_dir / "scripts" / "patchweaver-thin-archive-members.py"
+        lines = ["", "[kpatch source normalization]", f"modpost Makefile: {makefile_path}"]
+        if not makefile_path.exists():
+            lines.append("跳过 thin archive 兼容处理: scripts/Makefile.modpost 不存在")
+            return lines
+
+        helper_path.write_text(
+            "\n".join(
+                [
+                    "#!/usr/bin/env python3",
+                    "from __future__ import annotations",
+                    "",
+                    "import subprocess",
+                    "import sys",
+                    "from pathlib import Path",
+                    "",
+                    "",
+                    "def main() -> int:",
+                    "    if len(sys.argv) != 2:",
+                    "        return 2",
+                    "    archive = Path(sys.argv[1])",
+                    "    try:",
+                    "        data = archive.read_bytes()",
+                    "    except OSError:",
+                    "        return 1",
+                    "    if not data.startswith(b'!<thin>'):",
+                    "        return subprocess.run(['ar', 't', str(archive)], check=False).returncode",
+                    "    text = data.decode('utf-8', errors='ignore')",
+                    "    for raw_line in text.splitlines():",
+                    "        item = raw_line.strip()",
+                    "        if not item or item.startswith('!<') or item.startswith('//') or item.startswith('/'):",
+                    "            continue",
+                    "        if item.endswith('/'):",
+                    "            item = item[:-1]",
+                    "        if item and item != 'libgcc.a':",
+                    "            print(item)",
+                    "    return 0",
+                    "",
+                    "",
+                    "if __name__ == '__main__':",
+                    "    raise SystemExit(main())",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        helper_path.chmod(0o755)
+
+        original = makefile_path.read_text(encoding="utf-8", errors="replace")
+        replacement = "*) $(AR) t $${f} 2>/dev/null || python3 scripts/patchweaver-thin-archive-members.py $${f} ;;"
+        if replacement in original:
+            lines.append("thin archive 兼容处理已存在")
+            return lines
+
+        normalized = original.replace("*) $(AR) t $${f} ;;", replacement)
+        if normalized == original:
+            lines.append("跳过 thin archive 兼容处理: 未匹配到 modpost ar 展开规则")
+            return lines
+
+        makefile_path.write_text(normalized, encoding="utf-8")
+        lines.append("已为 .vmlinux.objs 生成加入 thin archive fallback")
         return lines
 
     def _cleanup_generated_source_tree(self, source_dir: Path | None, *, force: bool = False) -> list[str]:

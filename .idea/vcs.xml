@@ -12,10 +12,14 @@
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp-repair-intent/test_prepare_stable_source_bas0/linux-stable" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp-stable-cache/test_prepare_stable_source_bas0/baselines/HEAD-e84dc3b7e70d" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp-stable-cache/test_prepare_stable_source_bas0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-10844-7c29165b/test_fetch_patch_text_uses_loc0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-10844-7c29165b/test_stable_commit_kernel_rele0/linux-stable" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-22272-1e221857/test_prepare_stable_source_bas0/baselines/HEAD-e84dc3b7e70d" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-22272-1e221857/test_prepare_stable_source_bas0/linux-stable" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-22272-1e221857/test_prepare_stable_source_bas1/baselines/HEAD-7138a5166194" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-22272-1e221857/test_prepare_stable_source_bas1/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-24168-bdd939a9/test_fetch_patch_text_uses_loc0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-24168-bdd939a9/test_stable_commit_kernel_rele0/linux-stable" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-32328-da8d8b7c/test_prepare_stable_source_bas0/baselines/HEAD-e84dc3b7e70d" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-32328-da8d8b7c/test_prepare_stable_source_bas0/linux-stable" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-32328-da8d8b7c/test_prepare_stable_source_bas1/baselines/HEAD-7138a5166194" vcs="Git" />
@@ -32,6 +36,8 @@
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-34908-17f2d860/test_prepare_stable_source_bas0/linux-stable" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-34908-17f2d860/test_prepare_stable_source_bas1/baselines/HEAD-7138a5166194" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-34908-17f2d860/test_prepare_stable_source_bas1/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-36068-1826aa9c/test_fetch_patch_text_uses_loc0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-36068-1826aa9c/test_stable_commit_kernel_rele0/linux-stable" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-36404-f56346db/test_prepare_stable_source_bas0/baselines/HEAD-e84dc3b7e70d" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-36404-f56346db/test_prepare_stable_source_bas0/linux-stable" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-36404-f56346db/test_prepare_stable_source_bas1/baselines/HEAD-7138a5166194" vcs="Git" />
@@ -44,5 +50,19 @@
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-48028-7a862673/test_prepare_stable_source_bas0/linux-stable" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-48028-7a862673/test_prepare_stable_source_bas1/baselines/HEAD-7138a5166194" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-48028-7a862673/test_prepare_stable_source_bas1/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-54092-9c6657bf/test_fetch_patch_text_uses_loc0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-54092-9c6657bf/test_stable_commit_kernel_rele0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-54268-19f44ad4/test_fetch_patch_text_uses_loc0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-54268-19f44ad4/test_stable_commit_kernel_rele0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-54436-4467be3f/test_fetch_patch_text_uses_loc0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-54436-4467be3f/test_stable_commit_kernel_rele0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-59876-8ec73bcd/test_fetch_patch_text_uses_loc0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-59876-8ec73bcd/test_stable_commit_kernel_rele0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-60000-4a536460/test_fetch_patch_text_uses_loc0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-60000-4a536460/test_stable_commit_kernel_rele0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-66084-dade7bd8/test_fetch_patch_text_uses_loc0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-66084-dade7bd8/test_stable_commit_kernel_rele0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-9944-9c42780b/test_fetch_patch_text_uses_loc0/linux-stable" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/cache/pytest-tmp/pytest-main-9944-9c42780b/test_stable_commit_kernel_rele0/linux-stable" vcs="Git" />
   </component>
 </project>
