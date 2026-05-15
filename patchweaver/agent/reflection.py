@@ -170,11 +170,12 @@ def load_reflections_for_next_attempt(
     memory: DualMemory | None = None,
     *,
     limit: int = 8,
+    cve_id: str | None = None,
 ) -> list[ReflectionRecord]:
     """Load task-local and memory-backed reflections for the next Planner call."""
 
     local = _load_reflection_file(Path(task_workspace) / REFLECTION_FILE_NAME)
-    memory_reflections = memory.load_reflections(limit=limit) if memory is not None else []
+    memory_reflections = memory.load_reflections(limit=limit, cve_id=cve_id) if memory is not None else []
     merged: dict[str, ReflectionRecord] = {}
     for reflection in [*memory_reflections, *local]:
         merged[_effective_reflection_id(reflection)] = reflection

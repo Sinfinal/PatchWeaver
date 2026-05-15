@@ -134,12 +134,13 @@ def analyze_task(task_id: str, context: ApiContext = Depends(get_api_context)) -
 
 
 @router.post("/tasks/{task_id}/run", response_model=TaskActionResponse)
-def run_task(task_id: str, context: ApiContext = Depends(get_api_context)) -> TaskActionResponse:
-    """执行单轮尝试"""
+def run_task(task_id: str, background_tasks: BackgroundTasks, context: ApiContext = Depends(get_api_context)) -> TaskActionResponse:
+    """执行单轮尝试（异步后台执行，立即返回）"""
 
     try:
-        result = TaskQueryService(context).run_task(task_id)
-        return TaskActionResponse(task_id=task_id, status="ok", detail=result)
+        service = TaskQueryService(context)
+        background_tasks.add_task(service.run_task, task_id)
+        return TaskActionResponse(task_id=task_id, status="ok", detail={"task_id": task_id, "status": "queued"})
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

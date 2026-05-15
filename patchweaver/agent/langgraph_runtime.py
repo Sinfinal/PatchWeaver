@@ -341,7 +341,7 @@ class LangGraphRuntime:
         latest_attempt = attempts[-1] if attempts else None
         failure_record = self._load_failure_record(task=task, latest_attempt=latest_attempt)
         validation_report = self._load_validation_report(task=task, latest_attempt=latest_attempt)
-        reflections = load_reflections_for_next_attempt(task.workspace_dir, self.memory)
+        reflections = load_reflections_for_next_attempt(task.workspace_dir, self.memory, cve_id=task.cve_id)
         memory_hints = build_memory_hints_from_reflections(reflections)
         observation = AgentObservation.from_runtime(
             task=task,

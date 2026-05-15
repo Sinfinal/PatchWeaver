@@ -143,11 +143,11 @@ class DualMemory:
             matched.last_attempt_id = attempt_id
             self.repository.save_recipe_entries(recipe_entries)
 
-        self._save_reflection_memory(reflection)
+        self._save_reflection_memory(reflection, cve_id=cve_id)
         return self.repository.snapshot()
 
-    def load_reflections(self, *, limit: int = 8) -> list[ReflectionRecord]:
-        """Load memory-backed Agent reflections."""
+    def load_reflections(self, *, limit: int = 8, cve_id: str | None = None) -> list[ReflectionRecord]:
+        """Load memory-backed Agent reflections, optionally filtered by CVE."""
 
         path = self.repository.root_dir / "reflection_memory.json"
         if not path.exists():
@@ -161,7 +161,11 @@ class DualMemory:
         reflections: list[ReflectionRecord] = []
         for item in raw:
             try:
-                reflections.append(ReflectionRecord.model_validate(item))
+                r = ReflectionRecord.model_validate(item)
+                # 只加载同一 CVE 的 reflection，避免跨任务污染
+                if cve_id and item.get("cve_id") and item.get("cve_id") != cve_id:
+                    continue
+                reflections.append(r)
             except ValueError:
                 continue
         return reflections[-limit:]
@@ -278,7 +282,7 @@ class DualMemory:
             "minimal_livepatch_wrap": "上一轮命中 kpatch 约束，保留最小 wrapper 对照路线",
         }
 
-    def _save_reflection_memory(self, reflection: ReflectionRecord) -> None:
+    def _save_reflection_memory(self, reflection: ReflectionRecord, cve_id: str | None = None) -> None:
         """Persist a compact reflection ledger beside existing memory files."""
 
         path = self.repository.root_dir / "reflection_memory.json"
@@ -293,7 +297,10 @@ class DualMemory:
             raw = []
         reflection_id = self._reflection_id(reflection)
         entries = [item for item in raw if not isinstance(item, dict) or item.get("reflection_id") != reflection_id]
-        entries.append(reflection.model_dump(mode="json"))
+        entry = reflection.model_dump(mode="json")
+        if cve_id:
+            entry["cve_id"] = cve_id
+        entries.append(entry)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
