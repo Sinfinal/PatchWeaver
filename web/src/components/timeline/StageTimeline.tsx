@@ -54,19 +54,43 @@ export function StageTimeline({ items, currentStage, failureExplanation, failure
   const progressItems = buildProgressItems(items);
   const currentIndex = resolveCurrentIndex(progressItems, currentStage);
 
+  // 找到第一个未完成的阶段（下一个要执行的阶段）
+  const nextPendingIndex = progressItems.findIndex((item) => {
+    const s = normalizeProgressStatus(item.status);
+    return s !== "success" && s !== "failed";
+  });
+
+  // 只显示已完成的阶段 + 当前/下一个进行中的阶段，过滤掉更后面的 pending 阶段
+  const visibleItems = progressItems.filter((item, index) => {
+    const status = normalizeProgressStatus(item.status);
+    if (status === "success" || status === "failed") return true;
+    if (index === currentIndex) return true;
+    if (index === nextPendingIndex) return true;
+    if (["running", "building", "validating", "reporting", "processing"].includes(status)) return true;
+    return false;
+  });
+
+  if (visibleItems.length === 0) {
+    return <div className="pw-empty">任务正在启动中...</div>;
+  }
+
   return (
     <div className="pw-timeline-stack">
       <div className="pw-timeline" aria-label="任务阶段时间线">
-        {progressItems.map((item, index) => (
-          <StageTimelineNode
-            key={item.stage}
-            item={item}
-            index={index}
-            isCurrent={index === currentIndex}
-            failureExplanation={failureExplanation}
-            failureDiagnosis={failureDiagnosis}
-          />
-        ))}
+        {visibleItems.map((item) => {
+          const originalIndex = progressItems.indexOf(item);
+          const isCurrent = originalIndex === currentIndex || originalIndex === nextPendingIndex;
+          return (
+            <StageTimelineNode
+              key={item.stage}
+              item={item}
+              index={originalIndex}
+              isCurrent={isCurrent}
+              failureExplanation={failureExplanation}
+              failureDiagnosis={failureDiagnosis}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -110,7 +134,8 @@ function StageTimelineNode({
   failureDiagnosis?: FailureDiagnosis | null;
 }): JSX.Element {
   const normalizedStatus = normalizeProgressStatus(item.status);
-  const itemClass = `pw-timeline-node is-${normalizedStatus}${isCurrent ? " is-current" : ""}`;
+  const isLoading = isCurrent && normalizedStatus !== "success" && normalizedStatus !== "failed";
+  const itemClass = `pw-timeline-node is-${normalizedStatus}${isCurrent ? " is-current" : ""}${isLoading ? " is-loading" : ""}`;
   const label = item.label ?? stageLabelMap[item.stage] ?? item.stage;
   const isFailed = normalizedStatus === "failed";
   const showDiagnosis = isFailed && failureDiagnosis?.present;
@@ -120,7 +145,14 @@ function StageTimelineNode({
       <span className="pw-timeline-marker">{String(index + 1).padStart(2, "0")}</span>
       <div className="pw-stage-heading">
         <strong>{label}</strong>
-        <StatusBadge value={item.status} />
+        {isLoading ? (
+          <span className="pw-status pw-status-loading-badge">
+            <span className="pw-loading-spinner" />
+            执行中
+          </span>
+        ) : (
+          <StatusBadge value={item.status} />
+        )}
       </div>
       {normalizedStatus !== "blocked" && normalizedStatus !== "pending" ? (
         <>

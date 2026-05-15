@@ -705,16 +705,47 @@ code {
   background: currentColor;
 }
 
-.pw-status.success {
+/* 已构建 — 青绿色 */
+.pw-status.built {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.3);
+  background: rgba(52, 211, 153, 0.08);
+}
+
+/* 已报告/成功 — 绿色 */
+.pw-status.success,
+.pw-status.reported {
   color: var(--success-main);
   border-color: rgba(82, 210, 115, 0.28);
   background: rgba(82, 210, 115, 0.08);
 }
 
+/* 运行中 — 蓝色 */
 .pw-status.running {
-  color: var(--accent-blue);
+  color: #61b8ff;
   border-color: rgba(97, 184, 255, 0.3);
   background: rgba(97, 184, 255, 0.08);
+}
+
+/* 构建中 — 天蓝色 */
+.pw-status.building {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+/* 验证中 — 青色 */
+.pw-status.validating {
+  color: #22d3ee;
+  border-color: rgba(34, 211, 238, 0.3);
+  background: rgba(34, 211, 238, 0.08);
+}
+
+/* 生成报告中 — 靛蓝色 */
+.pw-status.reporting {
+  color: #818cf8;
+  border-color: rgba(129, 140, 248, 0.3);
+  background: rgba(129, 140, 248, 0.08);
 }
 
 .pw-status.warn {
@@ -733,6 +764,116 @@ code {
   color: var(--text-soft);
   border-color: rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.04);
+}
+
+/* 已创建 — 灰蓝色 */
+.pw-status.created {
+  color: #8b9ab0;
+  border-color: rgba(139, 154, 176, 0.3);
+  background: rgba(139, 154, 176, 0.08);
+}
+
+/* 已分析 — 紫色 */
+.pw-status.analyzed {
+  color: #a78bfa;
+  border-color: rgba(167, 139, 250, 0.3);
+  background: rgba(167, 139, 250, 0.08);
+}
+
+/* 已跳过 — 灰色 */
+.pw-status.skipped {
+  color: #6b7280;
+  border-color: rgba(107, 114, 128, 0.3);
+  background: rgba(107, 114, 128, 0.08);
+}
+
+/* 阻塞/终止 — 橙色 */
+.pw-status.blocked {
+  color: #f97316;
+  border-color: rgba(249, 115, 22, 0.3);
+  background: rgba(249, 115, 22, 0.08);
+}
+
+/* 卡住/证据缺失 — 棕黄色 */
+.pw-status.stale {
+  color: #d97706;
+  border-color: rgba(217, 119, 6, 0.3);
+  background: rgba(217, 119, 6, 0.08);
+}
+
+/* Tooltip 组件 */
+.pw-status-help {
+  position: relative;
+  display: inline-block;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.pw-status-help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--border-main);
+  color: var(--text-soft);
+  font-size: 11px;
+  cursor: help;
+  line-height: 1;
+}
+
+.pw-status-help-popup {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  min-width: 280px;
+  padding: 10px 12px;
+  background: #1a1f2e;
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+
+.pw-status-help:hover .pw-status-help-popup {
+  display: block;
+}
+
+.pw-status-help-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.pw-status-help-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.pw-status-help-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pw-status-help-name {
+  font-weight: 500;
+  color: var(--text-main);
+  min-width: 60px;
+}
+
+.pw-status-help-desc {
+  color: var(--text-soft);
 }
 
 .pw-code-panel {
@@ -1171,6 +1312,7 @@ select option:checked {
 
 .pw-timeline-node {
   position: relative;
+  isolation: isolate;
   min-width: 0;
   min-height: 0;
   border-radius: 14px;
@@ -1182,6 +1324,44 @@ select option:checked {
   display: grid;
   gap: 6px;
   align-content: start;
+  overflow: hidden;
+  transform: translateY(0);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.pw-timeline-node::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.08) 38%, transparent 62%),
+    radial-gradient(circle at 82% 18%, rgba(97, 184, 255, 0.12), transparent 36%);
+  opacity: 0;
+  transform: translateX(-18%);
+  transition: opacity 180ms ease, transform 240ms ease;
+}
+
+.pw-timeline-node:hover {
+  transform: translateY(-3px);
+  border-color: rgba(97, 184, 255, 0.38);
+  background:
+    radial-gradient(circle at top right, rgba(97, 184, 255, 0.1), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent),
+    var(--bg-panel-soft);
+  box-shadow:
+    0 18px 34px rgba(4, 9, 20, 0.26),
+    0 0 0 1px rgba(97, 184, 255, 0.06);
+}
+
+.pw-timeline-node:hover::before {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .pw-timeline-marker {
@@ -1201,6 +1381,23 @@ select option:checked {
   background: #111b31;
   border: 1px solid rgba(97, 184, 255, 0.38);
   box-shadow: 0 0 0 5px var(--bg-main);
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.pw-timeline-node:hover .pw-timeline-marker {
+  color: #07111c;
+  background:
+    linear-gradient(135deg, rgba(83, 210, 178, 0.95), rgba(97, 184, 255, 0.95));
+  border-color: rgba(214, 244, 255, 0.72);
+  transform: scale(1.06);
+  box-shadow:
+    0 0 0 5px var(--bg-main),
+    0 0 24px rgba(97, 184, 255, 0.28);
 }
 
 .pw-timeline-node.is-current {
@@ -1212,6 +1409,57 @@ select option:checked {
   box-shadow: 0 18px 34px rgba(5, 10, 22, 0.2);
 }
 
+@keyframes pw-loading-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.pw-timeline-node.is-loading .pw-stage-heading strong {
+  animation: pw-loading-pulse 1.4s ease-in-out infinite;
+}
+
+.pw-timeline-node.is-loading::after {
+  content: "";
+  display: block;
+  height: 2px;
+  margin-top: 10px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(97, 184, 255, 0.6), transparent);
+  background-size: 200% 100%;
+  animation: pw-loading-bar 1.6s linear infinite;
+}
+
+@keyframes pw-loading-bar {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.pw-status-loading-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #61b8ff;
+  border: 1px solid rgba(97, 184, 255, 0.3);
+  background: rgba(97, 184, 255, 0.08);
+}
+
+.pw-loading-spinner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid rgba(97, 184, 255, 0.25);
+  border-top-color: #61b8ff;
+  animation: pw-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pw-spin {
+  to { transform: rotate(360deg); }
+}
+
 .pw-timeline-node.is-failed {
   border-color: rgba(255, 107, 129, 0.48);
   background:
@@ -1220,14 +1468,50 @@ select option:checked {
     var(--bg-panel-soft);
 }
 
+.pw-timeline-node.is-failed:hover {
+  border-color: rgba(255, 107, 129, 0.68);
+  background:
+    radial-gradient(circle at top right, rgba(255, 107, 129, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent),
+    var(--bg-panel-soft);
+  box-shadow:
+    0 20px 38px rgba(34, 9, 20, 0.34),
+    0 0 0 1px rgba(255, 107, 129, 0.08);
+}
+
+.pw-timeline-node.is-failed:hover .pw-timeline-marker {
+  color: #fff4f6;
+  background:
+    linear-gradient(135deg, rgba(255, 107, 129, 0.96), rgba(243, 178, 79, 0.88));
+  border-color: rgba(255, 214, 222, 0.72);
+  box-shadow:
+    0 0 0 5px var(--bg-main),
+    0 0 24px rgba(255, 107, 129, 0.3);
+}
+
 .pw-timeline-node.is-blocked {
   border-color: rgba(255, 184, 108, 0.32);
   opacity: 0.82;
 }
 
+.pw-timeline-node.is-blocked:hover {
+  opacity: 0.96;
+  border-color: rgba(255, 184, 108, 0.48);
+  box-shadow:
+    0 16px 30px rgba(31, 19, 7, 0.28),
+    0 0 0 1px rgba(255, 184, 108, 0.06);
+}
+
 .pw-timeline-node.is-blocked .pw-timeline-marker {
   color: var(--text-soft);
   border-color: rgba(255, 184, 108, 0.3);
+}
+
+.pw-timeline-node.is-blocked:hover .pw-timeline-marker {
+  color: #15100a;
+  background:
+    linear-gradient(135deg, rgba(255, 202, 122, 0.96), rgba(255, 184, 108, 0.9));
+  border-color: rgba(255, 225, 170, 0.72);
 }
 
 .pw-stage-heading,

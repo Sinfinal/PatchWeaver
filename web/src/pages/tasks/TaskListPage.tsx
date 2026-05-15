@@ -98,63 +98,27 @@ export function TaskListPage(): JSX.Element {
         <div className="pw-grid two" style={{ marginBottom: 18 }}>
           <input
             className="pw-input"
-            placeholder="按 CVE 过滤，例如 CVE-2024-1086"
+            placeholder="按 CVE 编号搜索，例如 CVE-2024-1086"
             value={filters.cve_id}
             onChange={(event) => updateFilter("cve_id", event.target.value)}
           />
           <input
             className="pw-input"
-            placeholder="按状态过滤，例如 running / failed / reported"
+            placeholder="按状态筛选，例如 running / failed / built / reported"
             value={filters.status}
             onChange={(event) => updateFilter("status", event.target.value)}
           />
           <input
             className="pw-input"
-            placeholder="按失败类型过滤，例如 patch_apply_failed"
-            value={filters.failure_type}
-            onChange={(event) => updateFilter("failure_type", event.target.value)}
-          />
-          <input
-            className="pw-input"
-            placeholder="按目标内核过滤，例如 6.6.102-5.2.an23.x86_64"
-            value={filters.target_kernel}
-            onChange={(event) => updateFilter("target_kernel", event.target.value)}
-          />
-          <input
-            className="pw-input"
-            placeholder="按构建执行态过滤，例如 executed / not_run"
-            value={filters.build_exec_status}
-            onChange={(event) => updateFilter("build_exec_status", event.target.value)}
-          />
-          <input
-            className="pw-input"
-            placeholder="按目标态过滤，例如 target_already_patched"
-            value={filters.target_state}
-            onChange={(event) => updateFilter("target_state", event.target.value)}
-          />
-          <input
-            className="pw-input"
-            placeholder="按固定样例分组过滤，例如 challenge_dev / holdout"
-            value={filters.fixture_group}
-            onChange={(event) => updateFilter("fixture_group", event.target.value)}
-          />
-          <input
-            className="pw-input"
-            type="number"
-            min={0}
-            placeholder="按当前尝试轮过滤，例如 1"
-            value={filters.current_attempt}
-            onChange={(event) => updateFilter("current_attempt", event.target.value)}
-          />
-          <input
-            className="pw-input"
             type="datetime-local"
+            title="创建时间起始"
             value={filters.created_at_from}
             onChange={(event) => updateFilter("created_at_from", event.target.value)}
           />
           <input
             className="pw-input"
             type="datetime-local"
+            title="创建时间截止"
             value={filters.created_at_to}
             onChange={(event) => updateFilter("created_at_to", event.target.value)}
           />

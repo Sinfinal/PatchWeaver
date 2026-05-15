@@ -24,7 +24,8 @@
       "mcp__ssh__ssh_execute",
       "mcp__chrome__list_pages",
       "Bash(PW_SSH_PASS=b314B314 python tmp/sftp_sync_patchweaver_dev.py)",
-      "Bash(xargs cat)"
+      "Bash(xargs cat)",
+      "Bash(python *)"
     ]
   }
 }

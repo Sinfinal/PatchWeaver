@@ -13,7 +13,7 @@ from patchweaver.api.deps import ApiContext
 from patchweaver.agent.actions import AgentActionName
 from patchweaver.agent.health import evaluate_agent_health
 from patchweaver.agent.langgraph_runtime import LangGraphRuntime
-from patchweaver.api.services.failure_explanation_service import FailureExplanationService
+from patchweaver.api.services.failure_explanation_service import FailureExplanationService, _FALLBACK_EXPLANATIONS
 from patchweaver.config.resolver import resolve_runtime
 from patchweaver.memory.dual_memory import DualMemory
 from patchweaver.harness.workspace_guard import WorkspaceGuard
@@ -181,30 +181,15 @@ class TaskQueryService:
 
         items = []
         for row in rows:
-            task_for_health = self.context.task_repo.get_task(row["task_id"])
-            attempts_for_health = self.context.attempt_repo.list_attempts(row["task_id"]) if task_for_health is not None else []
-            agent_health = (
-                evaluate_agent_health(
-                    task=task_for_health,
-                    attempts=attempts_for_health,
-                    project_root=self.context.project_root,
-                    write=False,
-                )
-                if task_for_health is not None
-                else None
-            )
-            latest_failure_payload = self._load_latest_failure_payload(task_for_health, attempts_for_health)
-            failure_explanation = self._failure_explanation_payload(
-                failure_type=row["latest_failure_type"],
-                summary=row["latest_failure_summary"],
-                task_workspace=task_for_health.workspace_dir if task_for_health is not None else resolve_project_path(self.context.project_root, row["workspace_dir"]),
-                latest_failure=latest_failure_payload,
-            )
             fixture_binding = self._resolve_fixture_binding(
                 fixture_catalog,
                 cve_id=row["cve_id"],
                 target_kernel=row["target_kernel"],
             )
+            # 任务列表只用数据库字段，不做 LLM 调用或 agent_health 计算
+            # failure_explanation 从缓存文件读取，避免阻塞
+            task_workspace = resolve_project_path(self.context.project_root, row["workspace_dir"])
+            cached_explanation = self._load_cached_failure_explanation(task_workspace)
             items.append(
                 {
                     "task_id": row["task_id"],
@@ -219,12 +204,12 @@ class TaskQueryService:
                     "updated_at": row["updated_at"],
                     "latest_failure_type": row["latest_failure_type"],
                     "latest_failure_summary": row["latest_failure_summary"],
-                    "latest_failure_explanation": failure_explanation.get("explanation") if failure_explanation else None,
-                    "latest_failure_explanation_source": failure_explanation.get("source") if failure_explanation else None,
+                    "latest_failure_explanation": cached_explanation.get("explanation") if cached_explanation else _FALLBACK_EXPLANATIONS.get(row["latest_failure_type"] or ""),
+                    "latest_failure_explanation_source": cached_explanation.get("source") if cached_explanation else ("fallback_rule" if row["latest_failure_type"] else None),
                     "latest_build_exec_status": row["latest_build_exec_status"],
                     "latest_target_state": row["latest_target_state"],
                     "attempts_count": row["attempts_count"],
-                    "agent_health": agent_health,
+                    "agent_health": None,
                     "fixture_group": fixture_binding["fixture_group"] if fixture_binding else None,
                     "fixture_id": fixture_binding["fixture_id"] if fixture_binding else None,
                 }
@@ -479,9 +464,9 @@ class TaskQueryService:
             if analysis_failure_path.exists():
                 latest_failure_path = analysis_failure_path
 
-        # replay 会顺着 attempts、trace 和报告再做一次归并
-        # 没有尝试记录时直接给空结果，避免详情页首开就走一串无效读取
-        replay = relativize_payload(self.context.build_task_runner().replay_task(task_id), self.context.project_root) if attempts else {
+        # 任务运行中时跳过 replay（耗时操作），避免详情页阻塞
+        _skip_replay = task.status in {"running", "created", "analyzed"}
+        _empty_replay = {
             "command": "replay",
             "task_id": task_id,
             "latest_attempt_id": None,
@@ -498,6 +483,11 @@ class TaskQueryService:
             "comparison": {},
             "status": "empty",
         }
+        replay = (
+            relativize_payload(self.context.build_task_runner().replay_task(task_id), self.context.project_root)
+            if attempts and not _skip_replay
+            else _empty_replay
+        )
 
         latest_failure = self._load_json(latest_failure_path)
         latest_validation = self._load_json(latest_validation_path)
@@ -1260,6 +1250,13 @@ class TaskQueryService:
             if payload is not None:
                 return payload
         return self._load_json(task_dir / "analysis" / "trace" / "failure_record.json")
+
+    def _load_cached_failure_explanation(self, task_workspace: Path | None) -> dict | None:
+        """从缓存文件读取失败解释，不触发 LLM 调用"""
+        if task_workspace is None:
+            return None
+        cache_path = Path(task_workspace) / "agent" / "failure_explanation.json"
+        return self._load_json(cache_path)
 
     def _failure_explanation_payload(
         self,
