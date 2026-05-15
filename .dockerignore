@@ -2,6 +2,7 @@
 .git/
 .idea/
 .vscode/
+.claude/
 
 # Local Python and build caches
 __pycache__/

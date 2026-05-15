@@ -66,6 +66,7 @@ services:
   patchweaver-validation:
     profiles:
       - validation
+      -
     build:
       context: ../..
       dockerfile: build/patchweaver/Dockerfile

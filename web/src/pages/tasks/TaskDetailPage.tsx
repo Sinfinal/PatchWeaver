@@ -160,22 +160,27 @@ export function TaskDetailPage(): JSX.Element {
         title={detail.task.task_id}
         actions={
           <div className="pw-btn-row">
-            <button className="pw-btn" type="button" onClick={() => actionMutation.mutate("analyze")} disabled={actionMutation.isPending}>
-              分析
-            </button>
             <button
               className="pw-btn primary"
               type="button"
               onClick={() => actionMutation.mutate("run")}
-              disabled={actionMutation.isPending}
+              disabled={
+                actionMutation.isPending ||
+                ["running", "building", "validating", "reporting"].includes(detail.task.status) ||
+                detail.task.current_attempt >= detail.task.max_attempts
+              }
+              title={
+                detail.task.current_attempt >= detail.task.max_attempts
+                  ? `已达最大尝试轮次 ${detail.task.max_attempts}`
+                  : ["running", "building", "validating", "reporting"].includes(detail.task.status)
+                  ? "任务正在执行中"
+                  : "执行一轮构建验证"
+              }
             >
               执行一轮
             </button>
             <button className="pw-btn" type="button" onClick={() => actionMutation.mutate("report")} disabled={actionMutation.isPending}>
               生成报告
-            </button>
-            <button className="pw-btn" type="button" onClick={() => setSelectedTab("replay")}>
-              查看回放
             </button>
             <button className="pw-btn" type="button" onClick={() => void detailQuery.refetch()}>
               刷新
