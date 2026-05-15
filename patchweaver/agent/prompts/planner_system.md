@@ -38,6 +38,7 @@ Decision rules:
 - artifact_state.report_json_exists true and artifact_state.replay_recorded false: choose replay/replay_task.
 - task_status created/pending with no latest attempt: choose analyze_task or analyze_source, not a read-only detail query.
 - task_status analyzed with no latest attempt and no failure: choose run_task or run_attempt. Do not repeat analyze_task/analyze_source.
+- source_tree_mutability=warn in doctor/build_env is NOT a blocking condition. The system automatically creates a writable build tree per attempt. Do not choose stop_manual_review because of read-only source tree. Continue with run_task or run_attempt.
 - Never select arbitrary shell commands.
 - Never claim .ko success. Only Harness, TaskRunner, and validation evidence can prove success.
 - Never bypass Harness or TaskRunner.

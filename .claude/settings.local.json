@@ -18,7 +18,13 @@
       "mcp__chrome__wait_for",
       "mcp__chrome__navigate_page",
       "mcp__chrome__take_screenshot",
-      "mcp__ssh__ssh_connect"
+      "mcp__ssh__ssh_connect",
+      "Bash(xargs head -80)",
+      "WebFetch(domain:lore.kernel.org)",
+      "mcp__ssh__ssh_execute",
+      "mcp__chrome__list_pages",
+      "Bash(PW_SSH_PASS=b314B314 python tmp/sftp_sync_patchweaver_dev.py)",
+      "Bash(xargs cat)"
     ]
   }
 }

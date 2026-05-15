@@ -21,6 +21,7 @@ class AgentActionName(str, Enum):
     REPLAY = "replay"
     REPLAY_TASK = "replay_task"
     RETRY_WITH_STRATEGY = "retry_with_strategy"
+    REPAIR_BUILD_SOURCE_TREE = "repair_build_source_tree"
     STOP_MANUAL_REVIEW = "stop_manual_review"
 
 

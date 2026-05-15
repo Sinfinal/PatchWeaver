@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+import asyncio
+from contextlib import suppress
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 
 from patchweaver.api.deps import ApiContext, get_api_context
 from patchweaver.api.schemas import ArtifactContentResponse, CreateTaskRequest, TaskActionResponse
@@ -80,6 +83,33 @@ def get_task_detail(task_id: str, context: ApiContext = Depends(get_api_context)
         return TaskQueryService(context).get_task_detail(task_id)
     except Exception as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.websocket("/tasks/{task_id}/events")
+async def watch_task_events(
+    websocket: WebSocket,
+    task_id: str,
+    context: ApiContext = Depends(get_api_context),
+) -> None:
+    """推送任务详情页实时刷新事件"""
+
+    await websocket.accept()
+    service = TaskQueryService(context)
+    last_fingerprint: str | None = None
+    try:
+        while True:
+            snapshot = service.get_task_event_snapshot(task_id)
+            if snapshot["fingerprint"] != last_fingerprint:
+                await websocket.send_json(snapshot)
+                last_fingerprint = snapshot["fingerprint"]
+            await asyncio.sleep(2)
+    except WebSocketDisconnect:
+        return
+    except Exception as exc:
+        with suppress(RuntimeError):
+            await websocket.send_json({"event": "task_events_error", "task_id": task_id, "error": str(exc)})
+        with suppress(RuntimeError):
+            await websocket.close(code=1011)
 
 
 @router.get("/tasks/{task_id}/agent-decision")

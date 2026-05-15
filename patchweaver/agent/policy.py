@@ -42,9 +42,20 @@ class DecisionPolicy:
                 risk="environment",
             )
         if failure_type == "build_env_missing":
+            repair_count = int(self._diagnostic_path(observation, "repair_build_source_tree_count") or 0)
+            if repair_count < 1:
+                return AgentDecision(
+                    selected_action=AgentActionName.REPAIR_BUILD_SOURCE_TREE,
+                    reason="build_env_missing：源码树只读，自动尝试创建 attempt 级可写构建树后重试（最多1次）",
+                    evidence_refs=list(observation.evidence_refs),
+                    risk="low",  # type: ignore[arg-type]
+                    terminal=False,
+                    retry=False,
+                    action=AgentAction(name=AgentActionName.REPAIR_BUILD_SOURCE_TREE),
+                )
             return self._terminal(
                 observation,
-                reason="build_env_missing 说明 kpatch-build 构建环境不完整，需先补齐基础工具、debug vmlinux 或匹配目标内核的 GCC",
+                reason="build_env_missing：可写构建树修复已尝试1次仍失败，需人工检查磁盘空间或 Docker 挂载配置",
                 risk="environment",
             )
         if failure_type == "dependency_gap":

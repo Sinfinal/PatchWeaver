@@ -1,11 +1,12 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { CodePanel } from "../../components/code/CodePanel";
 import { SectionCard } from "../../components/layout/SectionCard";
 import { StatusBadge } from "../../components/status/StatusBadge";
-import { StageTimeline } from "../../components/timeline/StageTimeline";
+import { StageTimeline, stageLabelMap } from "../../components/timeline/StageTimeline";
 import { useLiveQueryOptions } from "../../hooks/useLiveQueryOptions";
+import { useTaskEvents } from "../../hooks/useTaskEvents";
 import {
   analyzeTask,
   fetchArtifactContent,
@@ -19,6 +20,8 @@ import { copyText, formatTime, shortenPath } from "../../utils/format";
 import type { TaskAttempt, TaskDetailResponse } from "../../types/tasks";
 
 type TabKey = "overview" | "input" | "analysis" | "attempts" | "build" | "validate" | "report" | "replay" | "artifacts";
+
+const FILE_PAGE_SIZE = 12;
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "overview", label: "概览" },
@@ -41,6 +44,18 @@ export function TaskDetailPage(): JSX.Element {
   const setSelectedAttemptNo = useUiStore((state) => state.setSelectedAttemptNo);
   const [selectedTab, setSelectedTab] = useState<TabKey>("overview");
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [filePage, setFilePage] = useState(1);
+  const refreshTaskDetail = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["task-detail", taskId] });
+    queryClient.invalidateQueries({ queryKey: ["task-artifacts", taskId] });
+    queryClient.invalidateQueries({ queryKey: ["overview"] });
+    queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    queryClient.invalidateQueries({ queryKey: ["task-report", taskId] });
+    if (selectedPath) {
+      queryClient.invalidateQueries({ queryKey: ["artifact-content", taskId, selectedPath] });
+    }
+  }, [queryClient, selectedPath, taskId]);
+  const liveEventStatus = useTaskEvents(taskId, refreshTaskDetail);
 
   const detailQuery = useQuery({
     queryKey: ["task-detail", taskId],
@@ -103,6 +118,11 @@ export function TaskDetailPage(): JSX.Element {
     () => buildTabFiles(detailQuery.data, selectedTab, currentAttempt, artifactsQuery.data?.items),
     [artifactsQuery.data?.items, currentAttempt, detailQuery.data, selectedTab],
   );
+  const filePageCount = Math.max(1, Math.ceil(tabFiles.length / FILE_PAGE_SIZE));
+  const visibleTabFiles = useMemo(() => {
+    const start = (filePage - 1) * FILE_PAGE_SIZE;
+    return tabFiles.slice(start, start + FILE_PAGE_SIZE);
+  }, [filePage, tabFiles]);
 
   useEffect(() => {
     if (tabFiles.length === 0) {
@@ -113,6 +133,16 @@ export function TaskDetailPage(): JSX.Element {
       setSelectedPath(tabFiles[0]);
     }
   }, [selectedPath, tabFiles]);
+
+  useEffect(() => {
+    setFilePage(1);
+  }, [selectedTab, currentAttempt?.attempt_no]);
+
+  useEffect(() => {
+    if (filePage > filePageCount) {
+      setFilePage(filePageCount);
+    }
+  }, [filePage, filePageCount]);
 
   if (detailQuery.isLoading) {
     return <div className="pw-empty">正在加载任务详情...</div>;
@@ -171,80 +201,34 @@ export function TaskDetailPage(): JSX.Element {
             </div>
           </div>
           <div className="pw-kv-item">
-            <span className="pw-kv-label">工作区</span>
-            <div className="pw-kv-value">{shortenPath(detail.task.workspace_dir)}</div>
+            <span className="pw-kv-label">目标内核</span>
+            <div className="pw-kv-value">{detail.task.target_kernel}</div>
           </div>
-          <div className="pw-kv-item">
-            <span className="pw-kv-label">目标内核来源</span>
-            <div className="pw-kv-value">{detail.task.target_kernel_source ?? "未记录"}</div>
-          </div>
-          <div className="pw-kv-item">
-            <span className="pw-kv-label">运行档位</span>
-            <div className="pw-kv-value">{detail.task.profile_name ?? "未记录"}</div>
-          </div>
-          <div className="pw-kv-item">
-            <span className="pw-kv-label">构建执行态</span>
-            <div className="pw-kv-value">{detail.task.latest_build_exec_status ?? "未记录"}</div>
-          </div>
-          <div className="pw-kv-item">
-            <span className="pw-kv-label">目标态结论</span>
-            <div className="pw-kv-value">{detail.task.latest_target_state ?? "未命中"}</div>
-          </div>
-          <div className="pw-kv-item">
-            <span className="pw-kv-label">固定样例分组</span>
-            <div className="pw-kv-value">{detail.task.fixture_group ?? "未绑定"}</div>
-          </div>
-          <div className="pw-kv-item">
-            <span className="pw-kv-label">固定样例编号</span>
-            <div className="pw-kv-value">{detail.task.fixture_id ?? "未绑定"}</div>
-          </div>
-          <div className="pw-kv-item">
-            <span className="pw-kv-label">当前运行机内核</span>
-            <div className="pw-kv-value">{detail.task.machine_profile?.machine_kernel ?? "未记录"}</div>
-          </div>
-          <div className="pw-kv-item">
-            <span className="pw-kv-label">最近失败类型</span>
-            <div className="pw-kv-value">{detail.task.latest_failure_type ?? "无"}</div>
-          </div>
-          <div className="pw-kv-item">
-            <span className="pw-kv-label">构建目标内核</span>
-            <div className="pw-kv-value">{detail.task.machine_profile?.build_target_kernel ?? "未记录"}</div>
-          </div>
+          {detail.task.latest_failure_type ? (
+            <div className="pw-kv-item">
+              <span className="pw-kv-label">失败类型</span>
+              <div className="pw-kv-value">{detail.task.latest_failure_type}</div>
+            </div>
+          ) : null}
           <div className="pw-kv-item">
             <span className="pw-kv-label">创建时间</span>
             <div className="pw-kv-value">{formatTime(detail.task.created_at)}</div>
           </div>
-          <div className="pw-kv-item">
-            <span className="pw-kv-label">最近更新时间</span>
-            <div className="pw-kv-value">{formatTime(detail.task.updated_at)}</div>
-          </div>
-          <div className="pw-kv-item">
-            <span className="pw-kv-label">工作区状态</span>
-            <div className="pw-kv-value">{detail.workspace_exists ? "任务根目录已生成，阶段目录按需创建" : "缺失"}</div>
-          </div>
         </div>
       </SectionCard>
 
-      <SectionCard
-        title="阶段时间线"
-      >
-        {detail.process_summary ? <ProcessSummaryPanel detail={detail} /> : null}
-        <StageTimeline items={detail.stage_view ?? detail.timeline} currentStage={detail.process_summary?.current_stage} />
+      <SectionCard title="阶段时间线" actions={<LiveEventBadge status={liveEventStatus} />}>
+        <StageTimeline
+          items={detail.stage_view ?? detail.timeline}
+          currentStage={detail.process_summary?.current_stage}
+          failureExplanation={detail.task.latest_failure_explanation ?? undefined}
+          failureDiagnosis={detail.failure_diagnosis}
+        />
       </SectionCard>
 
-      <SectionCard title="智能体工作状态">
-        <AgentWorkStatusPanel detail={detail} />
+      <SectionCard title="智能体状态">
+        <AgentPanel detail={detail} />
       </SectionCard>
-
-      <SectionCard title="智能体决策轨迹">
-        <AgentDecisionTimeline detail={detail} />
-      </SectionCard>
-
-      {detail.agent_decision_summary ? (
-        <SectionCard title="智能体决策摘要">
-          <AgentDecisionPanel detail={detail} />
-        </SectionCard>
-      ) : null}
 
       <SectionCard
         title="任务证据面板"
@@ -269,7 +253,28 @@ export function TaskDetailPage(): JSX.Element {
             <SectionCard title="候选文件">
               {tabFiles.length > 0 ? (
                 <div className="pw-list">
-                  {tabFiles.map((path) => (
+                  <div className="pw-file-list-head">
+                    <span>
+                      共 {tabFiles.length} 个文件，第 {filePage}/{filePageCount} 页
+                    </span>
+                    <div className="pw-pagination-controls">
+                      <button className="pw-btn compact" type="button" onClick={() => setFilePage(1)} disabled={filePage <= 1}>
+                        首页
+                      </button>
+                      <button className="pw-btn compact" type="button" onClick={() => setFilePage((current) => Math.max(1, current - 1))} disabled={filePage <= 1}>
+                        上一页
+                      </button>
+                      <button
+                        className="pw-btn compact"
+                        type="button"
+                        onClick={() => setFilePage((current) => Math.min(filePageCount, current + 1))}
+                        disabled={filePage >= filePageCount}
+                      >
+                        下一页
+                      </button>
+                    </div>
+                  </div>
+                  {visibleTabFiles.map((path) => (
                     <button
                       key={path}
                       type="button"
@@ -289,7 +294,13 @@ export function TaskDetailPage(): JSX.Element {
           <CodePanel
             title="产物预览"
             path={selectedPath ?? undefined}
-            content={contentQuery.isLoading ? "正在加载内容..." : contentQuery.data?.content}
+            content={
+              contentQuery.isLoading
+                ? "正在加载内容..."
+                : contentQuery.isError
+                  ? `无法打开文件\n${contentQuery.error instanceof Error ? contentQuery.error.message : "请确认文件仍存在"}`
+                  : contentQuery.data?.content
+            }
             emptyText="选择左侧候选文件后，这里会展示对应 artifact 的文本内容"
             actions={
               selectedPath ? (
@@ -378,6 +389,81 @@ function AgentDecisionTimeline({ detail }: { detail: TaskDetailResponse }): JSX.
   );
 }
 
+function LiveEventBadge({ status }: { status: string }): JSX.Element {
+  const labels: Record<string, string> = {
+    idle: "实时同步未启动",
+    connecting: "实时同步连接中",
+    connected: "实时同步已连接",
+    reconnecting: "实时同步重连中",
+    error: "实时同步异常",
+  };
+  return <span className={`pw-live-badge is-${status}`}>{labels[status] ?? "实时同步未知"}</span>;
+}
+
+function FailureDiagnosisPanel({ detail }: { detail: TaskDetailResponse }): JSX.Element | null {
+  const diagnosis = detail.failure_diagnosis;
+  if (!diagnosis?.present || detail.task.status === "built" || detail.task.status === "success" || detail.task.status === "reported") {
+    return null;
+  }
+
+  return (
+    <div className="pw-failure-diagnosis" role="status" aria-label="失败诊断">
+      <div className="pw-failure-diagnosis-head">
+        <div>
+          <span className="pw-process-label">失败诊断</span>
+          <strong>{diagnosis.reason}</strong>
+        </div>
+        <StatusBadge value="failed" />
+      </div>
+      <div className="pw-process-grid">
+        <div>
+          <span className="pw-process-label">失败阶段</span>
+          <div>{diagnosis.stage_label}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">失败类型</span>
+          <div>{diagnosis.failure_type}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">影响</span>
+          <div>{diagnosis.impact}</div>
+        </div>
+        <div>
+          <span className="pw-process-label">下一步</span>
+          <div>{diagnosis.next_action}</div>
+        </div>
+      </div>
+      <div className="pw-evidence-list">
+        <span className="pw-process-label">证据</span>
+        {diagnosis.evidence_paths.length > 0 ? (
+          diagnosis.evidence_paths.map((path) => (
+            <button
+              className="pw-evidence-chip"
+              key={path}
+              type="button"
+              onClick={() => void copyText(path)}
+              title="点击复制证据路径"
+            >
+              {shortenPath(path)}
+            </button>
+          ))
+        ) : (
+          <span className="pw-inline-note">未记录证据路径</span>
+        )}
+      </div>
+      {diagnosis.evidence_snippets?.length ? (
+        <div className="pw-list compact">
+          {diagnosis.evidence_snippets.map((snippet) => (
+            <div className="pw-log-snippet" key={snippet}>
+              {snippet}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function formatAgentAction(action?: string | null): string | null {
   if (!action) {
     return null;
@@ -393,9 +479,117 @@ function formatAgentAction(action?: string | null): string | null {
     replay: "执行回放",
     replay_task: "执行任务回放",
     retry_with_strategy: "切换策略重试",
+    repair_build_source_tree: "修复可写构建树",
     stop_manual_review: "停止自动执行并转人工复核",
   };
   return labels[action] ?? action;
+}
+
+function formatRecipe(recipe?: string | null): string | null {
+  if (!recipe) return null;
+  const labels: Record<string, string> = {
+    semantic_guard_rewrite: "语义保护改写",
+    smpl_primary: "SMPL 主路径改写",
+    section_change_avoidance: "规避 section 变更",
+    alternative_recipe: "备选改写路线",
+    stable_source_baseline: "稳定源码基线对齐",
+    reverse_unpatch: "反向撤销补丁",
+    context_adapter: "上下文适配",
+    dependency_target_inference: "依赖目标推断",
+    expand_module_dependencies: "扩展模块依赖",
+  };
+  return labels[recipe] ?? recipe;
+}
+
+function AgentPanel({ detail }: { detail: TaskDetailResponse }): JSX.Element {
+  const health = detail.agent_health ?? detail.task.agent_health;
+  const summary = detail.agent_decision_summary;
+  const latestDecision = summary?.workflow_trace?.latest_decision;
+  const trace = detail.agent_trace;
+
+  const problem = detail.task.latest_failure_explanation ?? detail.process_summary?.problem ?? detail.task.latest_failure_type;
+  const nextAction = latestDecision?.selected_action ?? summary?.agent_next_action ?? detail.process_summary?.next_action;
+  const strategy = summary?.strategy;
+  const recipe = summary?.selected_recipe;
+  const reason = latestDecision?.reason ?? summary?.failure_record?.summary;
+
+  return (
+    <div className="pw-process-summary">
+      <div className="pw-process-heading">
+        <div>
+          <strong>{detail.process_summary?.headline ?? `目标 ${detail.task.cve_id}`}</strong>
+          {detail.process_summary?.current_stage ? (
+            <div className="pw-inline-note">当前阶段 {stageLabelMap[detail.process_summary.current_stage] ?? detail.process_summary.current_stage}</div>
+          ) : null}
+        </div>
+        <StatusBadge value={health?.status ?? detail.process_summary?.overall_status ?? "unknown"} />
+      </div>
+      <div className="pw-process-grid">
+        {problem ? (
+          <div>
+            <span className="pw-process-label">当前问题</span>
+            <div>{problem}</div>
+          </div>
+        ) : null}
+        {nextAction ? (
+          <div>
+            <span className="pw-process-label">下一步动作</span>
+            <div>{formatAgentAction(nextAction) ?? nextAction}</div>
+          </div>
+        ) : null}
+        {strategy && strategy !== recipe ? (
+          <div>
+            <span className="pw-process-label">最终策略</span>
+            <div>{strategy}</div>
+          </div>
+        ) : null}
+        {recipe ? (
+          <div>
+            <span className="pw-process-label">改写策略</span>
+            <div>{formatRecipe(recipe) ?? recipe}</div>
+          </div>
+        ) : null}
+      </div>
+      {reason ? <div className="pw-process-conflict">决策理由：{reason}</div> : null}
+      {health?.recommendations?.length ? (
+        <div className="pw-process-conflict">建议动作：{health.recommendations.join("；")}</div>
+      ) : null}
+      {trace?.present && trace.steps.length > 0 ? (
+        <div className="pw-agent-trace">
+          {trace.steps.map((step) => (
+            <div className="pw-agent-step" key={step.step_index}>
+              <div className="pw-agent-step-head">
+                <span className="pw-agent-step-index">步骤 {step.step_index}</span>
+                <strong>{formatAgentAction(step.selected_action) ?? "未记录动作"}</strong>
+                <StatusBadge value={step.terminal_reason ? "terminal" : step.guard_result === "allowed" ? "success" : step.guard_result ? "warn" : "unknown"} />
+              </div>
+              <div className="pw-process-grid">
+                {step.reason_summary ? (
+                  <div>
+                    <span className="pw-process-label">规划理由</span>
+                    <div>{step.reason_summary}</div>
+                  </div>
+                ) : null}
+                {step.checkpoint_status ? (
+                  <div>
+                    <span className="pw-process-label">检查点</span>
+                    <div>{step.checkpoint_status}</div>
+                  </div>
+                ) : null}
+              </div>
+              {step.alternatives?.length ? (
+                <div className="pw-inline-note">候选策略：{step.alternatives.map((a) => formatAgentAction(a) ?? a).join(" / ")}</div>
+              ) : null}
+              {step.reflection_summary ? <div className="pw-process-conflict">反思记录：{step.reflection_summary}</div> : null}
+              {step.terminal_reason ? <div className="pw-process-conflict">终止原因：{step.terminal_reason}</div> : null}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="pw-inline-note">暂无智能体决策轨迹</div>
+      )}
+    </div>
+  );
 }
 
 function AgentWorkStatusPanel({ detail }: { detail: TaskDetailResponse }): JSX.Element {
@@ -468,8 +662,8 @@ function AgentDecisionPanel({ detail }: { detail: TaskDetailResponse }): JSX.Ele
           <div>{repairIntentStrategy ?? "未记录"}</div>
         </div>
         <div>
-          <span className="pw-process-label">选中 Recipe</span>
-          <div>{summary.selected_recipe ?? "未记录"}</div>
+          <span className="pw-process-label">改写策略</span>
+          <div>{formatRecipe(summary.selected_recipe) ?? summary.selected_recipe ?? "未记录"}</div>
         </div>
         <div>
           <span className="pw-process-label">最终策略</span>
@@ -519,7 +713,7 @@ function ProcessSummaryPanel({ detail }: { detail: TaskDetailResponse }): JSX.El
         <div>
           <strong>{summary.headline}</strong>
           <div className="pw-inline-note">
-            当前阶段 {summary.current_stage}，最近尝试轮 {summary.current_attempt_no ?? "未开始"}
+            当前阶段 {stageLabelMap[summary.current_stage] ?? summary.current_stage}，最近尝试轮 {summary.current_attempt_no ?? "未开始"}
           </div>
         </div>
         <StatusBadge value={summary.overall_status} />
@@ -774,10 +968,23 @@ function buildTabFiles(
   };
 
   if (tab === "artifacts") {
-    return (artifactItems ?? []).filter((item) => item.kind === "file").map((item) => item.relative_path).filter(Boolean);
+    return uniquePaths((artifactItems ?? []).filter((item) => item.kind === "file").map((item) => item.relative_path));
   }
 
-  return all.filter(predicateMap[tab]);
+  return uniquePaths(all.filter(predicateMap[tab]));
+}
+
+function uniquePaths(paths: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const path of paths) {
+    if (!path || seen.has(path)) {
+      continue;
+    }
+    seen.add(path);
+    result.push(path);
+  }
+  return result;
 }
 
 function asPrettyJson(value: unknown, emptyText: string): string {

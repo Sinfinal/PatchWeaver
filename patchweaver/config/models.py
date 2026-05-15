@@ -85,7 +85,9 @@ class BuildConfig(ConfigModel):
     )
     auto_switch_source_tree: bool = True
     auto_reverse_source_tree: bool = True
+    auto_writable_build_source_tree: bool = True
     cleanup_generated_source_tree: bool = True
+    writable_build_source_min_free_bytes: int = 536_870_912
     normalize_x86_function_padding_for_kpatch: bool = True
     auto_build_targets: bool = True
     auto_expand_module_dependencies: bool = True

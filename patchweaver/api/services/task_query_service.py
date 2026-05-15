@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from datetime import datetime
@@ -519,6 +520,34 @@ class TaskQueryService:
             project_root=self.context.project_root,
         )
         agent_trace = self._build_agent_trace(task=task, task_dir=task_dir)
+        process_summary = self._build_process_summary(
+            task=task,
+            task_dir=task_dir,
+            latest_attempt=latest_attempt,
+            latest_failure=latest_failure,
+            latest_validation=latest_validation,
+            latest_apply_precheck=latest_apply_precheck,
+            latest_build_summary=latest_build_summary,
+            replay=replay,
+        )
+        failure_diagnosis = self._build_failure_diagnosis(
+            task=task,
+            task_dir=task_dir,
+            latest_attempt=latest_attempt,
+            latest_failure=latest_failure,
+            latest_build_summary=latest_build_summary,
+            latest_apply_precheck=latest_apply_precheck,
+            process_summary=process_summary,
+        )
+        stage_view = self._build_stage_view(
+            task=task,
+            task_dir=task_dir,
+            latest_attempt=latest_attempt,
+            latest_failure=latest_failure,
+            latest_validation=latest_validation,
+            latest_apply_precheck=latest_apply_precheck,
+            latest_build_summary=latest_build_summary,
+        )
 
         return {
             # task 是顶部摘要
@@ -540,6 +569,7 @@ class TaskQueryService:
             "agent_decision_summary": agent_decision_summary,
             "agent_trace": agent_trace,
             "agent_health": agent_health,
+            "failure_diagnosis": failure_diagnosis,
             "evaluation_summary": self._load_json(task_dir / "reports" / "evaluation_summary.json"),
             "reports": {
                 "json_path": self._path(task_dir / "reports" / "report.json"),
@@ -566,39 +596,97 @@ class TaskQueryService:
                 ),
             },
             "replay": replay,
-            "process_summary": self._build_process_summary(
-                task=task,
-                task_dir=task_dir,
-                latest_attempt=latest_attempt,
-                latest_failure=latest_failure,
-                latest_validation=latest_validation,
-                latest_apply_precheck=latest_apply_precheck,
-                latest_build_summary=latest_build_summary,
-                replay=replay,
-            ),
-            "stage_view": self._build_stage_view(
-                task=task,
-                task_dir=task_dir,
-                latest_attempt=latest_attempt,
-                latest_failure=latest_failure,
-                latest_validation=latest_validation,
-                latest_apply_precheck=latest_apply_precheck,
-                latest_build_summary=latest_build_summary,
-            ),
+            "process_summary": process_summary,
+            "stage_view": stage_view,
             # timeline 和 artifact_index 都是给前端直接展示用的
             # 后端先把阶段完成情况和产物索引算好，页面层就不用再猜
             "timeline": self._build_timeline(task_dir, attempts),
-            "artifact_index": [
+            "artifact_index": self._build_artifact_index(task_dir, artifacts),
+            "workspace_exists": task_dir.exists(),
+        }
+
+    def get_task_event_snapshot(self, task_id: str) -> dict[str, Any]:
+        """返回任务详情实时刷新用的轻量快照"""
+
+        task = self._require_task(task_id)
+        attempts = self.context.attempt_repo.list_attempts(task_id)
+        artifacts = self.context.artifact_repo.list_artifacts(task_id)
+        latest_attempt = attempts[-1] if attempts else None
+        task_dir = task.workspace_dir.resolve()
+        attempt_dir = task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" if latest_attempt else None
+        watched_paths = [
+            task_dir / "task_context.json",
+            task_dir / "input" / "patch_bundle.json",
+            task_dir / "analysis" / "semantic_card.json",
+            task_dir / "analysis" / "constraint_report.json",
+            task_dir / "agent" / "agent_auto_workflow_trace.json",
+            task_dir / "agent" / "agent_workflow_trace.json",
+            task_dir / "reports" / "report.json",
+        ]
+        if attempt_dir is not None:
+            watched_paths.extend(
+                [
+                    attempt_dir / "rewrite" / "rewrite_plan.json",
+                    attempt_dir / "rewrite" / "rewritten.patch",
+                    attempt_dir / "rewrite" / "apply_precheck.json",
+                    attempt_dir / "logs" / "failure_record.json",
+                    attempt_dir / "logs" / "build.log",
+                    attempt_dir / "artifacts" / "build_summary.json",
+                    attempt_dir / "artifacts" / "validation_report.json",
+                ]
+            )
+        path_versions = {
+            self._path(path): path.stat().st_mtime_ns
+            for path in watched_paths
+            if path.exists()
+        }
+        fingerprint_payload = {
+            "task_status": task.status,
+            "task_updated_at": task.updated_at.isoformat(),
+            "current_attempt": task.current_attempt,
+            "attempt_count": len(attempts),
+            "artifact_count": len(artifacts),
+            "latest_attempt": {
+                "status": latest_attempt.status if latest_attempt is not None else None,
+                "failure_type": latest_attempt.failure_type if latest_attempt is not None else None,
+                "build_exec_status": latest_attempt.build_exec_status if latest_attempt is not None else None,
+                "target_state": latest_attempt.target_state if latest_attempt is not None else None,
+            },
+            "path_versions": path_versions,
+        }
+        fingerprint = hashlib.sha256(json.dumps(fingerprint_payload, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
+        return {
+            "event": "task_snapshot",
+            "task_id": task.task_id,
+            "status": task.status,
+            "updated_at": task.updated_at.isoformat(),
+            "current_attempt": task.current_attempt,
+            "attempt_count": len(attempts),
+            "artifact_count": len(artifacts),
+            "latest_attempt_status": latest_attempt.status if latest_attempt is not None else None,
+            "latest_failure_type": latest_attempt.failure_type if latest_attempt is not None else None,
+            "fingerprint": fingerprint,
+        }
+
+    def _build_artifact_index(self, task_dir: Path, artifacts: list[Any]) -> list[dict[str, Any]]:
+        """Build a workspace-relative artifact index without duplicate file entries."""
+
+        index: list[dict[str, Any]] = []
+        seen_paths: set[str] = set()
+        for artifact in artifacts:
+            relative_path = self._relative_to_workspace(task_dir, artifact.artifact_path)
+            if relative_path in seen_paths:
+                continue
+            seen_paths.add(relative_path)
+            index.append(
                 {
                     "artifact_type": artifact.artifact_type,
                     "artifact_path": self._path(artifact.artifact_path),
-                    "relative_path": self._relative_to_workspace(task_dir, artifact.artifact_path),
+                    "relative_path": relative_path,
                     "summary": artifact.summary,
                 }
-                for artifact in artifacts
-            ],
-            "workspace_exists": task_dir.exists(),
-        }
+            )
+        return index
 
     def _build_agent_trace(self, *, task: TaskContext, task_dir: Path) -> dict[str, Any]:
         """Build the structured Agent trace view for Web/API without exposing raw model reasoning."""
@@ -975,7 +1063,7 @@ class TaskQueryService:
             ),
             "failure_type": latest_failure_type,
             "failure_record": {
-                "summary": (latest_failure or {}).get("summary"),
+                "summary": self._display_summary((latest_failure or {}).get("summary")),
                 "stage_name": (latest_failure or {}).get("stage_name"),
                 "failure_type": (latest_failure or {}).get("failure_type"),
                 "evidence": (latest_failure or {}).get("evidence") or [],
@@ -1086,6 +1174,15 @@ class TaskQueryService:
             cve_id=task.cve_id,
             target_kernel=task.target_kernel,
         )
+        latest_failure_type = self._normalize_failure_type((latest_failure or {}).get("failure_type"))
+        if not latest_failure_type and latest_attempt is not None:
+            latest_failure_type = self._normalize_failure_type(latest_attempt.failure_type)
+        failure_explanation = self._failure_explanation_payload(
+            failure_type=latest_failure_type,
+            summary=(latest_failure or {}).get("summary"),
+            task_workspace=task.workspace_dir,
+            latest_failure=latest_failure,
+        )
         return {
             "task_id": task.task_id,
             "cve_id": task.cve_id,
@@ -1099,7 +1196,8 @@ class TaskQueryService:
             "machine_profile": task.machine_profile.model_dump(mode="json") if task.machine_profile is not None else None,
             "created_at": task.created_at.isoformat(),
             "updated_at": task.updated_at.isoformat(),
-            "latest_failure_type": latest_attempt.failure_type if latest_attempt is not None else (latest_failure or {}).get("failure_type"),
+            "latest_failure_type": latest_failure_type,
+            "latest_failure_explanation": failure_explanation.get("explanation") if failure_explanation else None,
             "latest_build_exec_status": latest_attempt.build_exec_status if latest_attempt is not None else None,
             "latest_target_state": latest_attempt.target_state if latest_attempt is not None else None,
             "agent_health": agent_health,
@@ -1187,6 +1285,117 @@ class TaskQueryService:
             )
         except (OSError, ValueError, TypeError):
             return None
+
+    def _stage_evidence_summaries(
+        self,
+        *,
+        task: TaskContext,
+        task_dir: Path,
+        attempt_dir: Path | None,
+        latest_failure: dict[str, Any] | None,
+        latest_apply_precheck: dict[str, Any] | None,
+        latest_build_summary: dict[str, Any] | None,
+    ) -> dict[str, str]:
+        """从阶段产物提炼任务特异摘要，供详情页时间线直接展示"""
+
+        patch_bundle = self._load_json(task_dir / "input" / "patch_bundle.json") or {}
+        semantic_card = self._load_json(task_dir / "analysis" / "semantic_card.json") or {}
+        repair_intent = self._load_json(task_dir / "analysis" / "repair_intent.json") or {}
+        constraint_report = self._load_json(task_dir / "analysis" / "constraint_report.json") or {}
+        rewrite_plan = self._load_json(attempt_dir / "rewrite" / "rewrite_plan.json") if attempt_dir else None
+
+        affected_files = self._as_text_list(patch_bundle.get("affected_files"))
+        touched_files = self._as_text_list(repair_intent.get("touched_files") or semantic_card.get("touched_files"))
+        touched_functions = self._as_text_list(repair_intent.get("touched_functions") or semantic_card.get("touched_functions"))
+        touched_state = self._as_text_list(repair_intent.get("touched_state"))
+        guard_conditions = self._as_text_list(repair_intent.get("guard_conditions") or semantic_card.get("must_keep_conditions"))
+        preserved_side_effects = self._as_text_list(repair_intent.get("preserved_side_effects") or semantic_card.get("must_keep_side_effects"))
+        target_files = self._as_text_list(constraint_report.get("target_files"))
+        target_functions = self._as_text_list(constraint_report.get("target_functions"))
+        risk_types = self._as_text_list(
+            constraint_report.get("dominant_risk_types")
+            or constraint_report.get("risk_types")
+            or constraint_report.get("hotpatch_risks")
+        )
+        high_risk_count = constraint_report.get("high_risk_count")
+        selected_recipe = self._first_present(rewrite_plan, latest_build_summary, keys=("selected_recipe", "recipe", "recipe_name"))
+        selected_strategy = self._first_present(rewrite_plan, latest_build_summary, keys=("selected_strategy", "strategy", "route", "rewrite_strategy"))
+        apply_summary = self._display_summary((latest_apply_precheck or {}).get("summary"))
+        build_summary = self._display_summary(
+            (latest_failure or {}).get("summary")
+            or (latest_build_summary or {}).get("summary")
+        )
+
+        source_commit = patch_bundle.get("stable_commit") or patch_bundle.get("upstream_commit")
+        source_ref = patch_bundle.get("stable_source_baseline_ref")
+        commit_message = patch_bundle.get("commit_message")
+        source_parts = []
+        if source_commit:
+            source_parts.append(f"已定位修复提交 {str(source_commit)[:12]}")
+        if commit_message:
+            source_parts.append(f"提交说明为 {commit_message}")
+        if affected_files:
+            source_parts.append(f"影响文件 {self._join_limited(affected_files)}")
+        if source_ref:
+            source_parts.append(f"未修复基线建议 {source_ref}")
+
+        root_cause = repair_intent.get("root_cause") or semantic_card.get("root_cause")
+        bug_class = repair_intent.get("bug_class") or semantic_card.get("bug_class")
+        analysis_parts = []
+        if root_cause:
+            analysis_parts.append(f"根因识别为 {root_cause}")
+        elif bug_class:
+            analysis_parts.append(f"问题类型识别为 {bug_class}")
+        if touched_files or affected_files:
+            analysis_parts.append(f"触达文件 {self._join_limited(touched_files or affected_files)}")
+        if touched_functions:
+            analysis_parts.append(f"触达函数 {self._join_limited(touched_functions)}")
+        if touched_state:
+            analysis_parts.append(f"涉及状态变更 {self._join_limited(touched_state)}")
+        if guard_conditions:
+            analysis_parts.append(f"保留条件 {self._join_limited(guard_conditions, limit=2)}")
+        if preserved_side_effects:
+            analysis_parts.append(f"需保留副作用 {self._join_limited(preserved_side_effects, limit=2)}")
+
+        diagnose_parts = []
+        if target_files or affected_files:
+            diagnose_parts.append(f"诊断目标文件 {self._join_limited(target_files or affected_files)}")
+        if target_functions:
+            diagnose_parts.append(f"目标函数 {self._join_limited(target_functions)}")
+        if risk_types:
+            diagnose_parts.append(f"主要风险 {self._join_limited([self._display_summary(item) for item in risk_types])}")
+        if high_risk_count not in (None, "", 0):
+            diagnose_parts.append(f"高风险项 {high_risk_count} 个")
+        if not diagnose_parts and (touched_state or guard_conditions):
+            diagnose_parts.append("约束诊断已基于语义卡片收敛热补丁风险")
+
+        plan_parts = []
+        if selected_recipe:
+            plan_parts.append(f"选中 recipe {selected_recipe}")
+        if selected_strategy:
+            plan_parts.append(f"改写策略 {selected_strategy}")
+        selection_reason = self._display_summary(self._first_present(rewrite_plan, latest_build_summary, keys=("selection_reason", "strategy_reason", "reason")))
+        if selection_reason:
+            plan_parts.append(selection_reason)
+
+        rewrite_parts = []
+        if attempt_dir and (attempt_dir / "rewrite" / "rewritten.patch").exists():
+            rewrite_parts.append("rewritten.patch 已生成")
+        if apply_summary:
+            rewrite_parts.append(apply_summary)
+        elif latest_apply_precheck and latest_apply_precheck.get("ok") is True:
+            rewrite_parts.append("apply 预检查通过")
+
+        return {
+            "prepare": f"任务 {task.task_id} 已绑定 {task.cve_id} 和目标内核 {task.target_kernel}",
+            "source": self._join_sentence(source_parts) or f"已进入 {task.cve_id} 来源定位，等待 patch bundle 产物",
+            "analysis": self._join_sentence(analysis_parts) or "语义分析产物已生成，但未提取到可展示的根因字段",
+            "diagnose": self._join_sentence(diagnose_parts) or "约束诊断产物已生成，未发现可展示的高风险摘要",
+            "plan": self._join_sentence(plan_parts) or "改写计划已生成，等待 recipe 和策略字段补齐",
+            "rewrite": self._join_sentence(rewrite_parts) or "改写阶段等待 rewritten.patch 或 apply 预检查结果",
+            "build": build_summary or "构建阶段等待 build_summary 或 failure_record",
+            "failure_analysis": build_summary or "失败归因等待 failure_record 产物",
+        }
 
     def _build_process_summary(
         self,
@@ -1312,6 +1521,172 @@ class TaskQueryService:
             "state_conflicts": state_conflicts,
         }
 
+    def _build_failure_diagnosis(
+        self,
+        *,
+        task: TaskContext,
+        task_dir: Path,
+        latest_attempt: Any | None,
+        latest_failure: dict[str, Any] | None,
+        latest_build_summary: dict[str, Any] | None,
+        latest_apply_precheck: dict[str, Any] | None,
+        process_summary: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """生成任务级失败诊断，供详情页首屏直接回答为什么失败"""
+
+        failure_type = self._latest_failure_type(latest_attempt, latest_failure, latest_build_summary, latest_apply_precheck)
+        if process_summary.get("overall_status") != "failed":
+            return None
+        if not failure_type:
+            return None
+
+        build_exec_status = self._latest_build_exec_status(latest_attempt, latest_build_summary, latest_apply_precheck)
+        attempt_dir = task_dir / "attempts" / f"{latest_attempt.attempt_no:03d}" if latest_attempt else None
+        raw_summary = (
+            (latest_failure or {}).get("summary")
+            or (latest_build_summary or {}).get("summary")
+            or (latest_apply_precheck or {}).get("summary")
+            or process_summary.get("analysis")
+        )
+        reason = self._display_summary(raw_summary) or self._display_summary(process_summary.get("problem")) or "失败原因待确认"
+        if failure_type == "build_env_missing" and self._read_only_filesystem_seen(latest_failure, latest_build_summary, latest_apply_precheck):
+            reason = "kpatch-build 需要修改源码树脚本，但当前源码目录为只读挂载"
+        elif failure_type == "source_unavailable":
+            reason = self._display_summary(raw_summary) or "未解析到可下载的 stable/upstream patch 来源"
+        elif failure_type == "target_already_patched":
+            reason = "目标源码树已经包含该修复，真实构建未执行"
+
+        evidence_paths = self._diagnosis_evidence_paths(
+            task_dir=task_dir,
+            attempt_dir=attempt_dir,
+            latest_failure=latest_failure,
+            latest_build_summary=latest_build_summary,
+            latest_apply_precheck=latest_apply_precheck,
+            process_summary=process_summary,
+        )
+        source_stage = str((latest_failure or {}).get("stage_name") or process_summary.get("current_stage") or "unknown")
+        return {
+            "present": True,
+            "task_id": task.task_id,
+            "failure_type": failure_type or process_summary.get("problem") or "unknown",
+            "stage": source_stage,
+            "stage_label": self._stage_display_name(source_stage),
+            "reason": reason,
+            "impact": self._failure_impact(failure_type, process_summary),
+            "next_action": self._display_summary(process_summary.get("next_action")) or self._next_action_for_failure(failure_type, build_exec_status),
+            "evidence_paths": evidence_paths,
+            "evidence_snippets": self._diagnosis_evidence_snippets(
+                latest_failure,
+                latest_build_summary,
+                latest_apply_precheck,
+            ),
+            "primary_evidence_path": evidence_paths[0] if evidence_paths else process_summary.get("primary_evidence_path"),
+            "source": "failure_record" if latest_failure else "process_summary",
+            "build_exec_status": build_exec_status,
+        }
+
+    def _read_only_filesystem_seen(self, *payloads: dict[str, Any] | None) -> bool:
+        """从失败摘要或证据中识别只读源码树挂载问题"""
+
+        text_parts: list[str] = []
+        for payload in payloads:
+            if not isinstance(payload, dict):
+                continue
+            text_parts.append(str(payload.get("summary") or ""))
+            evidence = payload.get("evidence")
+            if isinstance(evidence, list):
+                text_parts.extend(str(item) for item in evidence)
+            diagnostics = payload.get("diagnostic_details")
+            if isinstance(diagnostics, dict):
+                text_parts.append(json.dumps(diagnostics, ensure_ascii=False, sort_keys=True))
+        joined = " ".join(text_parts).lower()
+        return "read-only file system" in joined or "只读文件系统" in joined or "只读挂载" in joined
+
+    def _diagnosis_evidence_paths(
+        self,
+        *,
+        task_dir: Path,
+        attempt_dir: Path | None,
+        latest_failure: dict[str, Any] | None,
+        latest_build_summary: dict[str, Any] | None,
+        latest_apply_precheck: dict[str, Any] | None,
+        process_summary: dict[str, Any],
+    ) -> list[str]:
+        """给失败诊断卡片收敛最该看的证据路径"""
+
+        candidates: list[Path | None] = []
+        if attempt_dir is not None:
+            candidates.extend(
+                [
+                    attempt_dir / "logs" / "failure_record.json",
+                    attempt_dir / "logs" / "build.log",
+                    attempt_dir / "artifacts" / "build_summary.json",
+                    attempt_dir / "rewrite" / "apply_precheck.json",
+                ]
+            )
+        else:
+            candidates.extend(
+                [
+                    task_dir / "analysis" / "trace" / "failure_record.json",
+                    task_dir / "analysis" / "trace" / "source_fetch_trace.json",
+                ]
+            )
+        primary_path = process_summary.get("primary_evidence_path")
+        if isinstance(primary_path, str) and primary_path:
+            candidates.append(resolve_project_path(self.context.project_root, primary_path))
+
+        evidence: list[str] = []
+        for path in candidates:
+            if path is None:
+                continue
+            relative_path = self._path(path)
+            if relative_path and relative_path not in evidence and path.exists():
+                evidence.append(relative_path)
+
+        return evidence[:6]
+
+    def _diagnosis_evidence_snippets(self, *payloads: dict[str, Any] | None) -> list[str]:
+        """把 failure_record 里的日志证据转成短中文片段，不混入文件路径"""
+
+        snippets: list[str] = []
+        for payload in payloads:
+            raw_evidence = (payload or {}).get("evidence")
+            if not isinstance(raw_evidence, list):
+                continue
+            for item in raw_evidence:
+                if not isinstance(item, str) or not item.strip():
+                    continue
+                snippet = self._display_summary(item)
+                if snippet and snippet not in snippets:
+                    snippets.append(snippet)
+        return snippets[:4]
+
+    def _failure_impact(self, failure_type: str | None, process_summary: dict[str, Any]) -> str:
+        """把失败影响收敛成一句详情页可读结论"""
+
+        if failure_type == "source_unavailable":
+            return "未进入改写、构建和动态验证链路"
+        if failure_type == "target_already_patched":
+            return "当前源码基线不适合验证热补丁生成成功率"
+        if failure_type in {"build_env_missing", "compile_failed", "kpatch_constraint"}:
+            return "未产出可加载 .ko，动态验证未进入成功闭环"
+        missing_effect = self._display_summary(process_summary.get("missing_effect"))
+        return missing_effect or "成功链路尚未闭合"
+
+    @staticmethod
+    def _stage_display_name(stage: str) -> str:
+        labels = {
+            "prepare": "准备",
+            "source": "来源获取",
+            "analysis": "语义分析",
+            "diagnose": "约束诊断",
+            "build_precheck": "构建预检",
+            "build": "构建",
+            "validate": "动态验证",
+            "report": "报告与回放",
+        }
+        return labels.get(stage, stage)
+
     def _build_stage_view(
         self,
         *,
@@ -1338,6 +1713,14 @@ class TaskQueryService:
         report_json_path = task_dir / "reports" / "report.json"
         report_has_real_input = latest_attempt is not None or latest_failure is not None or (task_dir / "analysis" / "semantic_card.json").exists()
         report_complete = report_json_path.exists() and report_has_real_input
+        stage_summaries = self._stage_evidence_summaries(
+            task=task,
+            task_dir=task_dir,
+            attempt_dir=attempt_dir,
+            latest_failure=latest_failure,
+            latest_apply_precheck=latest_apply_precheck,
+            latest_build_summary=latest_build_summary,
+        )
 
         stage_nodes = [
             self._stage_node(
@@ -1347,7 +1730,7 @@ class TaskQueryService:
                 current_effect="任务上下文和工作区已建立。" if (task_dir / "task_context.json").exists() else "等待任务上下文落盘。",
                 missing_effect="无" if (task_dir / "task_context.json").exists() else "缺少 task_context.json。",
                 problem=None,
-                analysis="该阶段只确认任务输入与工作区，不判定补丁是否可修复。",
+                analysis=stage_summaries["prepare"],
                 next_action="进入来源获取与语义分析。",
                 evidence_paths=[task_dir / "task_context.json"],
             ),
@@ -1358,7 +1741,7 @@ class TaskQueryService:
                 current_effect="来源解析失败，未找到可下载 patch。" if source_failed else ("已获取 CVE 修复来源、patch bundle 和来源证据。" if (task_dir / "input" / "patch_bundle.json").exists() else "尚未获取 patch bundle。"),
                 missing_effect="缺少可用于改写的 stable/upstream patch。" if source_failed else ("无" if (task_dir / "input" / "patch_bundle.json").exists() else "缺少 patch_bundle/source_evidence/raw_patch。"),
                 problem="source_unavailable" if source_failed else None,
-                analysis=str((latest_failure or {}).get("summary") or "赛题要求从 CVE 定位上游或 stable 修复补丁，本阶段承接该要求。"),
+                analysis=self._display_summary((latest_failure or {}).get("summary")) if source_failed else stage_summaries["source"],
                 next_action=self._next_action_for_failure("source_unavailable", None) if source_failed else "进入语义理解和约束诊断。",
                 evidence_paths=[
                     task_dir / "input" / "patch_bundle.json",
@@ -1374,7 +1757,7 @@ class TaskQueryService:
                 current_effect="来源不可用，语义分析未执行。" if source_failed else ("已生成修复意图和触达对象摘要。" if (task_dir / "analysis" / "semantic_card.json").exists() else "尚未形成语义卡片。"),
                 missing_effect="未获得 patch，无法生成 semantic_card。" if source_failed else ("无" if (task_dir / "analysis" / "semantic_card.json").exists() else "缺少 semantic_card.json。"),
                 problem="source_unavailable" if source_failed else None,
-                analysis="该阶段用于守住语义一致性，避免后续改写偏离上游修复意图。",
+                analysis="来源缺失，未进入语义分析" if source_failed else stage_summaries["analysis"],
                 next_action="先解决来源获取问题。" if source_failed else "进入 kpatch 约束诊断。",
                 evidence_paths=[
                     task_dir / "analysis" / "semantic_card.json",
@@ -1388,7 +1771,7 @@ class TaskQueryService:
                 current_effect="来源不可用，约束诊断未执行。" if source_failed else ("已输出热补丁约束和候选路线。" if (task_dir / "analysis" / "constraint_report.json").exists() else "尚未形成约束报告。"),
                 missing_effect="未获得 patch，无法诊断 kpatch 约束。" if source_failed else ("无" if (task_dir / "analysis" / "constraint_report.json").exists() else "缺少 constraint_report.json。"),
                 problem="source_unavailable" if source_failed else None,
-                analysis="该阶段对齐 kpatch 限制，例如 fentry、init、静态数据和 ABI 风险。",
+                analysis="来源缺失，未进入约束诊断" if source_failed else stage_summaries["diagnose"],
                 next_action="先解决来源获取问题。" if source_failed else "进入改写规划。",
                 evidence_paths=[task_dir / "analysis" / "constraint_report.json"],
             ),
@@ -1399,7 +1782,7 @@ class TaskQueryService:
                 current_effect="已选择改写 recipe 和候选路径。" if attempt_dir and (attempt_dir / "rewrite" / "rewrite_plan.json").exists() else "尚未形成改写计划。",
                 missing_effect="无" if attempt_dir and (attempt_dir / "rewrite" / "rewrite_plan.json").exists() else "缺少 rewrite_plan.json。",
                 problem=None,
-                analysis="规划层只选择路线，不直接代表构建成功。",
+                analysis=stage_summaries["plan"],
                 next_action="输出 rewritten.patch 并执行 apply 预检查。",
                 evidence_paths=[attempt_dir / "rewrite" / "rewrite_plan.json"] if attempt_dir else [],
             ),
@@ -1410,7 +1793,7 @@ class TaskQueryService:
                 current_effect="已输出 rewritten.patch 和改写留痕。" if attempt_dir and (attempt_dir / "rewrite" / "rewritten.patch").exists() else "尚未输出 rewritten.patch。",
                 missing_effect="无" if attempt_dir and (attempt_dir / "rewrite" / "rewritten.patch").exists() else "缺少 rewritten.patch。",
                 problem=str((latest_apply_precheck or {}).get("failure_type") or "") or None,
-                analysis=str((latest_apply_precheck or {}).get("summary") or "改写阶段只说明补丁产物是否已生成。"),
+                analysis=stage_summaries["rewrite"],
                 next_action="进入构建预检查或真实 kpatch-build。",
                 evidence_paths=[
                     attempt_dir / "rewrite" / "rewritten.patch",
@@ -1426,6 +1809,7 @@ class TaskQueryService:
                 latest_failure_type=latest_failure_type,
                 latest_build_exec_status=latest_build_exec_status,
                 target_already_patched=target_already_patched,
+                stage_analysis=stage_summaries["build"],
             ),
             self._stage_node(
                 stage="failure_analysis",
@@ -1434,7 +1818,7 @@ class TaskQueryService:
                 current_effect="已形成结构化失败记录。" if latest_failure else "当前没有失败归因记录。",
                 missing_effect="无" if latest_failure else "失败时应补齐 failure_record.json。",
                 problem=latest_failure_type,
-                analysis=str((latest_failure or {}).get("summary") or "失败归因阶段只读取主链失败证据。"),
+                analysis=stage_summaries["failure_analysis"],
                 next_action="根据 failure_type 决定下一轮改写或环境修复。",
                 evidence_paths=[attempt_dir / "logs" / "failure_record.json"] if attempt_dir else [source_failure_path],
             ),
@@ -1445,7 +1829,7 @@ class TaskQueryService:
                 current_effect="来源不可用，未产出 .ko，动态验证未执行。" if source_failed else self._validation_current_effect(latest_validation, target_already_patched),
                 missing_effect="未产出可加载模块，load/unload/smoke 未执行。" if source_failed else self._validation_missing_effect(latest_attempt, latest_validation, target_already_patched),
                 problem=None if validation_status in {"", "passed", "pending"} else validation_status,
-                analysis="验证阶段必须区分构建未产出模块、配置跳过、目标已修复导致跳过。",
+                analysis=self._validation_analysis(latest_attempt, latest_validation, source_failed, target_already_patched),
                 next_action="先解决来源获取问题。" if source_failed else "构建成功后补齐 load/unload/smoke/semantic_guard 证据。",
                 evidence_paths=[
                     attempt_dir / "artifacts" / "validation_report.json",
@@ -1462,7 +1846,7 @@ class TaskQueryService:
                 current_effect="已生成结构化报告。" if report_complete else ("已有骨架报告，但缺少 attempt 或失败归因，不能视为完整闭环。" if report_json_path.exists() else "尚未生成最终报告。"),
                 missing_effect="无" if report_complete else ("缺少主链证据，报告不完整。" if report_json_path.exists() else "缺少 report.json/report.md。"),
                 problem=None if report_complete else ("incomplete_report" if report_json_path.exists() else None),
-                analysis="报告阶段应复用主链结论，不重新判定业务状态。",
+                analysis=self._report_analysis(report_complete, latest_failure_type, latest_attempt),
                 next_action="用于演示、回放和阶段验收。" if report_complete else "先执行分析或补齐失败归因，再生成报告。",
                 evidence_paths=[
                     task_dir / "reports" / "report.json",
@@ -1483,6 +1867,7 @@ class TaskQueryService:
         latest_failure_type: str | None,
         latest_build_exec_status: str | None,
         target_already_patched: bool,
+        stage_analysis: str | None = None,
     ) -> dict[str, Any]:
         """生成构建阶段节点"""
 
@@ -1492,42 +1877,42 @@ class TaskQueryService:
                 current_effect = "来源不可用，构建阶段未执行。"
                 missing_effect = "未获得可改写 patch，未执行 apply 预检查和 kpatch-build。"
                 problem = "source_unavailable"
-                analysis = str((latest_failure or {}).get("summary") or "没有可构建输入。")
+                analysis = stage_analysis or self._display_summary((latest_failure or {}).get("summary") or "没有可构建输入。")
                 next_action = self._next_action_for_failure(latest_failure_type, latest_build_exec_status)
             else:
                 status = "pending"
                 current_effect = "尚未进入构建阶段。"
                 missing_effect = "未执行 apply 预检查和 kpatch-build。"
                 problem = None
-                analysis = "没有 attempt 记录，不能判定构建结果。"
+                analysis = stage_analysis or "没有 attempt 记录，不能判定构建结果。"
                 next_action = "执行一轮尝试。"
         elif target_already_patched:
             status = "skipped"
             current_effect = "已完成目标源码状态判定。"
             missing_effect = "真实 kpatch-build 未执行，未产出 .ko。"
             problem = "target_already_patched"
-            analysis = "目标已修复不是普通构建失败，页面应展示为构建未执行。"
+            analysis = stage_analysis or "目标源码已包含修复，真实构建未执行"
             next_action = "切换未修复源码树或将样例标注为已修复态。"
         elif latest_attempt.status == "built":
             status = "success"
             current_effect = "真实 kpatch-build 已执行并形成构建成功记录。"
             missing_effect = "无" if latest_attempt.module_path else "模块产物路径缺失。"
             problem = None
-            analysis = "构建成功后仍需验证阶段确认 load/unload/smoke。"
+            analysis = stage_analysis or "kpatch-build 已产出构建成功记录，需继续验证 load/unload/smoke"
             next_action = "进入验证阶段。"
         elif latest_attempt.status == "failed":
             status = "failed"
             current_effect = "已形成构建或构建预检查失败证据。"
             missing_effect = "未产出可加载 .ko。"
             problem = latest_failure_type or "unknown"
-            analysis = str((latest_failure or {}).get("summary") or (latest_build_summary or {}).get("summary") or "请查看 build.log。")
+            analysis = stage_analysis or self._display_summary((latest_failure or {}).get("summary") or (latest_build_summary or {}).get("summary") or "请查看 build.log。")
             next_action = self._next_action_for_failure(latest_failure_type, latest_build_exec_status)
         else:
             status = "pending"
             current_effect = "构建阶段尚未收口。"
             missing_effect = "缺少最终 build_summary 或 failure_record。"
             problem = latest_failure_type
-            analysis = "当前 attempt 状态仍在中间态。"
+            analysis = stage_analysis or "当前 attempt 状态仍在中间态。"
             next_action = "等待本轮执行结束或补齐失败记录。"
 
         return self._stage_node(
@@ -1570,6 +1955,126 @@ class TaskQueryService:
             linearized.append(blocked_node)
 
         return linearized
+
+    def _validation_analysis(
+        self,
+        latest_attempt: Any | None,
+        latest_validation: dict[str, Any] | None,
+        source_failed: bool,
+        target_already_patched: bool,
+    ) -> str:
+        """按当前任务证据描述验证阶段实际状态"""
+
+        if source_failed:
+            return "来源获取失败，未进入模块构建和动态验证"
+        if target_already_patched:
+            return "目标源码已包含修复，未产出模块，验证链路未执行"
+        if latest_attempt is None or latest_attempt.status != "built":
+            return "未产出可加载模块，load、unload、smoke 未执行"
+        if not latest_validation:
+            return "模块构建记录已存在，等待 validation_report 记录加载、卸载和冒烟结果"
+        status = latest_validation.get("status")
+        if status == "passed":
+            return "validation_report 显示动态验证通过，包含 load、unload 或 smoke 证据"
+        return self._display_summary(latest_validation.get("summary") or f"validation_report 状态为 {status or '未记录'}")
+
+    def _report_analysis(self, report_complete: bool, latest_failure_type: str | None, latest_attempt: Any | None) -> str:
+        """按当前任务证据描述报告阶段实际状态"""
+
+        if report_complete:
+            return "报告已归并当前任务的主链证据、失败归因和回放材料"
+        if latest_attempt is not None and latest_attempt.status == "failed":
+            return f"构建停在 {latest_failure_type or 'unknown'}，报告尚未补齐失败闭环材料"
+        return "报告尚未生成，需先形成构建、验证或失败归因证据"
+
+    @staticmethod
+    def _as_text_list(value: Any) -> list[str]:
+        """把产物里的字符串列表字段规范成可展示列表"""
+
+        if isinstance(value, list):
+            return [str(item).strip() for item in value if str(item).strip()]
+        if isinstance(value, tuple):
+            return [str(item).strip() for item in value if str(item).strip()]
+        if isinstance(value, str) and value.strip():
+            return [value.strip()]
+        return []
+
+    @staticmethod
+    def _join_limited(items: list[str], *, limit: int = 3) -> str:
+        """限制长列表展示长度"""
+
+        clean_items = [item for item in items if item]
+        head = clean_items[:limit]
+        suffix = f" 等 {len(clean_items)} 项" if len(clean_items) > limit else ""
+        return "、".join(head) + suffix
+
+    def _join_sentence(self, parts: list[str]) -> str:
+        """用工程化短句拼接阶段摘要"""
+
+        return "；".join(self._display_summary(part) for part in parts if part)
+
+    def _display_summary(self, value: Any) -> str:
+        """把用户可见摘要归一成中文工程表述"""
+
+        if value is None:
+            return ""
+        text = " ".join(str(value).strip().split())
+        if not text:
+            return ""
+        replacements = {
+            "kpatch build failed due to a read-only file system preventing modification of source directory scripts.": "kpatch-build 需要修改源码树脚本，但当前源码目录为只读挂载",
+            "git apply --check passed": "apply 预检查通过",
+            "Read-only file system": "只读文件系统",
+            "read-only file system": "只读文件系统",
+            "source directory scripts": "源码树脚本",
+            "target_already_patched": "目标源码已包含修复",
+            "build_env_missing": "构建环境缺失",
+            "patch_apply_failed": "补丁应用失败",
+            "kpatch_constraint": "热补丁约束",
+            "compile_failed": "编译失败",
+            "semantic_guard_rewrite": "语义保护改写",
+            "section_change_avoidance": "规避 section 变更",
+            "direct_apply": "直接应用",
+            "callback_shadow": "回调影子改写",
+            "smpl_template": "SmPL 模板改写",
+        }
+        for source, target in replacements.items():
+            text = text.replace(source, target)
+        lower = text.lower()
+        if "sed:" in lower and "只读文件系统" in text:
+            return "kpatch-build 在源码树 scripts 目录写入临时文件时被只读挂载阻止"
+        if "mv:" in lower and "只读文件系统" in text:
+            return "kpatch-build 替换 scripts/link-vmlinux.sh 时被只读挂载阻止"
+        if self._looks_like_agent_runtime_reason(text):
+            return self._agent_display_reason(text) or text
+        return text.replace("。", "")
+
+    def _looks_like_agent_runtime_reason(self, text: str) -> bool:
+        """只把短的 Agent 运行时英文 reason 映射成中文，避免误伤文件名和提交信息"""
+
+        if not self._contains_latin(text):
+            return False
+        if any(marker in text for marker in ["CVE-", "/", ".c", ".h", ".json", ".patch", ".ko"]):
+            return False
+        lower = text.lower()
+        markers = [
+            "planner selected",
+            "kpatch constraint",
+            "source unavailable",
+            "source mapping",
+            "target already patched",
+            "context mismatch",
+            "patch apply",
+            "build env",
+            "environment",
+            "report generation",
+            "ready for report",
+            "validation",
+            "retry",
+            "terminal action",
+            "max steps",
+        ]
+        return any(marker in lower for marker in markers)
 
     def _stage_node(
         self,
@@ -1614,9 +2119,9 @@ class TaskQueryService:
         build_exec_status = self._latest_build_exec_status(latest_attempt, latest_build_summary, latest_apply_precheck)
         if build_exec_status == "executed":
             for value in [
+                self._normalize_failure_type((latest_failure or {}).get("failure_type")),
                 (latest_build_summary or {}).get("failure_type"),
-                latest_attempt.failure_type if latest_attempt is not None else None,
-                (latest_failure or {}).get("failure_type"),
+                self._normalize_failure_type(latest_attempt.failure_type if latest_attempt is not None else None),
             ]:
                 if value:
                     return str(value)
@@ -1628,10 +2133,21 @@ class TaskQueryService:
         if latest_attempt is not None and latest_attempt.target_state == "target_already_patched":
             return "target_already_patched"
         for source in [latest_failure, latest_build_summary, latest_apply_precheck]:
-            value = (source or {}).get("failure_type")
+            value = self._normalize_failure_type((source or {}).get("failure_type"))
             if value:
                 return str(value)
-        return latest_attempt.failure_type if latest_attempt is not None else None
+        return self._normalize_failure_type(latest_attempt.failure_type if latest_attempt is not None else None)
+
+    @staticmethod
+    def _normalize_failure_type(value: Any) -> str | None:
+        """把 none/success/passed 等非失败哨兵值归一为空"""
+
+        if value is None:
+            return None
+        text = str(value).strip()
+        if not text or text.lower() in {"none", "null", "success", "passed", "ok"}:
+            return None
+        return text
 
     def _latest_target_state(
         self,
@@ -1681,10 +2197,10 @@ class TaskQueryService:
         """暴露历史产物或多层口径不一致，不在前端隐式掩盖"""
 
         observed = {
-            "attempt": latest_attempt.failure_type if latest_attempt is not None else None,
-            "failure_record": (latest_failure or {}).get("failure_type"),
-            "apply_precheck": (latest_apply_precheck or {}).get("failure_type"),
-            "build_summary": (latest_build_summary or {}).get("failure_type"),
+            "attempt": self._normalize_failure_type(latest_attempt.failure_type if latest_attempt is not None else None),
+            "failure_record": self._normalize_failure_type((latest_failure or {}).get("failure_type")),
+            "apply_precheck": self._normalize_failure_type((latest_apply_precheck or {}).get("failure_type")),
+            "build_summary": self._normalize_failure_type((latest_build_summary or {}).get("failure_type")),
         }
         present = {name: value for name, value in observed.items() if value}
         if len(set(present.values())) <= 1:

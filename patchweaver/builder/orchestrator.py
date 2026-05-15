@@ -40,10 +40,10 @@ class BuildOrchestrator:
             status="running",
         )
 
-    def probe_environment(self) -> dict[str, Any]:
+    def probe_environment(self, *, workspace_root: Path | None = None) -> dict[str, Any]:
         """检查当前运行机上的构建环境是否齐备"""
 
-        return self._probe_local_environment()
+        return self._probe_local_environment(workspace_root=workspace_root)
 
     def precheck_patch(
         self,
@@ -157,13 +157,15 @@ class BuildOrchestrator:
             build_log_path=build_log_path,
         )
 
-    def _probe_local_environment(self) -> dict[str, Any]:
+    def _probe_local_environment(self, *, workspace_root: Path | None = None) -> dict[str, Any]:
         """检查本机构建环境"""
 
         builder_path = which(self.build_config.kpatch_build_cmd)
         selected_source_dir, selected_source_reason = self._select_local_source_dir()
         config_path = self._config_path_for_source(selected_source_dir)
         config_ok = config_path.exists() if config_path is not None else False
+        source_mutability = self._source_tree_mutability_snapshot(selected_source_dir)
+        writable_build_readiness = self._writable_build_workspace_snapshot(workspace_root)
 
         return {
             "backend": "local",
@@ -200,6 +202,8 @@ class BuildOrchestrator:
             "config_ok": config_ok,
             "vmlinux_path": self.build_config.vmlinux_path,
             "vmlinux_ok": Path(self.build_config.vmlinux_path).exists(),
+            "source_mutability": source_mutability,
+            "writable_build_readiness": writable_build_readiness,
         }
 
     def _execute_local_build(
@@ -621,6 +625,53 @@ class BuildOrchestrator:
         output_dir = build_log_path.parent.parent / "output"
         output_dir.mkdir(parents=True, exist_ok=True)
         builder_cmd = probe["builder_path"] or self.build_config.kpatch_build_cmd
+
+        # 若源码树不可直接写，自动准备 attempt 级可写构建树
+        source_mutability = probe.get("source_mutability") or {}
+        if not source_mutability.get("direct_build_usable") and getattr(self.build_config, "auto_writable_build_source_tree", True):
+            attempt_dir = build_log_path.parent.parent
+            writable_dir, writable_lines, writable_failure = self._prepare_writable_build_source_tree(
+                source_dir=selected_source_dir,
+                attempt_dir=attempt_dir,
+            )
+            lines.extend(writable_lines)
+            if writable_dir is not None:
+                selected_source_dir = writable_dir
+                generated_source_dir = writable_dir
+            elif writable_failure:
+                summary_text = f"无法创建可写构建树，kpatch-build 无法执行: {writable_failure}"
+                lines.append(summary_text)
+                summary = BuildSummary(
+                    task_id=task.task_id,
+                    attempt_id=record.attempt_id,
+                    backend="local",
+                    builder_cmd=builder_cmd,
+                    status="failed",
+                    summary=summary_text,
+                    rewritten_patch_path=rewritten_patch_path,
+                    source_dir=str(selected_source_dir),
+                    build_log_path=build_log_path,
+                    failure_type="build_env_missing",
+                    build_exec_status="not_run",
+                )
+                build_log = "\n".join(lines) + "\n"
+                self._persist_build_log(build_log_path=build_log_path, build_log=build_log)
+                return (
+                    record.model_copy(update={
+                        "candidate_id": plan.candidate_ids[0] if plan.candidate_ids else None,
+                        "status": "failed",
+                        "failure_type": "build_env_missing",
+                        "build_exec_status": "not_run",
+                        "build_log_path": build_log_path,
+                        "module_path": None,
+                        "rewritten_patch_path": rewritten_patch_path,
+                        "finished_at": datetime.now(timezone.utc),
+                    }),
+                    build_log,
+                    precheck,
+                    summary,
+                )
+
         lines.extend(self._ensure_call_sites_section_compat())
         build_targets = self._infer_build_targets(
             source_dir=selected_source_dir,
@@ -962,6 +1013,7 @@ class BuildOrchestrator:
             "kernel_devel_dir": "unknown",
             "patched_kernel_src_dir": "patched",
             "synthetic_reverse_tree": "unpatched",
+            "attempt_writable_build_tree": "attempt_writable_copy",
         }
         return mapping.get(slot_name, "unknown")
 
@@ -1774,6 +1826,348 @@ exec "$REAL" "${{args[@]}}"
         lines.append("已为 .vmlinux.objs 生成加入 thin archive fallback")
         return lines
 
+    def _prepare_writable_build_source_tree(
+        self,
+        *,
+        source_dir: Path,
+        attempt_dir: Path,
+    ) -> tuple[Path | None, list[str], str | None]:
+        """为真实 kpatch-build 准备 attempt 级可写源码树"""
+
+        writable_source_dir = attempt_dir / "sources" / "writable_build"
+        lines = [
+            "",
+            "[writable source tree]",
+            f"来源基线源码树: {source_dir}",
+            f"可写构建源码树: {writable_source_dir}",
+        ]
+
+        source_state = self._source_tree_mutability_snapshot(source_dir)
+        lines.extend(
+            [
+                f"baseline_ready: {source_state.get('baseline_ready')}",
+                f"direct_build_usable: {source_state.get('direct_build_usable')}",
+                f"scripts_writable: {source_state.get('scripts_writable')}",
+            ]
+        )
+        if not source_state.get("baseline_ready"):
+            lines.append("可写构建树准备失败: 来源基线源码树不完整")
+            return None, lines, "build_env_missing"
+
+        workspace_state = self._probe_writable_build_parent(writable_source_dir.parent)
+        lines.extend(
+            [
+                f"workspace_writable: {workspace_state.get('ready')}",
+                f"workspace_free_bytes: {workspace_state.get('free_bytes')}",
+            ]
+        )
+        if not workspace_state.get("ready"):
+            lines.append(f"可写构建树准备失败: {workspace_state.get('reason') or 'workspace 不可写'}")
+            return None, lines, "build_env_missing"
+
+        min_free_bytes = max(0, int(getattr(self.build_config, "writable_build_source_min_free_bytes", 0) or 0))
+        free_bytes = workspace_state.get("free_bytes")
+        if min_free_bytes and isinstance(free_bytes, int) and free_bytes < min_free_bytes:
+            lines.append(
+                "可写构建树准备失败: "
+                f"workspace 剩余空间 {free_bytes} bytes 小于最低要求 {min_free_bytes} bytes"
+            )
+            return None, lines, "build_env_missing"
+
+        copied, copy_method, copy_error = self._copy_source_tree_to_writable_build(
+            source_dir=source_dir,
+            writable_source_dir=writable_source_dir,
+        )
+        lines.append(f"复制/overlay 方式: {copy_method}")
+        if copy_method.startswith("full cp -a"):
+            lines.append("警告: 当前文件系统不支持 overlayfs/reflink，已降级为完整复制，单轮成本较高")
+        if not copied:
+            lines.append(f"可写构建树准备失败: {copy_error or '复制失败'}")
+            lines.extend(self._cleanup_generated_source_tree(writable_source_dir, force=True))
+            return None, lines, "build_env_missing"
+
+        writable_state = self._source_tree_mutability_snapshot(writable_source_dir)
+        lines.extend(
+            [
+                f"writable_build_ready: {writable_state.get('direct_build_usable')}",
+                f"writable_scripts_writable: {writable_state.get('scripts_writable')}",
+            ]
+        )
+        if not writable_state.get("direct_build_usable"):
+            lines.append(f"可写构建树准备失败: {writable_state.get('reason') or '源码树仍不可写'}")
+            lines.extend(self._cleanup_generated_source_tree(writable_source_dir, force=True))
+            return None, lines, "build_env_missing"
+
+        setlocalversion_ready = patch_setlocalversion_for_kpatch(writable_source_dir)
+        if setlocalversion_ready:
+            lines.append("setlocalversion 兼容处理完成: 支持 kpatch-build --save-scmversion")
+        else:
+            lines.append("setlocalversion 兼容处理跳过: 未找到 scripts/setlocalversion")
+        lines.extend(self._normalize_x86_function_padding(writable_source_dir))
+        lines.extend(self._patch_modpost_thin_archive_listing(writable_source_dir))
+        lines.append("可写构建树准备完成，真实 kpatch-build 将使用该源码树")
+        return writable_source_dir, lines, None
+
+    def _copy_source_tree_to_writable_build(
+        self,
+        *,
+        source_dir: Path,
+        writable_source_dir: Path,
+    ) -> tuple[bool, str, str | None]:
+        """按 overlayfs -> reflink -> full copy 的顺序准备可写构建树"""
+
+        try:
+            writable_source_dir.parent.mkdir(parents=True, exist_ok=True)
+            self._remove_writable_build_paths(writable_source_dir)
+        except OSError as exc:
+            return False, "prepare_destination", str(exc)
+
+        overlay_ok, overlay_error = self._try_overlay_writable_build(
+            source_dir=source_dir,
+            writable_source_dir=writable_source_dir,
+        )
+        if overlay_ok:
+            return True, "overlayfs", None
+
+        cp_path = which("cp") if os.name != "nt" else None
+        reflink_error: str | None = None
+        if cp_path is not None:
+            command = [cp_path, "-a", "--reflink=auto", str(source_dir), str(writable_source_dir)]
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=False,
+            )
+            if result.returncode == 0:
+                return True, "cp -a --reflink=auto", None
+            try:
+                self._remove_writable_build_paths(writable_source_dir)
+            except OSError:
+                pass
+            reflink_error = (result.stderr or result.stdout).strip()[:1000]
+
+        try:
+            if cp_path is not None:
+                command = [cp_path, "-a", str(source_dir), str(writable_source_dir)]
+                result = subprocess.run(
+                    command,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    check=False,
+                )
+                if result.returncode == 0:
+                    return True, "full cp -a fallback", None
+                full_cp_error = (result.stderr or result.stdout).strip()[:1000]
+                self._remove_writable_build_paths(writable_source_dir)
+            else:
+                full_cp_error = None
+            shutil.copytree(source_dir, writable_source_dir, symlinks=True)
+        except OSError as exc:
+            details = str(exc)
+            if overlay_error:
+                details = f"{details}; overlayfs reason: {overlay_error}"
+            if reflink_error:
+                details = f"{details}; reflink reason: {reflink_error}"
+            if full_cp_error:
+                details = f"{details}; full cp reason: {full_cp_error}"
+            return False, "full copy fallback", details
+        return True, "full cp -a fallback via shutil.copytree", None
+
+    def _try_overlay_writable_build(self, *, source_dir: Path, writable_source_dir: Path) -> tuple[bool, str | None]:
+        """尝试使用 overlayfs 创建接近零成本的可写构建树"""
+
+        if os.name == "nt":
+            return False, "Windows 开发环境不支持 overlayfs"
+        mount_path = which("mount")
+        if mount_path is None:
+            return False, "未找到 mount 命令"
+
+        upper_dir = self._writable_build_upper_dir(writable_source_dir)
+        work_dir = self._writable_build_work_dir(writable_source_dir)
+        try:
+            upper_dir.mkdir(parents=True, exist_ok=True)
+            work_dir.mkdir(parents=True, exist_ok=True)
+            writable_source_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            return False, str(exc)
+
+        options = ",".join(
+            [
+                f"lowerdir={source_dir.resolve()}",
+                f"upperdir={upper_dir.resolve()}",
+                f"workdir={work_dir.resolve()}",
+            ]
+        )
+        command = [mount_path, "-t", "overlay", "overlay", "-o", options, str(writable_source_dir.resolve())]
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        if result.returncode != 0:
+            self._remove_writable_build_paths(writable_source_dir)
+            return False, (result.stderr or result.stdout).strip()[:1000] or "overlayfs mount 失败"
+        if not self._local_kernel_tree_ok(writable_source_dir):
+            self._unmount_writable_build(writable_source_dir)
+            self._remove_writable_build_paths(writable_source_dir)
+            return False, "overlayfs 挂载后未看到有效源码树"
+        return True, None
+
+    def _writable_build_upper_dir(self, writable_source_dir: Path) -> Path:
+        return writable_source_dir.parent / "writable_build.upper"
+
+    def _writable_build_work_dir(self, writable_source_dir: Path) -> Path:
+        return writable_source_dir.parent / "writable_build.work"
+
+    def _remove_writable_build_paths(self, writable_source_dir: Path) -> None:
+        """清理 attempt/sources 下的可写构建树挂载点和私有写层"""
+
+        for path in [
+            writable_source_dir,
+            self._writable_build_upper_dir(writable_source_dir),
+            self._writable_build_work_dir(writable_source_dir),
+        ]:
+            if not path.exists():
+                continue
+            if not self._is_safe_generated_source_dir(path):
+                raise OSError(f"拒绝清理非 attempt/sources 路径: {path}")
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+
+    def _source_tree_mutability_snapshot(self, source_dir: Path | None) -> dict[str, Any]:
+        """检查源码树是否能直接承接 kpatch-build 写操作"""
+
+        if source_dir is None:
+            return {
+                "baseline_ready": False,
+                "direct_build_usable": False,
+                "source_exists": False,
+                "config_exists": False,
+                "scripts_exists": False,
+                "root_writable": False,
+                "scripts_writable": False,
+                "reason": "未选择源码树",
+            }
+
+        source_exists = self._local_kernel_tree_ok(source_dir)
+        config_exists = (source_dir / ".config").exists()
+        scripts_dir = source_dir / "scripts"
+        scripts_exists = scripts_dir.is_dir()
+        root_writable, root_reason = self._probe_directory_mutability(source_dir) if source_exists else (False, "源码树不存在")
+        scripts_writable, scripts_reason = (
+            self._probe_directory_mutability(scripts_dir) if scripts_exists else (False, "scripts 目录不存在")
+        )
+        baseline_ready = source_exists and config_exists and scripts_exists
+        direct_build_usable = baseline_ready and root_writable and scripts_writable
+        reason = None
+        if not baseline_ready:
+            missing = []
+            if not source_exists:
+                missing.append("Makefile/source")
+            if not config_exists:
+                missing.append(".config")
+            if not scripts_exists:
+                missing.append("scripts/")
+            reason = "源码基线缺少 " + ", ".join(missing)
+        elif not root_writable:
+            reason = f"源码树根目录不可写: {root_reason}"
+        elif not scripts_writable:
+            reason = f"scripts/ 不可写: {scripts_reason}"
+        return {
+            "baseline_ready": baseline_ready,
+            "direct_build_usable": direct_build_usable,
+            "source_exists": source_exists,
+            "config_exists": config_exists,
+            "scripts_exists": scripts_exists,
+            "root_writable": root_writable,
+            "scripts_writable": scripts_writable,
+            "reason": reason,
+        }
+
+    def _writable_build_workspace_snapshot(self, workspace_root: Path | None) -> dict[str, Any]:
+        """检查 Doctor 使用的 workspace 是否能创建 attempt 级可写构建树"""
+
+        if workspace_root is None:
+            return {
+                "ready": False,
+                "workspace_root": None,
+                "writable_build_root": None,
+                "free_bytes": None,
+                "reason": "未提供 workspace_root",
+            }
+        probe_parent = workspace_root / ".doctor" / "attempts" / "000" / "sources"
+        snapshot = self._probe_writable_build_parent(probe_parent)
+        snapshot["workspace_root"] = str(workspace_root)
+        snapshot["writable_build_root"] = str(probe_parent / "writable_build")
+        try:
+            shutil.rmtree(workspace_root / ".doctor")
+        except OSError:
+            pass
+        return snapshot
+
+    def _probe_writable_build_parent(self, parent_dir: Path) -> dict[str, Any]:
+        """检查指定 sources 目录能否承载可写构建树"""
+
+        try:
+            parent_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            return {"ready": False, "free_bytes": self._disk_free_bytes(parent_dir), "reason": str(exc)}
+        writable, reason = self._probe_directory_mutability(parent_dir)
+        return {
+            "ready": writable,
+            "free_bytes": self._disk_free_bytes(parent_dir),
+            "reason": None if writable else reason,
+        }
+
+    def _probe_directory_mutability(self, directory: Path) -> tuple[bool, str | None]:
+        """验证目录中创建、移动、删除临时文件是否可行"""
+
+        if not directory.is_dir():
+            return False, "目录不存在"
+        probe_file = directory / ".patchweaver-mutability-probe"
+        moved_file = directory / ".patchweaver-mutability-probe.moved"
+        try:
+            for candidate in [probe_file, moved_file]:
+                if candidate.exists():
+                    if candidate.is_dir():
+                        shutil.rmtree(candidate)
+                    else:
+                        candidate.unlink()
+            probe_file.write_text("ok\n", encoding="utf-8")
+            probe_file.replace(moved_file)
+            moved_file.unlink()
+        except OSError as exc:
+            try:
+                if probe_file.exists():
+                    probe_file.unlink()
+                if moved_file.exists():
+                    moved_file.unlink()
+            except OSError:
+                pass
+            return False, str(exc)
+        return True, None
+
+    def _disk_free_bytes(self, path: Path) -> int | None:
+        """返回路径所在文件系统剩余空间"""
+
+        current = path
+        while not current.exists() and current != current.parent:
+            current = current.parent
+        try:
+            return shutil.disk_usage(current).free
+        except OSError:
+            return None
+
     def _cleanup_generated_source_tree(self, source_dir: Path | None, *, force: bool = False) -> list[str]:
         """清理 attempt 内生成的临时源码树"""
 
@@ -1790,6 +2184,20 @@ exec "$REAL" "${{args[@]}}"
             ]
 
         lines = ["", "[source cleanup]", f"临时源码树: {source_dir}"]
+        if source_dir.name == "writable_build":
+            unmounted, detail = self._unmount_writable_build(source_dir)
+            if detail:
+                lines.append(detail)
+            try:
+                self._remove_writable_build_paths(source_dir)
+                lines.append("临时源码树已清理")
+            except OSError as exc:
+                if not source_dir.exists() and not self._writable_build_upper_dir(source_dir).exists():
+                    lines.append("临时源码树不存在，无需清理")
+                else:
+                    lines.append(f"临时源码树清理失败: {exc}")
+            return lines
+
         if not source_dir.exists():
             lines.append("临时源码树不存在，无需清理")
             return lines
@@ -1805,7 +2213,49 @@ exec "$REAL" "${{args[@]}}"
         """限制自动清理范围，避免误删真实源码树"""
 
         parts = source_dir.parts
-        return len(parts) >= 3 and parts[-1] == "reverse_unpatched" and parts[-2] == "sources"
+        return (
+            len(parts) >= 3
+            and parts[-1] in {"reverse_unpatched", "writable_build", "writable_build.upper", "writable_build.work"}
+            and parts[-2] == "sources"
+        )
+
+    def _unmount_writable_build(self, source_dir: Path) -> tuple[bool, str | None]:
+        """如果 writable_build 是 overlay 挂载点，则先卸载"""
+
+        if os.name == "nt":
+            return False, None
+        if not self._path_is_mounted(source_dir):
+            return False, None
+        umount_path = which("umount")
+        if umount_path is None:
+            return False, "overlayfs 卸载跳过: 未找到 umount 命令"
+        result = subprocess.run(
+            [umount_path, str(source_dir)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        if result.returncode != 0:
+            return False, "overlayfs 卸载失败: " + ((result.stderr or result.stdout).strip()[:1000] or "unknown")
+        return True, "overlayfs 已卸载"
+
+    def _path_is_mounted(self, path: Path) -> bool:
+        """从 /proc/self/mountinfo 判断路径是否为挂载点"""
+
+        mountinfo = Path("/proc/self/mountinfo")
+        if not mountinfo.exists():
+            return False
+        try:
+            resolved = str(path.resolve())
+            for raw_line in mountinfo.read_text(encoding="utf-8", errors="replace").splitlines():
+                fields = raw_line.split()
+                if len(fields) >= 5 and fields[4].replace("\\040", " ") == resolved:
+                    return True
+        except OSError:
+            return False
+        return False
 
     def _config_path_for_source(self, source_dir: Path | None) -> Path | None:
         """返回当前源码树对应的 .config 路径"""
@@ -1848,6 +2298,8 @@ exec "$REAL" "${{args[@]}}"
                     return self._source_slot_expected_state(slot_name)
         if candidate_path.name == "reverse_unpatched":
             return self._source_slot_expected_state("synthetic_reverse_tree")
+        if candidate_path.name == "writable_build":
+            return self._source_slot_expected_state("attempt_writable_build_tree")
         return "unknown"
 
     def _local_kernel_tree_ok(self, path: Path) -> bool:

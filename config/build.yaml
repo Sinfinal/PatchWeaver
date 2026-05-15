@@ -55,8 +55,14 @@ auto_switch_source_tree: true
 # 是否在 attempt 目录下自动准备一棵反向补丁树。
 auto_reverse_source_tree: true
 
+# 真实 kpatch-build 永远使用 attempt 级可写源码树，prepared/stable/source tree 只作为只读基线。
+auto_writable_build_source_tree: true
+
 # 反向补丁树只作为本轮构建临时输入，构建结束后清理，避免多 CVE 测试堆满磁盘。
 cleanup_generated_source_tree: true
+
+# 准备可写构建树前的最低剩余空间预检，避免进入真实构建后才因复制/overlay 失败。
+writable_build_source_min_free_bytes: 536870912
 
 # Anolis 6.6 验证内核使用 -fpatchable-function-entry=16,16。
 # 当前 kpatch-build/create-diff-object 对该布局会把函数入口识别到 offset 16。

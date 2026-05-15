@@ -1,9 +1,11 @@
 import { StatusBadge } from "../status/StatusBadge";
-import type { TimelineNode } from "../../types/tasks";
+import type { FailureDiagnosis, TimelineNode } from "../../types/tasks";
 
 type StageTimelineProps = {
   items: TimelineNode[];
   currentStage?: string | null;
+  failureExplanation?: string;
+  failureDiagnosis?: FailureDiagnosis | null;
 };
 
 type ProgressStage = {
@@ -12,7 +14,7 @@ type ProgressStage = {
   fallbackDescription: string;
 };
 
-const stageLabelMap: Record<string, string> = {
+export const stageLabelMap: Record<string, string> = {
   prepare: "准备",
   source: "来源获取",
   retrieve: "检索",
@@ -44,7 +46,7 @@ const progressStages: ProgressStage[] = [
   { stage: "report", label: "报告与回放", fallbackDescription: "等待结构化报告和回放摘要生成" },
 ];
 
-export function StageTimeline({ items, currentStage }: StageTimelineProps): JSX.Element {
+export function StageTimeline({ items, currentStage, failureExplanation, failureDiagnosis }: StageTimelineProps): JSX.Element {
   if (items.length === 0) {
     return <div className="pw-empty">当前任务还没有生成阶段时间线</div>;
   }
@@ -61,6 +63,8 @@ export function StageTimeline({ items, currentStage }: StageTimelineProps): JSX.
             item={item}
             index={index}
             isCurrent={index === currentIndex}
+            failureExplanation={failureExplanation}
+            failureDiagnosis={failureDiagnosis}
           />
         ))}
       </div>
@@ -96,14 +100,20 @@ function StageTimelineNode({
   item,
   index,
   isCurrent,
+  failureExplanation,
+  failureDiagnosis,
 }: {
   item: TimelineNode;
   index: number;
   isCurrent: boolean;
+  failureExplanation?: string;
+  failureDiagnosis?: FailureDiagnosis | null;
 }): JSX.Element {
   const normalizedStatus = normalizeProgressStatus(item.status);
   const itemClass = `pw-timeline-node is-${normalizedStatus}${isCurrent ? " is-current" : ""}`;
   const label = item.label ?? stageLabelMap[item.stage] ?? item.stage;
+  const isFailed = normalizedStatus === "failed";
+  const showDiagnosis = isFailed && failureDiagnosis?.present;
 
   return (
     <div className={itemClass} aria-current={isCurrent ? "step" : undefined}>
@@ -112,13 +122,45 @@ function StageTimelineNode({
         <strong>{label}</strong>
         <StatusBadge value={item.status} />
       </div>
-      {item.current_effect ? <div className="pw-stage-text">{item.current_effect}</div> : null}
-      {item.missing_effect ? <div className="pw-stage-muted">缺口：{item.missing_effect}</div> : null}
-      {item.problem ? <div className="pw-stage-muted">问题：{item.problem}</div> : null}
-      {item.analysis ? <div className="pw-stage-muted">判断：{item.analysis}</div> : null}
-      {item.next_action ? <div className="pw-stage-muted">下一步：{item.next_action}</div> : null}
-      {item.primary_evidence_path ?? item.path ? (
-        <div className="pw-inline-note">证据：{item.primary_evidence_path ?? item.path}</div>
+      {normalizedStatus !== "blocked" && normalizedStatus !== "pending" ? (
+        <>
+          {item.current_effect ? <div className="pw-stage-text">{item.current_effect}</div> : null}
+          {item.missing_effect && item.missing_effect !== "无" ? <div className="pw-stage-muted">缺口：{item.missing_effect}</div> : null}
+          {isFailed && failureExplanation ? (
+            <div className="pw-stage-muted">问题：{failureExplanation}</div>
+          ) : item.problem ? (
+            <div className="pw-stage-muted">问题：{item.problem}</div>
+          ) : null}
+          {item.next_action ? <div className="pw-stage-muted">下一步：{item.next_action}</div> : null}
+          {showDiagnosis ? (
+            <div className="pw-failure-diagnosis" role="status" aria-label="失败诊断">
+              <div className="pw-failure-diagnosis-head">
+                <div>
+                  <span className="pw-process-label">失败诊断</span>
+                  <strong>{failureDiagnosis.reason}</strong>
+                </div>
+                <StatusBadge value="failed" />
+              </div>
+              <div className="pw-process-grid">
+                <div>
+                  <span className="pw-process-label">影响</span>
+                  <div>{failureDiagnosis.impact}</div>
+                </div>
+                <div>
+                  <span className="pw-process-label">下一步</span>
+                  <div>{failureDiagnosis.next_action}</div>
+                </div>
+              </div>
+              {failureDiagnosis.evidence_snippets?.length ? (
+                <div className="pw-list compact">
+                  {failureDiagnosis.evidence_snippets.map((snippet) => (
+                    <div className="pw-log-snippet" key={snippet}>{snippet}</div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </>
       ) : null}
     </div>
   );

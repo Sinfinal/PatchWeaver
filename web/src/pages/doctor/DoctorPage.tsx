@@ -10,15 +10,9 @@ import type { DoctorCheck, DoctorRepairResult } from "../../types/doctor";
 import { formatTime } from "../../utils/format";
 
 const runtimeLabelMap: Record<string, string> = {
-  project_root: "项目根目录",
-  workspace_root: "工作区根目录",
-  database_path: "数据库路径",
-  manifest_dir: "Manifest 目录",
-  configured_default_kernel: "配置默认内核",
-  detected_target_kernel: "探测目标内核",
-  detected_target_kernel_source: "探测来源",
-  machine_kernel: "当前运行机内核",
-  machine_arch: "当前运行机架构",
+  detected_target_kernel: "目标内核",
+  machine_kernel: "运行机内核",
+  machine_arch: "架构",
   max_attempts: "默认最大尝试轮数",
   python_version: "Python 版本",
 };
@@ -105,18 +99,20 @@ export function DoctorPage(): JSX.Element {
         ) : null}
       </SectionCard>
 
-      <SectionCard title="运行时路径与默认值">
+      <SectionCard title="运行时信息">
         {report ? (
           <div className="pw-kv">
-            {Object.entries(report.runtime).map(([key, value]) => (
-              <div key={key} className="pw-kv-item">
-                <span className="pw-kv-label">{runtimeLabelMap[key] ?? key}</span>
-                <div className="pw-kv-value">{String(value)}</div>
-              </div>
-            ))}
+            {Object.entries(report.runtime)
+              .filter(([key]) => key in runtimeLabelMap)
+              .map(([key, value]) => (
+                <div key={key} className="pw-kv-item">
+                  <span className="pw-kv-label">{runtimeLabelMap[key]}</span>
+                  <div className="pw-kv-value">{String(value)}</div>
+                </div>
+              ))}
           </div>
         ) : (
-          <div className="pw-empty">诊断报告可用后，这里会展示项目根目录、工作区、数据库、探测目标内核和当前运行机信息</div>
+          <div className="pw-empty">诊断报告可用后，这里会展示目标内核和运行机信息</div>
         )}
       </SectionCard>
 
@@ -136,15 +132,17 @@ export function DoctorPage(): JSX.Element {
                   </tr>
                 </thead>
                 <tbody>
-                  {report.checks.map((item) => (
-                    <tr key={`${item.category}-${item.name}`}>
-                      <td className="pw-cell-no-wrap">{item.label}</td>
-                      <td className="pw-cell-no-wrap">
-                        <StatusBadge value={item.status} />
-                      </td>
-                      <td>{item.detail}</td>
-                    </tr>
-                  ))}
+                  {report.checks
+                    .filter((item) => item.category === "build_backend" || item.category === "model_backend" || item.status !== "ok")
+                    .map((item) => (
+                      <tr key={`${item.category}-${item.name}`}>
+                        <td className="pw-cell-no-wrap">{item.label}</td>
+                        <td className="pw-cell-no-wrap">
+                          <StatusBadge value={item.status} />
+                        </td>
+                        <td>{item.detail}</td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

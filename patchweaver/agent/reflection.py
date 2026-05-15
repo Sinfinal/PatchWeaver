@@ -286,7 +286,6 @@ def _what_to_avoid(*, failure_type: str, disabled_strategies: list[str]) -> str:
         return "不要在未对齐未修复源码基线时继续强行 apply 或 build"
     if failure_type in {"build_env_missing", "build_cache_incomplete"}:
         return "不要继续构建，先修复 kpatch、debug vmlinux、Module.symvers 或源码构建缓存"
-    if failure_type == "kpatch_constraint":
         if disabled_strategies:
             return "不要重复使用已无效策略：" + ",".join(disabled_strategies)
         return "不要重复直接套用同一改写形态，必须切换 livepatch 约束规避路线"
@@ -298,7 +297,7 @@ def _next_strategy_hint(observation: AgentObservation) -> str:
     if failure_type == "source_unavailable":
         return "terminal=true; stop_manual_review; 补来源映射或更换有明确修复提交的 CVE"
     if failure_type in {"build_env_missing", "build_cache_incomplete"}:
-        return "terminal=true; 修复构建环境和 baseline cache 后重新创建任务"
+        return "系统将自动创建可写构建树后重试；若仍失败则检查磁盘空间或 Docker 挂载"
     if failure_type == "patch_apply_failed":
         subtype = _diagnostic_path(observation.diagnostics, "patch_apply", "subtype")
         if subtype in {"context_mismatch", "source_too_new_or_already_patched"}:

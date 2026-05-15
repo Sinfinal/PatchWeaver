@@ -31,8 +31,8 @@ dependencies = [
   "fastapi>=0.115",
   #FastAPI/Starlette TestClient 依赖
   "httpx>=0.27",
-  #API 服务启动
-  "uvicorn>=0.30",
+  #API 服务启动，standard extra 提供 WebSocket 协议支持
+  "uvicorn[standard]>=0.30",
   #Milvus 向量数据库客户端
   "pymilvus>=2.6",
   #可选Agent状态图编排适配

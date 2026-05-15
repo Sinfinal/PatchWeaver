@@ -55,7 +55,10 @@ class DoctorApiService:
         checks = payload.get("checks")
         if not isinstance(checks, list):
             return False
-        return any(item.get("category") == "model_backend" and item.get("name") == "bailian_chat" for item in checks if isinstance(item, dict))
+        return (
+            any(item.get("category") == "model_backend" and item.get("name") == "bailian_chat" for item in checks if isinstance(item, dict))
+            and any(item.get("name") == "source_tree_mutability" for item in checks if isinstance(item, dict))
+        )
 
     def repair_environment(self) -> dict[str, Any]:
         """执行 Web 可触发的安全修复，并生成宿主机级修复脚本"""
@@ -120,7 +123,7 @@ class DoctorApiService:
         """整理运行时、依赖和构建环境检查结果"""
 
         runtime = self.context.runtime
-        build_env = BuildOrchestrator(self.context.build_config).probe_environment()
+        build_env = BuildOrchestrator(self.context.build_config).probe_environment(workspace_root=runtime.workspace_root.resolve())
         machine_profile = collect_machine_profile(self.context.build_config, build_env=build_env)
         checks: list[dict[str, Any]] = []
 
@@ -248,6 +251,39 @@ class DoctorApiService:
                 failed_status="error",
             ),
         ]
+
+        mutability = build_env.get("source_mutability") or {}
+        writable = build_env.get("writable_build_readiness") or {}
+
+        if mutability.get("baseline_ready") is not None:
+            if mutability.get("direct_build_usable"):
+                src_status = "ok"
+                src_detail = "源码树可直接用于 kpatch-build"
+            elif mutability.get("baseline_ready"):
+                src_status = "warn"
+                src_detail = f"源码树为只读基线，系统将自动创建 attempt 级可写构建树后再构建。{mutability.get('reason') or ''}"
+            else:
+                src_status = "error"
+                src_detail = mutability.get("reason") or "源码基线不完整"
+            checks.append({
+                "category": "build_backend",
+                "name": "source_tree_mutability",
+                "label": "源码树构建可用性",
+                "ok": src_status == "ok",
+                "status": src_status,
+                "detail": src_detail,
+            })
+
+        if writable.get("ready") is not None:
+            checks.append({
+                "category": "build_backend",
+                "name": "writable_build_readiness",
+                "label": "可写构建树就绪",
+                "ok": bool(writable.get("ready")),
+                "status": "ok" if writable.get("ready") else "error",
+                "detail": writable.get("reason") or ("workspace 可创建 attempt 级可写构建树" if writable.get("ready") else "无法创建可写构建树"),
+            })
+
         return checks
 
     def _model_backend_checks(self) -> list[dict[str, Any]]:

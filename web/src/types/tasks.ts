@@ -63,6 +63,7 @@ export type TaskSummary = {
   created_at: string;
   updated_at: string;
   latest_failure_type?: string | null;
+  latest_failure_explanation?: string | null;
   latest_build_exec_status?: string | null;
   latest_target_state?: string | null;
   agent_health?: AgentHealth | null;
@@ -132,6 +133,22 @@ export type ProcessSummary = {
   latest_target_state?: string | null;
   replay_status?: string | null;
   state_conflicts: string[];
+};
+
+export type FailureDiagnosis = {
+  present: boolean;
+  task_id: string;
+  failure_type: string;
+  stage: string;
+  stage_label: string;
+  reason: string;
+  impact: string;
+  next_action: string;
+  evidence_paths: string[];
+  evidence_snippets?: string[];
+  primary_evidence_path?: string | null;
+  source: string;
+  build_exec_status?: string | null;
 };
 
 export type AgentDecisionSummary = {
@@ -269,6 +286,7 @@ export type TaskDetailResponse = {
   agent_decision_summary?: AgentDecisionSummary;
   agent_trace?: AgentTrace;
   agent_health?: AgentHealth;
+  failure_diagnosis?: FailureDiagnosis | null;
   evaluation_summary?: Record<string, unknown> | null;
   reports: {
     json_path: string;
