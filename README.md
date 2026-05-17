@@ -13,13 +13,13 @@
 
 PatchWeaver 的目标是让使用者输入一个内核 CVE 后，系统能够自动获取修复补丁、理解修复意图、选择适合 `kpatch` 的改写策略、生成 livepatch `.ko`，并完成加载、卸载、冒烟测试、自测和结构化报告输出。
 
-![img_1.png](docs/images/封面.png)
+
 
 ## 项目简介
 
 PatchWeaver 面向操作系统内核热补丁生成场景，围绕 `CVE -> Patch -> Rewrite -> kpatch-build -> Validate -> Report` 建立完整自动化链路。
 
-![PatchWeaver 总流程图占位](docs/images/PatchWeaver_总流程图占位.png)
+
 
 系统不是简单执行脚本，而是由 Agent 驱动的工程闭环：
 
@@ -30,7 +30,6 @@ PatchWeaver 面向操作系统内核热补丁生成场景，围绕 `CVE -> Patch
 - 构建验证：调用 `kpatch-build` 生成 livepatch `.ko`，并执行 `load / unload / smoke / selftest`。
 - 报告回放：输出 `report.json`、`report.md`、构建日志、验证报告和可回放证据链。
 
-![PatchWeaver Agent 决策闭环占位](docs/images/PatchWeaver Agent 决策闭环占位.png)
 
 ## 快速使用
 
