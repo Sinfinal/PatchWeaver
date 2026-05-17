@@ -1,0 +1,122 @@
+[
+  {
+    "cve_id": "CVE-2024-26600",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "drivers/phy",
+    "summary": "phy: ti: phy-omap-usb2: Fix NULL pointer dereference for SRP"
+  },
+  {
+    "cve_id": "CVE-2024-26601",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "fs/ext4",
+    "summary": "ext4: regenerate buddy after block freeing failed if under fc replay"
+  },
+  {
+    "cve_id": "CVE-2024-26602",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "kernel/sched",
+    "summary": "sched/membarrier: reduce the ability to hammer on sys_membarrier"
+  },
+  {
+    "cve_id": "CVE-2024-26605",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "drivers/pci",
+    "summary": "PCI/ASPM: Fix deadlock when enabling ASPM"
+  },
+  {
+    "cve_id": "CVE-2024-26606",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "drivers/android",
+    "summary": "binder: signal epoll threads of self-work"
+  },
+  {
+    "cve_id": "CVE-2024-26607",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "drivers/gpu/drm",
+    "summary": "drm/bridge: sii902x: Fix probing race issue"
+  },
+  {
+    "cve_id": "CVE-2024-26608",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "fs/smb/server",
+    "summary": "ksmbd: fix global oob in ksmbd_nl_policy"
+  },
+  {
+    "cve_id": "CVE-2024-26611",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "net/xdp",
+    "summary": "xsk: fix usage of multi-buffer BPF helpers for ZC XDP"
+  },
+  {
+    "cve_id": "CVE-2024-26612",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "fs/fscache",
+    "summary": "netfs, fscache: Prevent Oops in fscache_put_cache()"
+  },
+  {
+    "cve_id": "CVE-2024-26614",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "net/ipv4",
+    "summary": "tcp: make sure init the accept_queue's spinlocks once"
+  },
+  {
+    "cve_id": "CVE-2024-26616",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "fs/btrfs",
+    "summary": "btrfs: scrub: avoid use-after-free when chunk length is not 64K"
+  },
+  {
+    "cve_id": "CVE-2024-26622",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "security/tomoyo",
+    "summary": "tomoyo: fix UAF write bug in tomoyo_write_control()"
+  },
+  {
+    "cve_id": "CVE-2024-26625",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "net/llc",
+    "summary": "llc: call sock_orphan() at release time"
+  },
+  {
+    "cve_id": "CVE-2024-26626",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "net/ipv4",
+    "summary": "ipmr: fix kernel panic when forwarding mcast packets"
+  },
+  {
+    "cve_id": "CVE-2024-26630",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "mm",
+    "summary": "mm: cachestat: fix folio read-after-free in cache walk"
+  },
+  {
+    "cve_id": "CVE-2024-26642",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "net/netfilter",
+    "summary": "netfilter: nf_tables: disallow anonymous set with timeout flag"
+  },
+  {
+    "cve_id": "CVE-2024-26643",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "net/netfilter",
+    "summary": "netfilter: nf_tables: mark set as dead when unbinding anonymous set"
+  },
+  {
+    "cve_id": "CVE-2024-26668",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "net/netfilter",
+    "summary": "netfilter: nft_limit: reject configurations that cause integer overflow"
+  },
+  {
+    "cve_id": "CVE-2024-26673",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "net/netfilter",
+    "summary": "netfilter: nft_ct: sanitize layer 3 and 4 protocol number in custom expression"
+  },
+  {
+    "cve_id": "CVE-2024-26726",
+    "seed_group": "rag-linux-kernel-2024-batch",
+    "subsystem": "fs/btrfs",
+    "summary": "btrfs: don't drop extent_map for free space inode on write error"
+  }
+]

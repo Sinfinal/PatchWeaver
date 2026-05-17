@@ -1,0 +1,277 @@
+{
+  "items": [
+    {
+      "cve_id": "CVE-2024-26600",
+      "card_path": "cards/CVE-2024-26600.md",
+      "metadata_path": "cards/CVE-2024-26600.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26600.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "drivers/phy/ti/phy-omap-usb2.c"
+      ],
+      "upstream_commit": null,
+      "stable_commit": "0430bfcd46657d9116a26cd377f112cbc40826a4"
+    },
+    {
+      "cve_id": "CVE-2024-26601",
+      "card_path": "cards/CVE-2024-26601.md",
+      "metadata_path": "cards/CVE-2024-26601.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26601.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "fs/ext4/mballoc.c"
+      ],
+      "upstream_commit": "6bd97bf273bd",
+      "stable_commit": "6b0d48647935e4b8c7b75d1eccb9043fcd4ee581"
+    },
+    {
+      "cve_id": "CVE-2024-26602",
+      "card_path": "cards/CVE-2024-26602.md",
+      "metadata_path": "cards/CVE-2024-26602.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26602.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "kernel/sched/membarrier.c"
+      ],
+      "upstream_commit": "944d5fe50f3f03daacfea16300e656a1691c4a23",
+      "stable_commit": "2441a64070b85c14eecc3728cc87e883f953f265"
+    },
+    {
+      "cve_id": "CVE-2024-26605",
+      "card_path": "cards/CVE-2024-26605.md",
+      "metadata_path": "cards/CVE-2024-26605.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26605.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "drivers/pci/bus.c",
+        "drivers/pci/pci.c",
+        "drivers/pci/pci.h",
+        "drivers/pci/pcie/aspm.c",
+        "include/linux/pci.h"
+      ],
+      "upstream_commit": "1e560864159d002b453da42bd2c13a1805515a20",
+      "stable_commit": "0f7908a016c092cfdaa16d785fa5099d867bc1a3"
+    },
+    {
+      "cve_id": "CVE-2024-26606",
+      "card_path": "cards/CVE-2024-26606.md",
+      "metadata_path": "cards/CVE-2024-26606.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26606.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "drivers/android/binder.c"
+      ],
+      "upstream_commit": "97830f3c3088638ff90b20dfba2eb4d487bf14d7",
+      "stable_commit": "42beab162dcee1e691ee4934292d51581c29df61"
+    },
+    {
+      "cve_id": "CVE-2024-26607",
+      "card_path": "cards/CVE-2024-26607.md",
+      "metadata_path": "cards/CVE-2024-26607.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26607.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "drivers/gpu/drm/bridge/sii902x.c"
+      ],
+      "upstream_commit": null,
+      "stable_commit": "08ac6f132dd77e40f786d8af51140c96c6d739c9"
+    },
+    {
+      "cve_id": "CVE-2024-26608",
+      "card_path": "cards/CVE-2024-26608.md",
+      "metadata_path": "cards/CVE-2024-26608.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26608.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "fs/smb/server/ksmbd_netlink.h",
+        "fs/smb/server/transport_ipc.c"
+      ],
+      "upstream_commit": "b33fb5b801c6",
+      "stable_commit": "2c939c74ef0b74e99b92e32edc2a59f9b9ca3d5a"
+    },
+    {
+      "cve_id": "CVE-2024-26611",
+      "card_path": "cards/CVE-2024-26611.md",
+      "metadata_path": "cards/CVE-2024-26611.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26611.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "include/net/xdp_sock_drv.h",
+        "net/core/filter.c"
+      ],
+      "upstream_commit": null,
+      "stable_commit": "5cd781f7216f980207af09c5e0e1bb1eda284540"
+    },
+    {
+      "cve_id": "CVE-2024-26612",
+      "card_path": "cards/CVE-2024-26612.md",
+      "metadata_path": "cards/CVE-2024-26612.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26612.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "fs/fscache/cache.c"
+      ],
+      "upstream_commit": null,
+      "stable_commit": "1c45256e599061021e2c848952e50f406457e448"
+    },
+    {
+      "cve_id": "CVE-2024-26614",
+      "card_path": "cards/CVE-2024-26614.md",
+      "metadata_path": "cards/CVE-2024-26614.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26614.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "include/net/inet_connection_sock.h",
+        "net/core/request_sock.c",
+        "net/ipv4/af_inet.c",
+        "net/ipv4/inet_connection_sock.c"
+      ],
+      "upstream_commit": null,
+      "stable_commit": "168e7e599860654876c2a1102a82610285c02f02"
+    },
+    {
+      "cve_id": "CVE-2024-26616",
+      "card_path": "cards/CVE-2024-26616.md",
+      "metadata_path": "cards/CVE-2024-26616.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26616.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "fs/btrfs/scrub.c"
+      ],
+      "upstream_commit": null,
+      "stable_commit": "34de0f04684ec00c093a0455648be055f0e8e24f"
+    },
+    {
+      "cve_id": "CVE-2024-26622",
+      "card_path": "cards/CVE-2024-26622.md",
+      "metadata_path": "cards/CVE-2024-26622.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26622.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "security/tomoyo/common.c"
+      ],
+      "upstream_commit": "2f03fc340cac9ea1dc63cbf8c93dd2eb0f227815",
+      "stable_commit": "2caa605079488da9601099fbda460cfc1702839f"
+    },
+    {
+      "cve_id": "CVE-2024-26625",
+      "card_path": "cards/CVE-2024-26625.md",
+      "metadata_path": "cards/CVE-2024-26625.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26625.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "net/llc/af_llc.c"
+      ],
+      "upstream_commit": "ff7b11aa481f",
+      "stable_commit": "3151051b787f7cd7e3329ea0016eb9113c248812"
+    },
+    {
+      "cve_id": "CVE-2024-26626",
+      "card_path": "cards/CVE-2024-26626.md",
+      "metadata_path": "cards/CVE-2024-26626.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26626.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "include/net/ip.h",
+        "net/ipv4/ip_sockglue.c",
+        "net/ipv4/ipmr.c",
+        "net/ipv4/raw.c",
+        "net/ipv4/udp.c"
+      ],
+      "upstream_commit": null,
+      "stable_commit": "2e8c9ae40adda2be1ba41c05fd3cd1e61cce3207"
+    },
+    {
+      "cve_id": "CVE-2024-26630",
+      "card_path": "cards/CVE-2024-26630.md",
+      "metadata_path": "cards/CVE-2024-26630.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26630.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "mm/filemap.c"
+      ],
+      "upstream_commit": null,
+      "stable_commit": "3a75cb05d53f4a6823a32deb078de1366954a804"
+    },
+    {
+      "cve_id": "CVE-2024-26642",
+      "card_path": "cards/CVE-2024-26642.md",
+      "metadata_path": "cards/CVE-2024-26642.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26642.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "upstream_commit": null,
+      "stable_commit": "16603605b667b70da974bea8216c93e7db043bf1"
+    },
+    {
+      "cve_id": "CVE-2024-26643",
+      "card_path": "cards/CVE-2024-26643.md",
+      "metadata_path": "cards/CVE-2024-26643.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26643.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "upstream_commit": "552705a3650bbf46a22b1adedc1b04181490fc36",
+      "stable_commit": "291cca35818bd52a407bc37ab45a15816039e363"
+    },
+    {
+      "cve_id": "CVE-2024-26668",
+      "card_path": "cards/CVE-2024-26668.md",
+      "metadata_path": "cards/CVE-2024-26668.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26668.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "net/netfilter/nft_limit.c"
+      ],
+      "upstream_commit": null,
+      "stable_commit": "00c2c29aa36d1d1827c51a3720e9f893a22c7c6a"
+    },
+    {
+      "cve_id": "CVE-2024-26673",
+      "card_path": "cards/CVE-2024-26673.md",
+      "metadata_path": "cards/CVE-2024-26673.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26673.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "net/netfilter/nft_ct.c"
+      ],
+      "upstream_commit": null,
+      "stable_commit": "0f501dae16b7099e69ee9b0d5c70b8f40fd30e98"
+    },
+    {
+      "cve_id": "CVE-2024-26726",
+      "card_path": "cards/CVE-2024-26726.md",
+      "metadata_path": "cards/CVE-2024-26726.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26726.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "fs/btrfs/inode.c"
+      ],
+      "upstream_commit": "5571e41ec6e56e35f34ae9f5b3a335ef510e0ade",
+      "stable_commit": "02f2b95b00bf57d20320ee168b30fb7f3db8e555"
+    }
+  ]
+}

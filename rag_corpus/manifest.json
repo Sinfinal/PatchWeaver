@@ -1,0 +1,82 @@
+{
+  "items": [
+    {
+      "cve_id": "CVE-2024-1086",
+      "card_path": "cards/CVE-2024-1086.md",
+      "metadata_path": "cards/CVE-2024-1086.metadata.json",
+      "chunk_path": "chunks/CVE-2024-1086.jsonl",
+      "task_id": "TASK-TEST-20260420-01",
+      "workspace_available": true,
+      "affected_files": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "upstream_commit": "f342de4e2f33e0e39165d8639387aa6c19dff660",
+      "stable_commit": "f342de4e2f33e0e39165d8639387aa6c19dff660"
+    },
+    {
+      "cve_id": "CVE-2022-0185",
+      "card_path": "cards/CVE-2022-0185.md",
+      "metadata_path": "cards/CVE-2022-0185.metadata.json",
+      "chunk_path": "chunks/CVE-2022-0185.jsonl",
+      "task_id": "TASK-TEST-20260420-02",
+      "workspace_available": true,
+      "affected_files": [
+        "fs/fs_context.c"
+      ],
+      "upstream_commit": "722d94847de2",
+      "stable_commit": "722d94847de2"
+    },
+    {
+      "cve_id": "CVE-2024-26607",
+      "card_path": "cards/CVE-2024-26607.md",
+      "metadata_path": "cards/CVE-2024-26607.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26607.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "drivers/gpu/drm/bridge/sii902x.c"
+      ],
+      "upstream_commit": null,
+      "stable_commit": "08ac6f132dd77e40f786d8af51140c96c6d739c9"
+    },
+    {
+      "cve_id": "CVE-2024-26622",
+      "card_path": "cards/CVE-2024-26622.md",
+      "metadata_path": "cards/CVE-2024-26622.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26622.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "security/tomoyo/common.c"
+      ],
+      "upstream_commit": "2f03fc340cac9ea1dc63cbf8c93dd2eb0f227815",
+      "stable_commit": "2caa605079488da9601099fbda460cfc1702839f"
+    },
+    {
+      "cve_id": "CVE-2024-26643",
+      "card_path": "cards/CVE-2024-26643.md",
+      "metadata_path": "cards/CVE-2024-26643.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26643.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "net/netfilter/nf_tables_api.c"
+      ],
+      "upstream_commit": "552705a3650bbf46a22b1adedc1b04181490fc36",
+      "stable_commit": "291cca35818bd52a407bc37ab45a15816039e363"
+    },
+    {
+      "cve_id": "CVE-2024-26726",
+      "card_path": "cards/CVE-2024-26726.md",
+      "metadata_path": "cards/CVE-2024-26726.metadata.json",
+      "chunk_path": "chunks/CVE-2024-26726.jsonl",
+      "task_id": null,
+      "workspace_available": false,
+      "affected_files": [
+        "fs/btrfs/inode.c"
+      ],
+      "upstream_commit": "5571e41ec6e56e35f34ae9f5b3a335ef510e0ade",
+      "stable_commit": "02f2b95b00bf57d20320ee168b30fb7f3db8e555"
+    }
+  ]
+}
