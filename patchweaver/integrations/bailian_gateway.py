@@ -24,6 +24,11 @@ SUPPORTED_ACTIONS = (
     "report",
     "replay",
     "agent_decision",
+    "rag_search",
+    "rag_health",
+    "rag_stats",
+    "rag_import_status",
+    "rag_reindex",
 )
 DEFAULT_API_BASE_URL = "http://127.0.0.1:8000"
 DEFAULT_TIMEOUT_SECONDS = 30
@@ -68,8 +73,8 @@ def operation_schema() -> dict[str, Any]:
     return {
         "name": "patchweaver_bailian_gateway",
         "description": (
-            "Create PatchWeaver tasks, trigger analyze/run/report/replay, and expose "
-            "Agent decisions through Bailian Function Compute or MCP tools."
+            "Create PatchWeaver tasks, trigger analyze/run/report/replay, inspect "
+            "Agent decisions, and query PatchWeaver RAG through Bailian Function Compute or MCP tools."
         ),
         "environment": {
             "PATCHWEAVER_BAILIAN_API_KEY": "Optional bearer token for PatchWeaver API calls. Value must stay secret.",
@@ -111,6 +116,26 @@ def operation_schema() -> dict[str, Any]:
                     "type": "integer",
                     "description": "Optional maximum Agent attempts for create/run calls.",
                 },
+                "query": {
+                    "type": "string",
+                    "description": "RAG search query for rag_search.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Optional result limit for rag_search.",
+                },
+                "subsystem": {
+                    "type": "string",
+                    "description": "Optional subsystem filter for rag_search.",
+                },
+                "corpus_path": {
+                    "type": "string",
+                    "description": "Optional corpus path for rag_reindex.",
+                },
+                "drop_existing": {
+                    "type": "boolean",
+                    "description": "Whether rag_reindex should rebuild the existing collection.",
+                },
             },
             "additionalProperties": True,
         },
@@ -134,6 +159,26 @@ def operation_schema() -> dict[str, Any]:
                 "method": "GET",
                 "path": "/tasks/{task_id}/agent-decision",
                 "payload_hint": {"task_id": "string"},
+            },
+            "rag_search": {
+                "method": "POST",
+                "path": "/rag/search",
+                "payload_hint": {
+                    "query": "CVE-2024-1086 netfilter verdict init double free fix",
+                    "limit": 3,
+                    "subsystem": "net",
+                },
+            },
+            "rag_health": {"method": "GET", "path": "/rag/health", "payload_hint": {}},
+            "rag_stats": {"method": "GET", "path": "/rag/stats", "payload_hint": {}},
+            "rag_import_status": {"method": "GET", "path": "/rag/import-status", "payload_hint": {}},
+            "rag_reindex": {
+                "method": "POST",
+                "path": "/rag/reindex",
+                "payload_hint": {
+                    "corpus_path": "rag_corpus_batch200/chunks/all_chunks.jsonl",
+                    "drop_existing": True,
+                },
             },
         },
         "output_schema": {
@@ -178,8 +223,8 @@ def openapi_schema(server_url: str = "https://patchweaver-gateway.example.com") 
                     "operationId": "patchweaver_gateway",
                     "summary": "Invoke a PatchWeaver Agent action",
                     "description": (
-                        "Create tasks, query status, run analysis/build stages, "
-                        "retrieve reports, replay evidence, or inspect agent decisions."
+                        "Create tasks, query status, run analysis/build stages, retrieve reports, "
+                        "replay evidence, inspect agent decisions, or call RAG retrieval endpoints."
                     ),
                     "requestBody": {
                         "required": True,
@@ -202,6 +247,18 @@ def openapi_schema(server_url: str = "https://patchweaver-gateway.example.com") 
                                             "payload": {
                                                 "cve_id": "CVE-2024-26742",
                                                 "profile": "demo",
+                                            },
+                                            "dry_run": True,
+                                        },
+                                    },
+                                    "ragSearch": {
+                                        "summary": "Search PatchWeaver RAG knowledge cards",
+                                        "value": {
+                                            "action": "rag_search",
+                                            "payload": {
+                                                "query": "CVE-2024-1086 netfilter verdict init double free fix",
+                                                "limit": 3,
+                                                "subsystem": "net",
                                             },
                                             "dry_run": True,
                                         },
@@ -239,6 +296,32 @@ def build_request(action: str, payload: Mapping[str, Any] | None, config: Bailia
             "url": f"{config.api_base_url}/tasks",
             "headers": _redacted_headers(config),
             "json": normalized_payload,
+        }
+    if action == "rag_search":
+        return {
+            "method": "POST",
+            "url": f"{config.api_base_url}/rag/search",
+            "headers": _redacted_headers(config),
+            "json": _post_payload(normalized_payload),
+        }
+    if action == "rag_reindex":
+        return {
+            "method": "POST",
+            "url": f"{config.api_base_url}/rag/reindex",
+            "headers": _redacted_headers(config),
+            "json": _post_payload(normalized_payload),
+        }
+    if action in {"rag_health", "rag_stats", "rag_import_status"}:
+        route_map = {
+            "rag_health": "/rag/health",
+            "rag_stats": "/rag/stats",
+            "rag_import_status": "/rag/import-status",
+        }
+        return {
+            "method": "GET",
+            "url": f"{config.api_base_url}{route_map[action]}",
+            "headers": _redacted_headers(config),
+            "json": None,
         }
 
     task_id = str(normalized_payload.get("task_id") or "").strip()
@@ -343,6 +426,11 @@ def normalize_bailian_payload(event: Mapping[str, Any]) -> dict[str, Any]:
         "profile",
         "target_kernel",
         "max_attempts",
+        "query",
+        "limit",
+        "subsystem",
+        "corpus_path",
+        "drop_existing",
         "source_url",
         "patch_url",
         "stable_source_baseline_ref",

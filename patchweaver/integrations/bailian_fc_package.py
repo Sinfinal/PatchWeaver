@@ -149,6 +149,20 @@ This package is intentionally small and uses only Python standard library module
 
 Keep `dry_run=true` for first console validation. Switch to `false` only after network access to PatchWeaver API is confirmed.
 
+## RAG Smoke Test Payload
+
+```json
+{
+  "action": "rag_search",
+  "payload": {
+    "query": "CVE-2024-1086 netfilter verdict init double free fix",
+    "limit": 3,
+    "subsystem": "net"
+  },
+  "dry_run": true
+}
+```
+
 ## OpenAPI Plugin Route
 
 The package also includes `openapi.json` for Bailian plugin registration. If you deploy PatchWeaver API directly, the equivalent schema is available from:
@@ -293,7 +307,7 @@ def build_bailian_readiness_manifest(
             "gateway": f"{clean_url}/gateway",
             "compat_gateway": f"{clean_url}/api/v1/integrations/bailian/gateway",
             "required_initial_mode": "dry_run=true",
-            "verified_actions": ["status", "agent_decision"],
+            "verified_actions": ["status", "agent_decision", "rag_search", "rag_health"],
         },
         "secret_policy": {
             "secrets_written_to_manifest": False,
